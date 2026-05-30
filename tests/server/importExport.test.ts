@@ -208,4 +208,156 @@ describe('import/export API', () => {
       .attach('file', zip, 'import.zip')
       .expect(400);
   });
+
+  it('imports pure cards with fresh FSRS state', async () => {
+    const zip = await makeZip(baseExportJson());
+
+    const response = await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify({ mode: 'import_all_as_new' }))
+      .attach('file', zip, 'import.zip')
+      .expect(200);
+
+    expect(response.body.imported_cards).toBe(1);
+    const card = db.prepare('SELECT * FROM word_sense_cards WHERE target_word = ?').get('charge') as { id: string; status: string; is_favorite: number };
+    const fsrs = db.prepare('SELECT * FROM fsrs_states WHERE card_id = ?').get(card.id) as { state: number; reps: number; lapses: number; last_reviewed_at: string | null };
+    expect(card.status).toBe('reviewing');
+    expect(card.is_favorite).toBe(0);
+    expect(fsrs).toMatchObject({ state: 0, reps: 0, lapses: 0, last_reviewed_at: null });
+  });
+
+  it('skips, merges, or imports conflicts according to mode', async () => {
+    const existing = createCard(db, {
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+    });
+    const zip = await makeZip(baseExportJson());
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify({ mode: 'skip_all' }))
+      .attach('file', zip, 'import.zip')
+      .expect(200);
+    expect((db.prepare('SELECT COUNT(*) as count FROM context_examples').get() as { count: number }).count).toBe(0);
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify({ mode: 'merge_all' }))
+      .attach('file', zip, 'import.zip')
+      .expect(200);
+    expect((db.prepare('SELECT COUNT(*) as count FROM context_examples WHERE card_id = ?').get(existing.id) as { count: number }).count).toBe(1);
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify({ mode: 'import_all_as_new' }))
+      .attach('file', zip, 'import.zip')
+      .expect(200);
+    expect((db.prepare('SELECT COUNT(*) as count FROM word_sense_cards WHERE target_word = ? AND context_meaning = ?').get('charge', '收费') as { count: number }).count).toBe(2);
+  });
+
+  it('supports per-item conflict decisions', async () => {
+    createCard(db, {
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+    });
+    const zip = await makeZip(baseExportJson());
+
+    const response = await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify({ mode: 'per_item', items: [{ import_card_id: 'import-card-1', decision: 'skip' }] }))
+      .attach('file', zip, 'import.zip')
+      .expect(200);
+
+    expect(response.body.skipped_cards).toBe(1);
+  });
+
+  it('keeps missing media records unavailable and normalizes sort order', async () => {
+    const zip = await makeZip(baseExportJson({
+      contexts: [
+        { id: 'ctx-1', card_id: 'import-card-1', sentence: 'A', note: null, is_primary: 0, sort_order: 10, created_at: '2026-05-30T00:00:00.000Z', updated_at: '2026-05-30T00:00:00.000Z' },
+        { id: 'ctx-2', card_id: 'import-card-1', sentence: 'B', note: null, is_primary: 0, sort_order: 10, created_at: '2026-05-30T00:00:01.000Z', updated_at: '2026-05-30T00:00:01.000Z' },
+      ],
+      media_files: [{
+        id: 'media-1',
+        context_example_id: 'ctx-1',
+        media_type: 'image',
+        file_name: 'missing.png',
+        file_path: 'uploads/missing.png',
+        mime_type: 'image/png',
+        file_size: 1,
+        is_available: 1,
+        created_at: '2026-05-30T00:00:00.000Z',
+      }],
+    }));
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify({ mode: 'import_all_as_new' }))
+      .attach('file', zip, 'import.zip')
+      .expect(200);
+
+    const contexts = db.prepare('SELECT sort_order, is_primary FROM context_examples ORDER BY sort_order ASC').all() as Array<{ sort_order: number; is_primary: number }>;
+    expect(contexts.map((context) => context.sort_order)).toEqual([10, 20]);
+    expect(contexts.some((context) => context.is_primary === 1)).toBe(true);
+    const media = db.prepare('SELECT is_available FROM media_files WHERE file_name = ?').get('missing.png') as { is_available: number };
+    expect(media.is_available).toBe(0);
+  });
+
+  it('preserves marked state for newly imported cards', async () => {
+    const marked = baseExportJson({
+      export_type: 'marked',
+      cards: [{
+        id: 'marked-card-1',
+        target_word: 'preserve',
+        context_meaning: '保留',
+        target_language: '英语',
+        definition_language: '中文',
+        is_favorite: 1,
+        status: 'mastered',
+        created_at: '2026-05-30T00:00:00.000Z',
+        updated_at: '2026-05-30T00:00:00.000Z',
+      }],
+      contexts: [],
+      fsrs_states: [{
+        id: 'fsrs-1',
+        card_id: 'marked-card-1',
+        due_date: '2026-06-01T00:00:00.000Z',
+        stability: 2,
+        difficulty: 3,
+        reps: 4,
+        lapses: 1,
+        state: 2,
+        last_reviewed_at: '2026-05-30T00:00:00.000Z',
+        created_at: '2026-05-30T00:00:00.000Z',
+        updated_at: '2026-05-30T00:00:00.000Z',
+      }],
+      review_logs: [{
+        id: 'log-1',
+        card_id: 'marked-card-1',
+        rating: 'good',
+        reviewed_at: '2026-05-30T00:00:00.000Z',
+        due_date_before: '2026-05-30T00:00:00.000Z',
+        due_date_after: '2026-06-01T00:00:00.000Z',
+        created_at: '2026-05-30T00:00:00.000Z',
+      }],
+    });
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify({ mode: 'import_all_as_new' }))
+      .attach('file', await makeZip(marked), 'import.zip')
+      .expect(200);
+
+    const card = db.prepare('SELECT * FROM word_sense_cards WHERE target_word = ?').get('preserve') as { id: string; status: string; is_favorite: number };
+    const fsrs = db.prepare('SELECT reps, lapses, state FROM fsrs_states WHERE card_id = ?').get(card.id) as { reps: number; lapses: number; state: number };
+    const logs = db.prepare('SELECT COUNT(*) as count FROM review_logs WHERE card_id = ?').get(card.id) as { count: number };
+    expect(card.status).toBe('mastered');
+    expect(card.is_favorite).toBe(1);
+    expect(fsrs).toMatchObject({ reps: 4, lapses: 1, state: 2 });
+    expect(logs.count).toBe(1);
+  });
 });

@@ -3,8 +3,9 @@ import multer from 'multer';
 import type { Database } from 'better-sqlite3';
 import { asyncRoute } from '../http/asyncRoute.js';
 import { BadRequestError } from '../http/errors.js';
-import { buildExportZip, scanImportZip } from '../domain/importExport.js';
-import { isExportType } from '../../shared/validators.js';
+import { buildExportZip, executeImportZip, scanImportZip } from '../domain/importExport.js';
+import { isExportType, isImportExecuteDecision } from '../../shared/validators.js';
+import type { ImportExecuteDecisionDto } from '../../shared/types.js';
 
 export function importExportRouter(db: Database, uploadsDir: string): Router {
   const router = Router();
@@ -22,6 +23,22 @@ export function importExportRouter(db: Database, uploadsDir: string): Router {
   router.post('/import/scan', upload.single('file'), asyncRoute(async (req, res) => {
     if (!req.file) throw new BadRequestError('file is required');
     const result = await scanImportZip(db, req.file.buffer);
+    res.json(result);
+  }));
+
+  router.post('/import/execute', upload.single('file'), asyncRoute(async (req, res) => {
+    if (!req.file) throw new BadRequestError('file is required');
+    if (typeof req.body.decisions !== 'string') throw new BadRequestError('decisions is required');
+
+    let decisions: unknown;
+    try {
+      decisions = JSON.parse(req.body.decisions);
+    } catch {
+      throw new BadRequestError('decisions must be valid JSON');
+    }
+
+    if (!isImportExecuteDecision(decisions)) throw new BadRequestError('Invalid import decisions');
+    const result = await executeImportZip(db, uploadsDir, req.file.buffer, decisions as ImportExecuteDecisionDto);
     res.json(result);
   }));
 
