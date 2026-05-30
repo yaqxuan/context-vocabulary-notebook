@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { listCards } from '../../src/client/api/cards';
 import { ApiError, apiBlob, apiFormData, apiRequest, buildQuery } from '../../src/client/api/client';
+import { exportCards } from '../../src/client/api/importExport';
+import { getHomeStatistics } from '../../src/client/api/statistics';
 
 describe('api client', () => {
   afterEach(() => {
@@ -101,5 +104,45 @@ describe('api client', () => {
       body: formData,
       headers: expect.not.objectContaining({ 'Content-Type': 'application/json' }),
     }));
+  });
+});
+
+describe('endpoint modules', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('requests card lists with query params', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ items: [], total: 0, page: 1, page_size: 20 }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await listCards({ search: 'charge', page: 1, page_size: 20, favorite: true });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/cards?search=charge&page=1&page_size=20&favorite=true', expect.any(Object));
+  });
+
+  it('requests home statistics', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ due_count: 0, reviewed_today_count: 0, again_today_count: 0, good_today_count: 0, daily_review_limit: 20, is_daily_target_reached: false }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await getHomeStatistics();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/statistics/home', expect.any(Object));
+  });
+
+  it('downloads pure-card exports', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('zip', { status: 200 }));
+
+    await exportCards('pure');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/export?type=pure', expect.any(Object));
   });
 });
