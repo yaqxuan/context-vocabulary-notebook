@@ -1,15 +1,49 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { App } from '../../src/client/App';
 
 describe('App', () => {
-  it('renders the project shell with navigation placeholders', () => {
+  afterEach(() => {
+    cleanup();
+    window.location.hash = '';
+  });
+
+  it('renders the sidebar shell with navigation', () => {
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: 'Context Vocabulary Notebook' })).toBeInTheDocument();
-    expect(screen.getByRole('navigation')).toHaveTextContent('首页');
-    expect(screen.getByRole('navigation')).toHaveTextContent('制卡');
-    expect(screen.getByRole('navigation')).toHaveTextContent('复习');
+    expect(screen.getByText('语境单词本')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: '主导航' })).toHaveTextContent('首页');
+    expect(screen.getByRole('navigation', { name: '主导航' })).toHaveTextContent('制卡');
+    expect(screen.getByRole('navigation', { name: '主导航' })).toHaveTextContent('设置');
+  });
+
+  it('navigates with hash links and highlights current page', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('link', { name: /^复习/ }));
+    window.location.hash = '#/review';
+    fireEvent(window, new HashChangeEvent('hashchange'));
+
+    expect(window.location.hash).toBe('#/review');
+    expect(screen.getByRole('heading', { name: '复习' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^复习/ })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it.each([
+    ['#/', '首页'],
+    ['#/create', '制卡'],
+    ['#/cards', '词义条目'],
+    ['#/cards/card-1', '词义详情'],
+    ['#/review', '复习'],
+    ['#/tags', '标签管理'],
+    ['#/favorites', '收藏'],
+    ['#/statistics', '统计'],
+    ['#/settings', '设置'],
+  ])('renders route %s', (hash, heading) => {
+    window.location.hash = hash;
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
   });
 });
