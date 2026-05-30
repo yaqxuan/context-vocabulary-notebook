@@ -8,6 +8,7 @@ import { mediaRouter } from './routes/media.js';
 import { reviewRouter } from './routes/review.js';
 import { settingsRouter } from './routes/settings.js';
 import { statisticsRouter } from './routes/statistics.js';
+import { importExportRouter } from './routes/importExport.js';
 import { ensureUploadsDir, resolveUploadPath } from './storage/uploads.js';
 import { BadRequestError } from './http/errors.js';
 
@@ -59,6 +60,7 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
   application.use('/api/review', reviewRouter(db));
   application.use('/api/settings', settingsRouter(db));
   application.use('/api/statistics', statisticsRouter(db));
+  application.use('/api', importExportRouter(db, uploadsDir));
 
   return application;
 }
