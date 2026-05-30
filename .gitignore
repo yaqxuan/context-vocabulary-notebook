@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.env
+*.local
+*.db
+*.sqlite
+*.sqlite3
+data/
+uploads/
+playwright-report/
+test-results/
