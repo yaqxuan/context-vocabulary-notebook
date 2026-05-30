@@ -1,4 +1,4 @@
-import type { CardDetailDto, CardSummaryDto, CreateCardBody, PaginatedResult, PatchCardBody, SuggestionDto } from '../../shared/types';
+import type { CardDetailDto, CardSummaryDto, ContextDto, CreateCardBody, PaginatedResult, PatchCardBody, SuggestionDto } from '../../shared/types';
 import { apiRequest, buildQuery, type QueryValue } from './client';
 
 export interface ListCardsParams extends Record<string, QueryValue> {
@@ -24,8 +24,13 @@ export function getCardSuggestions(targetWord: string): Promise<SuggestionDto[]>
   return apiRequest<SuggestionDto[]>(`/cards/suggestions?${query}`);
 }
 
-export function createCard(body: CreateCardBody): Promise<unknown> {
-  return apiRequest('/cards', { method: 'POST', json: body });
+export interface CreateCardResponseDto {
+  card: CardSummaryDto;
+  context: ContextDto;
+}
+
+export function createCard(body: CreateCardBody): Promise<CreateCardResponseDto> {
+  return apiRequest<CreateCardResponseDto>('/cards', { method: 'POST', json: body });
 }
 
 export function patchCard(id: string, body: PatchCardBody): Promise<CardSummaryDto> {

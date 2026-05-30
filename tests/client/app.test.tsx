@@ -1,11 +1,28 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../src/client/App';
 
 describe('App', () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({
+        due_count: 0,
+        reviewed_today_count: 0,
+        again_today_count: 0,
+        good_today_count: 0,
+        daily_review_limit: 20,
+        is_daily_target_reached: false,
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+  });
+
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
     window.location.hash = '';
   });
 
