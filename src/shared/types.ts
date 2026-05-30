@@ -200,3 +200,121 @@ export interface StatisticsPageDto {
   tag_distribution: Array<{ tag_id: string; name: string; card_count: number }>;
   rating_trend: Array<{ date: string; again_count: number; good_count: number }>;
 }
+
+export type ExportType = 'marked' | 'pure';
+
+export interface ExportCardRecord {
+  id: string;
+  target_word: string;
+  context_meaning: string;
+  target_language: string;
+  definition_language: string;
+  created_at: string;
+  updated_at: string;
+  is_favorite?: number;
+  status?: CardStatus;
+}
+
+export interface ExportContextRecord {
+  id: string;
+  card_id: string;
+  sentence: string;
+  note: string | null;
+  is_primary: number;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExportMediaRecord {
+  id: string;
+  context_example_id: string;
+  media_type: MediaType;
+  file_name: string;
+  file_path: string;
+  mime_type: string;
+  file_size: number;
+  is_available: number;
+  created_at: string;
+}
+
+export interface ExportTagRecord {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExportCardTagRecord {
+  card_id: string;
+  tag_id: string;
+  created_at: string;
+}
+
+export interface ExportFsrsRecord extends FsrsDto {
+  id: string;
+  card_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExportReviewLogRecord {
+  id: string;
+  card_id: string;
+  rating: 'again' | 'good';
+  reviewed_at: string;
+  due_date_before: string;
+  due_date_after: string;
+  created_at: string;
+}
+
+export interface ExportJson {
+  schema_version: 1;
+  export_type: ExportType;
+  exported_at: string;
+  cards: ExportCardRecord[];
+  contexts: ExportContextRecord[];
+  media_files: ExportMediaRecord[];
+  tags: ExportTagRecord[];
+  card_tags: ExportCardTagRecord[];
+  fsrs_states?: ExportFsrsRecord[];
+  review_logs?: ExportReviewLogRecord[];
+  settings?: SettingsDto;
+}
+
+export interface ImportConflictDto {
+  import_card_id: string;
+  existing_card_id: string;
+  target_word: string;
+  context_meaning: string;
+}
+
+export interface ImportScanResponseDto {
+  schema_version: 1;
+  export_type: ExportType;
+  counts: {
+    cards: number;
+    contexts: number;
+    media_files: number;
+    tags: number;
+  };
+  conflicts: ImportConflictDto[];
+  missing_media: string[];
+}
+
+export type ImportConflictDecision = 'skip' | 'merge' | 'import_as_new';
+
+export type ImportExecuteDecisionDto =
+  | { mode: 'skip_all' }
+  | { mode: 'merge_all' }
+  | { mode: 'import_all_as_new' }
+  | { mode: 'per_item'; items: Array<{ import_card_id: string; decision: ImportConflictDecision }> };
+
+export interface ImportExecuteResponseDto {
+  imported_cards: number;
+  imported_contexts: number;
+  imported_media_files: number;
+  skipped_cards: number;
+  merged_cards: number;
+  missing_media_files: number;
+}

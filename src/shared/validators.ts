@@ -51,3 +51,22 @@ export function resolveMediaType(filename: string, mime: string): MediaType | nu
 export function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
+
+export function isExportType(value: unknown): value is 'marked' | 'pure' {
+  return value === 'marked' || value === 'pure';
+}
+
+export function isImportExecuteDecision(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const mode = (value as { mode?: unknown }).mode;
+  if (mode === 'skip_all' || mode === 'merge_all' || mode === 'import_all_as_new') return true;
+  if (mode !== 'per_item') return false;
+  const items = (value as { items?: unknown }).items;
+  if (!Array.isArray(items)) return false;
+  return items.every((item) => {
+    if (!item || typeof item !== 'object') return false;
+    const record = item as { import_card_id?: unknown; decision?: unknown };
+    return typeof record.import_card_id === 'string'
+      && (record.decision === 'skip' || record.decision === 'merge' || record.decision === 'import_as_new');
+  });
+}
