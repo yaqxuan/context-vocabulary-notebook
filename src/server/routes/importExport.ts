@@ -7,9 +7,17 @@ import { buildExportZip, executeImportZip, scanImportZip } from '../domain/impor
 import { isExportType, isImportExecuteDecision } from '../../shared/validators.js';
 import type { ImportExecuteDecisionDto } from '../../shared/types.js';
 
+const MAX_IMPORT_ZIP_BYTES = 1024 * 1024 * 1024;
+
 export function importExportRouter(db: Database, uploadsDir: string): Router {
   const router = Router();
-  const upload = multer({ storage: multer.memoryStorage() });
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_IMPORT_ZIP_BYTES },
+    fileFilter: (_req, file, callback) => {
+      callback(null, file.mimetype === 'application/zip' || file.originalname.toLowerCase().endsWith('.zip'));
+    },
+  });
 
   router.get('/export', asyncRoute(async (req, res) => {
     const type = req.query.type;

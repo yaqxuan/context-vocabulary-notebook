@@ -209,6 +209,28 @@ describe('import/export API', () => {
       .expect(400);
   });
 
+  it('rejects unsafe media metadata during execute', async () => {
+    const zip = await makeZip(baseExportJson({
+      media_files: [{
+        id: 'media-1',
+        context_example_id: 'import-context-1',
+        media_type: 'script' as 'image',
+        file_name: 'evil.php',
+        file_path: 'uploads/evil.php',
+        mime_type: 'text/html',
+        file_size: 1,
+        is_available: 1,
+        created_at: '2026-05-30T00:00:00.000Z',
+      }],
+    }), { 'uploads/evil.php': 'x' });
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify({ mode: 'import_all_as_new' }))
+      .attach('file', zip, 'import.zip')
+      .expect(400);
+  });
+
   it('imports pure cards with fresh FSRS state', async () => {
     const zip = await makeZip(baseExportJson());
 
@@ -248,6 +270,7 @@ describe('import/export API', () => {
       .attach('file', zip, 'import.zip')
       .expect(200);
     expect((db.prepare('SELECT COUNT(*) as count FROM context_examples WHERE card_id = ?').get(existing.id) as { count: number }).count).toBe(1);
+    expect((db.prepare('SELECT COUNT(*) as count FROM fsrs_states WHERE card_id = ?').get(existing.id) as { count: number }).count).toBe(1);
 
     await request(createApp(db, { uploadsDir }))
       .post('/api/import/execute')

@@ -13,10 +13,28 @@ import type {
 } from '../../shared/types.js';
 import { resolveUploadPath } from '../storage/uploads.js';
 import { BadRequestError } from '../http/errors.js';
+import { ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, MEDIA_TYPES } from '../../shared/constants.js';
+import { MAX_IMPORT_CARDS } from '../../shared/validators.js';
+
+const MAX_EXPORT_JSON_BYTES = 10 * 1024 * 1024;
+const MAX_IMPORT_CONTEXTS = 20000;
+const MAX_IMPORT_MEDIA_FILES = 20000;
+const MAX_IMPORT_TAGS = 10000;
+const ISO_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
+interface PendingMediaWrite {
+  storedPath: string;
+  storedName: string;
+  mediaBuffer: Buffer;
+}
 
 function assertSafeUploadEntry(fileName: string): void {
-  if (!fileName || fileName.includes('..') || fileName.includes('/') || fileName.includes('\\') || path.basename(fileName) !== fileName) {
+  if (!fileName || fileName.includes('\0') || fileName.includes('..') || fileName.includes('/') || fileName.includes('\\') || path.basename(fileName) !== fileName) {
     throw new BadRequestError('Unsafe media file path');
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(ALLOWED_EXTENSIONS, path.extname(fileName).toLowerCase())) {
+    throw new BadRequestError('Unsupported media file extension');
   }
 }
 
@@ -33,8 +51,13 @@ async function readExportJsonFromZip(buffer: Buffer): Promise<{ zip: JSZip; data
 
   let data: ExportJson;
   try {
-    data = JSON.parse(await exportFile.async('string')) as ExportJson;
-  } catch {
+    const jsonText = await exportFile.async('string');
+    if (Buffer.byteLength(jsonText, 'utf8') > MAX_EXPORT_JSON_BYTES) {
+      throw new BadRequestError('export.json exceeds size limit');
+    }
+    data = JSON.parse(jsonText) as ExportJson;
+  } catch (error) {
+    if (error instanceof BadRequestError) throw error;
     throw new BadRequestError('export.json must be valid JSON');
   }
 
@@ -43,9 +66,54 @@ async function readExportJsonFromZip(buffer: Buffer): Promise<{ zip: JSZip; data
   if (!Array.isArray(data.cards) || !Array.isArray(data.contexts) || !Array.isArray(data.media_files) || !Array.isArray(data.tags) || !Array.isArray(data.card_tags)) {
     throw new BadRequestError('Invalid export.json shape');
   }
+  if (data.cards.length > MAX_IMPORT_CARDS || data.contexts.length > MAX_IMPORT_CONTEXTS || data.media_files.length > MAX_IMPORT_MEDIA_FILES || data.tags.length > MAX_IMPORT_TAGS) {
+    throw new BadRequestError('Import exceeds maximum record count');
+  }
 
-  for (const media of data.media_files) assertSafeUploadEntry(media.file_name);
+  validateExportJson(data);
   return { zip, data };
+}
+
+function validateExportJson(data: ExportJson): void {
+  for (const card of data.cards) {
+    requireIsoTimestamp(card.created_at);
+    requireIsoTimestamp(card.updated_at);
+  }
+
+  for (const context of data.contexts) {
+    requireIsoTimestamp(context.created_at);
+    requireIsoTimestamp(context.updated_at);
+  }
+
+  for (const media of data.media_files) {
+    assertSafeUploadEntry(media.file_name);
+    requireIsoTimestamp(media.created_at);
+    if (!MEDIA_TYPES.includes(media.media_type)) throw new BadRequestError('Invalid media_type');
+    if (!Object.prototype.hasOwnProperty.call(ALLOWED_MIME_TYPES, media.mime_type)) throw new BadRequestError('Unsupported media mime_type');
+  }
+
+  for (const tag of data.tags) {
+    requireIsoTimestamp(tag.created_at);
+    requireIsoTimestamp(tag.updated_at);
+  }
+
+  for (const cardTag of data.card_tags) requireIsoTimestamp(cardTag.created_at);
+  for (const fsrs of data.fsrs_states ?? []) {
+    requireIsoTimestamp(fsrs.due_date);
+    requireIsoTimestamp(fsrs.created_at);
+    requireIsoTimestamp(fsrs.updated_at);
+    if (fsrs.last_reviewed_at !== null) requireIsoTimestamp(fsrs.last_reviewed_at);
+  }
+  for (const log of data.review_logs ?? []) {
+    requireIsoTimestamp(log.reviewed_at);
+    requireIsoTimestamp(log.due_date_before);
+    requireIsoTimestamp(log.due_date_after);
+    requireIsoTimestamp(log.created_at);
+  }
+}
+
+function requireIsoTimestamp(value: string): void {
+  if (!ISO_TIMESTAMP_RE.test(value)) throw new BadRequestError('Invalid timestamp');
 }
 
 export async function buildExportZip(db: Database, uploadsDir: string, type: ExportType): Promise<Buffer> {
@@ -107,7 +175,9 @@ export async function buildExportZip(db: Database, uploadsDir: string, type: Exp
 
   if (marked) {
     exportJson.fsrs_states = db.prepare(`
-      SELECT fs.* FROM fsrs_states fs
+      SELECT fs.id, fs.card_id, fs.due_date, fs.stability, fs.difficulty, fs.reps, fs.lapses,
+             fs.state, fs.last_reviewed_at, fs.created_at, fs.updated_at
+      FROM fsrs_states fs
       JOIN word_sense_cards wsc ON wsc.id = fs.card_id
       WHERE wsc.deleted_at IS NULL
       ORDER BY fs.created_at ASC, fs.id ASC
@@ -182,6 +252,8 @@ export async function executeImportZip(
   }
 
   const now = new Date().toISOString();
+  const fsrsByCard = new Map((data.fsrs_states ?? []).map((state) => [state.card_id, state]));
+  const pendingMediaWrites: PendingMediaWrite[] = [];
   const response: ImportExecuteResponseDto = {
     imported_cards: 0,
     imported_contexts: 0,
@@ -280,7 +352,7 @@ export async function executeImportZip(
       const hasFile = Boolean(mediaBuffer);
       const storedName = hasFile ? `${randomUUID()}${path.extname(media.file_name).toLowerCase()}` : media.file_name;
       const storedPath = resolveUploadPath(uploadsDir, storedName);
-      if (mediaBuffer) fs.writeFileSync(storedPath, mediaBuffer);
+      if (mediaBuffer) pendingMediaWrites.push({ storedPath, storedName, mediaBuffer });
 
       db.prepare(`
         INSERT INTO media_files (id, context_example_id, media_type, file_name, file_path, mime_type, file_size, is_available, created_at)
@@ -293,7 +365,7 @@ export async function executeImportZip(
     for (const card of data.cards) {
       const localCardId = cardMap.get(card.id);
       if (!localCardId || mergedCardIds.has(card.id)) continue;
-      const fsrs = data.export_type === 'marked' ? data.fsrs_states?.find((state) => state.card_id === card.id) : undefined;
+      const fsrs = data.export_type === 'marked' ? fsrsByCard.get(card.id) : undefined;
 
       db.prepare(`
         INSERT INTO fsrs_states (id, card_id, due_date, stability, difficulty, reps, lapses, state, last_reviewed_at, created_at, updated_at)
@@ -334,7 +406,24 @@ export async function executeImportZip(
   });
 
   transaction();
+  writeImportedMedia(db, pendingMediaWrites);
   return response;
+}
+
+function writeImportedMedia(db: Database, writes: PendingMediaWrite[]): void {
+  const written: string[] = [];
+  try {
+    for (const write of writes) {
+      fs.writeFileSync(write.storedPath, write.mediaBuffer);
+      written.push(write.storedPath);
+    }
+  } catch (error) {
+    for (const filePath of written) fs.rmSync(filePath, { force: true });
+    for (const write of writes) {
+      db.prepare('UPDATE media_files SET is_available = 0 WHERE file_name = ?').run(write.storedName);
+    }
+    throw error;
+  }
 }
 
 function findExistingCard(db: Database, targetWord: string, contextMeaning: string): { id: string } | undefined {

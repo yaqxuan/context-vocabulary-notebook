@@ -56,13 +56,15 @@ export function isExportType(value: unknown): value is 'marked' | 'pure' {
   return value === 'marked' || value === 'pure';
 }
 
+export const MAX_IMPORT_CARDS = 5000;
+
 export function isImportExecuteDecision(value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
   const mode = (value as { mode?: unknown }).mode;
   if (mode === 'skip_all' || mode === 'merge_all' || mode === 'import_all_as_new') return true;
   if (mode !== 'per_item') return false;
   const items = (value as { items?: unknown }).items;
-  if (!Array.isArray(items)) return false;
+  if (!Array.isArray(items) || items.length > MAX_IMPORT_CARDS) return false;
   return items.every((item) => {
     if (!item || typeof item !== 'object') return false;
     const record = item as { import_card_id?: unknown; decision?: unknown };
