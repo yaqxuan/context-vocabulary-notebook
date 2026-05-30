@@ -41,6 +41,45 @@ async function readExportJson(responseBody: Buffer): Promise<ExportJson> {
   return JSON.parse(await file!.async('string')) as ExportJson;
 }
 
+async function makeZip(exportJson: ExportJson, files: Record<string, Buffer | string> = {}): Promise<Buffer> {
+  const zip = new JSZip();
+  zip.file('export.json', JSON.stringify(exportJson));
+  for (const [name, content] of Object.entries(files)) zip.file(name, content);
+  return zip.generateAsync({ type: 'nodebuffer' });
+}
+
+function baseExportJson(overrides: Partial<ExportJson> = {}): ExportJson {
+  const now = '2026-05-30T00:00:00.000Z';
+  return {
+    schema_version: 1,
+    export_type: 'pure',
+    exported_at: now,
+    cards: [{
+      id: 'import-card-1',
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      created_at: now,
+      updated_at: now,
+    }],
+    contexts: [{
+      id: 'import-context-1',
+      card_id: 'import-card-1',
+      sentence: 'They charge extra.',
+      note: null,
+      is_primary: 1,
+      sort_order: 10,
+      created_at: now,
+      updated_at: now,
+    }],
+    media_files: [],
+    tags: [],
+    card_tags: [],
+    ...overrides,
+  };
+}
+
 describe('import/export API', () => {
   it('exports pure cards without user-specific state', async () => {
     const card = createCard(db, {
@@ -127,5 +166,46 @@ describe('import/export API', () => {
     const zip = await JSZip.loadAsync(response.body as Buffer);
     expect(zip.file('export.json')).toBeTruthy();
     expect(zip.file('uploads/sample.png')).toBeTruthy();
+  });
+
+  it('scans conflicts without writing data', async () => {
+    createCard(db, {
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+    });
+    const zip = await makeZip(baseExportJson());
+
+    const response = await request(createApp(db, { uploadsDir }))
+      .post('/api/import/scan')
+      .attach('file', zip, 'import.zip')
+      .expect(200);
+
+    expect(response.body.conflicts).toMatchObject([{ target_word: 'charge', context_meaning: '收费' }]);
+    expect(response.body.counts.cards).toBe(1);
+    const count = db.prepare('SELECT COUNT(*) as count FROM context_examples').get() as { count: number };
+    expect(count.count).toBe(0);
+  });
+
+  it('rejects unsafe media paths during scan', async () => {
+    const zip = await makeZip(baseExportJson({
+      media_files: [{
+        id: 'media-1',
+        context_example_id: 'import-context-1',
+        media_type: 'image',
+        file_name: '../evil.png',
+        file_path: '../evil.png',
+        mime_type: 'image/png',
+        file_size: 1,
+        is_available: 1,
+        created_at: '2026-05-30T00:00:00.000Z',
+      }],
+    }));
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/scan')
+      .attach('file', zip, 'import.zip')
+      .expect(400);
   });
 });

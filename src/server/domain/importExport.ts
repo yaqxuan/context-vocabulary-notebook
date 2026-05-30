@@ -2,8 +2,43 @@ import fs from 'node:fs';
 import path from 'node:path';
 import JSZip from 'jszip';
 import type { Database } from 'better-sqlite3';
-import type { ExportJson, ExportType } from '../../shared/types.js';
+import type { ExportJson, ExportType, ImportScanResponseDto } from '../../shared/types.js';
 import { resolveUploadPath } from '../storage/uploads.js';
+import { BadRequestError } from '../http/errors.js';
+
+function assertSafeUploadEntry(fileName: string): void {
+  if (!fileName || fileName.includes('..') || fileName.includes('/') || fileName.includes('\\') || path.basename(fileName) !== fileName) {
+    throw new BadRequestError('Unsafe media file path');
+  }
+}
+
+async function readExportJsonFromZip(buffer: Buffer): Promise<{ zip: JSZip; data: ExportJson }> {
+  let zip: JSZip;
+  try {
+    zip = await JSZip.loadAsync(buffer);
+  } catch {
+    throw new BadRequestError('Invalid zip file');
+  }
+
+  const exportFile = zip.file('export.json');
+  if (!exportFile) throw new BadRequestError('export.json is required');
+
+  let data: ExportJson;
+  try {
+    data = JSON.parse(await exportFile.async('string')) as ExportJson;
+  } catch {
+    throw new BadRequestError('export.json must be valid JSON');
+  }
+
+  if (data.schema_version !== 1) throw new BadRequestError('Unsupported export schema_version');
+  if (data.export_type !== 'marked' && data.export_type !== 'pure') throw new BadRequestError('Invalid export_type');
+  if (!Array.isArray(data.cards) || !Array.isArray(data.contexts) || !Array.isArray(data.media_files) || !Array.isArray(data.tags) || !Array.isArray(data.card_tags)) {
+    throw new BadRequestError('Invalid export.json shape');
+  }
+
+  for (const media of data.media_files) assertSafeUploadEntry(media.file_name);
+  return { zip, data };
+}
 
 export async function buildExportZip(db: Database, uploadsDir: string, type: ExportType): Promise<Buffer> {
   const marked = type === 'marked';
@@ -91,4 +126,39 @@ export async function buildExportZip(db: Database, uploadsDir: string, type: Exp
   }
 
   return zip.generateAsync({ type: 'nodebuffer' });
+}
+
+export async function scanImportZip(db: Database, buffer: Buffer): Promise<ImportScanResponseDto> {
+  const { zip, data } = await readExportJsonFromZip(buffer);
+  const conflicts = data.cards.flatMap((card) => {
+    const existing = db.prepare(`
+      SELECT id FROM word_sense_cards
+      WHERE target_word = ? AND context_meaning = ? AND deleted_at IS NULL
+      ORDER BY created_at ASC LIMIT 1
+    `).get(card.target_word, card.context_meaning) as { id: string } | undefined;
+
+    return existing ? [{
+      import_card_id: card.id,
+      existing_card_id: existing.id,
+      target_word: card.target_word,
+      context_meaning: card.context_meaning,
+    }] : [];
+  });
+
+  const missing_media = data.media_files
+    .filter((media) => media.is_available && !zip.file(`uploads/${media.file_name}`))
+    .map((media) => media.file_name);
+
+  return {
+    schema_version: 1,
+    export_type: data.export_type,
+    counts: {
+      cards: data.cards.length,
+      contexts: data.contexts.length,
+      media_files: data.media_files.length,
+      tags: data.tags.length,
+    },
+    conflicts,
+    missing_media,
+  };
 }
