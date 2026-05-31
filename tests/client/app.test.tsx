@@ -42,6 +42,7 @@ describe('App', () => {
           fsrs: { due_date: 'now', stability: null, difficulty: null, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
         }));
       }
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(json([]));
       if (url.startsWith('/api/cards')) return Promise.resolve(json({ items: [], total: 0, page: 1, page_size: 20 }));
       return Promise.resolve(json({}));
     });
@@ -89,6 +90,15 @@ describe('App', () => {
     render(<App />);
 
     expect(screen.getAllByRole('heading', { name: heading }).length).toBeGreaterThan(0);
+  });
+
+  it('renders the real card create page on create route', async () => {
+    window.location.hash = '#/create';
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: '制卡' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '捕捉一个真实语境' })).toBeInTheDocument();
+    expect(screen.getByText('本地视频 mp4')).toBeInTheDocument();
   });
 
   it('renders real Phase 6 list-like routes', async () => {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { Layout, type NavItem } from './components/Layout';
 import { HomePage } from './pages/HomePage';
+import { CardCreatePage } from './pages/CardCreatePage';
 import { CardDetailPage } from './pages/CardDetailPage';
 import { CardListPage } from './pages/CardListPage';
 import { FavoritesPage } from './pages/FavoritesPage';
@@ -35,7 +36,7 @@ function routeFor(path: string): RouteResult {
     return { title: '首页', subtitle: '今日概览', element: <HomePage /> };
   }
   if (path === '/create') {
-    return { title: '制卡', subtitle: '添加真实视频语境', element: <PlaceholderPage message="制卡页会支持新建词义和添加到已有词义" phase="Phase 6" /> };
+    return { title: '制卡', subtitle: '添加真实视频语境', element: <CardCreatePage /> };
   }
   if (path === '/cards') {
     return { title: '词义条目', subtitle: '管理所有词义', element: <CardListPage /> };

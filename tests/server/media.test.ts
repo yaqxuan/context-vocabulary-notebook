@@ -107,7 +107,22 @@ describe('POST /api/media', () => {
       .attach('file', Buffer.from('data'), { filename: 'document.pdf', contentType: 'application/pdf' });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBeTruthy();
+    expect(res.body.error).toBe('Unsupported file type');
+    expect(fs.readdirSync(uploadsDir)).toHaveLength(0);
+  });
+
+  it('rejects uploads larger than the configured limit', async () => {
+    const limitedApp = createApp(db, { uploadsDir, uploadMaxBytes: 4 });
+    const card = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    const ctx = createContext(db, { card_id: card.id, sentence: 'Test.' });
+
+    const res = await request(limitedApp)
+      .post('/api/media')
+      .field('context_example_id', ctx.id)
+      .attach('file', Buffer.from('too-large'), { filename: 'clip.mp4', contentType: 'video/mp4' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('File too large');
     expect(fs.readdirSync(uploadsDir)).toHaveLength(0);
   });
 

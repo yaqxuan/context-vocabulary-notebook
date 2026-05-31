@@ -3,7 +3,6 @@ import type { Request, Response, NextFunction } from 'express';
 import type { Database } from 'better-sqlite3';
 import multer from 'multer';
 import fs from 'node:fs';
-import path from 'node:path';
 import { asyncRoute } from '../http/asyncRoute.js';
 import { BadRequestError, HttpError, NotFoundError } from '../http/errors.js';
 import { createMedia, deleteMedia, getMedia } from '../domain/media.js';
@@ -15,7 +14,13 @@ function paramStr(p: string | string[]): string {
   return Array.isArray(p) ? p[0]! : p;
 }
 
-export function mediaRouter(db: Database, uploadsDir: string): Router {
+export interface MediaRouterOptions {
+  maxFileSizeBytes?: number;
+}
+
+const DEFAULT_MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024;
+
+export function mediaRouter(db: Database, uploadsDir: string, options: MediaRouterOptions = {}): Router {
   const router = Router();
 
   // Multer storage: generate safe file names, store in uploadsDir
@@ -28,9 +33,17 @@ export function mediaRouter(db: Database, uploadsDir: string): Router {
     },
   });
 
-  // No fileFilter here - validate MIME/extension inside the route handler
-  // so we can return a clean JSON error response.
-  const upload = multer({ storage });
+  const upload = multer({
+    storage,
+    limits: { fileSize: options.maxFileSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES },
+    fileFilter: (_req, file, cb) => {
+      if (!resolveMediaType(file.originalname, file.mimetype)) {
+        cb(new BadRequestError('Unsupported file type'));
+        return;
+      }
+      cb(null, true);
+    },
+  });
 
   // Wrapper that runs multer then our async handler; converts multer errors to JSON too
   function uploadMiddleware(req: Request, res: Response, next: NextFunction): void {
@@ -60,9 +73,7 @@ export function mediaRouter(db: Database, uploadsDir: string): Router {
       // Validate MIME type and extension
       const mediaType = resolveMediaType(req.file.originalname, req.file.mimetype);
       if (!mediaType) {
-        throw new BadRequestError(
-          `Unsupported file type: ${req.file.mimetype} / ${path.extname(req.file.originalname)}`,
-        );
+        throw new BadRequestError('Unsupported file type');
       }
 
       const ctx = getContext(db, contextExampleId);

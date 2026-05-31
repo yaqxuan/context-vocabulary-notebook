@@ -43,6 +43,10 @@ describe('api client', () => {
     }));
   });
 
+  it('rejects absolute URLs to keep API calls same-origin', async () => {
+    await expect(apiRequest('https://example.com/api/cards')).rejects.toThrow('Absolute API URLs are not allowed');
+  });
+
   it('throws ApiError with JSON error message', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ error: 'target_word is required' }), {
