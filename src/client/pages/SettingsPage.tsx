@@ -179,15 +179,21 @@ function ExportSection() {
     const filename = type === 'marked' ? 'cvn-marked-export.zip' : 'cvn-pure-export.zip';
     const setter = type === 'marked' ? setMarkedLoading : setPureLoading;
     setter(true);
+    let url: string | null = null;
+    let a: HTMLAnchorElement | null = null;
     try {
       const blob = await exportCards(type);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      url = URL.createObjectURL(blob);
+      a = document.createElement('a');
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(url);
+      try {
+        a.click();
+      } finally {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     } finally {
       setter(false);
     }

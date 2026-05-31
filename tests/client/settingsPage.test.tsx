@@ -457,6 +457,37 @@ describe('SettingsPage', () => {
 
       await waitFor(() => expect(fetchedUrls.some((u) => u.includes('type=pure'))).toBe(true));
     });
+
+    it('removes the hidden anchor from the DOM after export, even if click throws', async () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        if (url.includes('/export')) {
+          return Promise.resolve(blobResponse());
+        }
+        return Promise.resolve(jsonResponse(settings));
+      });
+
+      // Spy on removeChild to verify it is called with an anchor element
+      const removeChildSpy = vi.spyOn(document.body, 'removeChild');
+
+      render(<SettingsPage />);
+      await screen.findByLabelText('界面语言');
+
+      fireEvent.click(screen.getByRole('button', { name: '导出含有标记的卡片' }));
+
+      await waitFor(() => expect(createObjectURLSpy).toHaveBeenCalledTimes(1));
+
+      // removeChild must have been called with the anchor element
+      expect(removeChildSpy).toHaveBeenCalledTimes(1);
+      const removedNode = removeChildSpy.mock.calls[0][0] as HTMLElement;
+      expect(removedNode.tagName).toBe('A');
+
+      // The anchor must not be present in the document body
+      const anchors = document.body.querySelectorAll('a[download]');
+      expect(anchors).toHaveLength(0);
+
+      removeChildSpy.mockRestore();
+    });
   });
 
   // ─── Import scan ───────────────────────────────────────────────────────────
