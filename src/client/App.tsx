@@ -8,6 +8,9 @@ import { CardListPage } from './pages/CardListPage';
 import { FavoritesPage } from './pages/FavoritesPage';
 import { TagsPage } from './pages/TagsPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { ReviewPage } from './pages/ReviewPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { StatisticsPage } from './pages/StatisticsPage';
 
 function currentHashPath(): string {
   const hash = window.location.hash.replace(/^#/, '');
@@ -45,7 +48,7 @@ function routeFor(path: string): RouteResult {
     return { title: '词义详情', subtitle: '查看和维护语境', element: <CardDetailPage key={path} /> };
   }
   if (path === '/review') {
-    return { title: '复习', subtitle: 'FSRS 调度', element: <PlaceholderPage message="复习页会显示主语境原句并提供 Again / Good" phase="Phase 7" /> };
+    return { title: '复习', subtitle: 'FSRS 调度', element: <ReviewPage /> };
   }
   if (path === '/tags') {
     return { title: '标签管理', subtitle: '自由分类和来源标记', element: <TagsPage /> };
@@ -54,10 +57,10 @@ function routeFor(path: string): RouteResult {
     return { title: '收藏', subtitle: '重点词义', element: <FavoritesPage /> };
   }
   if (path === '/statistics') {
-    return { title: '统计', subtitle: '复习分析', element: <PlaceholderPage message="统计页会展示复习趋势、正确率和标签分布" phase="Phase 7" /> };
+    return { title: '统计', subtitle: '复习分析', element: <StatisticsPage /> };
   }
   if (path === '/settings') {
-    return { title: '设置', subtitle: '本地 V1 设置', element: <PlaceholderPage message="设置页会支持语言、每日目标和数据导入导出" phase="Phase 7" /> };
+    return { title: '设置', subtitle: '本地 V1 设置', element: <SettingsPage /> };
   }
   return { title: '页面不存在', subtitle: '未知路由', element: <PlaceholderPage message="未找到对应页面" phase="Phase 6" /> };
 }

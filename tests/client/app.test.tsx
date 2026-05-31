@@ -22,6 +22,15 @@ describe('App', () => {
           is_daily_target_reached: false,
         }));
       }
+      if (url === '/api/review/due') {
+        return Promise.resolve(json({ status: 'empty', message: '今天没有待复习内容', card: null, progress: { reviewed_count: 0, again_count: 0, good_count: 0, daily_review_limit: 20, is_limit_reached: false } }));
+      }
+      if (url === '/api/statistics') {
+        return Promise.resolve(json({ totals: { total_cards: 0, reviewing_cards: 0, mastered_cards: 0, favorite_cards: 0 }, daily_review_counts: [], daily_accuracy: [], monthly_review_counts: [], tag_distribution: [], rating_trend: [] }));
+      }
+      if (url === '/api/settings') {
+        return Promise.resolve(json({ id: 1, interface_language: 'zh-CN', default_target_language: '英语', default_definition_language: '中文', daily_review_limit: 20, created_at: 'now', updated_at: 'now' }));
+      }
       if (url.startsWith('/api/tags')) return Promise.resolve(json([]));
       if (url === '/api/cards/card-1') {
         return Promise.resolve(json({
@@ -121,5 +130,35 @@ describe('App', () => {
     window.location.hash = '#/tags';
     render(<App />);
     expect(await screen.findByText('标签承担自由分类和来源标记，不影响复习算法。')).toBeInTheDocument();
+  });
+
+  it('routes review to the real review page', async () => {
+    window.location.hash = '#/review';
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ status: 'empty', message: '今天没有待复习内容', card: null, progress: { reviewed_count: 0, again_count: 0, good_count: 0, daily_review_limit: 20, is_limit_reached: false } }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+    render(<App />);
+
+    expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
+    expect(screen.queryByText('Phase 7')).not.toBeInTheDocument();
+  });
+
+  it('routes statistics to the real statistics page', async () => {
+    window.location.hash = '#/statistics';
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ totals: { total_cards: 0, reviewing_cards: 0, mastered_cards: 0, favorite_cards: 0 }, daily_review_counts: [], daily_accuracy: [], monthly_review_counts: [], tag_distribution: [], rating_trend: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+    render(<App />);
+
+    expect(await screen.findByText('还没有统计数据')).toBeInTheDocument();
+    expect(screen.queryByText('Phase 7')).not.toBeInTheDocument();
+  });
+
+  it('routes settings to the real settings page', async () => {
+    window.location.hash = '#/settings';
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ id: 1, interface_language: 'zh-CN', default_target_language: '英语', default_definition_language: '中文', daily_review_limit: 20, created_at: 'now', updated_at: 'now' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+    render(<App />);
+
+    expect(await screen.findByText('学习与界面设置')).toBeInTheDocument();
+    expect(screen.queryByText('Phase 7')).not.toBeInTheDocument();
   });
 });
