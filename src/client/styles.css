@@ -631,3 +631,181 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Phase 7: Review Page ---- */
+
+.phase7-review-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.phase7-review-card {
+  border: 1px solid rgba(23, 32, 51, 0.16);
+  border-radius: 1.5rem;
+  background: rgba(255, 247, 232, 0.82);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+}
+
+.phase7-review-card-header {
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: linear-gradient(135deg, rgba(255, 247, 232, .96), rgba(236, 253, 245, .84));
+  border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+}
+
+.phase7-review-kicker {
+  margin: 0 0 .5rem;
+  color: #0f766e;
+  font: 800 .75rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.phase7-review-word {
+  margin: 0 0 .35rem;
+  color: #172033;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: .95;
+  letter-spacing: -.07em;
+}
+
+.phase7-review-meaning {
+  margin: 0;
+  color: #475569;
+  font: 500 1rem/1.55 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-sentence-block {
+  padding: 1.25rem clamp(1rem, 2vw, 1.5rem);
+  border-bottom: 1px solid rgba(23, 32, 51, 0.06);
+}
+
+.phase7-review-sentence {
+  margin: 0;
+  color: #172033;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.phase7-review-sentence mark {
+  background: rgba(234, 179, 8, 0.22);
+  border-radius: 3px;
+  color: #92400e;
+  padding: .05em .15em;
+}
+
+.phase7-review-controls {
+  padding: .75rem clamp(1rem, 2vw, 1.5rem);
+  border-bottom: 1px solid rgba(23, 32, 51, 0.06);
+}
+
+.phase7-review-toggle {
+  border: 1px solid rgba(23, 32, 51, .14);
+  border-radius: .9rem;
+  background: rgba(255, 255, 255, .72);
+  color: #172033;
+  cursor: pointer;
+  font: 700 .875rem ui-sans-serif, system-ui, sans-serif;
+  padding: .6rem .9rem;
+}
+
+.phase7-review-context-panel {
+  padding: 1rem clamp(1rem, 2vw, 1.5rem);
+  background: rgba(241, 245, 249, 0.6);
+  border-bottom: 1px solid rgba(23, 32, 51, 0.06);
+  display: grid;
+  gap: .85rem;
+}
+
+.phase7-review-media-section,
+.phase7-review-context-note,
+.phase7-review-other-contexts {
+  display: grid;
+  gap: .4rem;
+}
+
+.phase7-review-media-label {
+  margin: 0;
+  color: #64748b;
+  font: 800 .75rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.phase7-review-media-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.phase7-review-media-name {
+  color: #334155;
+  font: 600 .875rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-media-unavailable {
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font: 700 .75rem ui-sans-serif, system-ui, sans-serif;
+  padding: .2rem .55rem;
+}
+
+.phase7-review-other-sentence {
+  margin: 0;
+  color: #475569;
+  font: 500 .9rem/1.6 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-footer {
+  padding: 1rem clamp(1rem, 2vw, 1.5rem);
+  display: grid;
+  gap: .75rem;
+}
+
+.phase7-review-progress {
+  margin: 0;
+  color: #64748b;
+  font: 600 .875rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-submit-error {
+  border-radius: .75rem;
+  background: #fff1f2;
+  color: #be123c;
+  font: 600 .875rem ui-sans-serif, system-ui, sans-serif;
+  padding: .75rem 1rem;
+}
+
+.phase7-review-success {
+  margin: 0;
+  color: #047857;
+  font: 700 .875rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-rating-row {
+  display: flex;
+  gap: .75rem;
+}
+
+.phase7-review-limit-banner {
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 1.25rem;
+  background: rgba(204, 251, 241, 0.6);
+  padding: 1rem clamp(1rem, 2vw, 1.5rem);
+  display: grid;
+  gap: .75rem;
+}
+
+.phase7-review-limit-msg {
+  margin: 0;
+  color: #0f766e;
+  font: 600 .9rem/1.55 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-limit-actions {
+  display: flex;
+  gap: .5rem;
+}
