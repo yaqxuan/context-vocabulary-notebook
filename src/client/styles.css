@@ -1111,3 +1111,15 @@ body {
 .phase7-statistics-spark-good {
   background: #0f766e;
 }
+
+.phase7-statistics-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

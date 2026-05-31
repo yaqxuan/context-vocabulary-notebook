@@ -38,22 +38,28 @@ interface BarEntry {
   count: number;
 }
 
-function BarChart({ entries }: { entries: BarEntry[] }) {
+function BarChart({ entries, summaryId }: { entries: BarEntry[]; summaryId?: string }) {
   if (entries.length === 0) return null;
   const max = Math.max(...entries.map((e) => e.count), 1);
+  const summaryText = entries.map((e) => `${e.label}: ${e.count}`).join(', ');
   return (
-    <div className="phase7-statistics-bars" aria-hidden="true">
-      {entries.map((e) => (
-        <div key={e.label} className="phase7-statistics-bar-col">
-          <div
-            className="phase7-statistics-bar"
-            style={{ height: `${Math.round((e.count / max) * 100)}%` }}
-            title={`${e.label}: ${e.count}`}
-          />
-          <span className="phase7-statistics-bar-label">{e.label}</span>
-        </div>
-      ))}
-    </div>
+    <>
+      <p id={summaryId} className="phase7-statistics-sr-only">
+        {summaryText}
+      </p>
+      <div className="phase7-statistics-bars" aria-hidden="true">
+        {entries.map((e) => (
+          <div key={e.label} className="phase7-statistics-bar-col">
+            <div
+              className="phase7-statistics-bar"
+              style={{ height: `${Math.round((e.count / max) * 100)}%` }}
+              title={`${e.label}: ${e.count}`}
+            />
+            <span className="phase7-statistics-bar-label">{e.label}</span>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -118,10 +124,15 @@ function RatingTrend({ entries }: { entries: StatisticsPageDto['rating_trend'] }
   if (entries.length === 0) return null;
   const maxAgain = Math.max(...entries.map((e) => e.again_count), 1);
   const maxGood = Math.max(...entries.map((e) => e.good_count), 1);
+  const againSummary = entries.map((e) => `${e.date}: ${e.again_count}`).join(', ');
+  const goodSummary = entries.map((e) => `${e.date}: ${e.good_count}`).join(', ');
   return (
     <div className="phase7-statistics-trend-grid">
       <div className="phase7-statistics-trend-box">
         <p className="phase7-statistics-trend-label">Again</p>
+        <p className="phase7-statistics-sr-only" data-testid="again-trend-summary">
+          {againSummary}
+        </p>
         <div className="phase7-statistics-spark" aria-hidden="true">
           {entries.map((e) => (
             <i
@@ -135,6 +146,9 @@ function RatingTrend({ entries }: { entries: StatisticsPageDto['rating_trend'] }
       </div>
       <div className="phase7-statistics-trend-box">
         <p className="phase7-statistics-trend-label">Good</p>
+        <p className="phase7-statistics-sr-only" data-testid="good-trend-summary">
+          {goodSummary}
+        </p>
         <div className="phase7-statistics-spark" aria-hidden="true">
           {entries.map((e) => (
             <i
@@ -190,13 +204,13 @@ function StatisticsReady({ data }: { data: StatisticsPageDto }) {
       ) : (
         <>
           {/* Recent 14-day chart */}
-          <section className="phase7-statistics-chart-card">
+          <section className="phase7-statistics-chart-card" data-testid="recent-14-chart">
             <div className="phase7-statistics-card-head">
               <h2 className="phase7-statistics-card-title">最近 14 天数量图</h2>
               <p className="phase7-statistics-card-sub">每日复习量（最新 14 天）</p>
             </div>
             {recent14.length > 0 ? (
-              <BarChart entries={recent14} />
+              <BarChart entries={recent14} summaryId="recent-14-summary" />
             ) : (
               <p className="phase7-statistics-chart-empty">暂无数据</p>
             )}

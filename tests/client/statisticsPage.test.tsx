@@ -129,15 +129,25 @@ describe('StatisticsPage', () => {
     it('uses only the latest 14 records from daily_review_counts (15 entries fixture)', async () => {
       render(<StatisticsPage />);
       await screen.findByText('248');
-      // Bar labels are rendered in .phase7-statistics-bar-label spans
-      // 05-02 should appear (2nd entry = first of the 14) and 05-15 (last entry)
-      const barLabels = document.querySelectorAll('.phase7-statistics-bar-label');
+      // Scope bar labels to the recent 14-day chart section only
+      const chartSection = screen.getByTestId('recent-14-chart');
+      const barLabels = chartSection.querySelectorAll('.phase7-statistics-bar-label');
       const labelTexts = Array.from(barLabels).map((el) => el.textContent);
       expect(labelTexts).toContain('05-15');
       // The first entry (05-01, the excluded one) should not appear as a bar label
       expect(labelTexts).not.toContain('05-01');
       // 05-02 should be the first bar label
       expect(labelTexts[0]).toBe('05-02');
+    });
+
+    it('renders accessible summary for recent 14-day chart', async () => {
+      render(<StatisticsPage />);
+      await screen.findByText('248');
+      // The sr-only summary paragraph should contain the data for the chart
+      const summary = document.getElementById('recent-14-summary');
+      expect(summary).toBeInTheDocument();
+      expect(summary?.textContent).toContain('05-02: 10');
+      expect(summary?.textContent).toContain('05-15: 18');
     });
   });
 
@@ -232,6 +242,24 @@ describe('StatisticsPage', () => {
       const trendLabels = document.querySelectorAll('.phase7-statistics-trend-label');
       const texts = Array.from(trendLabels).map((el) => el.textContent);
       expect(texts).toContain('Good');
+    });
+
+    it('renders accessible summary for Again trend spark chart', async () => {
+      render(<StatisticsPage />);
+      await screen.findByText('248');
+      const summary = screen.getByTestId('again-trend-summary');
+      expect(summary).toBeInTheDocument();
+      expect(summary.textContent).toContain('2026-05-14: 4');
+      expect(summary.textContent).toContain('2026-05-15: 3');
+    });
+
+    it('renders accessible summary for Good trend spark chart', async () => {
+      render(<StatisticsPage />);
+      await screen.findByText('248');
+      const summary = screen.getByTestId('good-trend-summary');
+      expect(summary).toBeInTheDocument();
+      expect(summary.textContent).toContain('2026-05-14: 16');
+      expect(summary.textContent).toContain('2026-05-15: 15');
     });
   });
 
