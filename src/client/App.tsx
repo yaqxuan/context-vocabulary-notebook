@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { Layout, type NavItem } from './components/Layout';
 import { HomePage } from './pages/HomePage';
+import { CardCreatePage } from './pages/CardCreatePage';
+import { CardDetailPage } from './pages/CardDetailPage';
+import { CardListPage } from './pages/CardListPage';
+import { FavoritesPage } from './pages/FavoritesPage';
+import { TagsPage } from './pages/TagsPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 
 function currentHashPath(): string {
@@ -31,22 +36,22 @@ function routeFor(path: string): RouteResult {
     return { title: '首页', subtitle: '今日概览', element: <HomePage /> };
   }
   if (path === '/create') {
-    return { title: '制卡', subtitle: '添加真实视频语境', element: <PlaceholderPage message="制卡页会支持新建词义和添加到已有词义" phase="Phase 6" /> };
+    return { title: '制卡', subtitle: '添加真实视频语境', element: <CardCreatePage /> };
   }
   if (path === '/cards') {
-    return { title: '词义条目', subtitle: '管理所有词义', element: <PlaceholderPage message="词义条目页会支持搜索、筛选、分页和状态操作" phase="Phase 6" /> };
+    return { title: '词义条目', subtitle: '管理所有词义', element: <CardListPage /> };
   }
   if (path.startsWith('/cards/')) {
-    return { title: '词义详情', subtitle: '查看和维护语境', element: <PlaceholderPage message="词义详情页会展示语境、媒体、标签和复习信息" phase="Phase 6" /> };
+    return { title: '词义详情', subtitle: '查看和维护语境', element: <CardDetailPage key={path} /> };
   }
   if (path === '/review') {
     return { title: '复习', subtitle: 'FSRS 调度', element: <PlaceholderPage message="复习页会显示主语境原句并提供 Again / Good" phase="Phase 7" /> };
   }
   if (path === '/tags') {
-    return { title: '标签管理', subtitle: '自由分类和来源标记', element: <PlaceholderPage message="标签页会支持新增、编辑、删除和查看标签下词义" phase="Phase 6" /> };
+    return { title: '标签管理', subtitle: '自由分类和来源标记', element: <TagsPage /> };
   }
   if (path === '/favorites') {
-    return { title: '收藏', subtitle: '重点词义', element: <PlaceholderPage message="收藏页会展示和管理已收藏词义" phase="Phase 6" /> };
+    return { title: '收藏', subtitle: '重点词义', element: <FavoritesPage /> };
   }
   if (path === '/statistics') {
     return { title: '统计', subtitle: '复习分析', element: <PlaceholderPage message="统计页会展示复习趋势、正确率和标签分布" phase="Phase 7" /> };
@@ -66,10 +71,11 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  const route = useMemo(() => routeFor(path), [path]);
+  const routePath = path.split('?')[0] || '/';
+  const route = useMemo(() => routeFor(routePath), [routePath]);
 
   return (
-    <Layout navItems={navItems} currentPath={path} title={route.title} subtitle={route.subtitle}>
+    <Layout navItems={navItems} currentPath={routePath} title={route.title} subtitle={route.subtitle}>
       {route.element}
     </Layout>
   );

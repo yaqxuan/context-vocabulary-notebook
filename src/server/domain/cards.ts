@@ -14,6 +14,15 @@ export interface CardRow {
   deleted_at: string | null;
 }
 
+export interface CardListRow extends CardRow {
+  primary_sentence: string | null;
+  context_count: number;
+}
+
+export interface CardSummaryRow extends CardListRow {
+  tags: Array<{ id: string; name: string; created_at: string; updated_at: string }>;
+}
+
 export interface CreateCardInput {
   target_word: string;
   context_meaning: string;
@@ -31,7 +40,7 @@ export interface ListCardsOptions {
 }
 
 export interface ListCardsResult {
-  items: CardRow[];
+  items: CardSummaryRow[];
   total: number;
   page: number;
   pageSize: number;
@@ -115,13 +124,64 @@ export function listCards(db: Database, options: ListCardsOptions): ListCardsRes
   `).get(...params) as { cnt: number };
 
   const rows = db.prepare(`
-    SELECT wsc.* FROM word_sense_cards wsc ${where}
+    SELECT
+      wsc.*,
+      COALESCE(primary_ctx.sentence, fallback_ctx.sentence) as primary_sentence,
+      (
+        SELECT COUNT(*)
+        FROM context_examples ce_count
+        WHERE ce_count.card_id = wsc.id AND ce_count.deleted_at IS NULL
+      ) as context_count
+    FROM word_sense_cards wsc
+    LEFT JOIN context_examples primary_ctx
+      ON primary_ctx.id = (
+        SELECT ce_primary.id
+        FROM context_examples ce_primary
+        WHERE ce_primary.card_id = wsc.id
+          AND ce_primary.is_primary = 1
+          AND ce_primary.deleted_at IS NULL
+        ORDER BY ce_primary.created_at ASC
+        LIMIT 1
+      )
+    LEFT JOIN context_examples fallback_ctx
+      ON fallback_ctx.id = (
+        SELECT ce_fallback.id
+        FROM context_examples ce_fallback
+        WHERE ce_fallback.card_id = wsc.id AND ce_fallback.deleted_at IS NULL
+        ORDER BY ce_fallback.created_at ASC
+        LIMIT 1
+      )
+    ${where}
     ORDER BY wsc.updated_at DESC
     LIMIT ? OFFSET ?
-  `).all(...params, pageSize, offset) as CardRow[];
+  `).all(...params, pageSize, offset) as CardListRow[];
+
+  const tagRows = rows.length === 0
+    ? []
+    : db.prepare(`
+        SELECT ct.card_id, t.id, t.name, t.created_at, t.updated_at
+        FROM card_tags ct
+        JOIN tags t ON t.id = ct.tag_id
+        WHERE ct.card_id IN (${rows.map(() => '?').join(',')})
+          AND t.deleted_at IS NULL
+        ORDER BY t.name ASC
+      `).all(...rows.map((row) => row.id)) as Array<{ card_id: string; id: string; name: string; created_at: string; updated_at: string }>;
+
+  const tagsByCard = new Map<string, Array<{ id: string; name: string; created_at: string; updated_at: string }>>();
+  for (const tag of tagRows) {
+    const current = tagsByCard.get(tag.card_id) ?? [];
+    current.push({ id: tag.id, name: tag.name, created_at: tag.created_at, updated_at: tag.updated_at });
+    tagsByCard.set(tag.card_id, current);
+  }
+
+  const items = rows.map((row) => ({
+    ...row,
+    context_count: Number(row.context_count),
+    tags: tagsByCard.get(row.id) ?? [],
+  }));
 
   return {
-    items: rows,
+    items,
     total: countRow.cnt,
     page,
     pageSize,

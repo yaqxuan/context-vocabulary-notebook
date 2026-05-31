@@ -27,7 +27,7 @@ interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
 }
 
 function apiUrl(path: string): string {
-  if (/^https?:\/\//.test(path)) return path;
+  if (/^https?:\/\//.test(path)) throw new Error('Absolute API URLs are not allowed');
   if (path.startsWith('/api/')) return path;
   if (path === '/api') return path;
   return `/api${path.startsWith('/') ? path : `/${path}`}`;

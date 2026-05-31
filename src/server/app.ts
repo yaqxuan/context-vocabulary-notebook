@@ -14,6 +14,7 @@ import { BadRequestError } from './http/errors.js';
 
 export interface AppOptions {
   uploadsDir?: string;
+  uploadMaxBytes?: number;
 }
 
 const DEFAULT_UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
@@ -56,7 +57,7 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
   application.use('/api/cards', cardsRouter(db));
   application.use('/api', contextsRouter(db));
   application.use('/api/tags', tagsRouter(db));
-  application.use('/api/media', mediaRouter(db, uploadsDir));
+  application.use('/api/media', mediaRouter(db, uploadsDir, { maxFileSizeBytes: options.uploadMaxBytes }));
   application.use('/api/review', reviewRouter(db));
   application.use('/api/settings', settingsRouter(db));
   application.use('/api/statistics', statisticsRouter(db));

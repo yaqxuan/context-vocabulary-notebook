@@ -483,7 +483,7 @@ describe('GET /api/cards/:id', () => {
 
     const res = await request(app).get(`/api/cards/${card.id}`);
     expect(res.status).toBe(200);
-    expect(res.body.card.id).toBe(card.id);
+    expect(res.body.id).toBe(card.id);
     expect(res.body.contexts).toBeTruthy();
     expect(res.body.tags).toBeTruthy();
     expect(res.body.fsrs).toBeTruthy();

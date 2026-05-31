@@ -26,6 +26,9 @@ export interface CardSummaryDto {
   is_favorite: number;
   created_at: string;
   updated_at: string;
+  primary_sentence: string | null;
+  context_count: number;
+  tags: TagDto[];
 }
 
 export interface CardDetailDto extends CardSummaryDto {

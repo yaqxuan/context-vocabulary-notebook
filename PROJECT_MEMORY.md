@@ -10,6 +10,10 @@ Context Vocabulary Notebook is a local-first lightweight vocabulary review app f
 
 Do not add built-in dictionaries, pronunciation/phonetics, AI auto-card creation, card rollback, source tables, website video links, sync, local API/CLI, MCP, OCR, ASR, subtitle extraction, browser extensions, mobile packaging, Anki export, or other future extensions unless the user explicitly approves scope expansion.
 
+## UI review gate
+
+Each user-facing page must have its own independent draft before implementation. The draft should show page structure, main content, states, and visual direction clearly enough for user review. For visual page drafts, write a local HTML file under `docs/superpowers/mockups/` instead of trying to show images in the terminal. Do not implement or mark the page accepted until the user says the draft feels close enough. Apply this especially to Phase 6 and Phase 7 pages where functionality and visual polish are built together.
+
 ## Technical stack
 
 - Frontend: React + Vite
@@ -38,6 +42,6 @@ Do not add built-in dictionaries, pronunciation/phonetics, AI auto-card creation
 
 ## Media and data handling
 
-Version 1 supports local files only: video `mp4`, audio `mp3`, images `jpg/png/webp`. Database stores file metadata and local paths; real files live under `uploads`. Imported missing files keep media records with `is_available = false`.
+Version 1 supports local files only: video `mp4`, audio `mp3`, images `jpg/png/webp`. Database stores file metadata and local paths; real files live under `uploads`. Imported missing files keep media records with `is_available = false`. On the create page, video is optional but strongly recommended. If the user enters a target word and meaning that exactly match an existing card, hide the create-new option and save as another context example under that existing word sense card; same-word but different-meaning cards are informational only.
 
 Marked exports include review state, FSRS state, logs, favorites, settings, and media. Pure-card exports exclude user-specific review/settings data and reinitialize FSRS on import.
