@@ -631,3 +631,813 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Phase 7: Review Page ---- */
+
+.phase7-review-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.phase7-review-card {
+  border: 1px solid rgba(23, 32, 51, 0.16);
+  border-radius: 1.5rem;
+  background: rgba(255, 247, 232, 0.82);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+}
+
+.phase7-review-card-header {
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: linear-gradient(135deg, rgba(255, 247, 232, .96), rgba(236, 253, 245, .84));
+  border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+}
+
+.phase7-review-kicker {
+  margin: 0 0 .5rem;
+  color: #0f766e;
+  font: 800 .75rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.phase7-review-word {
+  margin: 0 0 .35rem;
+  color: #172033;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: .95;
+  letter-spacing: -.07em;
+}
+
+.phase7-review-meaning {
+  margin: 0;
+  color: #475569;
+  font: 500 1rem/1.55 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-sentence-block {
+  padding: 1.25rem clamp(1rem, 2vw, 1.5rem);
+  border-bottom: 1px solid rgba(23, 32, 51, 0.06);
+}
+
+.phase7-review-sentence {
+  margin: 0;
+  color: #172033;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.phase7-review-sentence mark {
+  background: rgba(234, 179, 8, 0.22);
+  border-radius: 3px;
+  color: #92400e;
+  padding: .05em .15em;
+}
+
+.phase7-review-controls {
+  padding: .75rem clamp(1rem, 2vw, 1.5rem);
+  border-bottom: 1px solid rgba(23, 32, 51, 0.06);
+}
+
+.phase7-review-toggle {
+  border: 1px solid rgba(23, 32, 51, .14);
+  border-radius: .9rem;
+  background: rgba(255, 255, 255, .72);
+  color: #172033;
+  cursor: pointer;
+  font: 700 .875rem ui-sans-serif, system-ui, sans-serif;
+  padding: .6rem .9rem;
+}
+
+.phase7-review-context-panel {
+  padding: 1rem clamp(1rem, 2vw, 1.5rem);
+  background: rgba(241, 245, 249, 0.6);
+  border-bottom: 1px solid rgba(23, 32, 51, 0.06);
+  display: grid;
+  gap: .85rem;
+}
+
+.phase7-review-media-section,
+.phase7-review-context-note,
+.phase7-review-other-contexts {
+  display: grid;
+  gap: .4rem;
+}
+
+.phase7-review-media-label {
+  margin: 0;
+  color: #64748b;
+  font: 800 .75rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.phase7-review-media-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.phase7-review-media-name {
+  color: #334155;
+  font: 600 .875rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-media-unavailable {
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font: 700 .75rem ui-sans-serif, system-ui, sans-serif;
+  padding: .2rem .55rem;
+}
+
+.phase7-review-other-sentence {
+  margin: 0;
+  color: #475569;
+  font: 500 .9rem/1.6 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-footer {
+  padding: 1rem clamp(1rem, 2vw, 1.5rem);
+  display: grid;
+  gap: .75rem;
+}
+
+.phase7-review-progress {
+  margin: 0;
+  color: #64748b;
+  font: 600 .875rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-submit-error {
+  border-radius: .75rem;
+  background: #fff1f2;
+  color: #be123c;
+  font: 600 .875rem ui-sans-serif, system-ui, sans-serif;
+  padding: .75rem 1rem;
+}
+
+.phase7-review-success {
+  margin: 0;
+  color: #047857;
+  font: 700 .875rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-rating-row {
+  display: flex;
+  gap: .75rem;
+}
+
+.phase7-review-limit-banner {
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 1.25rem;
+  background: rgba(204, 251, 241, 0.6);
+  padding: 1rem clamp(1rem, 2vw, 1.5rem);
+  display: grid;
+  gap: .75rem;
+}
+
+.phase7-review-limit-msg {
+  margin: 0;
+  color: #0f766e;
+  font: 600 .9rem/1.55 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-review-limit-actions {
+  display: flex;
+  gap: .5rem;
+}
+
+/* ---- Phase 7: Statistics Page ---- */
+
+.phase7-statistics-shell {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.phase7-statistics-hero {
+  border: 1px solid rgba(23, 32, 51, 0.16);
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 247, 232, .98), rgba(236, 253, 245, .88));
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+  overflow: hidden;
+  position: relative;
+}
+
+.phase7-statistics-kicker {
+  margin: 0 0 .6rem;
+  color: #0f766e;
+  font: 850 .72rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.phase7-statistics-headline {
+  margin: 0;
+  color: #172033;
+  font-size: clamp(1.75rem, 3.5vw, 3rem);
+  line-height: .95;
+  letter-spacing: -.06em;
+}
+
+.phase7-statistics-hero-copy {
+  max-width: 56rem;
+  margin: .9rem 0 0;
+  color: #475569;
+  font: 500 .95rem/1.65 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-statistics-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 860px) {
+  .phase7-statistics-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .phase7-statistics-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+.phase7-statistics-metric {
+  border: 1px solid rgba(23, 32, 51, 0.14);
+  border-radius: 1.25rem;
+  background: rgba(255, 253, 246, .96);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  padding: 1.1rem 1.25rem;
+}
+
+.phase7-statistics-metric-label {
+  display: block;
+  color: #64748b;
+  font: 850 .72rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.phase7-statistics-metric-value {
+  display: block;
+  margin-top: .6rem;
+  color: #172033;
+  font: 950 2.8rem/.9 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.07em;
+}
+
+.phase7-statistics-chart-card {
+  border: 1px solid rgba(23, 32, 51, 0.14);
+  border-radius: 1.5rem;
+  background: rgba(255, 253, 246, .96);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  padding: 1.25rem 1.5rem;
+}
+
+.phase7-statistics-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.phase7-statistics-card-title {
+  margin: 0;
+  color: #172033;
+  font: 950 1.4rem/1 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.05em;
+}
+
+.phase7-statistics-card-sub {
+  margin: 0;
+  color: #64748b;
+  font: 650 .8rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-statistics-chart-empty {
+  margin: 0;
+  color: #94a3b8;
+  font: 500 .9rem ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Bar chart */
+
+.phase7-statistics-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: .5rem;
+  height: 160px;
+  padding: 0 0 1.5rem;
+}
+
+.phase7-statistics-bar-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.phase7-statistics-bar {
+  width: 100%;
+  min-height: 4px;
+  border-radius: 999px 999px 6px 6px;
+  background: linear-gradient(180deg, #2dd4bf, #0f766e);
+  box-shadow: 0 6px 14px rgba(15, 118, 110, 0.18);
+}
+
+.phase7-statistics-bar-label {
+  position: absolute;
+  bottom: -1.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: #64748b;
+  font: 800 .65rem ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Monthly list */
+
+.phase7-statistics-month-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .75rem;
+}
+
+.phase7-statistics-month-row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: .75rem;
+  align-items: center;
+}
+
+.phase7-statistics-month-label {
+  color: #64748b;
+  font: 800 .8rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .04em;
+}
+
+.phase7-statistics-month-count {
+  color: #172033;
+  font: 950 1.5rem/.9 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.05em;
+}
+
+/* Accuracy list */
+
+.phase7-statistics-accuracy-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .5rem;
+}
+
+.phase7-statistics-accuracy-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .5rem .75rem;
+  border-radius: .75rem;
+  background: rgba(239, 246, 255, .7);
+}
+
+.phase7-statistics-accuracy-date {
+  color: #64748b;
+  font: 700 .85rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-statistics-accuracy-pct {
+  color: #1d4ed8;
+  font: 800 1rem ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Tag distribution */
+
+.phase7-statistics-tag-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .65rem;
+}
+
+.phase7-statistics-tag-row {
+  display: grid;
+  grid-template-columns: 6rem 1fr 3rem;
+  gap: .6rem;
+  align-items: center;
+}
+
+.phase7-statistics-tag-name {
+  color: #334155;
+  font: 750 .85rem ui-sans-serif, system-ui, sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phase7-statistics-tag-track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(23, 32, 51, .08);
+  overflow: hidden;
+}
+
+.phase7-statistics-tag-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d97706, #2dd4bf);
+}
+
+.phase7-statistics-tag-count {
+  color: #475569;
+  font: 700 .85rem ui-sans-serif, system-ui, sans-serif;
+  text-align: right;
+}
+
+/* Again / Good trend */
+
+.phase7-statistics-trend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .9rem;
+}
+
+.phase7-statistics-trend-box {
+  border: 1px solid rgba(23, 32, 51, .12);
+  border-radius: 1.25rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, .62);
+}
+
+.phase7-statistics-trend-label {
+  margin: 0 0 .65rem;
+  color: #172033;
+  font: 850 .9rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.02em;
+}
+
+.phase7-statistics-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: .35rem;
+  height: 72px;
+}
+
+.phase7-statistics-spark-bar {
+  flex: 1;
+  display: block;
+  min-height: 4px;
+  border-radius: 999px;
+}
+
+.phase7-statistics-spark-again {
+  background: #be123c;
+}
+
+.phase7-statistics-spark-good {
+  background: #0f766e;
+}
+
+.phase7-statistics-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Settings Page ──────────────────────────────────────────────────────────── */
+
+.phase7-settings-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.phase7-settings-hero {
+  border: 1px solid rgba(23, 32, 51, 0.16);
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 247, 232, .98), rgba(236, 253, 245, .88));
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.phase7-settings-kicker {
+  margin: 0 0 .6rem;
+  color: #0f766e;
+  font: 850 .72rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.phase7-settings-headline {
+  margin: 0;
+  color: #172033;
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  line-height: .95;
+  letter-spacing: -.05em;
+}
+
+.phase7-settings-hero-copy {
+  max-width: 52rem;
+  margin: .9rem 0 0;
+  color: #475569;
+  font: 500 .95rem/1.65 ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Section card */
+
+.phase7-settings-section {
+  border: 1px solid rgba(23, 32, 51, 0.14);
+  border-radius: 1.5rem;
+  background: rgba(255, 253, 246, .96);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  padding: clamp(1.25rem, 2.5vw, 1.75rem);
+  display: grid;
+  gap: 1.25rem;
+}
+
+.phase7-settings-section-title {
+  margin: 0;
+  color: #172033;
+  font: 850 1.1rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.03em;
+}
+
+.phase7-settings-subsection-title {
+  margin: 0;
+  color: #334155;
+  font: 750 .9rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.01em;
+}
+
+/* Settings form */
+
+.phase7-settings-form {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .phase7-settings-form {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.phase7-settings-field {
+  display: grid;
+  gap: .4rem;
+}
+
+.phase7-settings-label {
+  color: #475569;
+  font: 750 .8rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.phase7-settings-input {
+  border: 1px solid rgba(23, 32, 51, 0.2);
+  border-radius: .75rem;
+  background: rgba(255, 255, 255, .9);
+  padding: .55rem .85rem;
+  color: #172033;
+  font: 500 .95rem ui-sans-serif, system-ui, sans-serif;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.phase7-settings-input:focus {
+  outline: none;
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, .15);
+}
+
+.phase7-settings-field-error {
+  margin: 0;
+  color: #be123c;
+  font: 600 .82rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.phase7-settings-saved-msg {
+  color: #0f766e;
+  font: 650 .88rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-settings-save-error {
+  color: #be123c;
+  font: 650 .88rem ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Export */
+
+.phase7-settings-export-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .phase7-settings-export-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.phase7-settings-export-card {
+  border: 1px solid rgba(23, 32, 51, 0.12);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, .62);
+  padding: 1.1rem 1.25rem;
+  display: grid;
+  gap: .85rem;
+}
+
+.phase7-settings-export-desc {
+  margin: 0;
+  color: #475569;
+  font: 500 .88rem/1.6 ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Import controls */
+
+.phase7-settings-import-controls {
+  display: grid;
+  gap: .85rem;
+}
+
+.phase7-settings-file-input {
+  border: 1px solid rgba(23, 32, 51, 0.18);
+  border-radius: .75rem;
+  background: rgba(255, 255, 255, .85);
+  padding: .4rem .75rem;
+  color: #334155;
+  font: 500 .9rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-settings-import-btns {
+  display: flex;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+
+.phase7-settings-import-error {
+  margin: 0;
+  color: #be123c;
+  font: 600 .88rem ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Scan result */
+
+.phase7-settings-scan-result {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.phase7-settings-scan-counts,
+.phase7-settings-result-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: .75rem;
+}
+
+.phase7-settings-count-item {
+  border: 1px solid rgba(23, 32, 51, 0.12);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, .7);
+  padding: .65rem .9rem;
+  display: grid;
+  gap: .2rem;
+}
+
+.phase7-settings-count-label {
+  color: #64748b;
+  font: 700 .72rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.phase7-settings-count-value {
+  color: #172033;
+  font: 900 1.8rem/.9 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.05em;
+}
+
+/* Conflicts */
+
+.phase7-settings-conflicts,
+.phase7-settings-missing-media {
+  display: grid;
+  gap: .65rem;
+}
+
+.phase7-settings-conflict-list,
+.phase7-settings-missing-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .5rem;
+}
+
+.phase7-settings-conflict-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem .85rem;
+  border-radius: .85rem;
+  background: rgba(254, 249, 195, .6);
+  border: 1px solid rgba(202, 138, 4, .18);
+  font: 500 .88rem ui-sans-serif, system-ui, sans-serif;
+  flex-wrap: wrap;
+}
+
+.phase7-settings-conflict-word {
+  color: #172033;
+  font-weight: 750;
+}
+
+.phase7-settings-conflict-sep {
+  color: #94a3b8;
+}
+
+.phase7-settings-conflict-meaning {
+  color: #475569;
+}
+
+.phase7-settings-conflict-select {
+  margin-left: auto;
+  border: 1px solid rgba(23, 32, 51, 0.18);
+  border-radius: .5rem;
+  background: rgba(255, 255, 255, .9);
+  padding: .25rem .5rem;
+  font: 500 .82rem ui-sans-serif, system-ui, sans-serif;
+  color: #334155;
+}
+
+.phase7-settings-missing-item {
+  padding: .4rem .75rem;
+  border-radius: .75rem;
+  background: rgba(254, 226, 226, .55);
+  border: 1px solid rgba(239, 68, 68, .15);
+  color: #7f1d1d;
+  font: 500 .85rem/1.4 ui-monospace, monospace;
+  word-break: break-all;
+}
+
+/* Decision mode radios */
+
+.phase7-settings-decision-modes {
+  display: grid;
+  gap: .65rem;
+}
+
+.phase7-settings-radio-group {
+  display: grid;
+  gap: .5rem;
+}
+
+.phase7-settings-radio-label {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: #334155;
+  font: 500 .9rem ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+/* Execute result */
+
+.phase7-settings-execute-result {
+  display: grid;
+  gap: .85rem;
+  border-top: 1px solid rgba(23, 32, 51, 0.1);
+  padding-top: 1rem;
+}
+
+.phase7-settings-execute-done {
+  margin: 0;
+  color: #0f766e;
+  font: 800 1rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.01em;
+}

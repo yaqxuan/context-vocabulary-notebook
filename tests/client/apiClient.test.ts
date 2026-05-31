@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { listCards } from '../../src/client/api/cards';
 import { ApiError, apiBlob, apiFormData, apiRequest, buildQuery } from '../../src/client/api/client';
-import { exportCards } from '../../src/client/api/importExport';
+import { executeImport, exportCards } from '../../src/client/api/importExport';
 import { getHomeStatistics } from '../../src/client/api/statistics';
 
 describe('api client', () => {
@@ -148,5 +148,22 @@ describe('endpoint modules', () => {
     await exportCards('pure');
 
     expect(fetchMock).toHaveBeenCalledWith('/api/export?type=pure', expect.any(Object));
+  });
+
+  it('posts import execute decisions using the server form key', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ imported_cards: 0, imported_contexts: 0, imported_media_files: 0, skipped_cards: 1, merged_cards: 0, missing_media_files: 0 }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const file = new File(['zip'], 'cards.zip', { type: 'application/zip' });
+
+    await executeImport(file, { mode: 'skip_all' });
+
+    const body = fetchMock.mock.calls[0]?.[1]?.body as FormData;
+    expect(body.get('file')).toBe(file);
+    expect(body.get('decisions')).toBe(JSON.stringify({ mode: 'skip_all' }));
+    expect(body.get('decision')).toBeNull();
   });
 });

@@ -41,10 +41,16 @@ export interface RatingTrend {
   good_count: number;
 }
 
+export interface MonthlyReviewCount {
+  month: string;
+  count: number;
+}
+
 export interface StatisticsPageData {
   totals: StatisticsTotals;
   daily_review_counts: DailyReviewCount[];
   daily_accuracy: DailyAccuracy[];
+  monthly_review_counts: MonthlyReviewCount[];
   tag_distribution: TagDistribution[];
   rating_trend: RatingTrend[];
 }
@@ -95,6 +101,15 @@ export function getStatisticsPageData(db: Database): StatisticsPageData {
     ORDER BY date ASC
   `).all() as DailyAccuracy[];
 
+  const monthlyReviewCounts = db.prepare(`
+    SELECT substr(rl.reviewed_at, 1, 7) AS month, COUNT(*) AS count
+    FROM review_logs rl
+    JOIN word_sense_cards wsc ON wsc.id = rl.card_id
+    WHERE wsc.deleted_at IS NULL
+    GROUP BY substr(rl.reviewed_at, 1, 7)
+    ORDER BY month ASC
+  `).all() as MonthlyReviewCount[];
+
   const tagDistribution = db.prepare(`
     SELECT t.id AS tag_id, t.name, COUNT(DISTINCT wsc.id) AS card_count
     FROM tags t
@@ -127,6 +142,7 @@ export function getStatisticsPageData(db: Database): StatisticsPageData {
     },
     daily_review_counts: dailyReviewCounts,
     daily_accuracy: dailyAccuracy,
+    monthly_review_counts: monthlyReviewCounts,
     tag_distribution: tagDistribution,
     rating_trend: ratingTrend,
   };

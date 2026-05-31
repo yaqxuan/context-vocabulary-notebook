@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Database } from 'better-sqlite3';
 import { REVIEW_RATINGS, type ReviewRating } from '../../shared/constants.js';
 import { getContextsForCard } from '../domain/contexts.js';
+import { getMediaForCard } from '../domain/media.js';
 import { getDailyReviewProgress, getNextDueCard, submitReview } from '../domain/review.js';
 import { asyncRoute } from '../http/asyncRoute.js';
 import { BadRequestError, NotFoundError } from '../http/errors.js';
@@ -31,6 +32,7 @@ export function reviewRouter(db: Database): Router {
       card: {
         ...card,
         contexts: getContextsForCard(db, card.id),
+        media: getMediaForCard(db, card.id),
       },
       progress,
     });
