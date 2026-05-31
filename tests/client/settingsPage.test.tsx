@@ -257,6 +257,96 @@ describe('SettingsPage', () => {
     });
   });
 
+  // ─── Validation: text fields must be non-empty after trimming ─────────────
+
+  describe('text field validation', () => {
+    beforeEach(() => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(settings));
+    });
+
+    it('shows 界面语言不能为空 when interface_language is blank', async () => {
+      render(<SettingsPage />);
+      await screen.findByLabelText('界面语言');
+
+      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '   ' } });
+      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+
+      expect(await screen.findByText('界面语言不能为空')).toBeInTheDocument();
+    });
+
+    it('shows 默认学习语言不能为空 when default_target_language is blank', async () => {
+      render(<SettingsPage />);
+      await screen.findByLabelText('默认学习语言');
+
+      fireEvent.change(screen.getByLabelText('默认学习语言'), { target: { value: '' } });
+      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+
+      expect(await screen.findByText('默认学习语言不能为空')).toBeInTheDocument();
+    });
+
+    it('shows 默认释义语言不能为空 when default_definition_language is blank', async () => {
+      render(<SettingsPage />);
+      await screen.findByLabelText('默认释义语言');
+
+      fireEvent.change(screen.getByLabelText('默认释义语言'), { target: { value: '   ' } });
+      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+
+      expect(await screen.findByText('默认释义语言不能为空')).toBeInTheDocument();
+    });
+
+    it('does not PATCH when any text field is empty', async () => {
+      const patchCalls: unknown[] = [];
+      vi.restoreAllMocks();
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_, init) => {
+        if (init?.method === 'PATCH') {
+          patchCalls.push(JSON.parse(init.body as string));
+          return Promise.resolve(jsonResponse(settings));
+        }
+        return Promise.resolve(jsonResponse(settings));
+      });
+
+      render(<SettingsPage />);
+      await screen.findByLabelText('界面语言');
+
+      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '' } });
+      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+
+      // Wait a tick; PATCH must not have been called
+      await waitFor(() => expect(screen.getByText('界面语言不能为空')).toBeInTheDocument());
+      expect(patchCalls).toHaveLength(0);
+    });
+  });
+
+  // ─── PATCH payload trimming ────────────────────────────────────────────────
+
+  describe('PATCH payload trimming', () => {
+    it('sends trimmed values for text fields', async () => {
+      const updatedSettings: SettingsDto = {
+        ...settings,
+        interface_language: '日本語',
+      };
+
+      let patchBody: unknown = null;
+      vi.spyOn(globalThis, 'fetch').mockImplementation((_, init) => {
+        if (init?.method === 'PATCH') {
+          patchBody = JSON.parse(init.body as string);
+          return Promise.resolve(jsonResponse(updatedSettings));
+        }
+        return Promise.resolve(jsonResponse(settings));
+      });
+
+      render(<SettingsPage />);
+      await screen.findByLabelText('界面语言');
+
+      // Type value with leading/trailing whitespace
+      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '  日本語  ' } });
+      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+
+      await screen.findByText('设置已保存');
+      expect((patchBody as Record<string, unknown>).interface_language).toBe('日本語');
+    });
+  });
+
   // ─── Export ────────────────────────────────────────────────────────────────
 
   describe('export', () => {
@@ -290,7 +380,7 @@ describe('SettingsPage', () => {
       anchorClickSpy.mockRestore();
     });
 
-    it('triggers marked export download on 导出 marked 备份 button click', async () => {
+    it('triggers marked export download on 导出含有标记的卡片 button click', async () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
         const url = String(input);
         if (url.includes('/export?type=marked')) {
@@ -302,7 +392,7 @@ describe('SettingsPage', () => {
       render(<SettingsPage />);
       await screen.findByLabelText('界面语言');
 
-      fireEvent.click(screen.getByRole('button', { name: '导出 marked 备份' }));
+      fireEvent.click(screen.getByRole('button', { name: '导出含有标记的卡片' }));
 
       await waitFor(() => expect(createObjectURLSpy).toHaveBeenCalledTimes(1));
       expect(revokeObjectURLSpy).toHaveBeenCalledTimes(1);
@@ -310,7 +400,7 @@ describe('SettingsPage', () => {
       expect(lastAnchorDownload).toContain('marked');
     });
 
-    it('triggers pure export download on 导出 pure 卡片 button click', async () => {
+    it('triggers pure export download on 导出纯卡片 button click', async () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
         const url = String(input);
         if (url.includes('/export?type=pure')) {
@@ -322,7 +412,7 @@ describe('SettingsPage', () => {
       render(<SettingsPage />);
       await screen.findByLabelText('界面语言');
 
-      fireEvent.click(screen.getByRole('button', { name: '导出 pure 卡片' }));
+      fireEvent.click(screen.getByRole('button', { name: '导出纯卡片' }));
 
       await waitFor(() => expect(createObjectURLSpy).toHaveBeenCalledTimes(1));
       expect(revokeObjectURLSpy).toHaveBeenCalledTimes(1);
@@ -344,7 +434,7 @@ describe('SettingsPage', () => {
       render(<SettingsPage />);
       await screen.findByLabelText('界面语言');
 
-      fireEvent.click(screen.getByRole('button', { name: '导出 marked 备份' }));
+      fireEvent.click(screen.getByRole('button', { name: '导出含有标记的卡片' }));
 
       await waitFor(() => expect(fetchedUrls.some((u) => u.includes('type=marked'))).toBe(true));
     });
@@ -363,7 +453,7 @@ describe('SettingsPage', () => {
       render(<SettingsPage />);
       await screen.findByLabelText('界面语言');
 
-      fireEvent.click(screen.getByRole('button', { name: '导出 pure 卡片' }));
+      fireEvent.click(screen.getByRole('button', { name: '导出纯卡片' }));
 
       await waitFor(() => expect(fetchedUrls.some((u) => u.includes('type=pure'))).toBe(true));
     });

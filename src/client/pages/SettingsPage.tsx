@@ -29,31 +29,54 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
   const [targetLang, setTargetLang] = useState(initial.default_target_language);
   const [defLang, setDefLang] = useState(initial.default_definition_language);
   const [dailyLimit, setDailyLimit] = useState(String(initial.daily_review_limit));
+  const [interfaceLangError, setInterfaceLangError] = useState<string | null>(null);
+  const [targetLangError, setTargetLangError] = useState<string | null>(null);
+  const [defLangError, setDefLangError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  function validateDailyLimit(value: string): boolean {
-    const n = Number(value);
-    if (!value.trim() || !Number.isInteger(n) || n <= 0) {
-      setValidationError('每日复习数量必须是正整数');
-      return false;
+  function validateAll(): boolean {
+    let ok = true;
+    if (!interfaceLang.trim()) {
+      setInterfaceLangError('界面语言不能为空');
+      ok = false;
+    } else {
+      setInterfaceLangError(null);
     }
-    setValidationError(null);
-    return true;
+    if (!targetLang.trim()) {
+      setTargetLangError('默认学习语言不能为空');
+      ok = false;
+    } else {
+      setTargetLangError(null);
+    }
+    if (!defLang.trim()) {
+      setDefLangError('默认释义语言不能为空');
+      ok = false;
+    } else {
+      setDefLangError(null);
+    }
+    const n = Number(dailyLimit);
+    if (!dailyLimit.trim() || !Number.isInteger(n) || n <= 0) {
+      setValidationError('每日复习数量必须是正整数');
+      ok = false;
+    } else {
+      setValidationError(null);
+    }
+    return ok;
   }
 
   async function handleSave() {
-    if (!validateDailyLimit(dailyLimit)) return;
+    if (!validateAll()) return;
     setSaving(true);
     setSaved(false);
     setSaveError(null);
     try {
       const updated = await patchSettings({
-        interface_language: interfaceLang,
-        default_target_language: targetLang,
-        default_definition_language: defLang,
+        interface_language: interfaceLang.trim(),
+        default_target_language: targetLang.trim(),
+        default_definition_language: defLang.trim(),
         daily_review_limit: Number(dailyLimit),
       });
       onSaved(updated);
@@ -67,7 +90,7 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
 
   return (
     <section className="phase7-settings-section">
-      <h2 className="phase7-settings-section-title">基本设置</h2>
+      <h2 className="phase7-settings-section-title">学习与界面设置</h2>
 
       <div className="phase7-settings-form">
         <div className="phase7-settings-field">
@@ -81,6 +104,9 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
             value={interfaceLang}
             onChange={(e) => setInterfaceLang(e.target.value)}
           />
+          {interfaceLangError && (
+            <p className="phase7-settings-field-error">{interfaceLangError}</p>
+          )}
         </div>
 
         <div className="phase7-settings-field">
@@ -94,6 +120,9 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
             value={targetLang}
             onChange={(e) => setTargetLang(e.target.value)}
           />
+          {targetLangError && (
+            <p className="phase7-settings-field-error">{targetLangError}</p>
+          )}
         </div>
 
         <div className="phase7-settings-field">
@@ -107,6 +136,9 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
             value={defLang}
             onChange={(e) => setDefLang(e.target.value)}
           />
+          {defLangError && (
+            <p className="phase7-settings-field-error">{defLangError}</p>
+          )}
         </div>
 
         <div className="phase7-settings-field">
@@ -170,7 +202,7 @@ function ExportSection() {
             完整备份：包含卡片、语境、媒体、标签、复习记录、FSRS 状态和设置。
           </p>
           <Button onClick={() => triggerDownload('marked')} disabled={markedLoading}>
-            导出 marked 备份
+            导出含有标记的卡片
           </Button>
         </div>
         <div className="phase7-settings-export-card">
@@ -178,7 +210,7 @@ function ExportSection() {
             纯内容分享：仅包含卡片和语境，不含个人状态、收藏或复习记录。
           </p>
           <Button onClick={() => triggerDownload('pure')} disabled={pureLoading}>
-            导出 pure 卡片
+            导出纯卡片
           </Button>
         </div>
       </div>
