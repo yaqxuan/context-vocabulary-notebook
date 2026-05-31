@@ -1123,3 +1123,321 @@ body {
   white-space: nowrap;
   border: 0;
 }
+
+/* ─── Settings Page ──────────────────────────────────────────────────────────── */
+
+.phase7-settings-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.phase7-settings-hero {
+  border: 1px solid rgba(23, 32, 51, 0.16);
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 247, 232, .98), rgba(236, 253, 245, .88));
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.phase7-settings-kicker {
+  margin: 0 0 .6rem;
+  color: #0f766e;
+  font: 850 .72rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.phase7-settings-headline {
+  margin: 0;
+  color: #172033;
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  line-height: .95;
+  letter-spacing: -.05em;
+}
+
+.phase7-settings-hero-copy {
+  max-width: 52rem;
+  margin: .9rem 0 0;
+  color: #475569;
+  font: 500 .95rem/1.65 ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Section card */
+
+.phase7-settings-section {
+  border: 1px solid rgba(23, 32, 51, 0.14);
+  border-radius: 1.5rem;
+  background: rgba(255, 253, 246, .96);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  padding: clamp(1.25rem, 2.5vw, 1.75rem);
+  display: grid;
+  gap: 1.25rem;
+}
+
+.phase7-settings-section-title {
+  margin: 0;
+  color: #172033;
+  font: 850 1.1rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.03em;
+}
+
+.phase7-settings-subsection-title {
+  margin: 0;
+  color: #334155;
+  font: 750 .9rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.01em;
+}
+
+/* Settings form */
+
+.phase7-settings-form {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .phase7-settings-form {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.phase7-settings-field {
+  display: grid;
+  gap: .4rem;
+}
+
+.phase7-settings-label {
+  color: #475569;
+  font: 750 .8rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.phase7-settings-input {
+  border: 1px solid rgba(23, 32, 51, 0.2);
+  border-radius: .75rem;
+  background: rgba(255, 255, 255, .9);
+  padding: .55rem .85rem;
+  color: #172033;
+  font: 500 .95rem ui-sans-serif, system-ui, sans-serif;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.phase7-settings-input:focus {
+  outline: none;
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, .15);
+}
+
+.phase7-settings-field-error {
+  margin: 0;
+  color: #be123c;
+  font: 600 .82rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.phase7-settings-saved-msg {
+  color: #0f766e;
+  font: 650 .88rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-settings-save-error {
+  color: #be123c;
+  font: 650 .88rem ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Export */
+
+.phase7-settings-export-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .phase7-settings-export-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.phase7-settings-export-card {
+  border: 1px solid rgba(23, 32, 51, 0.12);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, .62);
+  padding: 1.1rem 1.25rem;
+  display: grid;
+  gap: .85rem;
+}
+
+.phase7-settings-export-desc {
+  margin: 0;
+  color: #475569;
+  font: 500 .88rem/1.6 ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Import controls */
+
+.phase7-settings-import-controls {
+  display: grid;
+  gap: .85rem;
+}
+
+.phase7-settings-file-input {
+  border: 1px solid rgba(23, 32, 51, 0.18);
+  border-radius: .75rem;
+  background: rgba(255, 255, 255, .85);
+  padding: .4rem .75rem;
+  color: #334155;
+  font: 500 .9rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-settings-import-btns {
+  display: flex;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+
+.phase7-settings-import-error {
+  margin: 0;
+  color: #be123c;
+  font: 600 .88rem ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Scan result */
+
+.phase7-settings-scan-result {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.phase7-settings-scan-counts,
+.phase7-settings-result-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: .75rem;
+}
+
+.phase7-settings-count-item {
+  border: 1px solid rgba(23, 32, 51, 0.12);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, .7);
+  padding: .65rem .9rem;
+  display: grid;
+  gap: .2rem;
+}
+
+.phase7-settings-count-label {
+  color: #64748b;
+  font: 700 .72rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.phase7-settings-count-value {
+  color: #172033;
+  font: 900 1.8rem/.9 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.05em;
+}
+
+/* Conflicts */
+
+.phase7-settings-conflicts,
+.phase7-settings-missing-media {
+  display: grid;
+  gap: .65rem;
+}
+
+.phase7-settings-conflict-list,
+.phase7-settings-missing-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .5rem;
+}
+
+.phase7-settings-conflict-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem .85rem;
+  border-radius: .85rem;
+  background: rgba(254, 249, 195, .6);
+  border: 1px solid rgba(202, 138, 4, .18);
+  font: 500 .88rem ui-sans-serif, system-ui, sans-serif;
+  flex-wrap: wrap;
+}
+
+.phase7-settings-conflict-word {
+  color: #172033;
+  font-weight: 750;
+}
+
+.phase7-settings-conflict-sep {
+  color: #94a3b8;
+}
+
+.phase7-settings-conflict-meaning {
+  color: #475569;
+}
+
+.phase7-settings-conflict-select {
+  margin-left: auto;
+  border: 1px solid rgba(23, 32, 51, 0.18);
+  border-radius: .5rem;
+  background: rgba(255, 255, 255, .9);
+  padding: .25rem .5rem;
+  font: 500 .82rem ui-sans-serif, system-ui, sans-serif;
+  color: #334155;
+}
+
+.phase7-settings-missing-item {
+  padding: .4rem .75rem;
+  border-radius: .75rem;
+  background: rgba(254, 226, 226, .55);
+  border: 1px solid rgba(239, 68, 68, .15);
+  color: #7f1d1d;
+  font: 500 .85rem/1.4 ui-monospace, monospace;
+  word-break: break-all;
+}
+
+/* Decision mode radios */
+
+.phase7-settings-decision-modes {
+  display: grid;
+  gap: .65rem;
+}
+
+.phase7-settings-radio-group {
+  display: grid;
+  gap: .5rem;
+}
+
+.phase7-settings-radio-label {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: #334155;
+  font: 500 .9rem ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+/* Execute result */
+
+.phase7-settings-execute-result {
+  display: grid;
+  gap: .85rem;
+  border-top: 1px solid rgba(23, 32, 51, 0.1);
+  padding-top: 1rem;
+}
+
+.phase7-settings-execute-done {
+  margin: 0;
+  color: #0f766e;
+  font: 800 1rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.01em;
+}
