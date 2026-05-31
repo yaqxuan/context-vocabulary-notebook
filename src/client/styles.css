@@ -5,7 +5,282 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: #f8fafc;
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 34rem),
+    linear-gradient(135deg, #f8f1e7 0%, #edf3ee 45%, #f7f4ec 100%);
   color: #0f172a;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+}
+
+.phase6-hero,
+.phase6-filter-desk,
+.phase6-list-shell,
+.phase6-detail-grid,
+.phase6-tag-editor,
+.phase6-tag-card,
+.phase6-empty,
+.phase6-alert,
+.phase6-skeleton {
+  border: 1px solid rgba(23, 32, 51, 0.16);
+  border-radius: 1.5rem;
+  background: rgba(255, 247, 232, 0.82);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+}
+
+.phase6-catalogue,
+.phase6-detail,
+.phase6-tags {
+  display: grid;
+  gap: 1rem;
+}
+
+.phase6-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: linear-gradient(135deg, rgba(255, 247, 232, .96), rgba(236, 253, 245, .84));
+}
+
+.phase6-kicker {
+  margin: 0 0 .5rem;
+  color: #0f766e;
+  font: 800 .75rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.phase6-hero h2 {
+  margin: 0;
+  color: #172033;
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: .95;
+  letter-spacing: -.07em;
+}
+
+.phase6-hero p:not(.phase6-kicker) {
+  max-width: 44rem;
+  color: #475569;
+  font: 500 1rem/1.65 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase6-primary-link,
+.phase6-card-actions a,
+.phase6-tag-card a,
+.phase6-empty a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #172033;
+  color: #fff7e8;
+  font: 800 .875rem ui-sans-serif, system-ui, sans-serif;
+  padding: .75rem 1rem;
+  text-decoration: none;
+}
+
+.phase6-filter-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, minmax(8rem, .35fr)) auto;
+  gap: .75rem;
+  padding: 1rem;
+}
+
+.phase6-filter-desk label,
+.phase6-tag-editor label {
+  display: grid;
+  gap: .35rem;
+  color: #64748b;
+  font: 800 .75rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase6-filter-desk input,
+.phase6-filter-desk select,
+.phase6-tag-editor input {
+  border: 1px solid rgba(23, 32, 51, .14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, .72);
+  color: #172033;
+  font: 700 .875rem ui-sans-serif, system-ui, sans-serif;
+  padding: .75rem .9rem;
+}
+
+.phase6-filter-desk button,
+.phase6-card-actions button,
+.phase6-detail-actions button,
+.phase6-context-actions button,
+.phase6-tag-editor button,
+.phase6-tag-card button,
+.phase6-empty button,
+.phase6-alert button {
+  border: 1px solid rgba(23, 32, 51, .14);
+  border-radius: .9rem;
+  background: rgba(255, 255, 255, .72);
+  color: #172033;
+  cursor: pointer;
+  font: 800 .875rem ui-sans-serif, system-ui, sans-serif;
+  padding: .7rem .9rem;
+}
+
+.phase6-filter-desk button:disabled,
+.phase6-card-actions button:disabled,
+.phase6-detail-actions button:disabled,
+.phase6-context-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.phase6-card-list,
+.phase6-contexts,
+.phase6-tag-grid {
+  display: grid;
+  gap: .85rem;
+}
+
+.phase6-word-card,
+.phase6-context-card {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) 14rem;
+  gap: 1rem;
+  border: 1px solid rgba(23, 32, 51, .12);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, .66);
+  padding: 1rem;
+}
+
+.phase6-word strong {
+  display: block;
+  color: #172033;
+  font-size: 1.7rem;
+  letter-spacing: -.04em;
+}
+
+.phase6-word span,
+.phase6-card-main p,
+.phase6-card-actions span,
+.phase6-context-card small,
+.phase6-detail-side p,
+.phase6-empty p,
+.phase6-alert p,
+.phase6-skeleton {
+  color: #64748b;
+  font: 600 .875rem/1.55 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase6-card-main h3 {
+  margin: 0;
+  color: #172033;
+  font: 900 1.2rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase6-card-main div,
+.phase6-detail-side div,
+.phase6-media-row,
+.phase6-tag-card div,
+.phase6-empty div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.phase6-card-main div span,
+.phase6-detail-side div span,
+.phase6-media-row span {
+  border-radius: 999px;
+  background: #ccfbf1;
+  color: #0f766e;
+  font: 800 .75rem ui-sans-serif, system-ui, sans-serif;
+  padding: .3rem .55rem;
+}
+
+.phase6-card-actions,
+.phase6-detail-actions,
+.phase6-context-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  justify-content: flex-end;
+}
+
+.phase6-list-shell,
+.phase6-alert,
+.phase6-skeleton,
+.phase6-empty,
+.phase6-tag-editor,
+.phase6-tag-card,
+.phase6-detail-grid {
+  padding: 1rem;
+}
+
+.phase6-list-head {
+  margin-bottom: .85rem;
+  color: #64748b;
+  font: 700 .9rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase6-list-head strong {
+  color: #172033;
+  font-size: 1.6rem;
+}
+
+.phase6-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18rem;
+  gap: 1rem;
+}
+
+.phase6-context-card {
+  grid-template-columns: 1fr;
+}
+
+.phase6-context-card > div:first-child,
+.phase6-detail-side h3,
+.phase6-tag-card strong {
+  color: #172033;
+  font: 900 1rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase6-context-card > div:first-child span {
+  margin-left: .5rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: .25rem .55rem;
+}
+
+.phase6-tag-editor {
+  display: flex;
+  align-items: end;
+  gap: .75rem;
+}
+
+.phase6-tag-editor label {
+  flex: 1;
+}
+
+.phase6-tag-grid {
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+}
+
+.phase6-tag-card {
+  display: grid;
+  gap: .75rem;
+}
+
+@media (max-width: 920px) {
+  .phase6-hero,
+  .phase6-filter-desk,
+  .phase6-word-card,
+  .phase6-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .phase6-card-actions {
+    justify-content: flex-start;
+  }
+
+  .phase6-tag-editor {
+    display: grid;
+  }
 }

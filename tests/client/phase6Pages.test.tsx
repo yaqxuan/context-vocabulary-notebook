@@ -1,0 +1,138 @@
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { CardCatalogue, type CardCatalogueFilters } from '../../src/client/components/CardCatalogue';
+import { CardDetailPage } from '../../src/client/pages/CardDetailPage';
+import { CardListPage } from '../../src/client/pages/CardListPage';
+import { FavoritesPage } from '../../src/client/pages/FavoritesPage';
+import { TagsPage } from '../../src/client/pages/TagsPage';
+import type { CardSummaryDto, TagDto } from '../../src/shared/types';
+
+const tags: TagDto[] = [{ id: 'tag-1', name: '美剧', created_at: 'now', updated_at: 'now' }];
+const filters: CardCatalogueFilters = { search: '', tagId: '', status: '', favorite: '', page: 1, pageSize: 20 };
+const cards: CardSummaryDto[] = [{
+  id: 'card-1',
+  target_word: 'charge',
+  context_meaning: '收费',
+  target_language: '英语',
+  definition_language: '中文',
+  status: 'reviewing',
+  is_favorite: 1,
+  created_at: 'now',
+  updated_at: 'now',
+  primary_sentence: 'The hotel charges $100 per night.',
+  context_count: 2,
+  tags,
+}];
+
+const detail = {
+  ...cards[0],
+  contexts: [{ id: 'ctx-1', card_id: 'card-1', sentence: 'The hotel charges $100 per night.', note: 'S01E01 03:12', is_primary: 1, sort_order: 10, created_at: 'now', updated_at: 'now' }],
+  media: [{ id: 'media-1', context_example_id: 'ctx-1', media_type: 'video' as const, file_name: 'clip.mp4', file_path: '/uploads/clip.mp4', mime_type: 'video/mp4', file_size: 100, is_available: 1, created_at: 'now' }],
+  fsrs: { due_date: 'now', stability: null, difficulty: null, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
+};
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+}
+
+describe('Phase 6 pages', () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse(tags));
+      if (url.startsWith('/api/cards') && init?.method === 'PATCH') return Promise.resolve(jsonResponse(cards[0]));
+      if (url.startsWith('/api/cards')) return Promise.resolve(jsonResponse({ items: cards, total: 1, page: 1, page_size: 20 }));
+      return Promise.resolve(jsonResponse({}));
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    window.location.hash = '';
+  });
+
+  it('renders catalogue cards and emits filter/action changes', () => {
+    const onFiltersChange = vi.fn();
+    const onRetry = vi.fn();
+    const onToggleStatus = vi.fn();
+    const onToggleFavorite = vi.fn();
+
+    render(<CardCatalogue title="词义条目" subtitle="管理所有词义" cards={cards} total={1} loading={false} error={null} tags={tags} filters={filters} emptyMessage="还没有词义条目" filteredEmptyMessage="没有匹配的词义条目" onFiltersChange={onFiltersChange} onRetry={onRetry} onToggleStatus={onToggleStatus} onToggleFavorite={onToggleFavorite} />);
+
+    expect(screen.getByText('charge')).toBeInTheDocument();
+    expect(screen.getByText('收费')).toBeInTheDocument();
+    expect(screen.getByText('The hotel charges $100 per night.')).toBeInTheDocument();
+    expect(screen.getAllByText('美剧').length).toBeGreaterThan(0);
+    expect(screen.getByText('2 条语境')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '查看详情' })).toHaveAttribute('href', '#/cards/card-1');
+
+    fireEvent.change(screen.getByLabelText('搜索词义条目'), { target: { value: 'charge' } });
+    expect(onFiltersChange).toHaveBeenCalledWith({ ...filters, search: 'charge', page: 1 });
+
+    fireEvent.click(screen.getByRole('button', { name: '标记熟记' }));
+    expect(onToggleStatus).toHaveBeenCalledWith(cards[0]);
+
+    fireEvent.click(screen.getByRole('button', { name: '取消收藏' }));
+    expect(onToggleFavorite).toHaveBeenCalledWith(cards[0]);
+  });
+
+  it('loads card list page and toggles card status', async () => {
+    render(<CardListPage />);
+
+    expect(await screen.findByText('charge')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '标记熟记' }));
+
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/cards/card-1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ status: 'mastered' }) })));
+  });
+
+  it('loads favorites page with favorite filter forced', async () => {
+    render(<FavoritesPage />);
+
+    expect(await screen.findByRole('heading', { name: '收藏' })).toBeInTheDocument();
+    await waitFor(() => expect(String(vi.mocked(globalThis.fetch).mock.calls.find(([input]) => String(input).startsWith('/api/cards'))?.[0])).toContain('favorite=true'));
+  });
+
+  it('loads card detail and exposes context actions', async () => {
+    window.location.hash = '#/cards/card-1';
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse(cards[0]));
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
+      if (url === '/api/contexts/ctx-1/primary') return Promise.resolve(jsonResponse({ ok: true }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardDetailPage />);
+
+    expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
+    expect(screen.getByText('S01E01 03:12')).toBeInTheDocument();
+    expect(screen.getByText('clip.mp4')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '标记熟记' }));
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/cards/card-1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ status: 'mastered' }) })));
+  });
+
+  it('creates edits and confirms tag deletion', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/tags' && init?.method === 'POST') return Promise.resolve(jsonResponse({ id: 'tag-2', name: '电影', created_at: 'now', updated_at: 'now' }, 201));
+      if (url === '/api/tags/tag-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ...tags[0], name: '美剧 updated' }));
+      if (url === '/api/tags/tag-1' && init?.method === 'DELETE') return Promise.resolve(jsonResponse({ ok: true }));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse(tags));
+      return Promise.resolve(jsonResponse({}));
+    });
+
+    render(<TagsPage />);
+
+    expect(await screen.findByText('美剧')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('标签名称'), { target: { value: '电影' } });
+    fireEvent.click(screen.getByRole('button', { name: '新增标签' }));
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/tags', expect.objectContaining({ method: 'POST', body: JSON.stringify({ name: '电影' }) })));
+
+    fireEvent.click(screen.getByRole('button', { name: '编辑' }));
+    fireEvent.change(screen.getByLabelText('标签名称'), { target: { value: '美剧 updated' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存标签' }));
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/tags/tag-1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ name: '美剧 updated' }) })));
+  });
+});

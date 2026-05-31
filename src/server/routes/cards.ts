@@ -151,7 +151,16 @@ export function cardsRouter(db: Database): Router {
     const tags = getCardTags(db, card.id);
     const fsrs = db.prepare('SELECT * FROM fsrs_states WHERE card_id = ?').get(card.id) as Record<string, unknown>;
 
-    res.json({ card, contexts, media, tags, fsrs });
+    const primary_sentence = contexts.find((ctx) => ctx.is_primary === 1)?.sentence ?? contexts[0]?.sentence ?? null;
+    res.json({
+      ...card,
+      primary_sentence,
+      context_count: contexts.length,
+      contexts,
+      media,
+      tags,
+      fsrs,
+    });
   }));
 
   // PATCH /api/cards/:id
@@ -180,6 +189,7 @@ export function cardsRouter(db: Database): Router {
       return card;
     })();
 
+    if (!updated) throw new NotFoundError(`Card not found: ${id}`);
     res.json(updated);
   }));
 

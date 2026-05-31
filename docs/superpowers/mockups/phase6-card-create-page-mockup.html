@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase 6 制卡页视觉草稿</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --ink-2: #27364f;
+      --muted: #6b7280;
+      --paper: #fff7e8;
+      --paper-2: #f6ead5;
+      --jade: #0f766e;
+      --jade-2: #2dd4bf;
+      --amber: #d97706;
+      --rose: #be123c;
+      --line: rgba(23, 32, 51, 0.16);
+      --shadow: 0 35px 100px rgba(15, 23, 42, 0.25);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 1180px;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(45, 212, 191, 0.20), transparent 26rem),
+        radial-gradient(circle at 92% 12%, rgba(217, 119, 6, 0.23), transparent 25rem),
+        linear-gradient(135deg, #0f172a 0%, #172033 22%, #f3ead8 22.2%, #edf3ee 100%);
+      overflow-x: auto;
+    }
+
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.22;
+      background-image:
+        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mix-blend-mode: overlay;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 28px;
+      width: 1440px;
+      min-height: 100vh;
+      padding: 28px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 28px;
+      height: calc(100vh - 56px);
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 34px;
+      background:
+        linear-gradient(180deg, rgba(23,32,51,.97), rgba(15,23,42,.98)),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0 1px, transparent 1px 20px);
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+      padding: 22px;
+      color: #fff7e8;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 58px;
+      border-radius: 9px 9px 16px 16px;
+      background: linear-gradient(160deg, var(--jade-2), var(--jade) 52%, #052e2b);
+      box-shadow: inset -8px 0 18px rgba(0,0,0,.2), 0 10px 30px rgba(45,212,191,.25);
+      transform: rotate(-5deg);
+    }
+
+    .brand strong {
+      display: block;
+      font: 800 20px/1.05 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: -0.05em;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 4px;
+      color: rgba(255,247,232,.58);
+      font: 600 12px ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .nav {
+      display: grid;
+      gap: 10px;
+    }
+
+    .nav a {
+      display: block;
+      padding: 13px 14px;
+      border-radius: 18px;
+      color: rgba(255,247,232,.72);
+      text-decoration: none;
+      font: 750 14px ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .nav a small {
+      display: block;
+      margin-top: 2px;
+      color: rgba(255,247,232,.38);
+      font-weight: 600;
+    }
+
+    .nav a.active {
+      color: #052e2b;
+      background: linear-gradient(135deg, #ccfbf1, #fff7e8);
+      box-shadow: 0 12px 30px rgba(45,212,191,.18);
+    }
+
+    .sidebar-note {
+      margin-top: auto;
+      border: 1px solid rgba(255,247,232,.16);
+      border-radius: 22px;
+      padding: 15px;
+      background: rgba(255,247,232,.06);
+      color: rgba(255,247,232,.72);
+      font: 600 13px/1.6 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .main {
+      padding: 10px 0 60px;
+    }
+
+    .route-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      color: #fff7e8;
+    }
+
+    .route-title h1 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: -0.05em;
+    }
+
+    .route-title p {
+      margin: 6px 0 0;
+      color: rgba(255,247,232,.66);
+      font: 650 14px ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .studio {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(23,32,51,.18);
+      border-radius: 42px;
+      background:
+        linear-gradient(135deg, rgba(255,247,232,.96), rgba(239,246,240,.94)),
+        repeating-linear-gradient(90deg, rgba(23,32,51,.035) 0 1px, transparent 1px 19px);
+      box-shadow: var(--shadow);
+      padding: 34px;
+    }
+
+    .studio::before {
+      content: "";
+      position: absolute;
+      top: -110px;
+      right: 190px;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: rgba(217,119,6,.14);
+      filter: blur(24px);
+    }
+
+    .hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 26px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+
+    .kicker {
+      margin: 0 0 8px;
+      color: var(--jade);
+      font: 900 12px ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+
+    .hero h2 {
+      max-width: 760px;
+      margin: 0;
+      color: var(--ink);
+      font-size: 76px;
+      line-height: .88;
+      letter-spacing: -0.09em;
+    }
+
+    .hero p:last-child {
+      max-width: 720px;
+      margin: 18px 0 0;
+      color: #475569;
+      font: 650 16px/1.7 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .save {
+      border: 0;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff7e8;
+      padding: 16px 24px;
+      box-shadow: 0 18px 42px rgba(23,32,51,.30);
+      font: 900 15px ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 20px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background: rgba(255,255,255,.58);
+      box-shadow: inset 0 1px rgba(255,255,255,.85);
+      padding: 24px;
+      backdrop-filter: blur(18px);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .field.wide { grid-column: 1 / -1; }
+
+    .field label {
+      color: var(--ink);
+      font-weight: 850;
+      letter-spacing: -0.02em;
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      border: 1px solid rgba(23,32,51,.18);
+      border-radius: 20px;
+      background: rgba(255,251,242,.82);
+      color: var(--ink);
+      outline: none;
+      padding: 15px 16px;
+      font: 700 15px ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .field textarea {
+      min-height: 112px;
+      resize: none;
+    }
+
+    .field .help {
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .chip {
+      border: 1px solid rgba(15,118,110,.24);
+      border-radius: 999px;
+      background: rgba(240,253,250,.75);
+      color: var(--jade);
+      padding: 8px 12px;
+      font: 850 13px ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .chip.active {
+      background: var(--jade);
+      color: white;
+    }
+
+    .section-head {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 18px;
+      border-top: 1px dashed rgba(23,32,51,.18);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .section-head strong {
+      color: var(--ink);
+      font-size: 18px;
+      letter-spacing: -0.04em;
+    }
+
+    .section-head span {
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .media-row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 14px;
+    }
+
+    .media {
+      position: relative;
+      min-height: 142px;
+      display: grid;
+      align-content: space-between;
+      border: 1px solid rgba(23,32,51,.14);
+      border-radius: 24px;
+      background:
+        linear-gradient(135deg, rgba(255,247,237,.95), rgba(204,251,241,.45));
+      padding: 17px;
+      overflow: hidden;
+    }
+
+    .media::after {
+      content: "";
+      position: absolute;
+      right: -30px;
+      bottom: -40px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(15,118,110,.12);
+    }
+
+    .media strong {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1;
+      font: 900 15px ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .media b {
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff7e8;
+      padding: 4px 9px;
+      font-size: 11px;
+    }
+
+    .media p {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      color: #64748b;
+      font: 700 13px ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .side-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .side-title strong {
+      font-size: 18px;
+      letter-spacing: -0.04em;
+    }
+
+    .side-title span {
+      color: var(--jade);
+      font-weight: 850;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .sense-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .sense {
+      border: 1px solid rgba(23,32,51,.14);
+      border-radius: 23px;
+      background: rgba(255,251,242,.82);
+      padding: 15px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .sense.active {
+      border-color: var(--jade);
+      background: rgba(204,251,241,.54);
+      box-shadow: 0 14px 30px rgba(15,118,110,.12);
+    }
+
+    .sense span {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .sense strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--ink);
+      font-size: 18px;
+      letter-spacing: -0.04em;
+    }
+
+    .sense small {
+      display: block;
+      margin-top: 6px;
+      color: #64748b;
+      font-weight: 650;
+    }
+
+    .footer-note {
+      margin-top: 20px;
+      border-radius: 22px;
+      background: rgba(23,32,51,.92);
+      color: rgba(255,247,232,.78);
+      padding: 16px;
+      font: 650 13px/1.65 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .approval {
+      width: 1440px;
+      padding: 0 28px 28px 316px;
+      color: rgba(255,247,232,.8);
+      font: 700 14px ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .approval code {
+      color: #ccfbf1;
+      background: rgba(15,23,42,.35);
+      border-radius: 8px;
+      padding: 3px 7px;
+    }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div>
+          <strong>语境单词本</strong>
+          <span>Video Context</span>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <a href="#">首页<small>今日复习与快速入口</small></a>
+        <a class="active" href="#">制卡<small>创建词义和语境</small></a>
+        <a href="#">词义条目<small>搜索、筛选、管理</small></a>
+        <a href="#">复习<small>Again / Good 复习</small></a>
+        <a href="#">标签<small>分类和来源标记</small></a>
+        <a href="#">收藏<small>查看收藏词义</small></a>
+        <a href="#">统计<small>复习和标签分析</small></a>
+        <a href="#">设置<small>语言、目标和导入导出</small></a>
+      </nav>
+      <div class="sidebar-note">
+        本页草稿只展示视觉方向。真实实现会接入现有 API、校验、上传、跳转和测试。
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="route-title">
+        <div>
+          <h1>制卡</h1>
+          <p>添加真实视频语境</p>
+        </div>
+      </div>
+
+      <section class="studio">
+        <header class="hero">
+          <div>
+            <p class="kicker">Context Capture</p>
+            <h2>捕捉一个真实语境</h2>
+            <p>把视频里遇到的词、当下意思、原句和证据材料钉成一张可复习的词义卡。</p>
+          </div>
+          <button class="save">添加为新语境</button>
+        </header>
+
+        <div class="grid">
+          <section class="panel">
+            <div class="form-grid">
+              <div class="field">
+                <label>目标单词</label>
+                <input value="charge" readonly />
+              </div>
+              <div class="field">
+                <label>当前语境释义</label>
+                <input value="收费" readonly />
+                <span class="help">只写这个语境下的意思，不写完整词典释义。</span>
+              </div>
+
+              <div class="field wide">
+                <label>原句</label>
+                <textarea readonly>The hotel charges $100 per night.</textarea>
+                <span class="help">复习时会显示完整原句，并高亮目标单词。</span>
+              </div>
+
+              <div class="field">
+                <label>学习语言</label>
+                <input value="英语" readonly />
+              </div>
+              <div class="field">
+                <label>释义语言</label>
+                <input value="中文" readonly />
+              </div>
+
+              <div class="field wide">
+                <label>标签</label>
+                <div class="chips">
+                  <span class="chip active">美剧</span>
+                  <span class="chip active">Friends</span>
+                  <span class="chip">口语</span>
+                  <span class="chip">难词</span>
+                </div>
+              </div>
+
+              <div class="field wide">
+                <label>备注</label>
+                <textarea readonly>Friends S02E03 · 00:14:22 · 酒店前台解释房费。</textarea>
+              </div>
+
+              <div class="section-head">
+                <strong>语境附件</strong>
+                <span>视频推荐但可选，截图与音频可选；不支持网站视频 URL。</span>
+              </div>
+
+              <div class="media-row">
+                <div class="media">
+                  <strong>本地视频 mp4 <b>推荐</b></strong>
+                  <p>hotel-charge-scene.mp4 · 8.2 MB</p>
+                </div>
+                <div class="media">
+                  <strong>截图 jpg / png / webp <b>可选</b></strong>
+                  <p>scene-shot.webp · 420 KB</p>
+                </div>
+                <div class="media">
+                  <strong>音频 mp3 <b>可选</b></strong>
+                  <p>line-audio.mp3 · 310 KB</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel">
+            <div class="side-title">
+              <strong>已有词义</strong>
+              <span>Index Cards</span>
+            </div>
+            <div class="sense-list">
+              <div class="sense active">
+                <span>精确匹配 · charge = 收费</span>
+                <strong>添加为新语境</strong>
+                <small>已存在同词同义条目 · 3 条语境 · 复习中</small>
+              </div>
+              <div class="sense">
+                <span>charge</span>
+                <strong>指控</strong>
+                <small>不同语义，仅供参考</small>
+              </div>
+              <div class="sense">
+                <span>charge</span>
+                <strong>充电</strong>
+                <small>不同语义，仅供参考</small>
+              </div>
+            </div>
+            <div class="footer-note">
+              已找到相同词义：charge = 收费。这次保存会添加一个新语境，不会创建重复词义条目；其它 charge 词义只作参考。
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="approval">
+    文件：<code>docs/superpowers/mockups/phase6-card-create-page-mockup.html</code>。如果这版通过，我按这个方向实现真实 React 页面。
+  </div>
+</body>
+</html>
