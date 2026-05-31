@@ -11,9 +11,10 @@ function highlightWord(sentence: string, word: string): React.ReactNode {
   if (!word) return sentence;
   const regex = new RegExp(`(${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
   const parts = sentence.split(regex);
-  return parts.map((part, i) =>
-    regex.test(part) ? <mark key={i}>{part}</mark> : part,
-  );
+  return parts.map((part, i) => {
+    regex.lastIndex = 0;
+    return regex.test(part) ? <mark key={i}>{part}</mark> : part;
+  });
 }
 
 // --- Media item ---

@@ -172,6 +172,23 @@ describe('ReviewPage', () => {
       expect(marks[0].textContent).toMatch(/ephemeral/i);
     });
 
+    it('highlights repeated target words without dropping identical matches', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({
+        ...dueResponse,
+        card: {
+          ...dueCard,
+          target_word: 'go',
+          primary_sentence: 'go now, go again',
+        },
+      } satisfies ReviewDueResponseDto));
+
+      render(<ReviewPage />);
+
+      await screen.findByRole('heading', { name: 'go' });
+      const marks = [...document.querySelectorAll('mark')].map((mark) => mark.textContent);
+      expect(marks).toEqual(['go', 'go']);
+    });
+
     it('toggles context panel showing media, unavailable media badge, note, other contexts', async () => {
       render(<ReviewPage />);
 
