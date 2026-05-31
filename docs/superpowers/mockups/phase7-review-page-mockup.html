@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase 7 复习页视觉草稿</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --ink-2: #27364f;
+      --muted: #64748b;
+      --paper: #fff7e8;
+      --paper-2: #f5e7ce;
+      --paper-3: #fbf3df;
+      --jade: #0f766e;
+      --jade-2: #2dd4bf;
+      --amber: #d97706;
+      --blue: #1d4ed8;
+      --rose: #be123c;
+      --line: rgba(23, 32, 51, 0.16);
+      --shadow: 0 32px 90px rgba(15, 23, 42, 0.20);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 1180px;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(45, 212, 191, 0.20), transparent 26rem),
+        radial-gradient(circle at 86% 16%, rgba(217, 119, 6, 0.22), transparent 24rem),
+        linear-gradient(135deg, #101827 0%, #172033 21%, #f3ead8 21.2%, #edf3ee 100%);
+      overflow-x: auto;
+    }
+
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .16;
+      background-image:
+        linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mix-blend-mode: overlay;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 28px;
+      width: 1440px;
+      min-height: 100vh;
+      padding: 28px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 28px;
+      height: calc(100vh - 56px);
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 34px;
+      background: linear-gradient(180deg, rgba(23,32,51,.97), rgba(15,23,42,.98));
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+      padding: 22px;
+      color: var(--paper);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; }
+    .brand-mark { width: 44px; height: 58px; border-radius: 9px 9px 16px 16px; background: linear-gradient(160deg, var(--jade-2), var(--jade) 52%, #052e2b); box-shadow: inset -8px 0 18px rgba(0,0,0,.2), 0 10px 30px rgba(45,212,191,.25); transform: rotate(-5deg); }
+    .brand strong { display: block; font: 800 20px/1.05 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.05em; }
+    .brand span { display: block; margin-top: 4px; color: rgba(255,247,232,.58); font: 600 12px ui-sans-serif, system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+
+    .nav { display: grid; gap: 10px; }
+    .nav a { display: block; padding: 13px 14px; border-radius: 18px; color: rgba(255,247,232,.72); text-decoration: none; font: 750 14px ui-sans-serif, system-ui, sans-serif; }
+    .nav a small { display: block; margin-top: 3px; color: rgba(255,247,232,.42); font-weight: 600; }
+    .nav a.active { color: #062d2a; background: linear-gradient(135deg, var(--jade-2), #ccfbf1); box-shadow: 0 14px 35px rgba(45,212,191,.24); }
+    .sidebar-note { margin-top: auto; border: 1px solid rgba(255,255,255,.14); border-radius: 24px; padding: 16px; background: rgba(255,255,255,.06); color: rgba(255,247,232,.72); font: 600 13px/1.5 ui-sans-serif, system-ui, sans-serif; }
+
+    .main { display: grid; gap: 22px; }
+    .hero, .review-card, .context-panel, .state-card { border: 1px solid var(--line); border-radius: 34px; background: rgba(255,247,232,.92); box-shadow: var(--shadow); }
+    .hero { position: relative; overflow: hidden; padding: 30px; background: linear-gradient(135deg, rgba(255,247,232,.98), rgba(236,253,245,.88)); }
+    .hero::after { content: ""; position: absolute; right: 34px; top: -18px; width: 270px; height: 270px; border-radius: 999px; background: rgba(217,119,6,.12); filter: blur(10px); }
+    .hero-top { position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+    .kicker { margin: 0 0 10px; color: var(--jade); font: 850 12px ui-sans-serif, system-ui, sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { margin: 0; max-width: 760px; color: var(--ink); font-size: 74px; line-height: .92; letter-spacing: -.08em; }
+    .hero-copy { max-width: 690px; margin: 18px 0 0; color: #475569; font: 560 16px/1.7 ui-sans-serif, system-ui, sans-serif; }
+    .daily-ring { position: relative; z-index: 1; width: 178px; min-height: 178px; border-radius: 999px; display: grid; place-items: center; text-align: center; color: var(--paper); background: conic-gradient(var(--jade-2) 0 66%, rgba(255,255,255,.18) 66% 100%), #111827; box-shadow: 0 22px 50px rgba(15,23,42,.28); }
+    .daily-ring strong { display: block; font: 900 44px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.08em; }
+    .daily-ring span { color: rgba(255,247,232,.72); font: 750 13px ui-sans-serif, system-ui, sans-serif; }
+
+    .queue-strip { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 24px; }
+    .queue-card { border: 1px solid rgba(23,32,51,.12); border-radius: 22px; padding: 14px; background: rgba(255,255,255,.64); font: 700 13px ui-sans-serif, system-ui, sans-serif; }
+    .queue-card strong { display: block; margin-top: 6px; color: var(--ink); font-size: 28px; letter-spacing: -.06em; }
+
+    .review-card { padding: 28px; background: rgba(255,253,246,.96); }
+    .review-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(15,118,110,.18); border-radius: 999px; padding: 8px 11px; background: #ccfbf1; color: #0f766e; font: 850 12px ui-sans-serif, system-ui, sans-serif; text-transform: uppercase; letter-spacing: .12em; }
+    .due-meta { color: var(--muted); font: 700 13px ui-sans-serif, system-ui, sans-serif; text-align: right; }
+    .sentence { margin: 34px 0 20px; color: var(--ink); font-size: 52px; line-height: 1.16; letter-spacing: -.04em; }
+    .sentence mark { border-radius: 16px; padding: 0 .22em .05em; background: linear-gradient(180deg, transparent 42%, rgba(45,212,191,.45) 42%); color: #064e3b; }
+    .prompt { margin: 0; color: #475569; font: 650 17px/1.7 ui-sans-serif, system-ui, sans-serif; }
+    .answer-slab { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-top: 24px; border: 1px solid rgba(23,32,51,.14); border-radius: 28px; padding: 20px; background: linear-gradient(135deg, rgba(245,231,206,.72), rgba(236,253,245,.82)); }
+    .answer-slab h3 { margin: 0 0 4px; font: 900 24px ui-sans-serif, system-ui, sans-serif; letter-spacing: -.04em; }
+    .answer-slab p { margin: 0; color: #475569; font: 620 14px/1.6 ui-sans-serif, system-ui, sans-serif; }
+    .actions { display: flex; gap: 12px; }
+    .btn { border: 0; border-radius: 999px; padding: 15px 22px; color: white; font: 900 14px ui-sans-serif, system-ui, sans-serif; box-shadow: 0 16px 34px rgba(15,23,42,.18); }
+    .btn.again { background: linear-gradient(135deg, #be123c, #f43f5e); }
+    .btn.good { background: linear-gradient(135deg, #0f766e, #2dd4bf); color: #052e2b; }
+
+    .context-panel { padding: 24px; }
+    .panel-top { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 18px; }
+    .panel-top h2, .state-card h2 { margin: 0; font: 900 30px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.05em; }
+    .ghost-btn { border: 1px solid rgba(23,32,51,.18); border-radius: 999px; background: white; color: var(--ink); padding: 11px 15px; font: 850 13px ui-sans-serif, system-ui, sans-serif; }
+    .context-grid { display: grid; grid-template-columns: 1.25fr .75fr; gap: 16px; }
+    .video-box { min-height: 240px; border-radius: 28px; padding: 18px; color: var(--paper); background: radial-gradient(circle at 70% 20%, rgba(45,212,191,.24), transparent 15rem), linear-gradient(135deg, #111827, #27364f); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+    .video-box .play { width: 76px; height: 76px; margin: 54px auto 20px; border-radius: 999px; display: grid; place-items: center; background: rgba(255,255,255,.16); color: #ccfbf1; font: 900 32px ui-sans-serif, system-ui, sans-serif; }
+    .media-list { display: grid; gap: 12px; }
+    .media-card { border: 1px solid rgba(23,32,51,.13); border-radius: 24px; padding: 15px; background: rgba(255,255,255,.62); font: 650 14px/1.55 ui-sans-serif, system-ui, sans-serif; }
+    .media-card strong { display: block; margin-bottom: 4px; color: var(--ink); }
+
+    .states { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .state-card { padding: 22px; background: rgba(255,253,246,.94); }
+    .state-card p { color: #475569; font: 620 14px/1.65 ui-sans-serif, system-ui, sans-serif; }
+    .state-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .state-actions a { border-radius: 999px; padding: 11px 14px; background: #172033; color: var(--paper); text-decoration: none; font: 850 13px ui-sans-serif, system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"></div><div><strong>语境单词本</strong><span>Review Desk</span></div></div>
+      <nav class="nav" aria-label="主导航">
+        <a href="#">首页<small>今日复习与快速入口</small></a>
+        <a href="#">制卡<small>创建词义和语境</small></a>
+        <a href="#">词义条目<small>搜索、筛选、管理</small></a>
+        <a class="active" href="#">复习<small>Again / Good 复习</small></a>
+        <a href="#">标签<small>分类和来源标记</small></a>
+        <a href="#">收藏<small>查看收藏词义</small></a>
+        <a href="#">统计<small>复习和标签分析</small></a>
+        <a href="#">设置<small>语言、目标和导入导出</small></a>
+      </nav>
+      <div class="sidebar-note">Phase 7 草稿：复习只围绕词义条目，不围绕单个句子或视频片段。</div>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <div class="hero-top">
+          <div>
+            <p class="kicker">FSRS REVIEW</p>
+            <h1>先回忆，再看当时语境。</h1>
+            <p class="hero-copy">复习页默认只显示主语境原句，目标单词不遮住。用户先回忆当前语境下的中文释义，再按 Again / Good 反馈。</p>
+          </div>
+          <div class="daily-ring"><div><strong>18/30</strong><span>今日进度</span></div></div>
+        </div>
+        <div class="queue-strip">
+          <div class="queue-card">今日待复习<strong>12</strong></div>
+          <div class="queue-card">今日已复习<strong>18</strong></div>
+          <div class="queue-card">Again / Good<strong>4 / 14</strong></div>
+          <div class="queue-card">排序<strong>due_date ASC</strong></div>
+        </div>
+      </section>
+
+      <section class="review-card">
+        <div class="review-head">
+          <span class="pill">Next due card · reviewing</span>
+          <div class="due-meta">Due：今天 09:40<br>队列：due_date ASC → created_at ASC → id ASC</div>
+        </div>
+        <p class="sentence">The hotel <mark>charges</mark> $100 per night, but breakfast is included.</p>
+        <p class="prompt">请回忆：<strong>charge</strong> 在这个句子里是什么意思？完整原句保留，目标词高亮但不遮挡。</p>
+        <div class="answer-slab">
+          <div>
+            <h3>答案：收费</h3>
+            <p>能够顺利想起当前语境下释义 → Good；模糊、不知道、答错或不能顺利想起 → Again。</p>
+          </div>
+          <div class="actions"><button class="btn again">Again</button><button class="btn good">Good</button></div>
+        </div>
+      </section>
+
+      <section class="context-panel">
+        <div class="panel-top"><h2>查看当时语境</h2><button class="ghost-btn">展开 / 收起</button></div>
+        <div class="context-grid">
+          <div class="video-box"><div class="play">▶</div><strong>本地视频：hotel-dialogue.mp4</strong><p>00:12:40 - 00:12:52 · 当前语境片段</p></div>
+          <div class="media-list">
+            <div class="media-card"><strong>截图</strong>前台价目表画面，含 room rate。</div>
+            <div class="media-card"><strong>音频</strong>speaker-audio.mp3 · 12 秒。</div>
+            <div class="media-card"><strong>备注</strong>酒店前台解释房费，不是“充电”。</div>
+            <div class="media-card"><strong>其他语境实例</strong>They charge extra for late checkout.</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="states">
+        <section class="state-card">
+          <h2>今日复习目标已完成</h2>
+          <p>每日复习上限只是提醒，不强制停止。用户可结束复习，也可继续处理后续到期词义。</p>
+          <div class="state-actions"><a href="#">结束复习</a><a href="#">继续复习</a></div>
+        </section>
+        <section class="state-card">
+          <h2>今天没有待复习内容</h2>
+          <p>零任务状态给用户明确出口，避免空白页。</p>
+          <div class="state-actions"><a href="#">返回首页</a><a href="#">查看全部词义条目</a></div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
