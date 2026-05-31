@@ -147,6 +147,7 @@ function ReviewCard({ card, progress, submitting, submitError, lastRating, onAga
         <button
           type="button"
           className="phase7-review-toggle"
+          aria-expanded={contextOpen}
           onClick={() => setContextOpen((v) => !v)}
         >
           {contextOpen ? '收起语境' : '查看当时语境'}
@@ -242,7 +243,9 @@ export function ReviewPage() {
       const res = await getDueReview();
       if (res.status === 'due') {
         setState({ kind: 'due', card: res.card, progress: res.progress });
-        setLimitDismissed(false);
+        if (!res.progress.is_limit_reached) {
+          setLimitDismissed(false);
+        }
       } else {
         setState({ kind: 'empty', progress: res.progress });
       }

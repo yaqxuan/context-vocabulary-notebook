@@ -397,6 +397,62 @@ describe('ReviewPage', () => {
       // Card still visible
       expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
     });
+
+    it('banner remains dismissed after submitting when next response is still limit-reached', async () => {
+      const limitResponse: ReviewDueResponseDto = {
+        status: 'due',
+        card: dueCard,
+        progress: limitReachedProgress,
+      };
+      const nextCard: DueReviewCardDto = {
+        ...dueCard,
+        id: 'card-2',
+        target_word: 'laconic',
+        primary_sentence: 'His laconic reply surprised everyone.',
+        contexts: [],
+        media: [],
+      };
+      const nextLimitResponse: ReviewDueResponseDto = {
+        status: 'due',
+        card: nextCard,
+        progress: limitReachedProgress,
+      };
+      const limitSubmitResponse: SubmitReviewResponseDto = {
+        ...submitResponse,
+        progress: limitReachedProgress,
+      };
+
+      let callIndex = 0;
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
+          return Promise.resolve(jsonResponse(limitSubmitResponse));
+        }
+        if (url.startsWith('/api/review/due')) {
+          callIndex++;
+          if (callIndex === 1) return Promise.resolve(jsonResponse(limitResponse));
+          return Promise.resolve(jsonResponse(nextLimitResponse));
+        }
+        return Promise.resolve(jsonResponse({}));
+      });
+
+      render(<ReviewPage />);
+
+      // Initial load shows banner
+      await screen.findByRole('heading', { name: 'ephemeral' });
+      expect(screen.getByText(/今日目标已完成/)).toBeInTheDocument();
+
+      // User dismisses the banner
+      fireEvent.click(screen.getByRole('button', { name: '继续复习' }));
+      expect(screen.queryByText(/今日目标已完成/)).not.toBeInTheDocument();
+
+      // Submit a rating — next card still at limit
+      fireEvent.click(screen.getByRole('button', { name: /Good/ }));
+
+      // After next card loads (still limit-reached), banner must NOT reappear
+      await screen.findByRole('heading', { name: 'laconic' });
+      expect(screen.queryByText(/今日目标已完成/)).not.toBeInTheDocument();
+    });
   });
 
   describe('retryable API error', () => {
