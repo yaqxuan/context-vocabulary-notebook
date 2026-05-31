@@ -145,6 +145,7 @@ export interface DueReviewCardDto extends CardSummaryDto {
   due_date: string;
   primary_sentence: string;
   contexts: ContextDto[];
+  media: MediaDto[];
 }
 
 export type ReviewDueResponseDto =
@@ -200,6 +201,7 @@ export interface StatisticsPageDto {
   };
   daily_review_counts: Array<{ date: string; count: number }>;
   daily_accuracy: Array<{ date: string; reviewed_count: number; good_count: number; accuracy: number }>;
+  monthly_review_counts: Array<{ month: string; count: number }>;
   tag_distribution: Array<{ tag_id: string; name: string; card_count: number }>;
   rating_trend: Array<{ date: string; again_count: number; good_count: number }>;
 }

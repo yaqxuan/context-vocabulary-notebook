@@ -14,6 +14,6 @@ export function scanImport(file: File): Promise<ImportScanResponseDto> {
 export function executeImport(file: File, decision: ImportExecuteDecisionDto): Promise<ImportExecuteResponseDto> {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('decision', JSON.stringify(decision));
+  formData.append('decisions', JSON.stringify(decision));
   return apiFormData<ImportExecuteResponseDto>('/import/execute', formData);
 }

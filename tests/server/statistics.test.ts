@@ -68,6 +68,7 @@ describe('statistics API', () => {
     const tag = createTag(db, { name: '美剧' });
     addTagToCard(db, reviewing.id, tag.id);
     addTagToCard(db, mastered.id, tag.id);
+    insertReview(reviewing.id, 'good', '2026-04-29T10:00:00.000Z');
     insertReview(reviewing.id, 'good', '2026-05-29T10:00:00.000Z');
     insertReview(mastered.id, 'again', '2026-05-29T11:00:00.000Z');
     insertReview(deleted.id, 'again', '2026-05-29T12:00:00.000Z');
@@ -82,10 +83,23 @@ describe('statistics API', () => {
       mastered_cards: 1,
       favorite_cards: 1,
     });
-    expect(res.body.daily_review_counts).toEqual([{ date: '2026-05-29', count: 2 }]);
-    expect(res.body.daily_accuracy).toEqual([{ date: '2026-05-29', reviewed_count: 2, good_count: 1, accuracy: 0.5 }]);
+    expect(res.body.daily_review_counts).toEqual([
+      { date: '2026-04-29', count: 1 },
+      { date: '2026-05-29', count: 2 },
+    ]);
+    expect(res.body.daily_accuracy).toEqual([
+      { date: '2026-04-29', reviewed_count: 1, good_count: 1, accuracy: 1 },
+      { date: '2026-05-29', reviewed_count: 2, good_count: 1, accuracy: 0.5 },
+    ]);
     expect(res.body.tag_distribution).toEqual([{ tag_id: tag.id, name: '美剧', card_count: 2 }]);
-    expect(res.body.rating_trend).toEqual([{ date: '2026-05-29', again_count: 1, good_count: 1 }]);
+    expect(res.body.rating_trend).toEqual([
+      { date: '2026-04-29', again_count: 0, good_count: 1 },
+      { date: '2026-05-29', again_count: 1, good_count: 1 },
+    ]);
+    expect(res.body.monthly_review_counts).toEqual([
+      { month: '2026-04', count: 1 },
+      { month: '2026-05', count: 2 },
+    ]);
   });
 
   it('excludes soft-deleted card review logs from home counters', async () => {

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
@@ -203,6 +204,28 @@ describe('review API', () => {
     expect(res.body.card.primary_sentence).toBe('The hotel charges $100 per night.');
     expect(res.body.card.primary_sentence).toContain(res.body.card.target_word);
     expect(res.body.card.contexts.map((ctx: { id: string }) => ctx.id)).toContain(primary.id);
+  });
+
+  it('includes card media in the due response', async () => {
+    const card = createCard(db, { target_word: 'clip', context_meaning: '片段', target_language: '英语', definition_language: '中文' });
+    const ctx = createContext(db, { card_id: card.id, sentence: 'Watch the clip.' });
+    db.prepare(`
+      INSERT INTO media_files (id, context_example_id, media_type, file_name, file_path, mime_type, file_size, is_available, created_at)
+      VALUES (?, ?, 'video', 'clip.mp4', 'uploads/clip.mp4', 'video/mp4', 128, 1, ?)
+    `).run(randomUUID(), ctx.id, new Date().toISOString());
+
+    const res = await request(app).get('/api/review/due');
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('due');
+    expect(res.body.card.media).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        media_type: 'video',
+        file_name: 'clip.mp4',
+        mime_type: 'video/mp4',
+        is_available: 1,
+      }),
+    ]));
   });
 
   it('returns zero-task state when no card is due', async () => {
