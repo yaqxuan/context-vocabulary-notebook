@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { CardDetailDto, ContextDto } from '../../shared/types';
+import type { CardDetailDto, ContextDto, TagDto } from '../../shared/types';
 import { deleteCard, getCard, patchCard } from '../api/cards';
+import { listTags } from '../api/tags';
 import { deleteContext, moveContextDown, moveContextUp, setPrimaryContext } from '../api/contexts';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ErrorState, LoadingState } from '../components/UiStates';
@@ -22,6 +23,10 @@ export function CardDetailPage() {
   const [editingMeaning, setEditingMeaning] = useState(false);
   const [meaningDraft, setMeaningDraft] = useState('');
   const [meaningError, setMeaningError] = useState<string | null>(null);
+  const [editingTags, setEditingTags] = useState(false);
+  const [allTags, setAllTags] = useState<TagDto[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [tagsError, setTagsError] = useState<string | null>(null);
   const cardId = useMemo(currentCardId, []);
 
   const load = useCallback(() => {
@@ -69,6 +74,34 @@ export function CardDetailPage() {
       load();
     } catch (err) {
       setMeaningError(err instanceof Error ? err.message : '保存释义失败');
+    }
+  };
+
+  const startTagEdit = async () => {
+    if (!card) return;
+    setEditingTags(true);
+    setSelectedTagIds(card.tags.map((tag) => tag.id));
+    setAllTags([]);
+    setTagsError(null);
+    try {
+      setAllTags(await listTags());
+    } catch (err) {
+      setTagsError(err instanceof Error ? err.message : '标签列表加载失败');
+    }
+  };
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTagIds((cur) => cur.includes(tagId) ? cur.filter((id) => id !== tagId) : [...cur, tagId]);
+  };
+
+  const saveTags = async () => {
+    if (!card) return;
+    try {
+      await patchCard(card.id, { tag_ids: selectedTagIds });
+      setEditingTags(false);
+      load();
+    } catch (err) {
+      setTagsError(err instanceof Error ? err.message : '保存标签失败');
     }
   };
 
@@ -143,7 +176,32 @@ export function CardDetailPage() {
           <p>Reps：{card.fsrs.reps}</p>
           <p>Lapses：{card.fsrs.lapses}</p>
           <h3>标签</h3>
-          <div>{card.tags.length ? card.tags.map((tag) => <span key={tag.id}>{tag.name}</span>) : '暂无标签'}</div>
+          {editingTags ? (
+            <div className="phase6-tag-editor">
+              {tagsError ? <em>{tagsError}</em> : null}
+              <div>
+                {allTags.length ? allTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className={selectedTagIds.includes(tag.id) ? 'selected' : ''}
+                    onClick={() => toggleTag(tag.id)}
+                  >
+                    {tag.name}
+                  </button>
+                )) : <p>暂无可选标签</p>}
+              </div>
+              <div>
+                <button type="button" onClick={saveTags}>保存标签</button>
+                <button type="button" onClick={() => setEditingTags(false)}>取消</button>
+              </div>
+            </div>
+          ) : (
+            <div className="phase6-tag-readonly">
+              <div>{card.tags.length ? card.tags.map((tag) => <span key={tag.id}>{tag.name}</span>) : '暂无标签'}</div>
+              <button type="button" onClick={startTagEdit}>编辑标签</button>
+            </div>
+          )}
         </aside>
       </div>
 

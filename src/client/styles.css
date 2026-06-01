@@ -1919,3 +1919,27 @@ body {
   color: #b91c1c;
   font-style: normal;
 }
+
+/* Task 4: detail page inline tag editor */
+.phase6-tag-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.phase6-tag-editor > div,
+.phase6-tag-readonly {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.phase6-tag-editor button.selected {
+  background: #0f172a;
+  color: #fff;
+}
+
+.phase6-tag-editor em {
+  color: #b91c1c;
+  font-style: normal;
+}

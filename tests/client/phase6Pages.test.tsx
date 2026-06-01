@@ -170,6 +170,33 @@ describe('Phase 6 pages', () => {
     expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/cards/card-1', expect.objectContaining({ method: 'PATCH' }));
   });
 
+  it('edits tag assignments from the detail page', async () => {
+    window.location.hash = '#/cards/card-1';
+    const allTags = [
+      { id: 'tag-1', name: '美剧', created_at: 'now', updated_at: 'now' },
+      { id: 'tag-2', name: '电影', created_at: 'now', updated_at: 'now' },
+    ];
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/tags') return Promise.resolve(jsonResponse(allTags));
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse(cards[0]));
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardDetailPage />);
+
+    expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '编辑标签' }));
+    fireEvent.click(await screen.findByRole('button', { name: '电影' }));
+    fireEvent.click(screen.getByRole('button', { name: '保存标签' }));
+
+    await waitFor(() => expect(requests.some((request) => request.url === '/api/cards/card-1' && request.method === 'PATCH' && request.body === JSON.stringify({ tag_ids: ['tag-1', 'tag-2'] }))).toBe(true));
+    await waitFor(() => expect(requests.filter((request) => request.url === '/api/cards/card-1' && request.method === 'GET')).toHaveLength(2));
+  });
+
   it('creates edits and confirms tag deletion', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
