@@ -11,3 +11,5 @@ data/
 uploads/
 playwright-report/
 test-results/
+.superpowers/
+.claude/worktrees/

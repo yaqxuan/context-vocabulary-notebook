@@ -3,6 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HomePage } from '../../src/client/pages/HomePage';
 
+vi.mock('../../src/client/lib/homeGreetings', () => ({
+  getHomeGreeting: vi.fn().mockReturnValue({
+    date: '2026-06-01',
+    bucket: '07:00-11:00',
+    audience: 'weekday',
+    text: '早上好，今天刚刚开始。'
+  })
+}));
+
 describe('HomePage', () => {
   afterEach(() => {
     cleanup();
@@ -21,13 +30,14 @@ describe('HomePage', () => {
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
-      }),
+      })
     );
 
     render(<HomePage />);
 
     expect(screen.getByText('加载中…')).toBeInTheDocument();
-    expect(await screen.findByText('今日待复习')).toBeInTheDocument();
+    expect(await screen.findByText('早上好，今天刚刚开始。')).toBeInTheDocument();
+    expect(screen.getByText('今日待复习')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('5 / 20')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '开始复习' })).toHaveAttribute('href', '#/review');
@@ -46,7 +56,7 @@ describe('HomePage', () => {
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
-      }),
+      })
     );
 
     render(<HomePage />);
@@ -59,12 +69,13 @@ describe('HomePage', () => {
       new Response(JSON.stringify({ error: 'database unavailable' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
-      }),
+      })
     );
 
     render(<HomePage />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('database unavailable');
     await waitFor(() => expect(screen.queryByText('今日待复习')).not.toBeInTheDocument());
+    expect(screen.queryByText('早上好，今天刚刚开始。')).not.toBeInTheDocument();
   });
 });
