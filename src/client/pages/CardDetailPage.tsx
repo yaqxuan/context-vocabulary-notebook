@@ -52,9 +52,8 @@ export function CardDetailPage() {
 
   return (
     <section className="phase6-detail">
-      <div className="phase6-hero">
+      <div className="phase6-detail-summary">
         <div>
-          <p className="phase6-kicker">Card detail</p>
           <h2>{card.target_word}</h2>
           <p>{card.context_meaning}</p>
         </div>

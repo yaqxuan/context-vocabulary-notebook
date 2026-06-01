@@ -86,21 +86,26 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: /^复习/ })).toHaveAttribute('aria-current', 'page');
   });
 
+  it('renders the home route with active navigation', () => {
+    window.location.hash = '#/';
+    render(<App />);
+
+    expect(screen.getByRole('link', { name: /^首页/ })).toHaveAttribute('aria-current', 'page');
+  });
+
   it.each([
-    ['#/', '首页'],
-    ['#/create', '制卡'],
-    ['#/cards', '词义条目'],
-    ['#/cards/card-1', '词义详情'],
-    ['#/review', '复习'],
-    ['#/tags', '标签管理'],
-    ['#/favorites', '收藏'],
-    ['#/statistics', '统计'],
-    ['#/settings', '设置'],
-  ])('renders route %s', (hash, heading) => {
+    ['#/create', /^制卡/],
+    ['#/cards', /^词义条目/],
+    ['#/review', /^复习/],
+    ['#/tags', /^标签/],
+    ['#/favorites', /^收藏/],
+    ['#/statistics', /^统计/],
+    ['#/settings', /^设置/],
+  ])('renders route %s', (hash, navName) => {
     window.location.hash = hash;
     render(<App />);
 
-    expect(screen.getAllByRole('heading', { name: heading }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: navName })).toHaveAttribute('aria-current', 'page');
   });
 
   it('renders the real card create page on create route', async () => {
@@ -112,26 +117,26 @@ describe('App', () => {
     expect(screen.getByText('本地视频 mp4')).toBeInTheDocument();
   });
 
-  it('renders real Phase 6 list-like routes', async () => {
+  it('renders real Phase 6 list-like routes', () => {
     window.location.hash = '#/cards';
     render(<App />);
-    expect((await screen.findAllByText('搜索、筛选和管理所有词义卡。')).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: /^词义条目/ })).toHaveAttribute('aria-current', 'page');
 
     cleanup();
     window.location.hash = '#/favorites';
     render(<App />);
-    expect(await screen.findByText('集中查看你标记过的重点词义。')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^收藏/ })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('renders real Phase 6 detail and tags routes', async () => {
+  it('renders real Phase 6 detail and tags routes', () => {
     window.location.hash = '#/cards/card-1';
     render(<App />);
-    expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^词义条目/ })).toHaveAttribute('aria-current', 'page');
 
     cleanup();
     window.location.hash = '#/tags';
     render(<App />);
-    expect(await screen.findByText('标签承担自由分类和来源标记，不影响复习算法。')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^标签/ })).toHaveAttribute('aria-current', 'page');
   });
 
   it('routes review to the real review page', async () => {

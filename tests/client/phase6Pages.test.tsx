@@ -90,7 +90,8 @@ describe('Phase 6 pages', () => {
   it('loads favorites page with favorite filter forced', async () => {
     render(<FavoritesPage />);
 
-    expect(await screen.findByRole('heading', { name: '收藏' })).toBeInTheDocument();
+    expect(await screen.findByText('charge')).toBeInTheDocument();
+    expect(screen.getByLabelText('搜索词义条目')).toBeInTheDocument();
     await waitFor(() => expect(String(vi.mocked(globalThis.fetch).mock.calls.find(([input]) => String(input).startsWith('/api/cards'))?.[0])).toContain('favorite=true'));
   });
 

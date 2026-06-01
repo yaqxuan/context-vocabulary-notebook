@@ -46,13 +46,6 @@ export function TagsPage() {
 
   return (
     <section className="phase6-tags">
-      <div className="phase6-hero">
-        <div>
-          <p className="phase6-kicker">Tag index</p>
-          <h2>标签管理</h2>
-          <p>标签承担自由分类和来源标记，不影响复习算法。</p>
-        </div>
-      </div>
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       <div className="phase6-tag-editor">
         <label><span>标签名称</span><input aria-label="标签名称" value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：Friends" /></label>

@@ -103,6 +103,15 @@ describe('SettingsPage', () => {
       expect(screen.getByText('加载中…')).toBeInTheDocument();
     });
 
+    it('does not render the top settings hero header', async () => {
+      render(<SettingsPage />);
+
+      await screen.findByLabelText('界面语言');
+      expect(screen.queryByText('SETTINGS')).not.toBeInTheDocument();
+      expect(screen.queryByText('设置与数据管理')).not.toBeInTheDocument();
+      expect(screen.queryByText(/调整界面语言/)).not.toBeInTheDocument();
+    });
+
     it('renders form with loaded settings values', async () => {
       render(<SettingsPage />);
       // Wait for settings to load by checking for a form field label

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -8,6 +12,7 @@ body {
     radial-gradient(circle at 10% 0%, rgba(45, 212, 191, 0.20), transparent 26rem),
     radial-gradient(circle at 92% 12%, rgba(217, 119, 6, 0.23), transparent 25rem),
     linear-gradient(135deg, #101827 0%, #172033 21%, #f3ead8 21.2%, #edf3ee 100%);
+  background-attachment: fixed;
   color: #172033;
   font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
 }
@@ -428,6 +433,7 @@ body {
 .phase6-hero,
 .phase6-filter-desk,
 .phase6-list-shell,
+.phase6-detail-summary,
 .phase6-detail-grid,
 .phase6-tag-editor,
 .phase6-tag-card,
@@ -630,10 +636,34 @@ body {
 .phase6-alert,
 .phase6-skeleton,
 .phase6-empty,
+.phase6-detail-summary,
 .phase6-tag-editor,
 .phase6-tag-card,
 .phase6-detail-grid {
   padding: 1rem;
+}
+
+.phase6-detail-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.phase6-detail-summary h2 {
+  margin: 0;
+  color: #172033;
+  font: 900 clamp(1.8rem, 4vw, 3rem)/0.95 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.06em;
+  overflow-wrap: anywhere;
+}
+
+.phase6-detail-summary p {
+  margin: 0.35rem 0 0;
+  color: #475569;
+  font: 650 1rem/1.5 ui-sans-serif, system-ui, sans-serif;
 }
 
 .phase6-list-head {
@@ -693,6 +723,7 @@ body {
 
 @media (max-width: 920px) {
   .phase6-hero,
+  .phase6-detail-summary,
   .phase6-filter-desk,
   .phase6-word-card,
   .phase6-detail-grid {

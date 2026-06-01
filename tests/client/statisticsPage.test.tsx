@@ -87,6 +87,15 @@ describe('StatisticsPage', () => {
       expect(screen.getByText('加载中…')).toBeInTheDocument();
     });
 
+    it('does not render the top statistics hero header', async () => {
+      render(<StatisticsPage />);
+
+      await screen.findByText('248');
+      expect(screen.queryByText('REVIEW ANALYTICS')).not.toBeInTheDocument();
+      expect(screen.queryByText('看到复习节奏，而不是表格噪音。')).not.toBeInTheDocument();
+      expect(screen.queryByText(/统计页聚焦词义总量/)).not.toBeInTheDocument();
+    });
+
     it('renders 总词义条目数量 248', async () => {
       render(<StatisticsPage />);
       expect(await screen.findByText('248')).toBeInTheDocument();

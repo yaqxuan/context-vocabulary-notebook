@@ -499,14 +499,6 @@ function SettingsReady({ initial }: { initial: SettingsDto }) {
 
   return (
     <div className="phase7-settings-shell">
-      <section className="phase7-settings-hero">
-        <p className="phase7-settings-kicker">SETTINGS</p>
-        <h1 className="phase7-settings-headline">设置与数据管理</h1>
-        <p className="phase7-settings-hero-copy">
-          调整界面语言、学习语言和每日复习目标，或导出 / 导入卡片数据。
-        </p>
-      </section>
-
       <SettingsForm initial={current} onSaved={setCurrent} />
       <ExportSection />
       <ImportSection />

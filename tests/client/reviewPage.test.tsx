@@ -231,7 +231,7 @@ describe('ReviewPage', () => {
   });
 
   describe('review submission', () => {
-    it('reveals context after choosing Good and advances only after confirmation', async () => {
+    it('reveals context after choosing Good from a hidden context and uses next card action instead of confirmation', async () => {
       const nextCard: DueReviewCardDto = {
         ...dueCard,
         id: 'card-2',
@@ -246,6 +246,7 @@ describe('ReviewPage', () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
+          expect(init?.body).toBe(JSON.stringify({ rating: 'good' }));
           return Promise.resolve(jsonResponse(submitResponse));
         }
         if (url.startsWith('/api/review/due')) {
@@ -262,8 +263,52 @@ describe('ReviewPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
 
       expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '记错了，改为 Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '记错了，Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '下一张' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '确认 Good' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'laconic' })).not.toBeInTheDocument();
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(screen.getByRole('button', { name: '下一张' }));
+
+      expect(await screen.findByRole('heading', { name: 'laconic' })).toBeInTheDocument();
+    });
+
+    it('asks for Good confirmation when context was already open before rating', async () => {
+      const nextCard: DueReviewCardDto = {
+        ...dueCard,
+        id: 'card-2',
+        target_word: 'laconic',
+        primary_sentence: 'His laconic reply surprised everyone.',
+        contexts: [],
+        media: [],
+      };
+      const nextResponse: ReviewDueResponseDto = { status: 'due', card: nextCard, progress: submitResponse.progress };
+
+      let dueCallCount = 0;
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
+          expect(init?.body).toBe(JSON.stringify({ rating: 'good' }));
+          return Promise.resolve(jsonResponse(submitResponse));
+        }
+        if (url.startsWith('/api/review/due')) {
+          dueCallCount++;
+          if (dueCallCount === 1) return Promise.resolve(jsonResponse(dueResponse));
+          return Promise.resolve(jsonResponse(nextResponse));
+        }
+        return Promise.resolve(jsonResponse({}));
+      });
+
+      render(<ReviewPage />);
+
+      await screen.findByRole('heading', { name: 'ephemeral' });
+      fireEvent.click(screen.getByRole('button', { name: /查看当时语境/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+
+      expect(screen.getByRole('button', { name: '记错了，Again' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '确认 Good' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '下一张' })).not.toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'laconic' })).not.toBeInTheDocument();
       expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
@@ -277,13 +322,14 @@ describe('ReviewPage', () => {
       expect(await screen.findByRole('heading', { name: 'laconic' })).toBeInTheDocument();
     });
 
-    it('allows a Good choice to be corrected to Again before submission', async () => {
+    it('allows a Good choice to be corrected to Again before next-card submission', async () => {
       const againSubmitResponse: SubmitReviewResponseDto = {
         ...submitResponse,
         rating: 'again',
         progress: { ...progress, reviewed_count: 4, again_count: 2 },
       };
 
+      let dueCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
@@ -291,7 +337,9 @@ describe('ReviewPage', () => {
           return Promise.resolve(jsonResponse(againSubmitResponse));
         }
         if (url.startsWith('/api/review/due')) {
-          return Promise.resolve(jsonResponse(dueResponse));
+          dueCallCount++;
+          if (dueCallCount === 1) return Promise.resolve(jsonResponse(dueResponse));
+          return Promise.resolve(jsonResponse(emptyResponse));
         }
         return Promise.resolve(jsonResponse({}));
       });
@@ -300,14 +348,17 @@ describe('ReviewPage', () => {
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
-      fireEvent.click(screen.getByRole('button', { name: '记错了，改为 Again' }));
-      fireEvent.click(screen.getByRole('button', { name: '确认 Again' }));
+      fireEvent.click(screen.getByRole('button', { name: '记错了，Again' }));
 
-      await screen.findByText(/Again 已记录/);
-      expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '改为 Good' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '确认 Again' })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+      expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
+      expect(screen.queryByText(/Again 已记录/)).not.toBeInTheDocument();
     });
 
-    it('reveals context after choosing Again and advances only after confirmation', async () => {
+    it('reveals context after choosing Again, offers no Good correction, and advances only after confirmation', async () => {
       const againSubmitResponse: SubmitReviewResponseDto = {
         ...submitResponse,
         rating: 'again',
@@ -334,16 +385,15 @@ describe('ReviewPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Again' }));
 
       expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '确认 Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '确认 Again' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '改为 Good' })).not.toBeInTheDocument();
       expect(screen.queryByText('今天没有待复习内容')).not.toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole('button', { name: '确认 Again' }));
+      fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
-      await screen.findByText(/Again 已记录/);
-      expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
-
-      fireEvent.click(screen.getByRole('button', { name: '下一张' }));
       expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
+      expect(screen.queryByText(/Again 已记录/)).not.toBeInTheDocument();
     });
 
     it('keeps card visible and re-enables buttons on submit error', async () => {
@@ -366,7 +416,7 @@ describe('ReviewPage', () => {
       await screen.findByRole('heading', { name: 'ephemeral' });
 
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
-      fireEvent.click(screen.getByRole('button', { name: '确认 Good' }));
+      fireEvent.click(screen.getByRole('button', { name: '下一张' }));
 
       // Error appears
       await screen.findByRole('alert');
@@ -375,8 +425,38 @@ describe('ReviewPage', () => {
       expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
 
       // Buttons re-enabled
-      await waitFor(() => expect(screen.getByRole('button', { name: /Good/ })).not.toBeDisabled());
-      await waitFor(() => expect(screen.getByRole('button', { name: /Again/ })).not.toBeDisabled());
+      await waitFor(() => expect(screen.getByRole('button', { name: '下一张' })).not.toBeDisabled());
+      await waitFor(() => expect(screen.getByRole('button', { name: '记错了，Again' })).not.toBeDisabled());
+    });
+
+    it('does not offer to resubmit when loading the next card fails after Good submit succeeds', async () => {
+      let dueCallCount = 0;
+      let submitCallCount = 0;
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
+          submitCallCount++;
+          return Promise.resolve(jsonResponse(submitResponse));
+        }
+        if (url.startsWith('/api/review/due')) {
+          dueCallCount++;
+          if (dueCallCount === 1) return Promise.resolve(jsonResponse(dueResponse));
+          return Promise.resolve(jsonResponse({ error: 'next card unavailable' }, 500));
+        }
+        return Promise.resolve(jsonResponse({}));
+      });
+
+      render(<ReviewPage />);
+
+      await screen.findByRole('heading', { name: 'ephemeral' });
+      fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+      fireEvent.click(screen.getByRole('button', { name: '下一张' }));
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent('next card unavailable');
+      expect(screen.queryByRole('heading', { name: 'ephemeral' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '下一张' })).not.toBeInTheDocument();
+      expect(submitCallCount).toBe(1);
     });
   });
 
@@ -506,10 +586,8 @@ describe('ReviewPage', () => {
       fireEvent.click(screen.getByRole('button', { name: '继续复习' }));
       expect(screen.queryByText(/今日目标已完成/)).not.toBeInTheDocument();
 
-      // Choose and confirm a rating, then manually advance to the next card.
+      // Choose Good from hidden context, then use next action to submit and advance.
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
-      fireEvent.click(screen.getByRole('button', { name: '确认 Good' }));
-      await screen.findByText(/Good 已记录/);
       fireEvent.click(screen.getByRole('button', { name: '下一张' }));
 
       // After next card loads (still limit-reached), banner must NOT reappear

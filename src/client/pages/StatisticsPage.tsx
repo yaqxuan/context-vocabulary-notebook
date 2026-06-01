@@ -182,15 +182,6 @@ function StatisticsReady({ data }: { data: StatisticsPageDto }) {
 
   return (
     <div className="phase7-statistics-shell">
-      {/* Hero */}
-      <section className="phase7-statistics-hero">
-        <p className="phase7-statistics-kicker">REVIEW ANALYTICS</p>
-        <h1 className="phase7-statistics-headline">看到复习节奏，而不是表格噪音。</h1>
-        <p className="phase7-statistics-hero-copy">
-          统计页聚焦词义总量、复习状态、收藏、最近 14 天复习量、历史月份数量、正确率、标签分布和 Again / Good 趋势。
-        </p>
-      </section>
-
       {/* Metrics */}
       <div className="phase7-statistics-metrics">
         <MetricCard label="总词义条目数量" value={data.totals.total_cards} />

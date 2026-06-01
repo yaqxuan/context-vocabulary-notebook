@@ -61,7 +61,6 @@ function nextStatusLabel(card: CardSummaryDto): string {
 export function CardCatalogue(props: CardCatalogueProps) {
   const {
     title,
-    subtitle,
     cards,
     total,
     loading,
@@ -84,14 +83,7 @@ export function CardCatalogue(props: CardCatalogueProps) {
 
   return (
     <section className="phase6-catalogue" aria-label={title}>
-      <div className="phase6-hero">
-        <div>
-          <p className="phase6-kicker">Card catalogue</p>
-          <h2>{title}</h2>
-          <p>{subtitle}</p>
-        </div>
-        <a className="phase6-primary-link" href="#/create">+ 快速制卡</a>
-      </div>
+      <a className="phase6-primary-link" href="#/create">+ 快速制卡</a>
 
       <div className="phase6-filter-desk">
         <label>
