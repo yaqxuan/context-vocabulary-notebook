@@ -231,7 +231,7 @@ describe('ReviewPage', () => {
   });
 
   describe('review submission', () => {
-    it('submits Good and refreshes next due card with success message', async () => {
+    it('reveals context after choosing Good and advances only after confirmation', async () => {
       const nextCard: DueReviewCardDto = {
         ...dueCard,
         id: 'card-2',
@@ -242,15 +242,15 @@ describe('ReviewPage', () => {
       };
       const nextResponse: ReviewDueResponseDto = { status: 'due', card: nextCard, progress: submitResponse.progress };
 
-      let callIndex = 0;
+      let dueCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           return Promise.resolve(jsonResponse(submitResponse));
         }
         if (url.startsWith('/api/review/due')) {
-          callIndex++;
-          if (callIndex === 1) return Promise.resolve(jsonResponse(dueResponse));
+          dueCallCount++;
+          if (dueCallCount === 1) return Promise.resolve(jsonResponse(dueResponse));
           return Promise.resolve(jsonResponse(nextResponse));
         }
         return Promise.resolve(jsonResponse({}));
@@ -259,35 +259,70 @@ describe('ReviewPage', () => {
       render(<ReviewPage />);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
+      fireEvent.click(screen.getByRole('button', { name: 'Good' }));
 
-      fireEvent.click(screen.getByRole('button', { name: /Good/ }));
+      expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '记错了，改为 Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '确认 Good' })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'laconic' })).not.toBeInTheDocument();
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
-      // Buttons disabled while submitting
-      await waitFor(() => expect(screen.getByRole('button', { name: /Good/ })).toBeDisabled());
+      fireEvent.click(screen.getByRole('button', { name: '确认 Good' }));
 
-      // Success message appears
       await screen.findByText(/Good 已记录/);
+      expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '下一张' })).toBeInTheDocument();
 
-      // Next card loads
+      fireEvent.click(screen.getByRole('button', { name: '下一张' }));
       expect(await screen.findByRole('heading', { name: 'laconic' })).toBeInTheDocument();
     });
 
-    it('submits Again and refreshes next due card', async () => {
+    it('allows a Good choice to be corrected to Again before submission', async () => {
       const againSubmitResponse: SubmitReviewResponseDto = {
         ...submitResponse,
         rating: 'again',
         progress: { ...progress, reviewed_count: 4, again_count: 2 },
       };
 
-      let callIndex = 0;
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
+          expect(init?.body).toBe(JSON.stringify({ rating: 'again' }));
+          return Promise.resolve(jsonResponse(againSubmitResponse));
+        }
+        if (url.startsWith('/api/review/due')) {
+          return Promise.resolve(jsonResponse(dueResponse));
+        }
+        return Promise.resolve(jsonResponse({}));
+      });
+
+      render(<ReviewPage />);
+
+      await screen.findByRole('heading', { name: 'ephemeral' });
+      fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+      fireEvent.click(screen.getByRole('button', { name: '记错了，改为 Again' }));
+      fireEvent.click(screen.getByRole('button', { name: '确认 Again' }));
+
+      await screen.findByText(/Again 已记录/);
+      expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
+    });
+
+    it('reveals context after choosing Again and advances only after confirmation', async () => {
+      const againSubmitResponse: SubmitReviewResponseDto = {
+        ...submitResponse,
+        rating: 'again',
+        progress: { ...progress, reviewed_count: 4, again_count: 2 },
+      };
+
+      let dueCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           return Promise.resolve(jsonResponse(againSubmitResponse));
         }
         if (url.startsWith('/api/review/due')) {
-          callIndex++;
-          if (callIndex === 1) return Promise.resolve(jsonResponse(dueResponse));
+          dueCallCount++;
+          if (dueCallCount === 1) return Promise.resolve(jsonResponse(dueResponse));
           return Promise.resolve(jsonResponse(emptyResponse));
         }
         return Promise.resolve(jsonResponse({}));
@@ -296,11 +331,18 @@ describe('ReviewPage', () => {
       render(<ReviewPage />);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
+      fireEvent.click(screen.getByRole('button', { name: 'Again' }));
 
-      fireEvent.click(screen.getByRole('button', { name: /Again/ }));
+      expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '确认 Again' })).toBeInTheDocument();
+      expect(screen.queryByText('今天没有待复习内容')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '确认 Again' }));
 
       await screen.findByText(/Again 已记录/);
-      // Eventually shows empty queue
+      expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '下一张' }));
       expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
     });
 
@@ -323,7 +365,8 @@ describe('ReviewPage', () => {
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
-      fireEvent.click(screen.getByRole('button', { name: /Good/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+      fireEvent.click(screen.getByRole('button', { name: '确认 Good' }));
 
       // Error appears
       await screen.findByRole('alert');
@@ -463,8 +506,11 @@ describe('ReviewPage', () => {
       fireEvent.click(screen.getByRole('button', { name: '继续复习' }));
       expect(screen.queryByText(/今日目标已完成/)).not.toBeInTheDocument();
 
-      // Submit a rating — next card still at limit
-      fireEvent.click(screen.getByRole('button', { name: /Good/ }));
+      // Choose and confirm a rating, then manually advance to the next card.
+      fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+      fireEvent.click(screen.getByRole('button', { name: '确认 Good' }));
+      await screen.findByText(/Good 已记录/);
+      fireEvent.click(screen.getByRole('button', { name: '下一张' }));
 
       // After next card loads (still limit-reached), banner must NOT reappear
       await screen.findByRole('heading', { name: 'laconic' });

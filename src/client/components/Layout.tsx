@@ -45,23 +45,11 @@ export function Layout({ navItems, currentPath, title, subtitle, children }: Lay
               );
             })}
           </nav>
-
-          <div className="app-side-card" aria-label="应用定位">
-            <span>local-first</span>
-            <strong>本地优先</strong>
-            <p>手动制卡、真实语境、FSRS 复习。数据保存在本地，长期使用不依赖云端服务。</p>
-          </div>
         </aside>
 
         <main className="app-main">
-          <div className="app-route-title">
-            <div>
-              <h1>{title}</h1>
-              <p>{subtitle}</p>
-            </div>
-            <span>local-first</span>
-          </div>
-
+          <h1 className="sr-only">{title}</h1>
+          <p className="sr-only">{subtitle}</p>
           <section className="app-content-shell">
             {children}
           </section>

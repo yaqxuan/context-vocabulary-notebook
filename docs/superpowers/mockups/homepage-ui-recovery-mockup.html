@@ -134,62 +134,6 @@
     }
 
 
-    .side-card {
-      margin-top: auto;
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 28px;
-      background:
-        radial-gradient(circle at 70% 0%, rgba(45,212,191,.18), transparent 9rem),
-        rgba(255,255,255,.07);
-      padding: 18px;
-      font-family: ui-sans-serif, system-ui, sans-serif;
-    }
-
-    .side-card span {
-      color: rgba(255,247,232,.52);
-      font: 850 11px ui-sans-serif, system-ui, sans-serif;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-    }
-
-    .side-card strong {
-      display: block;
-      margin-top: 10px;
-      color: var(--paper);
-      font: 950 42px/.9 ui-sans-serif, system-ui, sans-serif;
-      letter-spacing: -.08em;
-    }
-
-    .side-card p {
-      margin: 10px 0 0;
-      color: rgba(255,247,232,.68);
-      font: 650 13px/1.55 ui-sans-serif, system-ui, sans-serif;
-    }
-
-    .side-micro {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    .side-micro div {
-      border-radius: 16px;
-      background: rgba(255,255,255,.07);
-      padding: 10px;
-    }
-
-    .side-micro b {
-      display: block;
-      color: #ccfbf1;
-      font: 900 20px/.9 ui-sans-serif, system-ui, sans-serif;
-    }
-
-    .side-micro small {
-      color: rgba(255,247,232,.54);
-      font: 700 11px ui-sans-serif, system-ui, sans-serif;
-    }
-
     .sidebar-note {
       margin-top: 12px;
       border: 1px solid rgba(255,255,255,.14);
@@ -204,36 +148,6 @@
       display: grid;
       gap: 22px;
       padding-bottom: 60px;
-    }
-
-    .route-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      color: var(--paper);
-    }
-
-    .route-title h1 {
-      margin: 0;
-      font-size: 26px;
-      letter-spacing: -.05em;
-    }
-
-    .route-title p {
-      margin: 6px 0 0;
-      color: rgba(255,247,232,.66);
-      font: 650 14px ui-sans-serif, system-ui, sans-serif;
-    }
-
-    .route-pill {
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 999px;
-      background: rgba(255,255,255,.07);
-      color: rgba(255,247,232,.78);
-      padding: 9px 12px;
-      font: 800 12px ui-sans-serif, system-ui, sans-serif;
-      letter-spacing: .12em;
-      text-transform: uppercase;
     }
 
     .home-studio {
@@ -513,27 +427,10 @@
         <a href="#/statistics">统计<small>复习和标签分析</small></a>
         <a href="#/settings">设置<small>语言、目标和导入导出</small></a>
       </nav>
-      <div class="side-card" aria-label="应用定位">
-        <span>local-first</span>
-        <strong>本地优先</strong>
-        <p>手动制卡、真实语境、FSRS 复习。数据保存在本地，长期使用不依赖云端服务。</p>
-        <div class="side-micro">
-          <div><b>V1</b><small>本地版本</small></div>
-          <div><b>FSRS</b><small>复习调度</small></div>
-        </div>
-      </div>
       <div class="sidebar-note">本地优先 · 手动制卡 · FSRS 复习。数据保存在本地，长期使用不依赖云端服务。</div>
     </aside>
 
     <main class="main">
-      <div class="route-title">
-        <div>
-          <h1>首页</h1>
-          <p>今日概览 · 本地问候 · 复习入口</p>
-        </div>
-        <span class="route-pill">local-first</span>
-      </div>
-
       <section class="home-studio" aria-label="首页今日概览">
         <section class="hero" aria-label="今日问候和复习入口">
           <div>

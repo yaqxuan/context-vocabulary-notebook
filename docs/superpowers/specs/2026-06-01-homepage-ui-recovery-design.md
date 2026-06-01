@@ -24,7 +24,6 @@ Required shell traits:
 - fixed grain/grid overlay,
 - dark sticky sidebar with a larger, more substantial book-mark brand,
 - jade active navigation item,
-- filled sidebar rhythm: navigation plus a substantial local-first identity card so the left column does not feel empty,
 - warm paper main studio panel,
 - large rounded panels, around 34-42px in mockup language,
 - serif display text with tight negative tracking,
@@ -117,7 +116,7 @@ Recommendation: Approach A.
 
 ## Proposed homepage structure
 
-The revised mockup uses the Phase 6/7 shell:
+The revised mockup uses the Phase 6/7 shell without an extra visible route title strip:
 
 ```text
 [Dark angled page background + grain]
@@ -125,8 +124,6 @@ The revised mockup uses the Phase 6/7 shell:
   brand: 语境单词本 / Review Desk
   active nav: 首页
 [Main]
-  route title: 首页
-  route subtitle: 今日概览 · 本地问候 · 复习入口
   [Warm paper home studio]
     [Hero]
       kicker: LOCAL GREETING
@@ -213,8 +210,8 @@ Automated checks:
 Manual visual review:
 
 - homepage shell matches Phase 6/7 mockups at page-background level.
-- sidebar, active nav, route title, and warm panels align with Phase 6/7 visual language.
-- sidebar feels substantial, not like a narrow nav strip with unused dark space.
+- sidebar, active nav, and warm panels align with Phase 6/7 visual language.
+- sidebar feels substantial, but does not include the extra local-first card.
 - welcome/greeting hierarchy reads as: large `欢迎回来`, smaller airy time-based greeting below.
 - review/statistics/settings pages do not visually regress after shared Layout upgrade.
 
@@ -223,10 +220,10 @@ Avoid tests that assert decorative class names.
 ## Acceptance criteria
 
 - Homepage background, grain, sidebar, and warm panel style match Phase 6/7 shell, not old light Layout.
-- Mockup includes full app shell/sidebar and route title context.
+- Mockup includes full app shell/sidebar without the extra visible route title strip.
 - Greeting no longer appears as a bare patch above stats.
 - `欢迎回来` is the hero headline; the selected time-based greeting sits below it, smaller and lighter.
-- Sidebar uses stronger brand scale and a today summary card to reduce awkward empty space.
+- Sidebar uses stronger brand scale without a separate local-first card.
 - Homepage remains a calm review desk, not a busy analytics dashboard.
 - No Phase 8A mockup files starting with `phase8a` are recreated.
 - No new product scope is introduced.

@@ -117,18 +117,29 @@ interface ReviewCardProps {
   progress: ReviewProgressDto;
   submitting: boolean;
   submitError: string | null;
+  pendingRating: 'again' | 'good' | null;
   lastRating: 'again' | 'good' | null;
-  onAgain: () => void;
-  onGood: () => void;
+  onChooseRating: (rating: 'again' | 'good') => void;
+  onConfirmRating: () => void;
+  onNext: () => void;
 }
 
-function ReviewCard({ card, progress, submitting, submitError, lastRating, onAgain, onGood }: ReviewCardProps) {
+function ReviewCard({ card, progress, submitting, submitError, pendingRating, lastRating, onChooseRating, onConfirmRating, onNext }: ReviewCardProps) {
   const [contextOpen, setContextOpen] = useState(false);
 
   // Reset context panel when a new card loads
   useEffect(() => {
     setContextOpen(false);
   }, [card.id]);
+
+  // Reveal context after choosing or recording a rating so mistakes can be caught before advancing.
+  useEffect(() => {
+    if (pendingRating || lastRating) {
+      setContextOpen(true);
+    } else {
+      setContextOpen(false);
+    }
+  }, [pendingRating, lastRating]);
 
   return (
     <div className="phase7-review-card">
@@ -155,8 +166,6 @@ function ReviewCard({ card, progress, submitting, submitError, lastRating, onAga
         </button>
       </div>
 
-      {contextOpen ? <ContextPanel card={card} /> : null}
-
       <div className="phase7-review-footer">
         <ProgressLabel progress={progress} />
 
@@ -164,27 +173,38 @@ function ReviewCard({ card, progress, submitting, submitError, lastRating, onAga
           <div role="alert" className="phase7-review-submit-error">{submitError}</div>
         ) : null}
 
+        {pendingRating && !lastRating ? (
+          <p className="phase7-review-success">已选择 {pendingRating === 'good' ? 'Good' : 'Again'}，请查看语境后确认。</p>
+        ) : null}
+
         {lastRating && !submitError ? (
           <p className="phase7-review-success">{lastRating === 'good' ? 'Good' : 'Again'} 已记录</p>
         ) : null}
 
-        <div className="phase7-review-rating-row">
-          <Button
-            variant="secondary"
-            disabled={submitting}
-            onClick={onAgain}
-          >
-            Again
-          </Button>
-          <Button
-            variant="primary"
-            disabled={submitting}
-            onClick={onGood}
-          >
-            Good
-          </Button>
-        </div>
+        {lastRating ? (
+          <div className="phase7-review-rating-row">
+            <Button variant="primary" disabled={submitting} onClick={onNext}>下一张</Button>
+          </div>
+        ) : pendingRating ? (
+          <div className="phase7-review-rating-row">
+            {pendingRating === 'good' ? (
+              <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again')}>记错了，改为 Again</Button>
+            ) : (
+              <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('good')}>改为 Good</Button>
+            )}
+            <Button variant={pendingRating === 'good' ? 'primary' : 'secondary'} disabled={submitting} onClick={() => onConfirmRating()}>
+              {pendingRating === 'good' ? '确认 Good' : '确认 Again'}
+            </Button>
+          </div>
+        ) : (
+          <div className="phase7-review-rating-row">
+            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again')}>Again</Button>
+            <Button variant="primary" disabled={submitting} onClick={() => onChooseRating('good')}>Good</Button>
+          </div>
+        )}
       </div>
+
+      {contextOpen ? <ContextPanel card={card} /> : null}
     </div>
   );
 }
@@ -201,12 +221,14 @@ export function ReviewPage() {
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingRating, setPendingRating] = useState<'again' | 'good' | null>(null);
   const [lastRating, setLastRating] = useState<'again' | 'good' | null>(null);
   const [limitDismissed, setLimitDismissed] = useState(false);
 
   const load = useCallback(() => {
     setState({ kind: 'loading' });
     setSubmitError(null);
+    setPendingRating(null);
     setLastRating(null);
     getDueReview()
       .then((res: ReviewDueResponseDto) => {
@@ -229,21 +251,45 @@ export function ReviewPage() {
     load();
   }, [load]);
 
-  const handleSubmit = async (rating: 'again' | 'good') => {
+  const handleChooseRating = (rating: 'again' | 'good') => {
+    setSubmitError(null);
+    setLastRating(null);
+    setPendingRating(rating);
+  };
+
+  const handleConfirmRating = async () => {
     if (state.kind !== 'due') return;
-    const cardId = state.card.id;
+    const rating = pendingRating;
+    if (!rating) return;
 
     setSubmitting(true);
     setSubmitError(null);
-    setLastRating(null);
 
     try {
-      await submitReview(cardId, { rating });
+      const result = await submitReview(state.card.id, { rating });
+      setState({ kind: 'due', card: state.card, progress: result.progress });
+      setPendingRating(null);
       setLastRating(rating);
-      // Fetch next card without going through full loading state
+      if (!result.progress.is_limit_reached) {
+        setLimitDismissed(false);
+      }
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : '提交失败，请重试');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleNext = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    setPendingRating(null);
+
+    try {
       const res = await getDueReview();
       if (res.status === 'due') {
         setState({ kind: 'due', card: res.card, progress: res.progress });
+        setLastRating(null);
         if (!res.progress.is_limit_reached) {
           setLimitDismissed(false);
         }
@@ -251,7 +297,7 @@ export function ReviewPage() {
         setState({ kind: 'empty', progress: res.progress });
       }
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : '提交失败，请重试');
+      setState({ kind: 'error', message: err instanceof Error ? err.message : '无法加载复习内容' });
     } finally {
       setSubmitting(false);
     }
@@ -284,9 +330,11 @@ export function ReviewPage() {
         progress={state.progress}
         submitting={submitting}
         submitError={submitError}
+        pendingRating={pendingRating}
         lastRating={lastRating}
-        onAgain={() => handleSubmit('again')}
-        onGood={() => handleSubmit('good')}
+        onChooseRating={handleChooseRating}
+        onConfirmRating={handleConfirmRating}
+        onNext={handleNext}
       />
     </div>
   );
