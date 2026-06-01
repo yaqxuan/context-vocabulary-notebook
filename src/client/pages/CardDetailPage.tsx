@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { CardDetailDto, ContextDto, TagDto } from '../../shared/types';
 import { deleteCard, getCard, patchCard } from '../api/cards';
@@ -27,6 +27,9 @@ export function CardDetailPage() {
   const [allTags, setAllTags] = useState<TagDto[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [tagsError, setTagsError] = useState<string | null>(null);
+  const [tagsLoading, setTagsLoading] = useState(false);
+  const tagLoadSeq = useRef(0);
+  const mountedRef = useRef(true);
   const cardId = useMemo(currentCardId, []);
 
   const load = useCallback(() => {
@@ -44,6 +47,10 @@ export function CardDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => () => {
+    mountedRef.current = false;
+  }, []);
 
   const runAndReload = async (action: () => Promise<unknown>) => {
     try {
@@ -79,14 +86,20 @@ export function CardDetailPage() {
 
   const startTagEdit = async () => {
     if (!card) return;
+    const seq = tagLoadSeq.current + 1;
+    tagLoadSeq.current = seq;
     setEditingTags(true);
     setSelectedTagIds(card.tags.map((tag) => tag.id));
     setAllTags([]);
     setTagsError(null);
+    setTagsLoading(true);
     try {
-      setAllTags(await listTags());
+      const tags = await listTags();
+      if (mountedRef.current && tagLoadSeq.current === seq) setAllTags(tags);
     } catch (err) {
-      setTagsError(err instanceof Error ? err.message : '标签列表加载失败');
+      if (mountedRef.current && tagLoadSeq.current === seq) setTagsError(err instanceof Error ? err.message : '标签列表加载失败');
+    } finally {
+      if (mountedRef.current && tagLoadSeq.current === seq) setTagsLoading(false);
     }
   };
 
@@ -94,11 +107,17 @@ export function CardDetailPage() {
     setSelectedTagIds((cur) => cur.includes(tagId) ? cur.filter((id) => id !== tagId) : [...cur, tagId]);
   };
 
+  const cancelTagEdit = () => {
+    tagLoadSeq.current += 1;
+    setTagsLoading(false);
+    setEditingTags(false);
+  };
+
   const saveTags = async () => {
     if (!card) return;
     try {
       await patchCard(card.id, { tag_ids: selectedTagIds });
-      setEditingTags(false);
+      cancelTagEdit();
       load();
     } catch (err) {
       setTagsError(err instanceof Error ? err.message : '保存标签失败');
@@ -180,7 +199,7 @@ export function CardDetailPage() {
             <div className="phase6-tag-editor">
               {tagsError ? <em>{tagsError}</em> : null}
               <div>
-                {allTags.length ? allTags.map((tag) => (
+                {tagsLoading ? <p>加载标签中…</p> : allTags.length ? allTags.map((tag) => (
                   <button
                     key={tag.id}
                     type="button"
@@ -193,7 +212,7 @@ export function CardDetailPage() {
               </div>
               <div>
                 <button type="button" onClick={saveTags}>保存标签</button>
-                <button type="button" onClick={() => setEditingTags(false)}>取消</button>
+                <button type="button" onClick={cancelTagEdit}>取消</button>
               </div>
             </div>
           ) : (
