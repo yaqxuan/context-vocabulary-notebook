@@ -358,7 +358,12 @@ export function ReviewPage() {
       {lastRating ? (
         <p className="phase7-review-success">{lastRating === 'good' ? 'Good' : 'Again'} 已记录</p>
       ) : null}
-      <EmptyState message="今天没有待复习内容" />
+      <EmptyState message="今天没有待复习内容" action={
+        <>
+          <a href="#/">返回首页</a>
+          <a href="#/cards">查看全部词义条目</a>
+        </>
+      } />
       <ProgressLabel progress={state.progress} />
     </div>
   );

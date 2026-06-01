@@ -469,6 +469,12 @@ describe('ReviewPage', () => {
       expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Again/ })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Good/ })).not.toBeInTheDocument();
+      const homeLink = screen.getByRole('link', { name: '返回首页' });
+      expect(homeLink).toBeInTheDocument();
+      expect(homeLink).toHaveAttribute('href', '#/');
+      const cardsLink = screen.getByRole('link', { name: '查看全部词义条目' });
+      expect(cardsLink).toBeInTheDocument();
+      expect(cardsLink).toHaveAttribute('href', '#/cards');
     });
   });
 
