@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CardCreatePage } from '../../src/client/pages/CardCreatePage';
+import { MEDIA_SIZE_LIMITS_BYTES } from '../../src/shared/constants';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -10,8 +11,10 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function file(name: string, type: string): File {
-  return new File(['sample'], name, { type });
+function file(name: string, type: string, size = 6): File {
+  const sample = new File(['sample'], name, { type });
+  Object.defineProperty(sample, 'size', { value: size });
+  return sample;
 }
 
 describe('CardCreatePage', () => {
@@ -74,6 +77,25 @@ describe('CardCreatePage', () => {
     expect(await screen.findByText('仅支持 mp4 本地视频文件')).toBeInTheDocument();
     expect(screen.getByText('仅支持 jpg、png 或 webp 截图')).toBeInTheDocument();
     expect(screen.getByText('仅支持 mp3 音频文件')).toBeInTheDocument();
+  });
+
+  // Test 3b: media file size validation
+  it('rejects media files that exceed size limits', async () => {
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('上传本地视频'), {
+      target: { files: [file('huge.mp4', 'video/mp4', MEDIA_SIZE_LIMITS_BYTES.video + 1)] },
+    });
+    fireEvent.change(screen.getByLabelText('上传截图'), {
+      target: { files: [file('huge.png', 'image/png', MEDIA_SIZE_LIMITS_BYTES.image + 1)] },
+    });
+    fireEvent.change(screen.getByLabelText('上传音频'), {
+      target: { files: [file('huge.mp3', 'audio/mpeg', MEDIA_SIZE_LIMITS_BYTES.audio + 1)] },
+    });
+
+    expect(await screen.findByText('视频不能超过 300MB')).toBeInTheDocument();
+    expect(screen.getByText('图片不能超过 10MB')).toBeInTheDocument();
+    expect(screen.getByText('音频不能超过 50MB')).toBeInTheDocument();
   });
 
   // Test 4: exact match forces append-to-existing mode

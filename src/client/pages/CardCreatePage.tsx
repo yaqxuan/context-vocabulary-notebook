@@ -5,6 +5,7 @@ import { getCardSuggestions } from '../api/cards';
 import { uploadMedia } from '../api/media';
 import { listTags } from '../api/tags';
 import type { CardDetailDto, SuggestionDto, TagDto } from '../../shared/types';
+import { MEDIA_SIZE_LIMIT_MESSAGES, MEDIA_SIZE_LIMITS_BYTES } from '../../shared/constants';
 
 type SaveMode = { kind: 'new' } | { kind: 'existing'; cardId: string; meaning: string; targetWord: string };
 type FieldErrors = Partial<Record<'targetWord' | 'meaning' | 'sentence' | 'video' | 'screenshot' | 'audio' | 'submit', string>>;
@@ -18,6 +19,11 @@ function parseExplicitCardId(): string | null {
 
 const DEFAULT_TARGET_LANGUAGE = '英语';
 const DEFAULT_DEFINITION_LANGUAGE = '中文';
+
+function mediaSizeError(kind: 'video' | 'screenshot' | 'audio', file: File): string | null {
+  const mediaKind = kind === 'screenshot' ? 'image' : kind;
+  return file.size > MEDIA_SIZE_LIMITS_BYTES[mediaKind] ? MEDIA_SIZE_LIMIT_MESSAGES[mediaKind] : null;
+}
 
 function hasExtension(f: File, extensions: string[]): boolean {
   const lower = f.name.toLowerCase();
@@ -180,6 +186,15 @@ export function CardCreatePage() {
     if (kind === 'audio' && !isMp3(next)) {
       setAudio(null);
       setErrors((cur) => ({ ...cur, audio: '仅支持 mp3 音频文件' }));
+      return;
+    }
+
+    const sizeError = mediaSizeError(kind, next);
+    if (sizeError) {
+      if (kind === 'video') setVideo(null);
+      if (kind === 'screenshot') setScreenshot(null);
+      if (kind === 'audio') setAudio(null);
+      setErrors((cur) => ({ ...cur, [kind]: sizeError }));
       return;
     }
 
