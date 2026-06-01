@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import type { Database } from 'better-sqlite3';
+import type { MediaType } from '../shared/constants.js';
 import { cardsRouter } from './routes/cards.js';
 import { contextsRouter } from './routes/contexts.js';
 import { tagsRouter } from './routes/tags.js';
@@ -15,6 +16,7 @@ import { BadRequestError } from './http/errors.js';
 export interface AppOptions {
   uploadsDir?: string;
   uploadMaxBytes?: number;
+  mediaSizeLimitsBytes?: Partial<Record<MediaType, number>>;
 }
 
 const DEFAULT_UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
@@ -57,7 +59,7 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
   application.use('/api/cards', cardsRouter(db));
   application.use('/api', contextsRouter(db));
   application.use('/api/tags', tagsRouter(db));
-  application.use('/api/media', mediaRouter(db, uploadsDir, { maxFileSizeBytes: options.uploadMaxBytes }));
+  application.use('/api/media', mediaRouter(db, uploadsDir, { maxFileSizeBytes: options.uploadMaxBytes, mediaSizeLimitsBytes: options.mediaSizeLimitsBytes }));
   application.use('/api/review', reviewRouter(db));
   application.use('/api/settings', settingsRouter(db));
   application.use('/api/statistics', statisticsRouter(db));

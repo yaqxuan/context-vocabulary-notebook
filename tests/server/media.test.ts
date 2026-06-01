@@ -9,6 +9,9 @@ import type { TestDb } from '../../src/server/db/testDb.js';
 import { createCard } from '../../src/server/domain/cards.js';
 import { createContext } from '../../src/server/domain/contexts.js';
 import { createApp } from '../../src/server/app.js';
+import { MEDIA_SIZE_LIMIT_MESSAGES } from '../../src/shared/constants.js';
+
+function smallOversizedBuffer(): Buffer { return Buffer.from('too-large'); }
 
 let db: TestDb;
 let app: ReturnType<typeof createApp>;
@@ -108,6 +111,57 @@ describe('POST /api/media', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Unsupported file type');
+    expect(fs.readdirSync(uploadsDir)).toHaveLength(0);
+  });
+
+  it('rejects image over 10MB with per-type limit message', async () => {
+    const card = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    const ctx = createContext(db, { card_id: card.id, sentence: 'Test.' });
+
+    const limitedApp = createApp(db, { uploadsDir, uploadMaxBytes: 1024, mediaSizeLimitsBytes: { image: 4 } });
+
+    const res = await request(limitedApp)
+      .post('/api/media')
+      .field('context_example_id', ctx.id)
+      .attach('file', smallOversizedBuffer(), { filename: 'huge.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(MEDIA_SIZE_LIMIT_MESSAGES.image);
+    expect(db.prepare('SELECT COUNT(*) as n FROM media_files').get() as { n: number }).toMatchObject({ n: 0 });
+    expect(fs.readdirSync(uploadsDir)).toHaveLength(0);
+  });
+
+  it('rejects audio over 50MB with per-type limit message', async () => {
+    const card = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    const ctx = createContext(db, { card_id: card.id, sentence: 'Test.' });
+
+    const limitedApp = createApp(db, { uploadsDir, uploadMaxBytes: 1024, mediaSizeLimitsBytes: { audio: 4 } });
+
+    const res = await request(limitedApp)
+      .post('/api/media')
+      .field('context_example_id', ctx.id)
+      .attach('file', smallOversizedBuffer(), { filename: 'huge.mp3', contentType: 'audio/mpeg' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(MEDIA_SIZE_LIMIT_MESSAGES.audio);
+    expect(db.prepare('SELECT COUNT(*) as n FROM media_files').get() as { n: number }).toMatchObject({ n: 0 });
+    expect(fs.readdirSync(uploadsDir)).toHaveLength(0);
+  });
+
+  it('rejects video over 300MB with per-type limit message', async () => {
+    const card = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    const ctx = createContext(db, { card_id: card.id, sentence: 'Test.' });
+
+    const limitedApp = createApp(db, { uploadsDir, uploadMaxBytes: 1024, mediaSizeLimitsBytes: { video: 4 } });
+
+    const res = await request(limitedApp)
+      .post('/api/media')
+      .field('context_example_id', ctx.id)
+      .attach('file', smallOversizedBuffer(), { filename: 'huge.mp4', contentType: 'video/mp4' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(MEDIA_SIZE_LIMIT_MESSAGES.video);
+    expect(db.prepare('SELECT COUNT(*) as n FROM media_files').get() as { n: number }).toMatchObject({ n: 0 });
     expect(fs.readdirSync(uploadsDir)).toHaveLength(0);
   });
 

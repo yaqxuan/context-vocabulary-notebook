@@ -9,6 +9,8 @@ import { createMedia, deleteMedia, getMedia } from '../domain/media.js';
 import { getContext } from '../domain/contexts.js';
 import { safeFileName, resolveUploadPath } from '../storage/uploads.js';
 import { resolveMediaType, isNonEmptyString } from '../../shared/validators.js';
+import { MEDIA_SIZE_LIMITS_BYTES, MEDIA_SIZE_LIMIT_MESSAGES } from '../../shared/constants.js';
+import type { MediaType } from '../../shared/constants.js';
 
 function paramStr(p: string | string[]): string {
   return Array.isArray(p) ? p[0]! : p;
@@ -16,12 +18,14 @@ function paramStr(p: string | string[]): string {
 
 export interface MediaRouterOptions {
   maxFileSizeBytes?: number;
+  mediaSizeLimitsBytes?: Partial<Record<MediaType, number>>;
 }
 
-const DEFAULT_MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024;
+const DEFAULT_MAX_FILE_SIZE_BYTES = MEDIA_SIZE_LIMITS_BYTES.video;
 
 export function mediaRouter(db: Database, uploadsDir: string, options: MediaRouterOptions = {}): Router {
   const router = Router();
+  const mediaSizeLimitsBytes = { ...MEDIA_SIZE_LIMITS_BYTES, ...options.mediaSizeLimitsBytes };
 
   // Multer storage: generate safe file names, store in uploadsDir
   const storage = multer.diskStorage({
@@ -74,6 +78,10 @@ export function mediaRouter(db: Database, uploadsDir: string, options: MediaRout
       const mediaType = resolveMediaType(req.file.originalname, req.file.mimetype);
       if (!mediaType) {
         throw new BadRequestError('Unsupported file type');
+      }
+
+      if (req.file.size > mediaSizeLimitsBytes[mediaType]) {
+        throw new BadRequestError(MEDIA_SIZE_LIMIT_MESSAGES[mediaType]);
       }
 
       const ctx = getContext(db, contextExampleId);
