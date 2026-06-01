@@ -192,6 +192,41 @@ describe('deleteContext (domain)', () => {
     const row1 = db.prepare('SELECT is_primary FROM context_examples WHERE id = ?').get(ctx1.id) as { is_primary: number };
     expect(row1.is_primary).toBe(1);
   });
+
+  it('deleting primary promotes earliest remaining context by created_at ASC, id ASC', () => {
+    const card = createCard(db, { target_word: 'promote', context_meaning: '晋升', target_language: '英语', definition_language: '中文' });
+    const primary = createContext(db, { card_id: card.id, sentence: 'Primary to delete.' });
+    expect(primary.is_primary).toBe(1);
+
+    db.prepare(`
+      INSERT INTO context_examples (id, card_id, sentence, note, is_primary, sort_order, created_at, updated_at)
+      VALUES ('ctx-earliest', ?, 'Earliest context.', NULL, 0, 20, '2020-01-01T00:00:00.000Z', '2020-01-01T00:00:00.000Z')
+    `).run(card.id);
+    db.prepare(`
+      INSERT INTO context_examples (id, card_id, sentence, note, is_primary, sort_order, created_at, updated_at)
+      VALUES ('ctx-later', ?, 'Later context.', NULL, 0, 30, '2025-01-01T00:00:00.000Z', '2025-01-01T00:00:00.000Z')
+    `).run(card.id);
+
+    deleteContext(db, primary.id);
+
+    const earliest = db.prepare('SELECT is_primary FROM context_examples WHERE id = ?').get('ctx-earliest') as { is_primary: number };
+    const later = db.prepare('SELECT is_primary FROM context_examples WHERE id = ?').get('ctx-later') as { is_primary: number };
+    expect(earliest.is_primary).toBe(1);
+    expect(later.is_primary).toBe(0);
+  });
+
+  it('deleting only context leaves no active primary', () => {
+    const card = createCard(db, { target_word: 'solo', context_meaning: '独自', target_language: '英语', definition_language: '中文' });
+    const ctx = createContext(db, { card_id: card.id, sentence: 'Only context.' });
+    expect(ctx.is_primary).toBe(1);
+
+    deleteContext(db, ctx.id);
+
+    const result = db.prepare(`
+      SELECT COUNT(*) as cnt FROM context_examples WHERE card_id = ? AND deleted_at IS NULL AND is_primary = 1
+    `).get(card.id) as { cnt: number };
+    expect(result.cnt).toBe(0);
+  });
 });
 
 describe('getContextSummary (domain)', () => {

@@ -118,15 +118,35 @@ export function deleteContext(db: Database, contextId: string): void {
   const now = new Date().toISOString();
 
   const transaction = db.transaction(() => {
+    const current = db.prepare(
+      'SELECT id, card_id, is_primary FROM context_examples WHERE id = ? AND deleted_at IS NULL',
+    ).get(contextId) as { id: string; card_id: string; is_primary: number } | undefined;
+    if (!current) return;
+
     // Soft-delete media_files for this context
     db.prepare(`
       UPDATE media_files SET deleted_at = ? WHERE context_example_id = ? AND deleted_at IS NULL
     `).run(now, contextId);
 
-    // Demote is_primary on the context being deleted so no deleted context remains primary
+    // Soft-delete context and clear is_primary
     db.prepare(`
       UPDATE context_examples SET is_primary = 0, deleted_at = ?, updated_at = ? WHERE id = ?
     `).run(now, now, contextId);
+
+    // Promote earliest remaining active context if deleted one was primary
+    if (current.is_primary === 1) {
+      const next = db.prepare(`
+        SELECT id FROM context_examples
+        WHERE card_id = ? AND deleted_at IS NULL
+        ORDER BY created_at ASC, id ASC
+        LIMIT 1
+      `).get(current.card_id) as { id: string } | undefined;
+      if (next) {
+        db.prepare(`
+          UPDATE context_examples SET is_primary = 1, updated_at = ? WHERE id = ?
+        `).run(now, next.id);
+      }
+    }
   });
 
   transaction();
