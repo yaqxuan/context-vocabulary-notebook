@@ -130,6 +130,46 @@ describe('Phase 6 pages', () => {
     expect(window.location.hash).toBe('#/create?card_id=card-1');
   });
 
+  it('edits context meaning from the detail page', async () => {
+    window.location.hash = '#/cards/card-1';
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ...cards[0], context_meaning: '收费；要价' }));
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardDetailPage />);
+
+    expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '编辑释义' }));
+    fireEvent.change(screen.getByLabelText('编辑当前语境释义'), { target: { value: '收费；要价' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存释义' }));
+
+    await waitFor(() => expect(requests.some((request) => request.url === '/api/cards/card-1' && request.method === 'PATCH' && request.body === JSON.stringify({ context_meaning: '收费；要价' }))).toBe(true));
+  });
+
+  it('rejects blank context meaning edits on the detail page', async () => {
+    window.location.hash = '#/cards/card-1';
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardDetailPage />);
+
+    expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '编辑释义' }));
+    fireEvent.change(screen.getByLabelText('编辑当前语境释义'), { target: { value: '   ' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存释义' }));
+
+    expect(screen.getByText('当前语境释义必填')).toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/cards/card-1', expect.objectContaining({ method: 'PATCH' }));
+  });
+
   it('creates edits and confirms tag deletion', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);

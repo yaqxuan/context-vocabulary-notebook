@@ -19,6 +19,9 @@ export function CardDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<'card' | ContextDto | null>(null);
+  const [editingMeaning, setEditingMeaning] = useState(false);
+  const [meaningDraft, setMeaningDraft] = useState('');
+  const [meaningError, setMeaningError] = useState<string | null>(null);
   const cardId = useMemo(currentCardId, []);
 
   const load = useCallback(() => {
@@ -46,6 +49,29 @@ export function CardDetailPage() {
     }
   };
 
+  const startMeaningEdit = () => {
+    if (!card) return;
+    setMeaningDraft(card.context_meaning);
+    setMeaningError(null);
+    setEditingMeaning(true);
+  };
+
+  const saveMeaning = async () => {
+    if (!card) return;
+    const nextMeaning = meaningDraft.trim();
+    if (!nextMeaning) {
+      setMeaningError('当前语境释义必填');
+      return;
+    }
+    try {
+      await patchCard(card.id, { context_meaning: nextMeaning });
+      setEditingMeaning(false);
+      load();
+    } catch (err) {
+      setMeaningError(err instanceof Error ? err.message : '保存释义失败');
+    }
+  };
+
   if (loading) return <LoadingState message="正在加载词义详情……" />;
   if (error) return <ErrorState message={error} onRetry={load} />;
   if (!card) return <ErrorState message="词义条目不存在" onRetry={load} />;
@@ -55,7 +81,30 @@ export function CardDetailPage() {
       <div className="phase6-detail-summary">
         <div>
           <h2>{card.target_word}</h2>
-          <p>{card.context_meaning}</p>
+          {editingMeaning ? (
+            <div className="phase6-inline-editor">
+              <label htmlFor="detail-meaning-edit">当前语境释义</label>
+              <input
+                id="detail-meaning-edit"
+                aria-label="编辑当前语境释义"
+                value={meaningDraft}
+                onChange={(event) => {
+                  setMeaningDraft(event.target.value);
+                  setMeaningError(null);
+                }}
+              />
+              {meaningError ? <em>{meaningError}</em> : null}
+              <div>
+                <button type="button" onClick={saveMeaning}>保存释义</button>
+                <button type="button" onClick={() => setEditingMeaning(false)}>取消</button>
+              </div>
+            </div>
+          ) : (
+            <div className="phase6-meaning-row">
+              <p>{card.context_meaning}</p>
+              <button type="button" onClick={startMeaningEdit}>编辑释义</button>
+            </div>
+          )}
         </div>
         <div className="phase6-detail-actions">
           <button type="button" onClick={() => { window.location.hash = `#/create?card_id=${encodeURIComponent(card.id)}`; }}>添加语境</button>

@@ -1898,3 +1898,24 @@ body {
   font: 800 1rem ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -.01em;
 }
+
+/* Task 3: detail page inline meaning editor */
+.phase6-meaning-row,
+.phase6-inline-editor,
+.phase6-inline-editor > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.phase6-inline-editor input {
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.phase6-inline-editor em {
+  color: #b91c1c;
+  font-style: normal;
+}
