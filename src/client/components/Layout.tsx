@@ -49,7 +49,7 @@ export function Layout({ navItems, currentPath, title, subtitle, children }: Lay
           <div className="app-side-card" aria-label="应用定位">
             <span>local-first</span>
             <strong>本地优先</strong>
-            <p>手动制卡、真实语境、FSRS 复习。数据保存在本地，首页只整合今日入口和问候。</p>
+            <p>手动制卡、真实语境、FSRS 复习。数据保存在本地，长期使用不依赖云端服务。</p>
           </div>
         </aside>
 

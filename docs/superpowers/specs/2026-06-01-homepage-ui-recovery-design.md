@@ -24,7 +24,7 @@ Required shell traits:
 - fixed grain/grid overlay,
 - dark sticky sidebar with a larger, more substantial book-mark brand,
 - jade active navigation item,
-- filled sidebar rhythm: navigation plus a today summary card so the left column does not feel empty,
+- filled sidebar rhythm: navigation plus a substantial local-first identity card so the left column does not feel empty,
 - warm paper main studio panel,
 - large rounded panels, around 34-42px in mockup language,
 - serif display text with tight negative tracking,
