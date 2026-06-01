@@ -2,6 +2,18 @@
 export const MEDIA_TYPES = ['video', 'image', 'audio'] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
+export const MEDIA_SIZE_LIMITS_BYTES: Record<MediaType, number> = {
+  image: 10 * 1024 * 1024,
+  audio: 50 * 1024 * 1024,
+  video: 300 * 1024 * 1024,
+};
+
+export const MEDIA_SIZE_LIMIT_MESSAGES: Record<MediaType, string> = {
+  image: '图片不能超过 10MB',
+  audio: '音频不能超过 50MB',
+  video: '视频不能超过 300MB',
+};
+
 export const ALLOWED_MIME_TYPES: Record<string, MediaType> = {
   'video/mp4': 'video',
   'audio/mpeg': 'audio',
