@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 
-import { createCard } from '../api/cards';
+import { createCard, getCard } from '../api/cards';
 import { getCardSuggestions } from '../api/cards';
 import { uploadMedia } from '../api/media';
 import { listTags } from '../api/tags';
-import type { SuggestionDto, TagDto } from '../../shared/types';
+import type { CardDetailDto, SuggestionDto, TagDto } from '../../shared/types';
 
 type SaveMode = { kind: 'new' } | { kind: 'existing'; cardId: string; meaning: string; targetWord: string };
 type FieldErrors = Partial<Record<'targetWord' | 'meaning' | 'sentence' | 'video' | 'screenshot' | 'audio' | 'submit', string>>;
+
+function parseExplicitCardId(): string | null {
+  const hash = window.location.hash;
+  const qIndex = hash.indexOf('?');
+  if (qIndex === -1) return null;
+  return new URLSearchParams(hash.slice(qIndex + 1)).get('card_id');
+}
 
 const DEFAULT_TARGET_LANGUAGE = '英语';
 const DEFAULT_DEFINITION_LANGUAGE = '中文';
@@ -66,6 +73,10 @@ export function CardCreatePage() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [appendCard, setAppendCard] = useState<CardDetailDto | null>(null);
+  const [appendLoadError, setAppendLoadError] = useState<string | null>(null);
+
+  const [explicitCardId] = useState(() => parseExplicitCardId());
 
   // Load tags on mount
   useEffect(() => {
@@ -76,8 +87,29 @@ export function CardCreatePage() {
     return () => { active = false; };
   }, []);
 
+  // Load explicit card when card_id present in hash query
+  useEffect(() => {
+    if (!explicitCardId) return;
+    let active = true;
+    getCard(explicitCardId)
+      .then((card) => {
+        if (!active) return;
+        setAppendCard(card);
+        setTargetWord(card.target_word);
+        setMeaning(card.context_meaning);
+        setTargetLanguage(card.target_language);
+        setDefinitionLanguage(card.definition_language);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setAppendLoadError(err instanceof Error ? err.message : '加载词义失败');
+      });
+    return () => { active = false; };
+  }, [explicitCardId]);
+
   // Load suggestions when target word changes
   useEffect(() => {
+    if (explicitCardId) return;
     const trimmed = targetWord.trim();
     if (!trimmed) {
       setSuggestions([]);
@@ -105,7 +137,7 @@ export function CardCreatePage() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [targetWord]);
+  }, [targetWord, explicitCardId]);
 
   // Derive exact match and mode from suggestions + current field values
   const exactMatch = useMemo(
@@ -114,11 +146,14 @@ export function CardCreatePage() {
   );
 
   const mode: SaveMode = useMemo(() => {
+    if (appendCard) {
+      return { kind: 'existing', cardId: appendCard.id, meaning: appendCard.context_meaning, targetWord: appendCard.target_word };
+    }
     if (exactMatch) {
       return { kind: 'existing', cardId: exactMatch.id, meaning: exactMatch.context_meaning, targetWord: exactMatch.target_word };
     }
     return { kind: 'new' };
-  }, [exactMatch]);
+  }, [exactMatch, appendCard]);
 
   function handleMediaChange(kind: 'video' | 'screenshot' | 'audio', fileList: FileList | null) {
     const next = fileList?.[0] ?? null;
@@ -211,6 +246,15 @@ export function CardCreatePage() {
   const saveLabel = isSaving ? '保存中…' : mode.kind === 'existing' ? '添加为新语境' : '保存词义条目';
   const currentMeaning = mode.kind === 'existing' ? mode.meaning : meaning;
 
+  if (appendLoadError) {
+    return (
+      <div className="card-create-studio">
+        <div className="card-create-alert" role="alert">{appendLoadError}</div>
+        <a href="#/cards">查看全部词义条目</a>
+      </div>
+    );
+  }
+
   return (
     <form className="card-create-studio" onSubmit={handleSubmit} noValidate>
       {/* Hero header */}
@@ -240,6 +284,7 @@ export function CardCreatePage() {
               value={targetWord}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setTargetWord(e.target.value)}
               placeholder="例如：charge"
+              disabled={Boolean(explicitCardId)}
             />
             {errors.targetWord ? <em>{errors.targetWord}</em> : null}
           </label>
@@ -252,7 +297,7 @@ export function CardCreatePage() {
               aria-label="当前语境释义"
               value={currentMeaning}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setMeaning(e.target.value)}
-              disabled={mode.kind === 'existing'}
+              disabled={mode.kind === 'existing' || Boolean(explicitCardId)}
               placeholder="例如：收费"
             />
             <small>只写这个语境下的意思，不写完整词典释义。</small>
@@ -372,6 +417,7 @@ export function CardCreatePage() {
             suggestions={suggestions}
             exactMatch={exactMatch}
             mode={mode}
+            appendCard={appendCard}
           />
         </aside>
       </div>
@@ -421,9 +467,17 @@ interface SuggestionPanelProps {
   suggestions: SuggestionDto[];
   exactMatch: SuggestionDto | null;
   mode: SaveMode;
+  appendCard: CardDetailDto | null;
 }
 
-function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch, mode }: SuggestionPanelProps) {
+function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch, mode, appendCard }: SuggestionPanelProps) {
+  if (appendCard) {
+    return (
+      <p className="card-create-side-copy card-create-exact-notice">
+        {`正在为已有词义添加语境：${appendCard.target_word} = ${appendCard.context_meaning}`}
+      </p>
+    );
+  }
   if (!targetWord.trim()) {
     return <p className="card-create-side-copy">输入目标单词后，我会查找已有词义，帮你避免重复建卡。</p>;
   }

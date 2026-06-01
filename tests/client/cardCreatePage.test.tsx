@@ -246,4 +246,68 @@ describe('CardCreatePage', () => {
     }));
     expect(requests.filter((r) => r.url === '/api/media' && r.method === 'POST')).toHaveLength(0);
   });
+
+  // Test 10: explicit append mode via hash query card_id
+  it('loads existing card from hash card_id, disables word/meaning, skips suggestions, posts append body', async () => {
+    window.location.hash = '#/create?card_id=card-1';
+
+    const cardDetail = {
+      id: 'card-1',
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      status: 'reviewing',
+      is_favorite: 0,
+      created_at: 'now',
+      updated_at: 'now',
+      primary_sentence: null,
+      context_count: 1,
+      tags: [],
+      contexts: [],
+      media: [],
+      fsrs: { due_date: 'now', stability: 1, difficulty: 5, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
+    };
+
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(cardDetail));
+      if (url === '/api/cards') {
+        return Promise.resolve(jsonResponse({
+          card: { id: 'card-1', target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文', status: 'reviewing', is_favorite: 0, created_at: 'now', updated_at: 'now' },
+          context: { id: 'ctx-3', card_id: 'card-1', sentence: 'They charge extra for breakfast.', note: 'S01E02', is_primary: 0, sort_order: 30, created_at: 'now', updated_at: 'now' },
+        }, 201));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    // Word and meaning loaded and disabled
+    await screen.findByDisplayValue('charge');
+    expect(screen.getByLabelText('目标单词')).toBeDisabled();
+    expect(screen.getByLabelText('当前语境释义')).toBeDisabled();
+
+    // Explicit append notice shown in sidebar
+    expect(screen.getByText('正在为已有词义添加语境：charge = 收费')).toBeInTheDocument();
+
+    // No suggestions calls
+    expect(requests.some((r) => r.url.includes('/api/cards/suggestions'))).toBe(false);
+
+    // Fill sentence and note, submit
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
+    fireEvent.change(screen.getByLabelText('备注'), { target: { value: 'S01E02' } });
+    fireEvent.click(screen.getByRole('button', { name: '添加为新语境' }));
+
+    await waitFor(() => expect(window.location.hash).toBe('#/cards/card-1'));
+    const cardRequest = requests.find((r) => r.url === '/api/cards' && r.method === 'POST');
+    expect(cardRequest?.body).toBe(JSON.stringify({
+      card_id: 'card-1',
+      sentence: 'They charge extra for breakfast.',
+      note: 'S01E02',
+    }));
+  });
 });
