@@ -114,6 +114,22 @@ describe('Phase 6 pages', () => {
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/cards/card-1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ status: 'mastered' }) })));
   });
 
+  it('添加语境 button navigates to create page with card_id', async () => {
+    window.location.hash = '#/cards/card-1';
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse(cards[0]));
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardDetailPage />);
+
+    expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '添加语境' }));
+    expect(window.location.hash).toBe('#/create?card_id=card-1');
+  });
+
   it('creates edits and confirms tag deletion', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);

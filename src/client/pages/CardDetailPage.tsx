@@ -58,6 +58,7 @@ export function CardDetailPage() {
           <p>{card.context_meaning}</p>
         </div>
         <div className="phase6-detail-actions">
+          <button type="button" onClick={() => { window.location.hash = `#/create?card_id=${encodeURIComponent(card.id)}`; }}>添加语境</button>
           <button type="button" onClick={() => runAndReload(() => patchCard(card.id, { is_favorite: !card.is_favorite }))}>{card.is_favorite ? '取消收藏' : '收藏'}</button>
           <button type="button" onClick={() => runAndReload(() => patchCard(card.id, { status: card.status === 'reviewing' ? 'mastered' : 'reviewing' }))}>{card.status === 'reviewing' ? '标记熟记' : '恢复复习'}</button>
           <button type="button" onClick={() => setConfirmDelete('card')}>删除词义</button>
