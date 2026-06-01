@@ -63,10 +63,12 @@ describe('App', () => {
     window.location.hash = '';
   });
 
-  it('renders the sidebar shell with navigation', () => {
+  it('renders the Phase 6/7 sidebar shell with navigation', () => {
     render(<App />);
 
     expect(screen.getByText('语境单词本')).toBeInTheDocument();
+    expect(screen.getByText('Context Review Desk')).toBeInTheDocument();
+    expect(screen.getByText('本地优先')).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: '主导航' })).toHaveTextContent('首页');
     expect(screen.getByRole('navigation', { name: '主导航' })).toHaveTextContent('制卡');
     expect(screen.getByRole('navigation', { name: '主导航' })).toHaveTextContent('设置');

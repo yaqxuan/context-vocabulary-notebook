@@ -17,35 +17,53 @@ interface LayoutProps {
 
 export function Layout({ navItems, currentPath, title, subtitle, children }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 md:flex-row md:px-6 lg:px-8">
-        <aside className="md:w-72 md:shrink-0">
-          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 md:sticky md:top-6">
-            <p className="text-lg font-bold text-slate-950">语境单词本</p>
-            <p className="mt-1 text-sm text-slate-500">Context Vocabulary Notebook</p>
-            <nav className="mt-6 space-y-1" aria-label="主导航">
-              {navItems.map((item) => {
-                const active = item.match(currentPath);
-                return (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    aria-current={active ? 'page' : undefined}
-                    className={`block rounded-xl px-3 py-2 transition ${active ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-100' : 'text-slate-700 hover:bg-slate-100'}`}
-                  >
-                    <span className="block text-sm font-semibold">{item.label}</span>
-                    <span className="block text-xs text-slate-500">{item.description}</span>
-                  </a>
-                );
-              })}
-            </nav>
+    <div className="app-shell">
+      <div className="app-grain" aria-hidden="true" />
+      <div className="app-frame">
+        <aside className="app-sidebar">
+          <div className="app-brand">
+            <div className="app-brand-mark" aria-hidden="true" />
+            <div>
+              <p>语境单词本</p>
+              <span>Context Review Desk</span>
+            </div>
+          </div>
+
+          <nav className="app-nav" aria-label="主导航">
+            {navItems.map((item) => {
+              const active = item.match(currentPath);
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={active ? 'active' : undefined}
+                >
+                  {item.label}
+                  <small>{item.description}</small>
+                </a>
+              );
+            })}
+          </nav>
+
+          <div className="app-side-card" aria-label="应用定位">
+            <span>local-first</span>
+            <strong>本地优先</strong>
+            <p>手动制卡、真实语境、FSRS 复习。数据保存在本地，首页只整合今日入口和问候。</p>
           </div>
         </aside>
-        <main className="min-w-0 flex-1">
-          <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
-            <p className="text-sm font-medium text-blue-700">{subtitle}</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">{title}</h1>
-            <div className="mt-6">{children}</div>
+
+        <main className="app-main">
+          <div className="app-route-title">
+            <div>
+              <h1>{title}</h1>
+              <p>{subtitle}</p>
+            </div>
+            <span>local-first</span>
+          </div>
+
+          <section className="app-content-shell">
+            {children}
           </section>
         </main>
       </div>
