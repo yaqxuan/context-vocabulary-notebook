@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { HomeStatisticsDto } from '../../shared/types';
 import { ErrorState, LoadingState } from '../components/UiStates';
 import { getHomeStatistics } from '../api/statistics';
+import { getHomeGreeting } from '../lib/homeGreetings';
 
 interface StatCardProps {
   label: string;
@@ -45,8 +46,11 @@ export function HomePage() {
   if (error) return <ErrorState message={error} onRetry={load} />;
   if (!data) return <ErrorState message="无法加载首页数据" onRetry={load} />;
 
+  const greeting = getHomeGreeting();
+
   return (
     <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-slate-900">{greeting.text}</h1>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="今日待复习" value={data.due_count} help="按 FSRS 到期排序" />
         <StatCard label="今日已复习" value={`${data.reviewed_today_count} / ${data.daily_review_limit}`} help="每日目标是提醒，不是硬限制" />
