@@ -4,6 +4,7 @@ import { createCard, getCard } from '../api/cards';
 import { getCardSuggestions } from '../api/cards';
 import { uploadMedia } from '../api/media';
 import { listTags } from '../api/tags';
+import { getSettings } from '../api/settings';
 import type { CardDetailDto, SuggestionDto, TagDto } from '../../shared/types';
 import { MEDIA_SIZE_LIMIT_MESSAGES, MEDIA_SIZE_LIMITS_BYTES } from '../../shared/constants';
 
@@ -92,6 +93,22 @@ export function CardCreatePage() {
       .catch(() => { if (active) setTags([]); });
     return () => { active = false; };
   }, []);
+
+  // Load settings defaults for new-card mode
+  useEffect(() => {
+    if (explicitCardId) return;
+    let active = true;
+    getSettings()
+      .then((s) => {
+        if (!active) return;
+        setTargetLanguage(s.default_target_language ?? DEFAULT_TARGET_LANGUAGE);
+        setDefinitionLanguage(s.default_definition_language ?? DEFAULT_DEFINITION_LANGUAGE);
+      })
+      .catch(() => {
+        if (!active) return;
+      });
+    return () => { active = false; };
+  }, [explicitCardId]);
 
   // Load explicit card when card_id present in hash query
   useEffect(() => {

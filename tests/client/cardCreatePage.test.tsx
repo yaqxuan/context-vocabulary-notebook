@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CardCreatePage } from '../../src/client/pages/CardCreatePage';
@@ -15,6 +15,13 @@ function file(name: string, type: string, size = 6): File {
   const sample = new File(['sample'], name, { type });
   Object.defineProperty(sample, 'size', { value: size });
   return sample;
+}
+
+async function flushPromises(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 }
 
 describe('CardCreatePage', () => {
@@ -269,7 +276,92 @@ describe('CardCreatePage', () => {
     expect(requests.filter((r) => r.url === '/api/media' && r.method === 'POST')).toHaveLength(0);
   });
 
-  // Test 10: explicit append mode via hash query card_id
+  // Test 10: settings default languages applied in new-card mode
+  it('applies settings default languages for new-card mode', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({
+        id: 1, interface_language: '中文', created_at: 'now', updated_at: 'now',
+        default_target_language: '日语',
+        default_definition_language: '英文',
+        daily_review_limit: 20,
+      }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    await waitFor(() => expect(screen.getByLabelText('学习语言')).toHaveValue('日语'));
+    expect(screen.getByLabelText('释义语言')).toHaveValue('英文');
+  });
+
+  // Test 11: settings fetch failure falls back to defaults
+  it('falls back to default languages when settings fetch fails', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ error: 'fail' }, 500));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/settings', expect.any(Object)));
+    await flushPromises();
+    expect(screen.getByLabelText('学习语言')).toHaveValue('英语');
+    expect(screen.getByLabelText('释义语言')).toHaveValue('中文');
+  });
+
+  // Test 12: explicit append mode keeps card languages, ignores settings
+  it('explicit append mode keeps card languages not settings defaults', async () => {
+    window.location.hash = '#/create?card_id=card-1';
+
+    const cardDetail = {
+      id: 'card-1',
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      status: 'reviewing',
+      is_favorite: 0,
+      created_at: 'now',
+      updated_at: 'now',
+      primary_sentence: null,
+      context_count: 1,
+      tags: [],
+      contexts: [],
+      media: [],
+      fsrs: { due_date: 'now', stability: 1, difficulty: 5, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
+    };
+
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({
+        id: 1, interface_language: '中文', created_at: 'now', updated_at: 'now',
+        default_target_language: '日语',
+        default_definition_language: '英文',
+        daily_review_limit: 20,
+      }));
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(cardDetail));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    await screen.findByDisplayValue('charge');
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/cards/card-1', expect.any(Object)));
+    await flushPromises();
+    expect(vi.mocked(globalThis.fetch).mock.calls.some(([input]) => String(input) === '/api/settings')).toBe(false);
+    expect(screen.getByLabelText('学习语言')).toHaveValue('英语');
+    expect(screen.getByLabelText('释义语言')).toHaveValue('中文');
+  });
+
+  // Test 13: explicit append mode via hash query card_id
   it('loads existing card from hash card_id, disables word/meaning, skips suggestions, posts append body', async () => {
     window.location.hash = '#/create?card_id=card-1';
 
