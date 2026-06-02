@@ -18,7 +18,7 @@ describe('HomePage', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows loading then welcome, greeting, actions, and home statistics', async () => {
+  it('shows greeting, actions, and metric values without removed helper modules', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({
         due_count: 3,
@@ -43,9 +43,17 @@ describe('HomePage', () => {
     expect(screen.getAllByText('3').length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: '开始复习' })).toHaveAttribute('href', '#/review');
     expect(screen.getByRole('link', { name: '快速制卡' })).toHaveAttribute('href', '#/create');
+    expect(screen.queryByText('LOCAL GREETING')).not.toBeInTheDocument();
+    expect(screen.queryByText('today progress')).not.toBeInTheDocument();
+    expect(screen.queryByText(/问候语来自本地时间段/)).not.toBeInTheDocument();
+    expect(screen.queryByText('按 FSRS 到期排序')).not.toBeInTheDocument();
+    expect(screen.queryByText('每日目标是提醒，不是硬限制')).not.toBeInTheDocument();
+    expect(screen.queryByText('今天不熟或答错')).not.toBeInTheDocument();
+    expect(screen.queryByText('今天顺利想起')).not.toBeInTheDocument();
+    expect(screen.queryByText('soft goal')).not.toBeInTheDocument();
   });
 
-  it('shows daily target reached message', async () => {
+  it('does not show the removed soft-goal card when daily target is reached', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({
         due_count: 0,
@@ -62,7 +70,9 @@ describe('HomePage', () => {
 
     render(<HomePage />);
 
-    expect(await screen.findByText('今日复习目标已完成')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '欢迎回来' })).toBeInTheDocument();
+    expect(screen.queryByText('今日复习目标已完成')).not.toBeInTheDocument();
+    expect(screen.queryByText('soft goal')).not.toBeInTheDocument();
   });
 
   it('shows API errors without greeting or fake counts', async () => {

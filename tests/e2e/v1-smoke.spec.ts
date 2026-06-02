@@ -12,7 +12,8 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
   }).toBe(true);
 
   await page.goto('/#/create');
-  await expect(page.getByRole('heading', { name: '捕捉一个真实语境' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '保存词义条目' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '捕捉一个真实语境' })).toHaveCount(0);
 
   await page.getByLabel('目标单词').fill(targetWord);
   await page.getByLabel('当前语境释义').fill(meaning);

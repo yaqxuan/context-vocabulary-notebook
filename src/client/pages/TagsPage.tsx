@@ -47,24 +47,35 @@ export function TagsPage() {
   return (
     <section className="phase6-tags">
       {error ? <ErrorState message={error} onRetry={load} /> : null}
-      <div className="phase6-tag-editor">
-        <label><span>标签名称</span><input aria-label="标签名称" value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：Friends" /></label>
-        <button type="button" onClick={save}>{editing ? '保存标签' : '新增标签'}</button>
-        {editing ? <button type="button" onClick={() => { setEditing(null); setName(''); }}>取消编辑</button> : null}
+
+      <div className="phase6-tags-board">
+        <div className="phase6-tag-editor">
+          <div className="phase6-tag-editor-copy">
+            <strong>{editing ? '编辑标签' : '新增标签'}</strong>
+            <span>{editing ? `正在修改“${editing.name}”` : '给词义条目准备可复用分类。'}</span>
+          </div>
+          <label><span>标签名称</span><input aria-label="标签名称" value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：Friends" /></label>
+          <div className="phase6-tag-editor-actions">
+            <button type="button" onClick={save}>{editing ? '保存标签' : '新增标签'}</button>
+            {editing ? <button type="button" onClick={() => { setEditing(null); setName(''); }}>取消编辑</button> : null}
+          </div>
+        </div>
+
+        <div className="phase6-tag-grid">
+          {tags.length === 0 ? <p className="phase6-tag-empty">暂无标签</p> : null}
+          {tags.map((tag) => (
+            <article key={tag.id} className="phase6-tag-card">
+              <strong>{tag.name}</strong>
+              <div>
+                <a href={`#/cards?tag_id=${tag.id}`}>查看词义</a>
+                <button type="button" onClick={() => { setEditing(tag); setName(tag.name); }}>编辑</button>
+                <button type="button" onClick={() => setDeleteTarget(tag)}>删除</button>
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
-      <div className="phase6-tag-grid">
-        {tags.length === 0 ? <p>暂无标签</p> : null}
-        {tags.map((tag) => (
-          <article key={tag.id} className="phase6-tag-card">
-            <strong>{tag.name}</strong>
-            <div>
-              <a href={`#/cards?tag_id=${tag.id}`}>查看词义</a>
-              <button type="button" onClick={() => { setEditing(tag); setName(tag.name); }}>编辑</button>
-              <button type="button" onClick={() => setDeleteTarget(tag)}>删除</button>
-            </div>
-          </article>
-        ))}
-      </div>
+
       {deleteTarget ? <ConfirmDialog title="删除标签" message={`确认删除标签“${deleteTarget.name}”？词义条目不会被删除。`} confirmLabel="删除" onCancel={() => setDeleteTarget(null)} onConfirm={async () => {
         try {
           await deleteTag(deleteTarget.id);

@@ -235,22 +235,18 @@ describe('StatisticsPage', () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(fullStats));
     });
 
-    it('renders Again section in trend area', async () => {
+    it('renders Again explanation and bars in trend area', async () => {
       render(<StatisticsPage />);
       await screen.findByText('248');
-      // The trend box label is a <p> with exactly "Again"
-      const trendLabels = document.querySelectorAll('.phase7-statistics-trend-label');
-      const texts = Array.from(trendLabels).map((el) => el.textContent);
-      expect(texts).toContain('Again');
+      expect(screen.getByText('Again：没想起 / 记错')).toBeInTheDocument();
+      expect(screen.getByTestId('rating-trend-again-2026-05-14')).toHaveClass('phase7-statistics-rating-bar--again');
     });
 
-    it('renders Good section in trend area', async () => {
+    it('renders Good explanation and bars in trend area', async () => {
       render(<StatisticsPage />);
       await screen.findByText('248');
-      // The trend box label is a <p> with exactly "Good"
-      const trendLabels = document.querySelectorAll('.phase7-statistics-trend-label');
-      const texts = Array.from(trendLabels).map((el) => el.textContent);
-      expect(texts).toContain('Good');
+      expect(screen.getByText('Good：顺利想起')).toBeInTheDocument();
+      expect(screen.getByTestId('rating-trend-good-2026-05-14')).toHaveClass('phase7-statistics-rating-bar--good');
     });
 
     it('renders accessible summary for Again trend spark chart', async () => {

@@ -277,6 +277,8 @@ export function CardCreatePage() {
 
   const saveLabel = isSaving ? '保存中…' : mode.kind === 'existing' ? '添加为新语境' : '保存词义条目';
   const currentMeaning = mode.kind === 'existing' ? mode.meaning : meaning;
+  const showSuggestionPanel = Boolean(targetWord.trim());
+  const suggestionTitle = appendCard ? '添加到已有词义' : '查找已有词义，避免重复建卡';
 
   if (appendLoadError) {
     return (
@@ -289,22 +291,10 @@ export function CardCreatePage() {
 
   return (
     <form className="card-create-studio" onSubmit={handleSubmit} noValidate>
-      {/* Hero header */}
-      <div className="card-create-hero">
-        <div>
-          <p className="card-create-kicker">Context capture</p>
-          <h2>捕捉一个真实语境</h2>
-          <p>把视频里遇到的词、当下意思、原句和证据材料钉成一张可复习的词义卡。</p>
-        </div>
-        <button className="card-create-save" type="submit" disabled={isSaving}>
-          {saveLabel}
-        </button>
-      </div>
-
       {errors.submit ? <div className="card-create-alert" role="alert">{errors.submit}</div> : null}
       {successMessage ? <div className="card-create-success" role="status">{successMessage}</div> : null}
 
-      <div className="card-create-grid">
+      <div className={`card-create-grid${showSuggestionPanel ? '' : ' card-create-grid--single'}`}>
         {/* Main form panel */}
         <section className="card-create-panel card-create-panel-main" aria-label="制卡表单">
           {/* Target word */}
@@ -439,19 +429,27 @@ export function CardCreatePage() {
           </section>
         </section>
 
-        {/* Suggestions sidebar */}
-        <aside className="card-create-panel card-create-suggestions" aria-label="已有词义">
-          <p className="card-create-side-title">已有词义</p>
-          <SuggestionPanel
-            state={suggestionState}
-            targetWord={targetWord}
-            meaning={meaning}
-            suggestions={suggestions}
-            exactMatch={exactMatch}
-            mode={mode}
-            appendCard={appendCard}
-          />
-        </aside>
+        {showSuggestionPanel ? (
+          <aside className="card-create-panel card-create-suggestions" aria-label={suggestionTitle}>
+            <p className="card-create-side-title">{suggestionTitle}</p>
+            <SuggestionPanel
+              state={suggestionState}
+              targetWord={targetWord}
+              meaning={meaning}
+              suggestions={suggestions}
+              exactMatch={exactMatch}
+              mode={mode}
+              appendCard={appendCard}
+            />
+          </aside>
+        ) : null}
+      </div>
+
+      {/* Save action: keep submit below media uploads so users do not scroll back up after attaching files. */}
+      <div className="card-create-actions">
+        <button className="card-create-save" type="submit" disabled={isSaving}>
+          {saveLabel}
+        </button>
       </div>
     </form>
   );
@@ -511,7 +509,7 @@ function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch, 
     );
   }
   if (!targetWord.trim()) {
-    return <p className="card-create-side-copy">输入目标单词后，我会查找已有词义，帮你避免重复建卡。</p>;
+    return null;
   }
   if (state === 'loading') {
     return <p className="card-create-side-copy">正在查找已有词义……</p>;

@@ -83,8 +83,6 @@ export function CardCatalogue(props: CardCatalogueProps) {
 
   return (
     <section className="phase6-catalogue" aria-label={title}>
-      <a className="phase6-primary-link" href="#/create">+ 快速制卡</a>
-
       <div className="phase6-filter-desk">
         <label>
           <span>搜索</span>

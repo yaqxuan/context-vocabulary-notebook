@@ -113,7 +113,7 @@ describe('App', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: '制卡' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '捕捉一个真实语境' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '捕捉一个真实语境' })).not.toBeInTheDocument();
     expect(screen.getByText('本地视频 mp4')).toBeInTheDocument();
   });
 

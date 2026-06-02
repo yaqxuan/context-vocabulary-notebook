@@ -50,6 +50,7 @@ function BarChart({ entries, summaryId }: { entries: BarEntry[]; summaryId?: str
       <div className="phase7-statistics-bars" aria-hidden="true">
         {entries.map((e) => (
           <div key={e.label} className="phase7-statistics-bar-col">
+            <span className="phase7-statistics-bar-count">{e.count}</span>
             <div
               className="phase7-statistics-bar"
               style={{ height: `${Math.round((e.count / max) * 100)}%` }}
@@ -63,19 +64,46 @@ function BarChart({ entries, summaryId }: { entries: BarEntry[]; summaryId?: str
   );
 }
 
-// --- Accuracy list ---
+// --- Accuracy line chart ---
 
-function AccuracyList({ entries }: { entries: StatisticsPageDto['daily_accuracy'] }) {
+function AccuracyLineChart({ entries }: { entries: StatisticsPageDto['daily_accuracy'] }) {
   if (entries.length === 0) return null;
+
+  const width = 1000;
+  const height = 190;
+  const padX = 46;
+  const padTop = 30;
+  const padBottom = 42;
+  const plotHeight = height - padTop - padBottom;
+  const xFor = (index: number) => entries.length === 1
+    ? width / 2
+    : padX + (index * (width - padX * 2)) / (entries.length - 1);
+  const yFor = (accuracy: number) => padTop + (1 - accuracy) * plotHeight;
+  const points = entries.map((e, index) => `${xFor(index)},${yFor(e.accuracy)}`).join(' ');
+  const summaryText = entries.map((e) => `${shortDate(e.date)}: ${pct(e.accuracy)}`).join(', ');
+  const showInlineValues = entries.length <= 14;
+
   return (
-    <ul className="phase7-statistics-accuracy-list">
-      {entries.map((e) => (
-        <li key={e.date} className="phase7-statistics-accuracy-row">
-          <span className="phase7-statistics-accuracy-date">{shortDate(e.date)}</span>
-          <span className="phase7-statistics-accuracy-pct">{pct(e.accuracy)}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="phase7-statistics-line-chart">
+      <p className="phase7-statistics-sr-only">{summaryText}</p>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`每日正确率：${summaryText}`}>
+        <line className="phase7-statistics-line-axis" x1={padX} y1={padTop} x2={padX} y2={height - padBottom} />
+        <line className="phase7-statistics-line-axis" x1={padX} y1={height - padBottom} x2={width - padX} y2={height - padBottom} />
+        <polyline className="phase7-statistics-line-path" points={points} />
+        {entries.map((e, index) => {
+          const x = xFor(index);
+          const y = yFor(e.accuracy);
+          const valueY = y < 58 ? y + 36 : y - 16;
+          return (
+            <g key={e.date}>
+              <circle className="phase7-statistics-line-dot" cx={x} cy={y} r="7" />
+              {showInlineValues ? <text className="phase7-statistics-line-value" x={x} y={valueY} textAnchor="middle">{pct(e.accuracy)}</text> : null}
+              <text className="phase7-statistics-line-label" x={x} y={height - 14} textAnchor="middle">{shortDate(e.date)}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
 
@@ -122,43 +150,44 @@ function TagDistribution({ entries }: { entries: StatisticsPageDto['tag_distribu
 
 function RatingTrend({ entries }: { entries: StatisticsPageDto['rating_trend'] }) {
   if (entries.length === 0) return null;
-  const maxAgain = Math.max(...entries.map((e) => e.again_count), 1);
-  const maxGood = Math.max(...entries.map((e) => e.good_count), 1);
+  const max = Math.max(...entries.flatMap((e) => [e.again_count, e.good_count]), 1);
+  const barHeight = (count: number) => count === 0 ? 0 : Math.max(8, Math.round((count / max) * 88));
   const againSummary = entries.map((e) => `${e.date}: ${e.again_count}`).join(', ');
   const goodSummary = entries.map((e) => `${e.date}: ${e.good_count}`).join(', ');
   return (
-    <div className="phase7-statistics-trend-grid">
-      <div className="phase7-statistics-trend-box">
-        <p className="phase7-statistics-trend-label">Again</p>
-        <p className="phase7-statistics-sr-only" data-testid="again-trend-summary">
-          {againSummary}
-        </p>
-        <div className="phase7-statistics-spark" aria-hidden="true">
-          {entries.map((e) => (
-            <i
-              key={e.date}
-              className="phase7-statistics-spark-bar phase7-statistics-spark-again"
-              style={{ height: `${Math.round((e.again_count / maxAgain) * 100)}%` }}
-              title={`${e.date}: ${e.again_count}`}
-            />
-          ))}
-        </div>
+    <div className="phase7-statistics-rating-trend">
+      <p className="phase7-statistics-sr-only" data-testid="again-trend-summary">{againSummary}</p>
+      <p className="phase7-statistics-sr-only" data-testid="good-trend-summary">{goodSummary}</p>
+      <div className="phase7-statistics-rating-legend" aria-hidden="true">
+        <span><i className="phase7-statistics-rating-dot phase7-statistics-rating-dot--again" />Again：没想起 / 记错</span>
+        <span><i className="phase7-statistics-rating-dot phase7-statistics-rating-dot--good" />Good：顺利想起</span>
       </div>
-      <div className="phase7-statistics-trend-box">
-        <p className="phase7-statistics-trend-label">Good</p>
-        <p className="phase7-statistics-sr-only" data-testid="good-trend-summary">
-          {goodSummary}
-        </p>
-        <div className="phase7-statistics-spark" aria-hidden="true">
-          {entries.map((e) => (
-            <i
-              key={e.date}
-              className="phase7-statistics-spark-bar phase7-statistics-spark-good"
-              style={{ height: `${Math.round((e.good_count / maxGood) * 100)}%` }}
-              title={`${e.date}: ${e.good_count}`}
-            />
-          ))}
-        </div>
+      <div className="phase7-statistics-rating-groups" aria-hidden="true">
+        {entries.map((entry) => (
+          <div key={entry.date} className="phase7-statistics-rating-group" data-testid={`rating-trend-group-${entry.date}`}>
+            <div className="phase7-statistics-rating-bars">
+              <span className="phase7-statistics-rating-stack">
+                <span className="phase7-statistics-rating-count">{entry.again_count}</span>
+                <i
+                  className="phase7-statistics-rating-bar phase7-statistics-rating-bar--again"
+                  data-testid={`rating-trend-again-${entry.date}`}
+                  style={{ height: `${barHeight(entry.again_count)}px` }}
+                  title={`${entry.date} Again: ${entry.again_count}`}
+                />
+              </span>
+              <span className="phase7-statistics-rating-stack">
+                <span className="phase7-statistics-rating-count">{entry.good_count}</span>
+                <i
+                  className="phase7-statistics-rating-bar phase7-statistics-rating-bar--good"
+                  data-testid={`rating-trend-good-${entry.date}`}
+                  style={{ height: `${barHeight(entry.good_count)}px` }}
+                  title={`${entry.date} Good: ${entry.good_count}`}
+                />
+              </span>
+            </div>
+            <span className="phase7-statistics-bar-label">{shortDate(entry.date)}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -222,7 +251,7 @@ function StatisticsReady({ data }: { data: StatisticsPageDto }) {
               <h2 className="phase7-statistics-card-title">每日正确率折线图</h2>
               <p className="phase7-statistics-card-sub">每天 Good 占总复习比</p>
             </div>
-            <AccuracyList entries={data.daily_accuracy} />
+            <AccuracyLineChart entries={data.daily_accuracy} />
           </section>
 
           {/* Tag distribution */}
@@ -238,7 +267,7 @@ function StatisticsReady({ data }: { data: StatisticsPageDto }) {
           <section className="phase7-statistics-chart-card">
             <div className="phase7-statistics-card-head">
               <h2 className="phase7-statistics-card-title">Again / Good 趋势</h2>
-              <p className="phase7-statistics-card-sub">每日评分分布</p>
+              <p className="phase7-statistics-card-sub">每一天的 Again / Good 次数对比</p>
             </div>
             <RatingTrend entries={data.rating_trend} />
           </section>

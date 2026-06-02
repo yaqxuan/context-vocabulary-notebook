@@ -41,10 +41,14 @@ describe('CardCreatePage', () => {
   });
 
   // Test 1: render
-  it('renders a polished create workspace with default languages and recommended optional video', async () => {
+  it('renders create workspace without removed hero and idle suggestions copy', async () => {
     render(<CardCreatePage />);
 
-    expect(screen.getByRole('heading', { name: '捕捉一个真实语境' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '保存词义条目' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '捕捉一个真实语境' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Context capture')).not.toBeInTheDocument();
+    expect(screen.queryByText(/把视频里遇到的词/)).not.toBeInTheDocument();
+    expect(screen.queryByText('输入目标单词后，我会查找已有词义，帮你避免重复建卡。')).not.toBeInTheDocument();
     expect(screen.getByLabelText('目标单词')).toHaveAttribute('placeholder', '例如：charge');
     expect(screen.getByLabelText('学习语言')).toHaveValue('英语');
     expect(screen.getByLabelText('释义语言')).toHaveValue('中文');
@@ -125,6 +129,7 @@ describe('CardCreatePage', () => {
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: ' 收费 ' } });
 
     expect(await screen.findByText('已找到相同词义：charge = 收费')).toBeInTheDocument();
+    expect(screen.getByText('查找已有词义，避免重复建卡')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '添加为新语境' })).toBeInTheDocument();
     expect(screen.queryByText('创建新的词义条目')).not.toBeInTheDocument();
     expect(screen.getByText('不同语义，仅供参考')).toBeInTheDocument();
