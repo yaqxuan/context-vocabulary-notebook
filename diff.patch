@@ -1,0 +1,1096 @@
+diff --git a/require.md b/require.md
+index d3edd63..6e60bd7 100644
+--- a/require.md
++++ b/require.md
+@@ -117,37 +117,47 @@ The app charges a monthly subscription fee.
+ 系统使用独立的 `id` 作为词义条目主键，制卡时间作为普通字段保存。
+ 
+ ---
+-
+-### 5.2 制卡时的已有词义联想
+-
+-用户输入目标单词时，系统自动展示该单词已有的词义条目。
+-
+-例如用户输入：
+-
+-```text
+-charge
+-```
+-
+-系统展示：
+-
+-```text
+-charge = 收费
+-charge = 指控
+-charge = 充电
+-```
+-
+-用户可以选择：
+-
+-```text
+-添加到已有词义条目
+-创建新的词义条目
+-```
+-
+-如果选择已有词义条目，当前原句、备注、本地视频、截图和音频会作为新的语境实例添加到该词义条目下。
+-
+----
+-
+-### 5.3 语境实例
++
++### 5.2 制卡时的已有词义联想
++
++制卡页在目标单词为空时不展示已有词义联想模块，避免空侧栏和无效说明文字干扰填写。
++
++用户输入目标单词后，系统自动查询并展示该单词已有的词义条目。联想模块标题应表达用途：查找已有词义，避免重复建卡。
++
++例如用户输入：
++
++```text
++charge
++```
++
++系统可以展示：
++
++```text
++charge = 收费
++charge = 指控
++charge = 充电
++```
++
++处理规则：
++
++```text
++如果目标单词 + 当前语境释义完全匹配已有词义条目：
++  隐藏创建新词义条目的选项
++  当前原句、备注、本地视频、截图和音频保存为该已有词义条目的新语境实例
++
++如果只有目标单词相同，但当前语境释义不同：
++  已有词义只作为参考信息展示
++  仍允许创建新的词义条目
++
++如果没有同名单词：
++  允许创建新的词义条目
++```
++
++用户主动选择已有词义条目时，当前原句、备注、本地视频、截图和音频会作为新的语境实例添加到该词义条目下。
++
++---
++
++### 5.3 语境实例
+ 
+ 每个词义条目下面可以添加多个语境实例。
+ 
+@@ -677,45 +687,62 @@ tags.deleted_at IS NULL
+ ```
+ 
+ 这样可以避免用户删除卡片后，列表看不到卡片，但统计数字仍然包含它导致的错位感。
+-
+----
+-
+-## 9. 首页与统计页
+-
+-### 9.1 首页
+-
+-首页只放行动导向信息：
+-
+-```text
+-今日待复习数量
+-今日已复习数量
+-今日 Again / Good 数量
+-今日是否达到复习目标
+-开始复习按钮
+-快速制卡入口
+-```
+-
+----
+-
+-### 9.2 统计页
+-
+-统计页放分析信息：
+-
+-```text
+-总词义条目数量
+-复习中数量
+-已熟记数量
+-收藏数量
+-每日复习数量折线图
+-每日正确率折线图
+-标签分布
+-Again / Good 趋势
+-```
+-
+-每日复习数量和正确率统计需要排除已软删除词义条目的复习记录。
+-
+----
+-
++
++---
++
++## 9. 首页与统计页
++
++### 9.1 首页
++
++首页展示今日复习桌面和两个核心入口，不扩展新功能。
++
++包含：
++
++```text
++本地时间段问候语
++开始复习按钮
++快速制卡入口
++今日待复习数量
++今日已复习数量
++今日 Again / Good 数量
++复习节奏摘要
++```
++
++首页不展示实现细节或装饰性模块：
++
++```text
++不显示 LOCAL GREETING 标签
++不显示问候语调度说明
++不显示单独的 today progress 大卡
++不在统计卡下显示解释性小字
++不显示 soft goal 模块
++```
++
++每日目标是复习页的提醒逻辑，首页不单独展示“今日复习目标已完成 / 今天可以继续积累和复习”的目标状态卡。
++
++---
++
++### 9.2 统计页
++
++统计页放分析信息：
++
++```text
++总词义条目数量
++复习中数量
++已熟记数量
++收藏数量
++每日复习数量折线图
++每日正确率折线图
++标签分布
++Again / Good 趋势
++```
++
++Again / Good 趋势必须说明含义：Again 表示没想起或记错，Good 表示顺利想起。图表应按天对比两类评分次数，避免只显示两个难以理解的独立色块。
++
++每日复习数量和正确率统计需要排除已软删除词义条目的复习记录。
++
++---
++
+ ## 10. 导入导出
+ 
+ 系统提供两种导入导出模式。
+@@ -860,65 +887,87 @@ is_available = false
+ 设置页
+ ```
+ 
+----
+-
+-### 11.1 首页
+-
+-展示今日复习任务和快速入口。
+-
+-包含：
+-
+-```text
+-今日待复习数量
+-今日已复习数量
+-今日 Again / Good 数量
+-今日是否达到复习目标
+-开始复习按钮
+-快速制卡入口
+-```
+-
+----
+-
+-### 11.2 制卡页
+-
+-用于创建词义条目，或给已有词义条目添加新的语境实例。
+-
+-核心功能：
+-
+-```text
+-输入目标单词
+-展示已有词义条目
+-选择添加到已有条目或创建新条目
+-输入当前语境释义
+-输入原句
+-添加标签
+-添加备注
+-上传本地视频 mp4
+-上传截图 jpg / png / webp
+-上传音频 mp3
+-保存
+-```
+-
+----
+-
+-### 11.3 词义条目列表页
+-
+-支持：
+-
+-```text
+-搜索
+-分页
+-标签筛选
+-状态筛选
+-收藏筛选
+-标记熟记
+-查看详情
+-```
+-
+-列表默认展示：
+-
+-```text
+-目标单词
++---
++
++### 11.1 首页
++
++展示今日复习任务、时间段问候语和快速入口。
++
++包含：
++
++```text
++本地时间段问候语
++开始复习按钮
++快速制卡入口
++今日待复习数量
++今日已复习数量
++今日 Again / Good 数量
++复习节奏摘要
++```
++
++页面不展示：
++
++```text
++LOCAL GREETING 标签
++问候语调度说明
++独立 today progress 大卡
++统计卡解释性小字
++soft goal 模块
++首页目标状态卡
++```
++
++---
++
++### 11.2 制卡页
++
++用于创建词义条目，或给已有词义条目添加新的语境实例。页面以表单为主，不展示额外的大型 hero 标题或装饰性说明文案。
++
++核心功能：
++
++```text
++输入目标单词
++输入当前语境释义
++输入原句
++添加标签
++添加备注
++上传本地视频 mp4
++上传截图 jpg / png / webp
++上传音频 mp3
++保存
++```
++
++已有词义联想：
++
++```text
++目标单词为空时不展示已有词义模块
++输入目标单词后展示已有词义模块
++模块标题为“查找已有词义，避免重复建卡”
++目标单词 + 当前语境释义完全匹配已有条目时，隐藏创建新词义条目的选项，并保存为新语境实例
++同名单词但释义不同的条目仅作为参考，仍允许创建新词义条目
++```
++
++---
++
++### 11.3 词义条目列表页
++
++支持：
++
++```text
++搜索
++分页
++标签筛选
++状态筛选
++收藏筛选
++标记熟记
++查看详情
++```
++
++列表页不展示独立的顶部大条“快速制卡”按钮；快速制卡入口保留在首页和主导航。
++
++列表默认展示：
++
++```text
++目标单词
+ 当前语境释义
+ 主语境原句
+ 标签
+@@ -1078,15 +1127,17 @@ updated_at DESC
+ 复习中数量
+ 已熟记数量
+ 收藏数量
+-每日复习数量折线图
+-每日正确率折线图
+-标签分布
+-Again / Good 趋势
+-```
+-
+----
+-
+-### 11.9 设置页
++每日复习数量折线图
++每日正确率折线图
++标签分布
++Again / Good 趋势
++```
++
++Again / Good 趋势展示按天对比的 Again 与 Good 次数，并在页面上说明：Again 是没想起或记错，Good 是顺利想起。
++
++---
++
++### 11.9 设置页
+ 
+ 用于设置：
+ 
+diff --git a/src/client/components/CardCatalogue.tsx b/src/client/components/CardCatalogue.tsx
+index 03dec1f..84f4c37 100644
+--- a/src/client/components/CardCatalogue.tsx
++++ b/src/client/components/CardCatalogue.tsx
+@@ -83,8 +83,6 @@ export function CardCatalogue(props: CardCatalogueProps) {
+ 
+   return (
+     <section className="phase6-catalogue" aria-label={title}>
+-      <a className="phase6-primary-link" href="#/create">+ 快速制卡</a>
+-
+       <div className="phase6-filter-desk">
+         <label>
+           <span>搜索</span>
+diff --git a/src/client/pages/CardCreatePage.tsx b/src/client/pages/CardCreatePage.tsx
+index 60feebe..249add1 100644
+--- a/src/client/pages/CardCreatePage.tsx
++++ b/src/client/pages/CardCreatePage.tsx
+@@ -277,6 +277,8 @@ export function CardCreatePage() {
+ 
+   const saveLabel = isSaving ? '保存中…' : mode.kind === 'existing' ? '添加为新语境' : '保存词义条目';
+   const currentMeaning = mode.kind === 'existing' ? mode.meaning : meaning;
++  const showSuggestionPanel = Boolean(targetWord.trim());
++  const suggestionTitle = appendCard ? '添加到已有词义' : '查找已有词义，避免重复建卡';
+ 
+   if (appendLoadError) {
+     return (
+@@ -289,13 +291,8 @@ export function CardCreatePage() {
+ 
+   return (
+     <form className="card-create-studio" onSubmit={handleSubmit} noValidate>
+-      {/* Hero header */}
++      {/* Save action */}
+       <div className="card-create-hero">
+-        <div>
+-          <p className="card-create-kicker">Context capture</p>
+-          <h2>捕捉一个真实语境</h2>
+-          <p>把视频里遇到的词、当下意思、原句和证据材料钉成一张可复习的词义卡。</p>
+-        </div>
+         <button className="card-create-save" type="submit" disabled={isSaving}>
+           {saveLabel}
+         </button>
+@@ -304,7 +301,7 @@ export function CardCreatePage() {
+       {errors.submit ? <div className="card-create-alert" role="alert">{errors.submit}</div> : null}
+       {successMessage ? <div className="card-create-success" role="status">{successMessage}</div> : null}
+ 
+-      <div className="card-create-grid">
++      <div className={`card-create-grid${showSuggestionPanel ? '' : ' card-create-grid--single'}`}>
+         {/* Main form panel */}
+         <section className="card-create-panel card-create-panel-main" aria-label="制卡表单">
+           {/* Target word */}
+@@ -439,19 +436,20 @@ export function CardCreatePage() {
+           </section>
+         </section>
+ 
+-        {/* Suggestions sidebar */}
+-        <aside className="card-create-panel card-create-suggestions" aria-label="已有词义">
+-          <p className="card-create-side-title">已有词义</p>
+-          <SuggestionPanel
+-            state={suggestionState}
+-            targetWord={targetWord}
+-            meaning={meaning}
+-            suggestions={suggestions}
+-            exactMatch={exactMatch}
+-            mode={mode}
+-            appendCard={appendCard}
+-          />
+-        </aside>
++        {showSuggestionPanel ? (
++          <aside className="card-create-panel card-create-suggestions" aria-label={suggestionTitle}>
++            <p className="card-create-side-title">{suggestionTitle}</p>
++            <SuggestionPanel
++              state={suggestionState}
++              targetWord={targetWord}
++              meaning={meaning}
++              suggestions={suggestions}
++              exactMatch={exactMatch}
++              mode={mode}
++              appendCard={appendCard}
++            />
++          </aside>
++        ) : null}
+       </div>
+     </form>
+   );
+@@ -511,7 +509,7 @@ function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch,
+     );
+   }
+   if (!targetWord.trim()) {
+-    return <p className="card-create-side-copy">输入目标单词后，我会查找已有词义，帮你避免重复建卡。</p>;
++    return null;
+   }
+   if (state === 'loading') {
+     return <p className="card-create-side-copy">正在查找已有词义……</p>;
+diff --git a/src/client/pages/HomePage.tsx b/src/client/pages/HomePage.tsx
+index a3ddf13..cb06dc5 100644
+--- a/src/client/pages/HomePage.tsx
++++ b/src/client/pages/HomePage.tsx
+@@ -8,15 +8,13 @@ import { getHomeGreeting } from '../lib/homeGreetings';
+ interface StatCardProps {
+   label: string;
+   value: string | number;
+-  help: string;
+ }
+ 
+-function StatCard({ label, value, help }: StatCardProps) {
++function StatCard({ label, value }: StatCardProps) {
+   return (
+     <div className="home-metric">
+       <span>{label}</span>
+       <strong>{value}</strong>
+-      <em>{help}</em>
+     </div>
+   );
+ }
+@@ -26,30 +24,17 @@ function progressWidth(reviewed: number, limit: number): string {
+   return `${Math.min(100, Math.round((reviewed / limit) * 100))}%`;
+ }
+ 
+-function HomeHero({ data, greeting }: { data: HomeStatisticsDto; greeting: string }) {
+-  const progressText = `${data.reviewed_today_count}/${data.daily_review_limit}`;
++function HomeHero({ greeting }: { greeting: string }) {
+   return (
+     <section className="home-hero" aria-label="今日问候和复习入口">
+       <div>
+-        <p className="home-kicker">LOCAL GREETING</p>
+         <h2 className="home-welcome">欢迎回来</h2>
+         <p className="home-greeting">{greeting}</p>
+-        <p className="home-copy">
+-          问候语来自本地时间段，不显示调度细节。首页先给一个安静入口，再把今天真正要做的复习量摆清楚。
+-        </p>
+         <div className="home-actions">
+           <a className="home-btn home-btn-primary" href="#/review">开始复习</a>
+           <a className="home-btn home-btn-secondary" href="#/create">快速制卡</a>
+         </div>
+       </div>
+-
+-      <div className="home-progress-card" aria-label={`今日复习进度 ${progressText}`}>
+-        <span>today progress</span>
+-        <strong>{progressText}</strong>
+-        <div className="home-progress-track" aria-hidden="true">
+-          <i style={{ width: progressWidth(data.reviewed_today_count, data.daily_review_limit) }} />
+-        </div>
+-      </div>
+     </section>
+   );
+ }
+@@ -83,31 +68,25 @@ export function HomePage() {
+ 
+   return (
+     <div className="home-desk">
+-      <HomeHero data={data} greeting={greeting.text} />
++      <HomeHero greeting={greeting.text} />
+ 
+       <section className="home-metrics" aria-label="首页统计">
+-        <StatCard label="今日待复习" value={data.due_count} help="按 FSRS 到期排序" />
+-        <StatCard label="今日已复习" value={`${data.reviewed_today_count}/${data.daily_review_limit}`} help="每日目标是提醒，不是硬限制" />
+-        <StatCard label="Again" value={data.again_today_count} help="今天不熟或答错" />
+-        <StatCard label="Good" value={data.good_today_count} help="今天顺利想起" />
++        <StatCard label="今日待复习" value={data.due_count} />
++        <StatCard label="今日已复习" value={`${data.reviewed_today_count}/${data.daily_review_limit}`} />
++        <StatCard label="Again" value={data.again_today_count} />
++        <StatCard label="Good" value={data.good_today_count} />
+       </section>
+ 
+       <div className="home-bottom-grid">
+         <section className="home-focus-card" aria-label="复习节奏摘要">
+           <h2>先处理到期，再继续积累。</h2>
+-          <p>首页不扩展新功能，只把现有数据组织成更清晰的复习桌面：待复习、今日进度、Again / Good 和两个主入口。</p>
++          <p>先看待复习数量，再用 Good / Again 判断今天的复习节奏。</p>
+           <div className="home-mini-queue" aria-hidden="true">
+             <div className="home-queue-row"><span>待复习</span><span className="home-track"><i style={{ width: progressWidth(data.due_count, Math.max(data.due_count + data.reviewed_today_count, 1)) }} /></span><strong>{data.due_count}</strong></div>
+             <div className="home-queue-row"><span>Good</span><span className="home-track"><i style={{ width: progressWidth(data.good_today_count, Math.max(data.reviewed_today_count, 1)) }} /></span><strong>{data.good_today_count}</strong></div>
+             <div className="home-queue-row"><span>Again</span><span className="home-track"><i style={{ width: progressWidth(data.again_today_count, Math.max(data.reviewed_today_count, 1)) }} /></span><strong>{data.again_today_count}</strong></div>
+           </div>
+         </section>
+-
+-        <section className="home-state-card" aria-label="今日目标提醒">
+-          <span>soft goal</span>
+-          <h2>{data.is_daily_target_reached ? '今日复习目标已完成' : '今天可以继续积累和复习'}</h2>
+-          <p>复习页会按到期时间展示词义条目，目标单词不会被隐藏。每日目标是提醒，不是硬限制。</p>
+-        </section>
+       </div>
+     </div>
+   );
+diff --git a/src/client/pages/StatisticsPage.tsx b/src/client/pages/StatisticsPage.tsx
+index 2506469..88dcb06 100644
+--- a/src/client/pages/StatisticsPage.tsx
++++ b/src/client/pages/StatisticsPage.tsx
+@@ -122,43 +122,44 @@ function TagDistribution({ entries }: { entries: StatisticsPageDto['tag_distribu
+ 
+ function RatingTrend({ entries }: { entries: StatisticsPageDto['rating_trend'] }) {
+   if (entries.length === 0) return null;
+-  const maxAgain = Math.max(...entries.map((e) => e.again_count), 1);
+-  const maxGood = Math.max(...entries.map((e) => e.good_count), 1);
++  const max = Math.max(...entries.flatMap((e) => [e.again_count, e.good_count]), 1);
++  const barHeight = (count: number) => count === 0 ? 0 : Math.max(8, Math.round((count / max) * 88));
+   const againSummary = entries.map((e) => `${e.date}: ${e.again_count}`).join(', ');
+   const goodSummary = entries.map((e) => `${e.date}: ${e.good_count}`).join(', ');
+   return (
+-    <div className="phase7-statistics-trend-grid">
+-      <div className="phase7-statistics-trend-box">
+-        <p className="phase7-statistics-trend-label">Again</p>
+-        <p className="phase7-statistics-sr-only" data-testid="again-trend-summary">
+-          {againSummary}
+-        </p>
+-        <div className="phase7-statistics-spark" aria-hidden="true">
+-          {entries.map((e) => (
+-            <i
+-              key={e.date}
+-              className="phase7-statistics-spark-bar phase7-statistics-spark-again"
+-              style={{ height: `${Math.round((e.again_count / maxAgain) * 100)}%` }}
+-              title={`${e.date}: ${e.again_count}`}
+-            />
+-          ))}
+-        </div>
++    <div className="phase7-statistics-rating-trend">
++      <p className="phase7-statistics-sr-only" data-testid="again-trend-summary">{againSummary}</p>
++      <p className="phase7-statistics-sr-only" data-testid="good-trend-summary">{goodSummary}</p>
++      <div className="phase7-statistics-rating-legend" aria-hidden="true">
++        <span><i className="phase7-statistics-rating-dot phase7-statistics-rating-dot--again" />Again：没想起 / 记错</span>
++        <span><i className="phase7-statistics-rating-dot phase7-statistics-rating-dot--good" />Good：顺利想起</span>
+       </div>
+-      <div className="phase7-statistics-trend-box">
+-        <p className="phase7-statistics-trend-label">Good</p>
+-        <p className="phase7-statistics-sr-only" data-testid="good-trend-summary">
+-          {goodSummary}
+-        </p>
+-        <div className="phase7-statistics-spark" aria-hidden="true">
+-          {entries.map((e) => (
+-            <i
+-              key={e.date}
+-              className="phase7-statistics-spark-bar phase7-statistics-spark-good"
+-              style={{ height: `${Math.round((e.good_count / maxGood) * 100)}%` }}
+-              title={`${e.date}: ${e.good_count}`}
+-            />
+-          ))}
+-        </div>
++      <div className="phase7-statistics-rating-groups" aria-hidden="true">
++        {entries.map((entry) => (
++          <div key={entry.date} className="phase7-statistics-rating-group" data-testid={`rating-trend-group-${entry.date}`}>
++            <div className="phase7-statistics-rating-bars">
++              <span className="phase7-statistics-rating-stack">
++                <span className="phase7-statistics-rating-count">{entry.again_count}</span>
++                <i
++                  className="phase7-statistics-rating-bar phase7-statistics-rating-bar--again"
++                  data-testid={`rating-trend-again-${entry.date}`}
++                  style={{ height: `${barHeight(entry.again_count)}px` }}
++                  title={`${entry.date} Again: ${entry.again_count}`}
++                />
++              </span>
++              <span className="phase7-statistics-rating-stack">
++                <span className="phase7-statistics-rating-count">{entry.good_count}</span>
++                <i
++                  className="phase7-statistics-rating-bar phase7-statistics-rating-bar--good"
++                  data-testid={`rating-trend-good-${entry.date}`}
++                  style={{ height: `${barHeight(entry.good_count)}px` }}
++                  title={`${entry.date} Good: ${entry.good_count}`}
++                />
++              </span>
++            </div>
++            <span className="phase7-statistics-bar-label">{shortDate(entry.date)}</span>
++          </div>
++        ))}
+       </div>
+     </div>
+   );
+@@ -238,7 +239,7 @@ function StatisticsReady({ data }: { data: StatisticsPageDto }) {
+           <section className="phase7-statistics-chart-card">
+             <div className="phase7-statistics-card-head">
+               <h2 className="phase7-statistics-card-title">Again / Good 趋势</h2>
+-              <p className="phase7-statistics-card-sub">每日评分分布</p>
++              <p className="phase7-statistics-card-sub">每一天的 Again / Good 次数对比</p>
+             </div>
+             <RatingTrend entries={data.rating_trend} />
+           </section>
+diff --git a/src/client/styles.css b/src/client/styles.css
+index cffc0f8..9c92833 100644
+--- a/src/client/styles.css
++++ b/src/client/styles.css
+@@ -195,20 +195,12 @@ body {
+   position: relative;
+   z-index: 1;
+   display: grid;
+-  grid-template-columns: minmax(0, 1fr) 13rem;
++  grid-template-columns: minmax(0, 1fr);
+   gap: 1.75rem;
+   align-items: end;
+   margin-bottom: 1.375rem;
+ }
+ 
+-.home-kicker {
+-  margin: 0 0 0.625rem;
+-  color: #0f766e;
+-  font: 850 0.75rem ui-sans-serif, system-ui, sans-serif;
+-  letter-spacing: 0.18em;
+-  text-transform: uppercase;
+-}
+-
+ .home-welcome {
+   margin: 0;
+   max-width: 48rem;
+@@ -229,13 +221,6 @@ body {
+   letter-spacing: 0.10em;
+ }
+ 
+-.home-copy {
+-  max-width: 43.75rem;
+-  margin: 1.125rem 0 0;
+-  color: #475569;
+-  font: 560 1rem/1.7 ui-sans-serif, system-ui, sans-serif;
+-}
+-
+ .home-actions {
+   display: flex;
+   flex-wrap: wrap;
+@@ -266,16 +251,6 @@ body {
+   color: #172033;
+ }
+ 
+-.home-progress-card {
+-  border: 1px solid rgba(23, 32, 51, 0.13);
+-  border-radius: 1.75rem;
+-  background: rgba(255, 255, 255, 0.64);
+-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.8);
+-  font-family: ui-sans-serif, system-ui, sans-serif;
+-  padding: 1.125rem;
+-}
+-
+-.home-progress-card span,
+ .home-metric span {
+   color: #64748b;
+   font: 850 0.75rem ui-sans-serif, system-ui, sans-serif;
+@@ -283,27 +258,12 @@ body {
+   text-transform: uppercase;
+ }
+ 
+-.home-progress-card strong {
+-  display: block;
+-  margin-top: 0.625rem;
+-  color: #172033;
+-  font: 950 2.875rem/.9 ui-sans-serif, system-ui, sans-serif;
+-  letter-spacing: -0.08em;
+-}
+-
+-.home-progress-track,
+ .home-track {
+   overflow: hidden;
+   border-radius: 999px;
+   background: rgba(23, 32, 51, 0.08);
+ }
+ 
+-.home-progress-track {
+-  height: 0.625rem;
+-  margin-top: 1.125rem;
+-}
+-
+-.home-progress-track i,
+ .home-track i {
+   display: block;
+   height: 100%;
+@@ -321,8 +281,7 @@ body {
+ }
+ 
+ .home-metric,
+-.home-focus-card,
+-.home-state-card {
++.home-focus-card {
+   border: 1px solid rgba(23, 32, 51, 0.14);
+   border-radius: 1.75rem;
+   background: rgba(255, 253, 246, 0.96);
+@@ -342,37 +301,26 @@ body {
+   letter-spacing: -0.08em;
+ }
+ 
+-.home-metric em {
+-  display: block;
+-  margin-top: 0.625rem;
+-  color: #64748b;
+-  font: 650 0.82rem/1.45 ui-sans-serif, system-ui, sans-serif;
+-  font-style: normal;
+-}
+-
+ .home-bottom-grid {
+   position: relative;
+   z-index: 1;
+   display: grid;
+-  grid-template-columns: 1.18fr 0.82fr;
++  grid-template-columns: 1fr;
+   gap: 1.125rem;
+ }
+ 
+-.home-focus-card,
+-.home-state-card {
++.home-focus-card {
+   padding: 1.5rem;
+ }
+ 
+-.home-focus-card h2,
+-.home-state-card h2 {
++.home-focus-card h2 {
+   margin: 0;
+   color: #172033;
+   font: 950 2rem/1 ui-sans-serif, system-ui, sans-serif;
+   letter-spacing: -0.06em;
+ }
+ 
+-.home-focus-card p,
+-.home-state-card p {
++.home-focus-card p {
+   margin: 0.75rem 0 0;
+   color: #475569;
+   font: 650 0.875rem/1.65 ui-sans-serif, system-ui, sans-serif;
+@@ -397,22 +345,6 @@ body {
+   height: 0.75rem;
+ }
+ 
+-.home-state-card {
+-  background: linear-gradient(135deg, rgba(204, 251, 241, 0.62), rgba(255, 247, 232, 0.86));
+-}
+-
+-.home-state-card > span {
+-  display: inline-flex;
+-  border-radius: 999px;
+-  background: #ccfbf1;
+-  color: #0f766e;
+-  font: 850 0.75rem ui-sans-serif, system-ui, sans-serif;
+-  letter-spacing: 0.12em;
+-  margin-bottom: 0.875rem;
+-  padding: 0.5rem 0.7rem;
+-  text-transform: uppercase;
+-}
+-
+ @media (max-width: 1100px) {
+   .home-metrics {
+     grid-template-columns: repeat(2, 1fr);
+@@ -483,7 +415,6 @@ body {
+   font: 500 1rem/1.65 ui-sans-serif, system-ui, sans-serif;
+ }
+ 
+-.phase6-primary-link,
+ .phase6-card-actions a,
+ .phase6-tag-card a,
+ .phase6-empty a {
+@@ -769,35 +700,8 @@ body {
+ 
+ .card-create-hero {
+   display: flex;
+-  gap: 1.5rem;
+-  align-items: flex-start;
+-  justify-content: space-between;
+-  margin-bottom: 1.5rem;
+-}
+-
+-.card-create-kicker {
+-  margin: 0 0 0.5rem;
+-  color: #0f766e;
+-  font-size: 0.75rem;
+-  font-weight: 800;
+-  letter-spacing: 0.18em;
+-  text-transform: uppercase;
+-}
+-
+-.card-create-hero h2 {
+-  margin: 0;
+-  color: #172033;
+-  font-size: clamp(2rem, 4vw, 4.5rem);
+-  line-height: 0.92;
+-  letter-spacing: -0.08em;
+-}
+-
+-.card-create-hero p:not(.card-create-kicker) {
+-  max-width: 40rem;
+-  margin: 1rem 0 0;
+-  color: #475569;
+-  font-family: ui-sans-serif, system-ui, sans-serif;
+-  font-size: 1rem;
++  justify-content: flex-end;
++  margin-bottom: 1rem;
+ }
+ 
+ .card-create-save {
+@@ -842,6 +746,10 @@ body {
+   grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.42fr);
+ }
+ 
++.card-create-grid--single {
++  grid-template-columns: minmax(0, 1fr);
++}
++
+ .card-create-panel {
+   border: 1px solid rgba(71, 85, 105, 0.16);
+   border-radius: 24px;
+@@ -1527,45 +1435,90 @@ body {
+ 
+ /* Again / Good trend */
+ 
+-.phase7-statistics-trend-grid {
++.phase7-statistics-rating-trend {
+   display: grid;
+-  grid-template-columns: 1fr 1fr;
+-  gap: .9rem;
++  gap: 0.9rem;
+ }
+ 
+-.phase7-statistics-trend-box {
+-  border: 1px solid rgba(23, 32, 51, .12);
+-  border-radius: 1.25rem;
+-  padding: 1rem;
+-  background: rgba(255, 255, 255, .62);
++.phase7-statistics-rating-legend {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.55rem 1rem;
++  color: #475569;
++  font: 750 0.82rem ui-sans-serif, system-ui, sans-serif;
+ }
+ 
+-.phase7-statistics-trend-label {
+-  margin: 0 0 .65rem;
+-  color: #172033;
+-  font: 850 .9rem ui-sans-serif, system-ui, sans-serif;
+-  letter-spacing: -.02em;
++.phase7-statistics-rating-legend span {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.35rem;
++}
++
++.phase7-statistics-rating-dot {
++  width: 0.65rem;
++  height: 0.65rem;
++  border-radius: 999px;
++}
++
++.phase7-statistics-rating-dot--again {
++  background: #be123c;
++}
++
++.phase7-statistics-rating-dot--good {
++  background: #0f766e;
+ }
+ 
+-.phase7-statistics-spark {
++.phase7-statistics-rating-groups {
+   display: flex;
+   align-items: flex-end;
+-  gap: .35rem;
+-  height: 72px;
++  gap: 0.75rem;
++  min-height: 140px;
++  overflow-x: auto;
++  padding: 0.25rem 0 0.4rem;
+ }
+ 
+-.phase7-statistics-spark-bar {
+-  flex: 1;
++.phase7-statistics-rating-group {
++  width: 3rem;
++  flex: 0 0 3rem;
++  display: grid;
++  justify-items: center;
++  align-items: end;
++  gap: 0.35rem;
++  position: relative;
++}
++
++.phase7-statistics-rating-bars {
++  display: flex;
++  align-items: flex-end;
++  gap: 0.35rem;
++  height: 104px;
++}
++
++.phase7-statistics-rating-stack {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  justify-content: flex-end;
++  gap: 0.22rem;
++  height: 100%;
++}
++
++.phase7-statistics-rating-count {
++  color: #64748b;
++  font: 800 0.68rem ui-sans-serif, system-ui, sans-serif;
++}
++
++.phase7-statistics-rating-bar {
+   display: block;
+-  min-height: 4px;
+-  border-radius: 999px;
++  width: 0.85rem;
++  border-radius: 0.4rem 0.4rem 0.16rem 0.16rem;
+ }
+ 
+-.phase7-statistics-spark-again {
++.phase7-statistics-rating-bar--again {
+   background: #be123c;
+ }
+ 
+-.phase7-statistics-spark-good {
++.phase7-statistics-rating-bar--good {
+   background: #0f766e;
+ }
+ 
+diff --git a/tests/client/app.test.tsx b/tests/client/app.test.tsx
+index d834572..5ac695d 100644
+--- a/tests/client/app.test.tsx
++++ b/tests/client/app.test.tsx
+@@ -113,7 +113,7 @@ describe('App', () => {
+     render(<App />);
+ 
+     expect(screen.getByRole('heading', { name: '制卡' })).toBeInTheDocument();
+-    expect(screen.getByRole('heading', { name: '捕捉一个真实语境' })).toBeInTheDocument();
++    expect(screen.queryByRole('heading', { name: '捕捉一个真实语境' })).not.toBeInTheDocument();
+     expect(screen.getByText('本地视频 mp4')).toBeInTheDocument();
+   });
+ 
+diff --git a/tests/client/cardCreatePage.test.tsx b/tests/client/cardCreatePage.test.tsx
+index 1b1262e..332d4ee 100644
+--- a/tests/client/cardCreatePage.test.tsx
++++ b/tests/client/cardCreatePage.test.tsx
+@@ -41,10 +41,14 @@ describe('CardCreatePage', () => {
+   });
+ 
+   // Test 1: render
+-  it('renders a polished create workspace with default languages and recommended optional video', async () => {
++  it('renders create workspace without removed hero and idle suggestions copy', async () => {
+     render(<CardCreatePage />);
+ 
+-    expect(screen.getByRole('heading', { name: '捕捉一个真实语境' })).toBeInTheDocument();
++    expect(screen.getByRole('button', { name: '保存词义条目' })).toBeInTheDocument();
++    expect(screen.queryByRole('heading', { name: '捕捉一个真实语境' })).not.toBeInTheDocument();
++    expect(screen.queryByText('Context capture')).not.toBeInTheDocument();
++    expect(screen.queryByText(/把视频里遇到的词/)).not.toBeInTheDocument();
++    expect(screen.queryByText('输入目标单词后，我会查找已有词义，帮你避免重复建卡。')).not.toBeInTheDocument();
+     expect(screen.getByLabelText('目标单词')).toHaveAttribute('placeholder', '例如：charge');
+     expect(screen.getByLabelText('学习语言')).toHaveValue('英语');
+     expect(screen.getByLabelText('释义语言')).toHaveValue('中文');
+@@ -125,6 +129,7 @@ describe('CardCreatePage', () => {
+     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: ' 收费 ' } });
+ 
+     expect(await screen.findByText('已找到相同词义：charge = 收费')).toBeInTheDocument();
++    expect(screen.getByText('查找已有词义，避免重复建卡')).toBeInTheDocument();
+     expect(screen.getByRole('button', { name: '添加为新语境' })).toBeInTheDocument();
+     expect(screen.queryByText('创建新的词义条目')).not.toBeInTheDocument();
+     expect(screen.getByText('不同语义，仅供参考')).toBeInTheDocument();
+diff --git a/tests/client/homePage.test.tsx b/tests/client/homePage.test.tsx
+index 299e362..bf60f72 100644
+--- a/tests/client/homePage.test.tsx
++++ b/tests/client/homePage.test.tsx
+@@ -18,7 +18,7 @@ describe('HomePage', () => {
+     vi.restoreAllMocks();
+   });
+ 
+-  it('shows loading then welcome, greeting, actions, and home statistics', async () => {
++  it('shows greeting, actions, and metric values without removed helper modules', async () => {
+     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+       new Response(JSON.stringify({
+         due_count: 3,
+@@ -43,9 +43,17 @@ describe('HomePage', () => {
+     expect(screen.getAllByText('3').length).toBeGreaterThan(0);
+     expect(screen.getByRole('link', { name: '开始复习' })).toHaveAttribute('href', '#/review');
+     expect(screen.getByRole('link', { name: '快速制卡' })).toHaveAttribute('href', '#/create');
++    expect(screen.queryByText('LOCAL GREETING')).not.toBeInTheDocument();
++    expect(screen.queryByText('today progress')).not.toBeInTheDocument();
++    expect(screen.queryByText(/问候语来自本地时间段/)).not.toBeInTheDocument();
++    expect(screen.queryByText('按 FSRS 到期排序')).not.toBeInTheDocument();
++    expect(screen.queryByText('每日目标是提醒，不是硬限制')).not.toBeInTheDocument();
++    expect(screen.queryByText('今天不熟或答错')).not.toBeInTheDocument();
++    expect(screen.queryByText('今天顺利想起')).not.toBeInTheDocument();
++    expect(screen.queryByText('soft goal')).not.toBeInTheDocument();
+   });
+ 
+-  it('shows daily target reached message', async () => {
++  it('does not show the removed soft-goal card when daily target is reached', async () => {
+     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+       new Response(JSON.stringify({
+         due_count: 0,
+@@ -62,7 +70,9 @@ describe('HomePage', () => {
+ 
+     render(<HomePage />);
+ 
+-    expect(await screen.findByText('今日复习目标已完成')).toBeInTheDocument();
++    expect(await screen.findByRole('heading', { name: '欢迎回来' })).toBeInTheDocument();
++    expect(screen.queryByText('今日复习目标已完成')).not.toBeInTheDocument();
++    expect(screen.queryByText('soft goal')).not.toBeInTheDocument();
+   });
+ 
+   it('shows API errors without greeting or fake counts', async () => {
+diff --git a/tests/client/statisticsPage.test.tsx b/tests/client/statisticsPage.test.tsx
+index f83608f..254d42d 100644
+--- a/tests/client/statisticsPage.test.tsx
++++ b/tests/client/statisticsPage.test.tsx
+@@ -235,22 +235,18 @@ describe('StatisticsPage', () => {
+       vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(fullStats));
+     });
+ 
+-    it('renders Again section in trend area', async () => {
++    it('renders Again explanation and bars in trend area', async () => {
+       render(<StatisticsPage />);
+       await screen.findByText('248');
+-      // The trend box label is a <p> with exactly "Again"
+-      const trendLabels = document.querySelectorAll('.phase7-statistics-trend-label');
+-      const texts = Array.from(trendLabels).map((el) => el.textContent);
+-      expect(texts).toContain('Again');
++      expect(screen.getByText('Again：没想起 / 记错')).toBeInTheDocument();
++      expect(screen.getByTestId('rating-trend-again-2026-05-14')).toHaveClass('phase7-statistics-rating-bar--again');
+     });
+ 
+-    it('renders Good section in trend area', async () => {
++    it('renders Good explanation and bars in trend area', async () => {
+       render(<StatisticsPage />);
+       await screen.findByText('248');
+-      // The trend box label is a <p> with exactly "Good"
+-      const trendLabels = document.querySelectorAll('.phase7-statistics-trend-label');
+-      const texts = Array.from(trendLabels).map((el) => el.textContent);
+-      expect(texts).toContain('Good');
++      expect(screen.getByText('Good：顺利想起')).toBeInTheDocument();
++      expect(screen.getByTestId('rating-trend-good-2026-05-14')).toHaveClass('phase7-statistics-rating-bar--good');
+     });
+ 
+     it('renders accessible summary for Again trend spark chart', async () => {
+diff --git a/tests/e2e/v1-smoke.spec.ts b/tests/e2e/v1-smoke.spec.ts
+index 68e3608..7a5e841 100644
+--- a/tests/e2e/v1-smoke.spec.ts
++++ b/tests/e2e/v1-smoke.spec.ts
+@@ -12,7 +12,8 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
+   }).toBe(true);
+ 
+   await page.goto('/#/create');
+-  await expect(page.getByRole('heading', { name: '捕捉一个真实语境' })).toBeVisible();
++  await expect(page.getByRole('button', { name: '保存词义条目' })).toBeVisible();
++  await expect(page.getByRole('heading', { name: '捕捉一个真实语境' })).toHaveCount(0);
+ 
+   await page.getByLabel('目标单词').fill(targetWord);
+   await page.getByLabel('当前语境释义').fill(meaning);
