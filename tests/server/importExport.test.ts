@@ -280,6 +280,56 @@ describe('import/export API', () => {
     expect((db.prepare('SELECT COUNT(*) as count FROM word_sense_cards WHERE target_word = ? AND context_meaning = ?').get('charge', '收费') as { count: number }).count).toBe(2);
   });
 
+  it.each([
+    ['merge_all', { mode: 'merge_all' }],
+    ['per_item merge', { mode: 'per_item', items: [{ import_card_id: 'import-card-1', decision: 'merge' }] }],
+  ])('preserves existing primary when importing merged contexts via %s', async (_label, decisions) => {
+    const existing = createCard(db, {
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+    });
+    createContext(db, { card_id: existing.id, sentence: 'The hotel charges $100.' });
+    const zip = await makeZip(baseExportJson());
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify(decisions))
+      .attach('file', zip, 'import.zip')
+      .expect(200);
+
+    const contexts = db.prepare('SELECT sentence, is_primary FROM context_examples WHERE card_id = ? AND deleted_at IS NULL ORDER BY created_at ASC').all(existing.id) as Array<{ sentence: string; is_primary: number }>;
+    expect(contexts).toHaveLength(2);
+    expect(contexts.filter((context) => context.is_primary === 1)).toHaveLength(1);
+    expect(contexts.find((context) => context.sentence === 'The hotel charges $100.')?.is_primary).toBe(1);
+    expect(contexts.find((context) => context.sentence === 'They charge extra.')?.is_primary).toBe(0);
+  });
+
+  it.each([
+    ['merge_all', { mode: 'merge_all' }],
+    ['per_item merge', { mode: 'per_item', items: [{ import_card_id: 'import-card-1', decision: 'merge' }] }],
+  ])('uses imported primary when merged card has no active contexts via %s', async (_label, decisions) => {
+    const existing = createCard(db, {
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+    });
+    const zip = await makeZip(baseExportJson());
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify(decisions))
+      .attach('file', zip, 'import.zip')
+      .expect(200);
+
+    const contexts = db.prepare('SELECT sentence, is_primary FROM context_examples WHERE card_id = ? AND deleted_at IS NULL').all(existing.id) as Array<{ sentence: string; is_primary: number }>;
+    expect(contexts).toHaveLength(1);
+    expect(contexts.filter((context) => context.is_primary === 1)).toHaveLength(1);
+    expect(contexts[0]).toMatchObject({ sentence: 'They charge extra.', is_primary: 1 });
+  });
+
   it('supports per-item conflict decisions', async () => {
     createCard(db, {
       target_word: 'charge',

@@ -314,7 +314,12 @@ export async function executeImportZip(
       const localCardId = cardMap.get(importCardId);
       if (!localCardId) continue;
 
-      for (const context of normalizeContexts(contexts)) {
+      const normalizedContexts = normalizeContexts(contexts);
+      const contextsToImport = mergedCardIds.has(importCardId) && hasActiveContexts(db, localCardId)
+        ? normalizedContexts.map((context) => ({ ...context, is_primary: 0 }))
+        : normalizedContexts;
+
+      for (const context of contextsToImport) {
         const newContextId = randomUUID();
         contextMap.set(context.id, newContextId);
         db.prepare(`
@@ -432,6 +437,11 @@ function findExistingCard(db: Database, targetWord: string, contextMeaning: stri
     WHERE target_word = ? AND context_meaning = ? AND deleted_at IS NULL
     ORDER BY created_at ASC LIMIT 1
   `).get(targetWord, contextMeaning) as { id: string } | undefined;
+}
+
+function hasActiveContexts(db: Database, cardId: string): boolean {
+  const row = db.prepare('SELECT id FROM context_examples WHERE card_id = ? AND deleted_at IS NULL LIMIT 1').get(cardId) as { id: string } | undefined;
+  return Boolean(row);
 }
 
 function decisionForCard(cardId: string, hasConflict: boolean, decisions: ImportExecuteDecisionDto): ImportConflictDecision {

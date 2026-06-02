@@ -1,13 +1,17 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
+const clientPort = Number(process.env.CLIENT_PORT ?? 5173);
+const apiPort = Number(process.env.PORT ?? 3107);
+
 export default defineConfig({
   plugins: [react()],
   root: '.',
   server: {
-    port: 5173,
+    port: clientPort,
+    strictPort: true,
     proxy: {
-      '/api': 'http://localhost:3107'
+      '/api': `http://localhost:${apiPort}`
     }
   },
   build: {
@@ -17,6 +21,6 @@ export default defineConfig({
     environment: 'jsdom',
     css: true,
     setupFiles: ['./tests/setup.ts'],
-    exclude: ['dist/**', 'node_modules/**']
+    exclude: ['dist/**', 'node_modules/**', 'tests/e2e/**']
   }
 });
