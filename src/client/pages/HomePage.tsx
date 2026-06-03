@@ -79,8 +79,6 @@ export function HomePage() {
 
       <div className="home-bottom-grid">
         <section className="home-focus-card" aria-label="复习节奏摘要">
-          <h2>先处理到期，再继续积累。</h2>
-          <p>先看待复习数量，再用 Good / Again 判断今天的复习节奏。</p>
           <div className="home-mini-queue" aria-hidden="true">
             <div className="home-queue-row"><span>待复习</span><span className="home-track"><i style={{ width: progressWidth(data.due_count, Math.max(data.due_count + data.reviewed_today_count, 1)) }} /></span><strong>{data.due_count}</strong></div>
             <div className="home-queue-row"><span>Good</span><span className="home-track"><i style={{ width: progressWidth(data.good_today_count, Math.max(data.reviewed_today_count, 1)) }} /></span><strong>{data.good_today_count}</strong></div>

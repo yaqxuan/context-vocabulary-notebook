@@ -29,7 +29,7 @@ const detail = {
   ...cards[0],
   contexts: [{ id: 'ctx-1', card_id: 'card-1', sentence: 'The hotel charges $100 per night.', note: 'S01E01 03:12', is_primary: 1, sort_order: 10, created_at: 'now', updated_at: 'now' }],
   media: [{ id: 'media-1', context_example_id: 'ctx-1', media_type: 'video' as const, file_name: 'clip.mp4', file_path: '/uploads/clip.mp4', mime_type: 'video/mp4', file_size: 100, is_available: 1, created_at: 'now' }],
-  fsrs: { due_date: 'now', stability: null, difficulty: null, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
+  fsrs: { due_date: '2026-06-03T00:00:00.000Z', stability: null, difficulty: null, elapsed_days: 0, scheduled_days: 0, learning_steps: 0, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -108,10 +108,47 @@ describe('Phase 6 pages', () => {
     render(<CardDetailPage />);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
+    const titleStack = screen.getByTestId('detail-title-stack');
+    expect(titleStack).toContainElement(screen.getByRole('heading', { name: 'charge' }));
+    expect(titleStack).toContainElement(screen.getByText('收费'));
+    expect(screen.getByTestId('detail-meaning-actions')).toContainElement(screen.getByRole('button', { name: '编辑释义' }));
     expect(screen.getByText('S01E01 03:12')).toBeInTheDocument();
-    expect(screen.getByText('clip.mp4')).toBeInTheDocument();
+    expect(screen.getByText('正在复习中：已进入复习队列，可以现在复习。')).toBeInTheDocument();
+    expect(screen.queryByText(/复习时间：/)).not.toBeInTheDocument();
+    expect(screen.getByText('复习次数：0')).toBeInTheDocument();
+    expect(screen.getByText('遗忘次数：0')).toBeInTheDocument();
+    expect(screen.getByLabelText('clip.mp4')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '标记熟记' }));
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/cards/card-1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ status: 'mastered' }) })));
+  });
+
+  it('renders review info with one next-review line and Chinese counter labels', async () => {
+    window.location.hash = '#/cards/card-1';
+    const futureDetail = {
+      ...detail,
+      fsrs: {
+        ...detail.fsrs,
+        due_date: '2099-01-02T03:04:05.000Z',
+        reps: 6,
+        lapses: 0,
+      },
+    };
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(futureDetail));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardDetailPage />);
+
+    expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
+    expect(screen.getByText('状态：复习中')).toBeInTheDocument();
+    expect(screen.getAllByText(/2099/)).toHaveLength(1);
+    expect(screen.queryByText(/复习时间：/)).not.toBeInTheDocument();
+    expect(screen.getByText('复习次数：6')).toBeInTheDocument();
+    expect(screen.getByText('遗忘次数：0')).toBeInTheDocument();
+    expect(screen.queryByText(/Reps/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Lapses/)).not.toBeInTheDocument();
   });
 
   it('添加语境 button navigates to create page with card_id', async () => {
@@ -195,6 +232,34 @@ describe('Phase 6 pages', () => {
 
     await waitFor(() => expect(requests.some((request) => request.url === '/api/cards/card-1' && request.method === 'PATCH' && request.body === JSON.stringify({ tag_ids: ['tag-1', 'tag-2'] }))).toBe(true));
     await waitFor(() => expect(requests.filter((request) => request.url === '/api/cards/card-1' && request.method === 'GET')).toHaveLength(2));
+  });
+
+  it('creates a new tag while editing detail tag assignments', async () => {
+    window.location.hash = '#/cards/card-1';
+    const allTags = [tags[0]];
+    const createdTag = { id: 'tag-2', name: '电影', created_at: 'now', updated_at: 'now' };
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/tags' && init?.method === 'POST') return Promise.resolve(jsonResponse(createdTag, 201));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse(allTags));
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse(cards[0]));
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardDetailPage />);
+
+    expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '编辑标签' }));
+    fireEvent.change(await screen.findByLabelText('新增标签名称'), { target: { value: '电影' } });
+    fireEvent.click(screen.getByRole('button', { name: '新增并选中标签' }));
+    expect(await screen.findByRole('button', { name: '电影' })).toHaveClass('selected');
+    fireEvent.click(screen.getByRole('button', { name: '保存标签' }));
+
+    await waitFor(() => expect(requests.some((request) => request.url === '/api/tags' && request.method === 'POST' && request.body === JSON.stringify({ name: '电影' }))).toBe(true));
+    await waitFor(() => expect(requests.some((request) => request.url === '/api/cards/card-1' && request.method === 'PATCH' && request.body === JSON.stringify({ tag_ids: ['tag-1', 'tag-2'] }))).toBe(true));
   });
 
   it('creates edits and confirms tag deletion', async () => {

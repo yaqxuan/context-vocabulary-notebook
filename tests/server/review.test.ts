@@ -267,6 +267,74 @@ describe('review API', () => {
     expect(log.due_date_after).toBe(res.body.fsrs.due_date);
   });
 
+  it('stores FSRS learning step so two Good reviews can graduate a new card', async () => {
+    const card = createCard(db, { target_word: 'learn', context_meaning: '学习', target_language: '英语', definition_language: '中文' });
+    const first = await request(app).post(`/api/review/${card.id}`).send({ rating: 'good' });
+    const firstDue = first.body.fsrs.due_date as string;
+
+    db.prepare('UPDATE fsrs_states SET due_date = ? WHERE card_id = ?').run(new Date(Date.now() - 1000).toISOString(), card.id);
+    const second = await request(app).post(`/api/review/${card.id}`).send({ rating: 'good' });
+
+    expect(first.status).toBe(200);
+    expect(first.body.fsrs.learning_steps).toBe(1);
+    expect(firstDue).toBeTruthy();
+    expect(second.status).toBe(200);
+    expect(second.body.fsrs.state).toBe(2);
+    expect(second.body.fsrs.scheduled_days).toBeGreaterThan(0);
+    expect(second.body.fsrs.learning_steps).toBe(0);
+  });
+
+  it('counts daily reviewed_count by distinct card instead of review attempts', async () => {
+    db.prepare('UPDATE user_settings SET daily_review_limit = 2 WHERE id = 1').run();
+    const card = createCard(db, { target_word: 'repeat', context_meaning: '重复', target_language: '英语', definition_language: '中文' });
+
+    const first = await request(app).post(`/api/review/${card.id}`).send({ rating: 'again' });
+    const second = await request(app).post(`/api/review/${card.id}`).send({ rating: 'again' });
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(second.body.progress.reviewed_count).toBe(1);
+    expect(second.body.progress.again_count).toBe(2);
+    expect(second.body.progress.is_limit_reached).toBe(false);
+  });
+
+  it('places Again cards after normal due cards without overwriting FSRS due_date', async () => {
+    const miss = createCard(db, { target_word: 'miss', context_meaning: '错过', target_language: '英语', definition_language: '中文' });
+    const other = createCard(db, { target_word: 'other', context_meaning: '其他', target_language: '英语', definition_language: '中文' });
+
+    const again = await request(app).post(`/api/review/${miss.id}`).send({ rating: 'again' });
+    const fsrsAfterAgain = db.prepare('SELECT due_date, same_day_retry_at FROM fsrs_states WHERE card_id = ?').get(miss.id) as { due_date: string; same_day_retry_at: string | null };
+    const due = await request(app).get('/api/review/due').expect(200);
+
+    expect(again.status).toBe(200);
+    expect(fsrsAfterAgain.due_date).toBe(again.body.fsrs.due_date);
+    expect(fsrsAfterAgain.due_date).not.toBe(again.body.reviewed_at);
+    expect(fsrsAfterAgain.same_day_retry_at).toBe(again.body.reviewed_at);
+    expect(due.body.status).toBe('due');
+    expect(due.body.card.id).toBe(other.id);
+  });
+
+  it('returns an Again card immediately when no normal due cards remain', async () => {
+    const card = createCard(db, { target_word: 'miss', context_meaning: '错过', target_language: '英语', definition_language: '中文' });
+
+    await request(app).post(`/api/review/${card.id}`).send({ rating: 'again' });
+    const due = await request(app).get('/api/review/due').expect(200);
+
+    expect(due.body.status).toBe('due');
+    expect(due.body.card.id).toBe(card.id);
+  });
+
+  it('clears same-day retry marker after Good', async () => {
+    const card = createCard(db, { target_word: 'resolve', context_meaning: '解决', target_language: '英语', definition_language: '中文' });
+
+    await request(app).post(`/api/review/${card.id}`).send({ rating: 'again' });
+    const good = await request(app).post(`/api/review/${card.id}`).send({ rating: 'good' });
+    const fsrs = db.prepare('SELECT same_day_retry_at FROM fsrs_states WHERE card_id = ?').get(card.id) as { same_day_retry_at: string | null };
+
+    expect(good.status).toBe(200);
+    expect(fsrs.same_day_retry_at).toBeNull();
+  });
+
   it('submits Again review and keeps new-card lapses from ts-fsrs', async () => {
     const card = createCard(db, { target_word: 'miss', context_meaning: '错过', target_language: '英语', definition_language: '中文' });
 

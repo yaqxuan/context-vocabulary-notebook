@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { CardDetailDto, ContextDto, TagDto } from '../../shared/types';
 import { deleteCard, getCard, patchCard } from '../api/cards';
-import { listTags } from '../api/tags';
+import { createTag, listTags } from '../api/tags';
 import { deleteContext, moveContextDown, moveContextUp, setPrimaryContext } from '../api/contexts';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { MediaPreview } from '../components/MediaPreview';
 import { ErrorState, LoadingState } from '../components/UiStates';
 
 function currentCardId(): string {
@@ -13,6 +14,23 @@ function currentCardId(): string {
 
 function mediaForContext(card: CardDetailDto, contextId: string) {
   return card.media.filter((media) => media.context_example_id === contextId);
+}
+
+function formatReviewTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('zh-CN', { hour12: false });
+}
+
+function reviewStatusCopy(card: CardDetailDto): string {
+  if (card.status === 'mastered') {
+    return '已熟记：暂不进入复习队列，恢复复习后继续使用当前复习状态。';
+  }
+  const due = new Date(card.fsrs.due_date).getTime();
+  if (!Number.isNaN(due) && due <= Date.now()) {
+    return '正在复习中：已进入复习队列，可以现在复习。';
+  }
+  return `复习中：下次复习 ${formatReviewTime(card.fsrs.due_date)}。`;
 }
 
 export function CardDetailPage() {
@@ -26,8 +44,10 @@ export function CardDetailPage() {
   const [editingTags, setEditingTags] = useState(false);
   const [allTags, setAllTags] = useState<TagDto[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [newTagName, setNewTagName] = useState('');
   const [tagsError, setTagsError] = useState<string | null>(null);
   const [tagsLoading, setTagsLoading] = useState(false);
+  const [creatingTag, setCreatingTag] = useState(false);
   const tagLoadSeq = useRef(0);
   const mountedRef = useRef(true);
   const cardId = useMemo(currentCardId, []);
@@ -91,6 +111,7 @@ export function CardDetailPage() {
     setEditingTags(true);
     setSelectedTagIds(card.tags.map((tag) => tag.id));
     setAllTags([]);
+    setNewTagName('');
     setTagsError(null);
     setTagsLoading(true);
     try {
@@ -110,7 +131,29 @@ export function CardDetailPage() {
   const cancelTagEdit = () => {
     tagLoadSeq.current += 1;
     setTagsLoading(false);
+    setCreatingTag(false);
+    setNewTagName('');
     setEditingTags(false);
+  };
+
+  const createAndSelectTag = async () => {
+    const name = newTagName.trim();
+    if (!name) {
+      setTagsError('标签名称必填');
+      return;
+    }
+    try {
+      setCreatingTag(true);
+      setTagsError(null);
+      const tag = await createTag({ name });
+      setAllTags((cur) => cur.some((item) => item.id === tag.id) ? cur : [...cur, tag]);
+      setSelectedTagIds((cur) => cur.includes(tag.id) ? cur : [...cur, tag.id]);
+      setNewTagName('');
+    } catch (err) {
+      setTagsError(err instanceof Error ? err.message : '新增标签失败');
+    } finally {
+      setCreatingTag(false);
+    }
   };
 
   const saveTags = async () => {
@@ -131,7 +174,7 @@ export function CardDetailPage() {
   return (
     <section className="phase6-detail">
       <div className="phase6-detail-summary">
-        <div>
+        <div className="phase6-detail-title-stack" data-testid="detail-title-stack">
           <h2>{card.target_word}</h2>
           {editingMeaning ? (
             <div className="phase6-inline-editor">
@@ -152,10 +195,12 @@ export function CardDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="phase6-meaning-row">
-              <p>{card.context_meaning}</p>
-              <button type="button" onClick={startMeaningEdit}>编辑释义</button>
-            </div>
+            <>
+              <p className="phase6-detail-meaning">{card.context_meaning}</p>
+              <div className="phase6-detail-meaning-actions" data-testid="detail-meaning-actions">
+                <button type="button" onClick={startMeaningEdit}>编辑释义</button>
+              </div>
+            </>
           )}
         </div>
         <div className="phase6-detail-actions">
@@ -176,7 +221,15 @@ export function CardDetailPage() {
               <p>{context.sentence}</p>
               {context.note ? <small>{context.note}</small> : null}
               <div className="phase6-media-row">
-                {mediaForContext(card, context.id).map((media) => <span key={media.id}>{media.file_name}{media.is_available ? '' : '（文件不可用）'}</span>)}
+                {mediaForContext(card, context.id).map((media) => (
+                  <MediaPreview
+                    key={media.id}
+                    mediaType={media.media_type}
+                    src={`/uploads/${encodeURIComponent(media.file_name)}`}
+                    fileName={media.file_name}
+                    isAvailable={Boolean(media.is_available)}
+                  />
+                ))}
               </div>
               <div className="phase6-context-actions">
                 <button type="button" disabled={index === 0} onClick={() => runAndReload(() => moveContextUp(context.id))}>上移</button>
@@ -191,9 +244,9 @@ export function CardDetailPage() {
         <aside className="phase6-detail-side">
           <h3>复习信息</h3>
           <p>状态：{card.status === 'reviewing' ? '复习中' : '已熟记'}</p>
-          <p>Due：{card.fsrs.due_date}</p>
-          <p>Reps：{card.fsrs.reps}</p>
-          <p>Lapses：{card.fsrs.lapses}</p>
+          <p>{reviewStatusCopy(card)}</p>
+          <p>复习次数：{card.fsrs.reps}</p>
+          <p>遗忘次数：{card.fsrs.lapses}</p>
           <h3>标签</h3>
           {editingTags ? (
             <div className="phase6-tag-editor">
@@ -209,6 +262,20 @@ export function CardDetailPage() {
                     {tag.name}
                   </button>
                 )) : <p>暂无可选标签</p>}
+              </div>
+              <div className="phase6-tag-create-row">
+                <label htmlFor="detail-new-tag">新增标签名称</label>
+                <input
+                  id="detail-new-tag"
+                  aria-label="新增标签名称"
+                  value={newTagName}
+                  onChange={(event) => {
+                    setNewTagName(event.target.value);
+                    setTagsError(null);
+                  }}
+                  placeholder="例如：电影"
+                />
+                <button type="button" disabled={creatingTag} onClick={createAndSelectTag}>新增并选中标签</button>
               </div>
               <div>
                 <button type="button" onClick={saveTags}>保存标签</button>

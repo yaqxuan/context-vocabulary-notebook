@@ -24,10 +24,14 @@ export interface FsrsStateRow {
   due_date: string;
   stability: number | null;
   difficulty: number | null;
+  elapsed_days: number;
+  scheduled_days: number;
+  learning_steps: number;
   reps: number;
   lapses: number;
   state: number;
   last_reviewed_at: string | null;
+  same_day_retry_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -50,8 +54,16 @@ export interface SubmitReviewResult {
   progress: DailyReviewProgress;
 }
 
+function startOfLocalDayIso(now: Date): string {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  return start.toISOString();
+}
+
 export function getDueQueue(db: Database): DueCardRow[] {
-  const now = new Date().toISOString();
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const todayStart = startOfLocalDayIso(nowDate);
 
   return db.prepare(`
     SELECT
@@ -88,9 +100,16 @@ export function getDueQueue(db: Database): DueCardRow[] {
     JOIN fsrs_states fs ON fs.card_id = wsc.id
     WHERE wsc.status = 'reviewing'
       AND wsc.deleted_at IS NULL
-      AND fs.due_date <= ?
-    ORDER BY fs.due_date ASC, wsc.created_at ASC, wsc.id ASC
-  `).all(now) as DueCardRow[];
+      AND (
+        fs.due_date <= ?
+        OR (fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ?)
+      )
+    ORDER BY
+      CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN 1 ELSE 0 END ASC,
+      CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN fs.same_day_retry_at ELSE fs.due_date END ASC,
+      wsc.created_at ASC,
+      wsc.id ASC
+  `).all(now, todayStart, todayStart, todayStart) as DueCardRow[];
 }
 
 export function getNextDueCard(db: Database): DueCardRow | null {
@@ -105,7 +124,7 @@ export function getDailyReviewProgress(db: Database, now = new Date()): DailyRev
 
   const counts = db.prepare(`
     SELECT
-      COUNT(*) AS reviewed_count,
+      COUNT(DISTINCT rl.card_id) AS reviewed_count,
       SUM(CASE WHEN rl.rating = 'again' THEN 1 ELSE 0 END) AS again_count,
       SUM(CASE WHEN rl.rating = 'good' THEN 1 ELSE 0 END) AS good_count
     FROM review_logs rl
@@ -145,9 +164,9 @@ export function submitReview(db: Database, cardId: string, rating: ReviewRating,
       due: fsrsBefore.due_date,
       stability: fsrsBefore.stability ?? 0,
       difficulty: fsrsBefore.difficulty ?? 0,
-      elapsed_days: 0,
-      scheduled_days: 0,
-      learning_steps: 0,
+      elapsed_days: fsrsBefore.elapsed_days,
+      scheduled_days: fsrsBefore.scheduled_days,
+      learning_steps: fsrsBefore.learning_steps,
       reps: fsrsBefore.reps,
       lapses: fsrsBefore.lapses,
       state: fsrsBefore.state,
@@ -156,26 +175,35 @@ export function submitReview(db: Database, cardId: string, rating: ReviewRating,
 
     const next = fsrs().next(cardInput, reviewedAt, grade).card;
     const dueDateAfter = next.due.toISOString();
+    const sameDayRetryAt = rating === 'again' ? reviewedAtIso : null;
 
     db.prepare(`
       UPDATE fsrs_states
       SET due_date = ?,
           stability = ?,
           difficulty = ?,
+          elapsed_days = ?,
+          scheduled_days = ?,
+          learning_steps = ?,
           reps = ?,
           lapses = ?,
           state = ?,
           last_reviewed_at = ?,
+          same_day_retry_at = ?,
           updated_at = ?
       WHERE card_id = ?
     `).run(
       dueDateAfter,
       next.stability,
       next.difficulty,
+      next.elapsed_days,
+      next.scheduled_days,
+      next.learning_steps,
       next.reps,
       next.lapses,
       next.state,
       reviewedAtIso,
+      sameDayRetryAt,
       reviewedAtIso,
       cardId,
     );

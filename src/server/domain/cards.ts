@@ -56,10 +56,10 @@ export function createCard(db: Database, input: CreateCardInput): CardRow {
     VALUES (?, ?, ?, ?, ?, 'reviewing', ?, ?)
   `);
 
-  // INSERT has 5 ? placeholders (state/reps/lapses/last_reviewed_at are literals)
+  // INSERT has 5 ? placeholders (FSRS counters start at zero; last_reviewed_at is null)
   const insertFsrs = db.prepare(`
-    INSERT INTO fsrs_states (id, card_id, due_date, state, reps, lapses, last_reviewed_at, created_at, updated_at)
-    VALUES (?, ?, ?, 0, 0, 0, NULL, ?, ?)
+    INSERT INTO fsrs_states (id, card_id, due_date, elapsed_days, scheduled_days, learning_steps, state, reps, lapses, last_reviewed_at, created_at, updated_at)
+    VALUES (?, ?, ?, 0, 0, 0, 0, 0, 0, NULL, ?, ?)
   `);
 
   const transaction = db.transaction(() => {

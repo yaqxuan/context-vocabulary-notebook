@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type { DueReviewCardDto, MediaDto, ReviewDueResponseDto, ReviewProgressDto } from '../../shared/types';
+import { patchCard } from '../api/cards';
 import { getDueReview, submitReview } from '../api/review';
 import { Button } from '../components/Button';
 import { EmptyState, ErrorState, LoadingState } from '../components/UiStates';
@@ -19,14 +20,34 @@ function highlightWord(sentence: string, word: string): React.ReactNode {
 
 // --- Media item ---
 
+function mediaUrl(item: MediaDto): string {
+  return `/uploads/${encodeURIComponent(item.file_name)}`;
+}
+
 function MediaItem({ item }: { item: MediaDto }) {
   const unavailable = item.is_available === 0;
+  if (unavailable) {
+    return (
+      <div className="phase7-review-media-item phase7-review-media-item--unavailable">
+        <span className="phase7-review-media-name">{item.file_name}</span>
+        <span className="phase7-review-media-unavailable">文件不可用</span>
+      </div>
+    );
+  }
+
+  const src = mediaUrl(item);
   return (
     <div className="phase7-review-media-item">
-      <span className="phase7-review-media-name">{item.file_name}</span>
-      {unavailable ? (
-        <span className="phase7-review-media-unavailable">文件不可用</span>
+      {item.media_type === 'video' ? (
+        <video className="phase7-review-media-player" src={src} controls preload="metadata" />
       ) : null}
+      {item.media_type === 'image' ? (
+        <img className="phase7-review-media-image" src={src} alt={item.file_name} />
+      ) : null}
+      {item.media_type === 'audio' ? (
+        <audio className="phase7-review-media-player" src={src} controls preload="metadata" />
+      ) : null}
+      <span className="phase7-review-media-name">{item.file_name}</span>
     </div>
   );
 }
@@ -39,9 +60,10 @@ function ContextPanel({ card }: { card: DueReviewCardDto }) {
     .filter((c) => c.id !== primaryCtx?.id)
     .sort((a, b) => a.sort_order - b.sort_order);
 
-  const videos = card.media.filter((m) => m.media_type === 'video');
-  const images = card.media.filter((m) => m.media_type === 'image');
-  const audios = card.media.filter((m) => m.media_type === 'audio');
+  const primaryMedia = card.media.filter((m) => m.context_example_id === primaryCtx?.id);
+  const videos = primaryMedia.filter((m) => m.media_type === 'video').slice(0, 1);
+  const images = primaryMedia.filter((m) => m.media_type === 'image');
+  const audios = primaryMedia.filter((m) => m.media_type === 'audio');
 
   return (
     <div className="phase7-review-context-panel">
@@ -122,11 +144,14 @@ interface ReviewCardProps {
   lastRating: 'again' | 'good' | null;
   onChooseRating: (rating: 'again' | 'good', contextWasOpen: boolean) => void;
   onConfirmRating: (advanceAfterSubmit?: boolean) => void;
+  onToggleFavorite: () => void;
+  onMarkMastered: () => void;
   onNext: () => void;
 }
 
-function ReviewCard({ card, progress, submitting, submitError, pendingRating, pendingRequiresConfirm, lastRating, onChooseRating, onConfirmRating, onNext }: ReviewCardProps) {
+function ReviewCard({ card, progress, submitting, submitError, pendingRating, pendingRequiresConfirm, lastRating, onChooseRating, onConfirmRating, onToggleFavorite, onMarkMastered, onNext }: ReviewCardProps) {
   const [contextOpen, setContextOpen] = useState(false);
+  const answerRevealed = Boolean(pendingRating || lastRating);
 
   // Reset context panel when a new card loads
   useEffect(() => {
@@ -145,8 +170,18 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
   return (
     <div className="phase7-review-card">
       <div className="phase7-review-card-header">
-        <h2 className="phase7-review-word">{card.target_word}</h2>
-        <p className="phase7-review-meaning">{card.context_meaning}</p>
+        <div className="phase7-review-card-title-block">
+          <h2 className="phase7-review-word">{card.target_word}</h2>
+          {answerRevealed ? <p className="phase7-review-meaning">{card.context_meaning}</p> : null}
+        </div>
+        {answerRevealed ? (
+          <div className="phase7-review-card-header-actions">
+            <Button variant="secondary" disabled={submitting} onClick={onToggleFavorite}>
+              {card.is_favorite ? '取消收藏' : '收藏'}
+            </Button>
+            <Button variant="secondary" disabled={submitting} onClick={onMarkMastered}>标记熟记</Button>
+          </div>
+        ) : null}
       </div>
 
       <div className="phase7-review-sentence-block">
@@ -351,6 +386,67 @@ export function ReviewPage() {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    if (state.kind !== 'due') return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const updated = await patchCard(state.card.id, { is_favorite: !state.card.is_favorite });
+      setState({ kind: 'due', card: { ...state.card, is_favorite: updated.is_favorite, updated_at: updated.updated_at }, progress: state.progress });
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : '收藏状态更新失败，请重试');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleMarkMastered = async () => {
+    if (state.kind !== 'due') return;
+
+    const rating = pendingRating;
+    let ratingSubmitted = false;
+    let mastered = false;
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      if (rating) {
+        const result = await submitReview(state.card.id, { rating });
+        ratingSubmitted = true;
+        if (!result.progress.is_limit_reached) {
+          setLimitDismissed(false);
+        }
+      }
+
+      await patchCard(state.card.id, { status: 'mastered' });
+      mastered = true;
+
+      const res = await getDueReview();
+      setPendingRating(null);
+      setPendingRequiresConfirm(false);
+      setLastRating(null);
+      if (res.status === 'due') {
+        setState({ kind: 'due', card: res.card, progress: res.progress });
+        if (!res.progress.is_limit_reached) {
+          setLimitDismissed(false);
+        }
+      } else {
+        setState({ kind: 'empty', progress: res.progress });
+      }
+    } catch (err) {
+      if (mastered) {
+        setState({ kind: 'error', message: err instanceof Error ? err.message : '无法加载复习内容' });
+      } else if (rating && !ratingSubmitted) {
+        setSubmitError(err instanceof Error ? err.message : '提交失败，请重试');
+      } else {
+        setSubmitError(err instanceof Error ? err.message : '标记熟记失败，请重试');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (state.kind === 'loading') return <LoadingState message="加载中…" />;
   if (state.kind === 'error') return <ErrorState message={state.message} onRetry={load} />;
   if (state.kind === 'empty') return (
@@ -388,6 +484,8 @@ export function ReviewPage() {
         lastRating={lastRating}
         onChooseRating={handleChooseRating}
         onConfirmRating={handleConfirmRating}
+        onToggleFavorite={handleToggleFavorite}
+        onMarkMastered={handleMarkMastered}
         onNext={handleNext}
       />
     </div>

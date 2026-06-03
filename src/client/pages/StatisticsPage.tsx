@@ -33,29 +33,46 @@ function MetricCard({ label, value }: MetricProps) {
 
 // --- Bar chart (recent 14-day + monthly) ---
 
-interface BarEntry {
+interface DailyQuantityEntry {
+  date: string;
   label: string;
-  count: number;
+  reviewCount: number;
+  goodCount: number;
 }
 
-function BarChart({ entries, summaryId }: { entries: BarEntry[]; summaryId?: string }) {
+function DailyQuantityChart({ entries, summaryId }: { entries: DailyQuantityEntry[]; summaryId?: string }) {
   if (entries.length === 0) return null;
-  const max = Math.max(...entries.map((e) => e.count), 1);
-  const summaryText = entries.map((e) => `${e.label}: ${e.count}`).join(', ');
+  const max = Math.max(...entries.flatMap((e) => [e.reviewCount, e.goodCount]), 1);
+  const barHeight = (count: number) => count === 0 ? 0 : Math.max(4, Math.round((count / max) * 100));
+  const summaryText = entries.map((e) => `${e.label}: 净复习量 ${e.reviewCount}, Good ${e.goodCount}`).join(', ');
   return (
     <>
       <p id={summaryId} className="phase7-statistics-sr-only">
         {summaryText}
       </p>
-      <div className="phase7-statistics-bars" aria-hidden="true">
+      <div className="phase7-statistics-bars phase7-statistics-daily-bars" aria-hidden="true">
         {entries.map((e) => (
-          <div key={e.label} className="phase7-statistics-bar-col">
-            <span className="phase7-statistics-bar-count">{e.count}</span>
-            <div
-              className="phase7-statistics-bar"
-              style={{ height: `${Math.round((e.count / max) * 100)}%` }}
-              title={`${e.label}: ${e.count}`}
-            />
+          <div key={e.date} className="phase7-statistics-bar-col phase7-statistics-daily-col">
+            <div className="phase7-statistics-daily-bar-pair">
+              <span className="phase7-statistics-daily-stack">
+                <span className="phase7-statistics-bar-count">{e.reviewCount}</span>
+                <i
+                  className="phase7-statistics-daily-bar phase7-statistics-daily-bar--review"
+                  data-testid={`daily-review-bar-${e.date}`}
+                  style={{ height: `${barHeight(e.reviewCount)}%` }}
+                  title={`${e.date} 净复习量: ${e.reviewCount}`}
+                />
+              </span>
+              <span className="phase7-statistics-daily-stack">
+                <span className="phase7-statistics-bar-count">{e.goodCount}</span>
+                <i
+                  className="phase7-statistics-daily-bar phase7-statistics-daily-bar--good"
+                  data-testid={`daily-good-bar-${e.date}`}
+                  style={{ height: `${barHeight(e.goodCount)}%` }}
+                  title={`${e.date} Good: ${e.goodCount}`}
+                />
+              </span>
+            </div>
             <span className="phase7-statistics-bar-label">{e.label}</span>
           </div>
         ))}
@@ -203,10 +220,13 @@ function StatisticsReady({ data }: { data: StatisticsPageDto }) {
     data.tag_distribution.length === 0 &&
     data.rating_trend.length === 0;
 
-  // Latest 14 records from daily_review_counts
+  // Latest 14 records from daily_review_counts, paired with same-day Good counts.
+  const goodCountsByDate = new Map(data.rating_trend.map((e) => [e.date, e.good_count]));
   const recent14 = data.daily_review_counts.slice(-14).map((e) => ({
+    date: e.date,
     label: shortDate(e.date),
-    count: e.count,
+    reviewCount: e.count,
+    goodCount: goodCountsByDate.get(e.date) ?? 0,
   }));
 
   return (
@@ -227,10 +247,10 @@ function StatisticsReady({ data }: { data: StatisticsPageDto }) {
           <section className="phase7-statistics-chart-card" data-testid="recent-14-chart">
             <div className="phase7-statistics-card-head">
               <h2 className="phase7-statistics-card-title">最近 14 天数量图</h2>
-              <p className="phase7-statistics-card-sub">每日复习量（最新 14 天）</p>
+              <p className="phase7-statistics-card-sub">每日净复习量 / Good 数量（最新 14 天）</p>
             </div>
             {recent14.length > 0 ? (
-              <BarChart entries={recent14} summaryId="recent-14-summary" />
+              <DailyQuantityChart entries={recent14} summaryId="recent-14-summary" />
             ) : (
               <p className="phase7-statistics-chart-empty">暂无数据</p>
             )}

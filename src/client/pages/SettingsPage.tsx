@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
+  AiConfigDto,
   ImportConflictDecision,
   ImportConflictDto,
   ImportExecuteDecisionDto,
@@ -8,6 +9,15 @@ import type {
   ImportScanResponseDto,
   SettingsDto,
 } from '../../shared/types';
+import {
+  createAiConfig,
+  deleteAiConfig,
+  listAiConfigs,
+  listAiModels,
+  listSavedAiConfigModels,
+  patchAiConfig,
+  setActiveAiConfig,
+} from '../api/aiConfigs';
 import { exportCards, executeImport, scanImport } from '../api/importExport';
 import { getSettings, patchSettings } from '../api/settings';
 import { Button } from '../components/Button';
@@ -164,6 +174,278 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
         </Button>
         {saved && <span className="phase7-settings-saved-msg">设置已保存</span>}
         {saveError && <span className="phase7-settings-save-error">{saveError}</span>}
+      </div>
+    </section>
+  );
+}
+
+
+// ─── AI config section ─────────────────────────────────────────────────────────
+
+function AiConfigSection() {
+  const [configs, setConfigs] = useState<AiConfigDto[]>([]);
+  const [name, setName] = useState('');
+  const [baseUrl, setBaseUrl] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [model, setModel] = useState('');
+  const [modelOptions, setModelOptions] = useState<string[]>([]);
+  const [fetchingModels, setFetchingModels] = useState(false);
+  const [makeActive, setMakeActive] = useState(false);
+  const [editingConfigId, setEditingConfigId] = useState<string | null>(null);
+  const [editingBaseUrl, setEditingBaseUrl] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const loadConfigs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setConfigs(await listAiConfigs());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI 配置加载失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadConfigs();
+  }, [loadConfigs]);
+
+  const canFetchModels = Boolean(
+    baseUrl.trim() && (apiKey.trim() || (editingConfigId && baseUrl.trim() === editingBaseUrl)),
+  );
+
+  function resetForm() {
+    setName('');
+    setBaseUrl('');
+    setApiKey('');
+    setModel('');
+    setModelOptions([]);
+    setMakeActive(false);
+    setEditingConfigId(null);
+    setEditingBaseUrl('');
+  }
+
+  function handleEdit(config: AiConfigDto) {
+    setName(config.name);
+    setBaseUrl(config.base_url);
+    setApiKey('');
+    setModel(config.model);
+    setModelOptions([]);
+    setMakeActive(Boolean(config.is_active));
+    setEditingConfigId(config.id);
+    setEditingBaseUrl(config.base_url);
+    setSaved(false);
+    setError(null);
+  }
+
+  function handleCancelEdit() {
+    resetForm();
+    setSaved(false);
+    setError(null);
+  }
+
+  async function handleFetchModels() {
+    setFetchingModels(true);
+    setSaved(false);
+    setError(null);
+    try {
+      const result = apiKey.trim()
+        ? await listAiModels({ base_url: baseUrl.trim(), api_key: apiKey.trim() })
+        : await listSavedAiConfigModels(editingConfigId!);
+      setModelOptions(result.models);
+      if (!model.trim() && result.models[0]) setModel(result.models[0]);
+      if (result.models.length === 0) setError('未获取到模型');
+    } catch (err) {
+      setModelOptions([]);
+      setError(err instanceof Error ? err.message : '模型列表获取失败');
+    } finally {
+      setFetchingModels(false);
+    }
+  }
+
+  async function handleSaveAiConfig() {
+    setSaving(true);
+    setSaved(false);
+    setError(null);
+    try {
+      if (editingConfigId) {
+        await patchAiConfig(editingConfigId, {
+          name: name.trim(),
+          base_url: baseUrl.trim(),
+          model: model.trim(),
+          ...(apiKey.trim() ? { api_key: apiKey.trim() } : {}),
+          is_active: makeActive,
+        });
+      } else {
+        await createAiConfig({
+          name: name.trim(),
+          base_url: baseUrl.trim(),
+          api_key: apiKey.trim(),
+          model: model.trim(),
+          is_active: makeActive,
+        });
+      }
+      resetForm();
+      setSaved(true);
+      await loadConfigs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI 配置保存失败');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleActivate(id: string) {
+    setSaved(false);
+    setError(null);
+    try {
+      await setActiveAiConfig(id);
+      await loadConfigs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI 配置启用失败');
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setSaved(false);
+    setError(null);
+    try {
+      await deleteAiConfig(id);
+      await loadConfigs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI 配置删除失败');
+    }
+  }
+
+  return (
+    <section className="phase7-settings-section ai-settings-section">
+      <h2 className="phase7-settings-section-title">AI API 配置</h2>
+      <p className="phase7-settings-export-desc">
+        使用 OpenAI-compatible 接口生成制卡建议。API Key 只保存在本地，导出数据不包含 Key。
+      </p>
+
+      {loading ? <p className="phase7-settings-export-desc">AI 配置加载中…</p> : null}
+      {!loading && configs.length === 0 ? <p className="phase7-settings-export-desc">暂无 AI 配置</p> : null}
+
+      <div className="ai-config-list">
+        {configs.map((config) => (
+          <div key={config.id} className="ai-config-card ai-config-card--light" data-testid={`ai-config-card-${config.id}`}>
+            <div className="ai-config-main">
+              <strong className="ai-config-name">{config.name}</strong>
+              <div className="ai-config-meta" aria-label={`${config.name} 配置详情`}>
+                <span>{config.model}</span>
+                <small>{config.base_url}</small>
+                <small>{config.has_api_key ? 'API Key 已保存' : 'API Key 未保存'}</small>
+              </div>
+            </div>
+            <div className="ai-config-actions">
+              {config.is_active ? (
+                <span className="ai-config-active">当前启用</span>
+              ) : (
+                <Button aria-label={`启用 ${config.name}`} onClick={() => handleActivate(config.id)}>启用</Button>
+              )}
+              <Button aria-label={`编辑 ${config.name}`} variant="secondary" onClick={() => handleEdit(config)}>
+                编辑
+              </Button>
+              <Button aria-label={`删除 ${config.name}`} variant="secondary" onClick={() => handleDelete(config.id)}>
+                删除
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="phase7-settings-form ai-config-form">
+        <div className="phase7-settings-field">
+          <label htmlFor="ai-config-name" className="phase7-settings-label">
+            配置名称
+          </label>
+          <input
+            id="ai-config-name"
+            className="phase7-settings-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="phase7-settings-field">
+          <label htmlFor="ai-config-base-url" className="phase7-settings-label">
+            Base URL
+          </label>
+          <input
+            id="ai-config-base-url"
+            className="phase7-settings-input"
+            value={baseUrl}
+            onChange={(e) => setBaseUrl(e.target.value)}
+            placeholder="https://api.example.com/v1"
+          />
+        </div>
+        <div className="phase7-settings-field">
+          <label htmlFor="ai-config-api-key" className="phase7-settings-label">
+            API Key
+          </label>
+          <input
+            id="ai-config-api-key"
+            className="phase7-settings-input"
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+        </div>
+        <div className="phase7-settings-field">
+          <Button
+            variant="secondary"
+            onClick={handleFetchModels}
+            disabled={fetchingModels || !canFetchModels}
+          >
+            {fetchingModels ? '获取中…' : '获取模型列表'}
+          </Button>
+        </div>
+        <div className="phase7-settings-field">
+          <label htmlFor="ai-config-model" className="phase7-settings-label">
+            模型
+          </label>
+          <input
+            id="ai-config-model"
+            className="phase7-settings-input"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder="deepseek-chat"
+          />
+          {modelOptions.length > 0 && (
+            <div className="ai-model-options" aria-label="模型列表">
+              {modelOptions.map((option) => (
+                <button key={option} type="button" className="ai-model-option" onClick={() => setModel(option)}>
+                  {option}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <label className="phase7-settings-radio-label">
+          <input
+            type="checkbox"
+            checked={makeActive}
+            onChange={(e) => setMakeActive(e.target.checked)}
+          />
+          保存后立即启用
+        </label>
+      </div>
+
+      <div className="phase7-settings-actions">
+        <Button onClick={handleSaveAiConfig} disabled={saving}>
+          保存 AI 配置
+        </Button>
+        {editingConfigId && (
+          <Button variant="ghost" onClick={handleCancelEdit} disabled={saving}>
+            取消编辑
+          </Button>
+        )}
+        {saved && <span className="phase7-settings-saved-msg">AI 配置已保存</span>}
+        {error && <span className="phase7-settings-save-error">{error}</span>}
       </div>
     </section>
   );
@@ -500,6 +782,7 @@ function SettingsReady({ initial }: { initial: SettingsDto }) {
   return (
     <div className="phase7-settings-shell">
       <SettingsForm initial={current} onSaved={setCurrent} />
+      <AiConfigSection />
       <ExportSection />
       <ImportSection />
     </div>

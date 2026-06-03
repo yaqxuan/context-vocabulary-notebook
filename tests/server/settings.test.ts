@@ -4,6 +4,33 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/server/app.js';
 import { createTestDb, destroyTestDb } from '../../src/server/db/testDb.js';
 import type { TestDb } from '../../src/server/db/testDb.js';
+import type { AiConfigDto, CreateAiConfigBody, AiSuggestionResponseDto } from '../../src/shared/types.js';
+
+// Compile-time shape checks; runtime endpoint coverage comes with AI config routes.
+const typeSmokeAiConfig: AiConfigDto = {
+  id: 'cfg-1',
+  name: 'DeepSeek',
+  base_url: 'https://api.deepseek.com/v1',
+  model: 'deepseek-chat',
+  is_active: 1,
+  has_api_key: true,
+  created_at: '2026-06-03T00:00:00.000Z',
+  updated_at: '2026-06-03T00:00:00.000Z',
+};
+const typeSmokeCreateAiConfig: CreateAiConfigBody = {
+  name: 'DeepSeek',
+  base_url: 'https://api.deepseek.com/v1',
+  api_key: 'sk-local',
+  model: 'deepseek-chat',
+};
+const typeSmokeAiSuggestion: AiSuggestionResponseDto = {
+  status: 'success',
+  meaning_suggestion: '收费',
+  usage_note: '在句中表示收取费用。',
+};
+void typeSmokeAiConfig;
+void typeSmokeCreateAiConfig;
+void typeSmokeAiSuggestion;
 
 let db: TestDb;
 let app: ReturnType<typeof createApp>;

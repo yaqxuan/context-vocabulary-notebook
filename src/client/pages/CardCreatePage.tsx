@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
 
 import { createCard, getCard } from '../api/cards';
 import { getCardSuggestions } from '../api/cards';
 import { uploadMedia } from '../api/media';
+import { getAiSuggestion } from '../api/aiSuggestions';
 import { listTags } from '../api/tags';
 import { getSettings } from '../api/settings';
 import type { CardDetailDto, SuggestionDto, TagDto } from '../../shared/types';
@@ -74,6 +75,10 @@ export function CardCreatePage() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<SuggestionDto[]>([]);
   const [suggestionState, setSuggestionState] = useState<'idle' | 'loading' | 'empty' | 'success' | 'error'>('idle');
+  const [aiMeaningSuggestion, setAiMeaningSuggestion] = useState('');
+  const [aiUsageSuggestion, setAiUsageSuggestion] = useState('');
+  const [aiSuggestionState, setAiSuggestionState] = useState<'idle' | 'loading' | 'none' | 'success' | 'error'>('idle');
+  const [meaningTouched, setMeaningTouched] = useState(false);
   const [video, setVideo] = useState<File | null>(null);
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [audio, setAudio] = useState<File | null>(null);
@@ -82,6 +87,9 @@ export function CardCreatePage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [appendCard, setAppendCard] = useState<CardDetailDto | null>(null);
   const [appendLoadError, setAppendLoadError] = useState<string | null>(null);
+  const aiAutoFilledNoteRef = useRef(false);
+  const aiMeaningInputKeyRef = useRef('');
+  const noteTouchedRef = useRef(false);
 
   const [explicitCardId] = useState(() => parseExplicitCardId());
 
@@ -130,6 +138,15 @@ export function CardCreatePage() {
     return () => { active = false; };
   }, [explicitCardId]);
 
+  useEffect(() => {
+    if (explicitCardId) return;
+    const inputKey = `${targetWord.trim()}\n${sentence.trim()}`;
+    if (aiMeaningInputKeyRef.current !== inputKey) {
+      aiMeaningInputKeyRef.current = inputKey;
+      if (!meaning.trim()) setMeaningTouched(false);
+    }
+  }, [targetWord, sentence, meaning, explicitCardId]);
+
   // Load suggestions when target word changes
   useEffect(() => {
     if (explicitCardId) return;
@@ -161,6 +178,67 @@ export function CardCreatePage() {
       window.clearTimeout(timer);
     };
   }, [targetWord, explicitCardId]);
+
+  // Load AI suggestions when both target word and sentence are present
+  useEffect(() => {
+    if (explicitCardId) return;
+    const trimmedWord = targetWord.trim();
+    const trimmedSentence = sentence.trim();
+    if (!trimmedWord || !trimmedSentence) {
+      setAiMeaningSuggestion('');
+      setAiUsageSuggestion('');
+      setAiSuggestionState('idle');
+      if (!noteTouchedRef.current && aiAutoFilledNoteRef.current) {
+        setNote('');
+        aiAutoFilledNoteRef.current = false;
+      }
+      return;
+    }
+
+    let active = true;
+    setAiMeaningSuggestion('');
+    setAiUsageSuggestion('');
+    setAiSuggestionState('loading');
+    if (!noteTouchedRef.current && aiAutoFilledNoteRef.current) {
+      setNote('');
+      aiAutoFilledNoteRef.current = false;
+    }
+    const timer = window.setTimeout(() => {
+      getAiSuggestion({
+        target_word: trimmedWord,
+        sentence: trimmedSentence,
+        target_language: targetLanguage.trim() || DEFAULT_TARGET_LANGUAGE,
+        definition_language: definitionLanguage.trim() || DEFAULT_DEFINITION_LANGUAGE,
+      })
+        .then((result) => {
+          if (!active) return;
+          if (result.status === 'success') {
+            setAiMeaningSuggestion(result.meaning_suggestion);
+            setAiUsageSuggestion(result.usage_note);
+            setAiSuggestionState('success');
+            if (!noteTouchedRef.current && result.usage_note) {
+              setNote(result.usage_note);
+              aiAutoFilledNoteRef.current = true;
+            }
+          } else {
+            setAiMeaningSuggestion('');
+            setAiUsageSuggestion('');
+            setAiSuggestionState('none');
+          }
+        })
+        .catch(() => {
+          if (!active) return;
+          setAiMeaningSuggestion('');
+          setAiUsageSuggestion('');
+          setAiSuggestionState('error');
+        });
+    }, 400);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [targetWord, sentence, targetLanguage, definitionLanguage, explicitCardId]);
 
   // Derive exact match and mode from suggestions + current field values
   const exactMatch = useMemo(
@@ -220,6 +298,37 @@ export function CardCreatePage() {
     if (kind === 'audio') setAudio(next);
   }
 
+  function handleMeaningChange(value: string) {
+    setMeaningTouched(true);
+    setMeaning(value);
+  }
+
+  function acceptAiMeaningSuggestion() {
+    setMeaning(aiMeaningSuggestion);
+    setMeaningTouched(true);
+    setAiMeaningSuggestion('');
+  }
+
+  function handleMeaningKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!meaning.trim() && aiMeaningSuggestion) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        acceptAiMeaningSuggestion();
+      }
+      if (event.key === 'Backspace') {
+        event.preventDefault();
+        setAiMeaningSuggestion('');
+        setMeaningTouched(true);
+      }
+    }
+  }
+
+  function handleNoteChange(value: string) {
+    noteTouchedRef.current = true;
+    aiAutoFilledNoteRef.current = false;
+    setNote(value);
+  }
+
   function validate(): FieldErrors {
     const errs: FieldErrors = {};
     if (!targetWord.trim()) errs.targetWord = '目标单词必填';
@@ -277,6 +386,7 @@ export function CardCreatePage() {
 
   const saveLabel = isSaving ? '保存中…' : mode.kind === 'existing' ? '添加为新语境' : '保存词义条目';
   const currentMeaning = mode.kind === 'existing' ? mode.meaning : meaning;
+  const showAiMeaningGhost = Boolean(!currentMeaning && aiMeaningSuggestion && !meaningTouched);
   const showSuggestionPanel = Boolean(targetWord.trim());
   const suggestionTitle = appendCard ? '添加到已有词义' : '查找已有词义，避免重复建卡';
 
@@ -297,6 +407,21 @@ export function CardCreatePage() {
       <div className={`card-create-grid${showSuggestionPanel ? '' : ' card-create-grid--single'}`}>
         {/* Main form panel */}
         <section className="card-create-panel card-create-panel-main" aria-label="制卡表单">
+          {/* Sentence */}
+          <label className="card-create-field card-create-field-wide" htmlFor="cc-sentence">
+            <span>原句</span>
+            <textarea
+              id="cc-sentence"
+              aria-label="原句"
+              value={sentence}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setSentence(e.target.value)}
+              placeholder="The hotel charges $100 per night."
+              rows={4}
+            />
+            <small>先写完整语境句子，再填写生词。</small>
+            {errors.sentence ? <em>{errors.sentence}</em> : null}
+          </label>
+
           {/* Target word */}
           <label className="card-create-field" htmlFor="cc-target-word">
             <span>目标单词</span>
@@ -312,33 +437,26 @@ export function CardCreatePage() {
           </label>
 
           {/* Current context meaning */}
-          <label className="card-create-field" htmlFor="cc-meaning">
+          <label className="card-create-field card-create-meaning-field" htmlFor="cc-meaning">
             <span>当前语境释义</span>
-            <input
-              id="cc-meaning"
-              aria-label="当前语境释义"
-              value={currentMeaning}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setMeaning(e.target.value)}
-              disabled={mode.kind === 'existing' || Boolean(explicitCardId)}
-              placeholder="例如：收费"
-            />
-            <small>只写这个语境下的意思，不写完整词典释义。</small>
+            <div className="card-create-ghost-wrap">
+              <input
+                id="cc-meaning"
+                aria-label="当前语境释义"
+                value={currentMeaning}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => handleMeaningChange(e.target.value)}
+                onKeyDown={handleMeaningKeyDown}
+                disabled={mode.kind === 'existing' || Boolean(explicitCardId)}
+                placeholder={showAiMeaningGhost ? '' : '例如：收费'}
+              />
+              {showAiMeaningGhost ? (
+                <button type="button" className="card-create-ghost-text" onClick={acceptAiMeaningSuggestion}>
+                  AI 建议：{aiMeaningSuggestion}
+                </button>
+              ) : null}
+            </div>
+            <small>只写这个语境下的意思。Enter 或点击建议采纳，Backspace 删除建议。</small>
             {errors.meaning ? <em>{errors.meaning}</em> : null}
-          </label>
-
-          {/* Sentence */}
-          <label className="card-create-field card-create-field-wide" htmlFor="cc-sentence">
-            <span>原句</span>
-            <textarea
-              id="cc-sentence"
-              aria-label="原句"
-              value={sentence}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setSentence(e.target.value)}
-              placeholder="The hotel charges $100 per night."
-              rows={4}
-            />
-            <small>复习时会显示完整原句，并高亮目标单词。</small>
-            {errors.sentence ? <em>{errors.sentence}</em> : null}
           </label>
 
           {/* Language row */}
@@ -380,17 +498,18 @@ export function CardCreatePage() {
             </div>
           </fieldset>
 
-          {/* Note */}
+          {/* AI usage suggestion */}
           <label className="card-create-field card-create-field-wide" htmlFor="cc-note">
-            <span>备注</span>
+            <span>AI 建议</span>
             <textarea
               id="cc-note"
-              aria-label="备注"
+              aria-label="AI 建议"
               value={note}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNote(e.target.value)}
-              placeholder="视频名称、时间点、场景说明……"
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleNoteChange(e.target.value)}
+              placeholder={aiSuggestionState === 'loading' ? 'AI 建议生成中…' : 'none'}
               rows={3}
             />
+            <small>{aiUsageSuggestion ? '可保留、修改或删除这条语境用法说明。' : 'none'}</small>
           </label>
 
           {/* Media section */}

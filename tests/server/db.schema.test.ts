@@ -24,6 +24,7 @@ describe('schema: all required tables exist', () => {
     'fsrs_states',
     'review_logs',
     'user_settings',
+    'ai_configs',
   ];
 
   for (const tableName of requiredTables) {
@@ -117,10 +118,14 @@ describe('schema: fsrs_states columns', () => {
     expect(names).toContain('due_date');
     expect(names).toContain('stability');
     expect(names).toContain('difficulty');
+    expect(names).toContain('elapsed_days');
+    expect(names).toContain('scheduled_days');
+    expect(names).toContain('learning_steps');
     expect(names).toContain('reps');
     expect(names).toContain('lapses');
     expect(names).toContain('state');
     expect(names).toContain('last_reviewed_at');
+    expect(names).toContain('same_day_retry_at');
     expect(names).toContain('created_at');
     expect(names).toContain('updated_at');
   });
@@ -151,6 +156,25 @@ describe('schema: user_settings columns', () => {
     expect(names).toContain('daily_review_limit');
     expect(names).toContain('created_at');
     expect(names).toContain('updated_at');
+  });
+});
+
+describe('schema: ai_configs columns', () => {
+  it('creates ai_configs table for OpenAI-compatible settings', () => {
+    const columns = db.prepare('PRAGMA table_info(ai_configs)').all() as Array<{ name: string }>;
+    const names = columns.map((c) => c.name);
+    expect(names).toContain('id');
+    expect(names).toContain('name');
+    expect(names).toContain('base_url');
+    expect(names).toContain('api_key');
+    expect(names).toContain('model');
+    expect(names).toContain('is_active');
+    expect(names).toContain('created_at');
+    expect(names).toContain('updated_at');
+    expect(names).toContain('deleted_at');
+
+    const indexes = db.prepare('PRAGMA index_list(ai_configs)').all() as Array<{ name: string }>;
+    expect(indexes.some((idx) => idx.name === 'idx_ai_configs_active')).toBe(true);
   });
 });
 
@@ -192,12 +216,13 @@ describe('schema: singleton user_settings row', () => {
 });
 
 describe('schema: required indexes exist', () => {
-  it('has idx_fsrs_due_date index on fsrs_states', () => {
+  it('has fsrs queue indexes on fsrs_states', () => {
     const indexes = db.prepare(
       "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='fsrs_states'",
     ).all() as Array<{ name: string }>;
     const names = indexes.map(i => i.name);
     expect(names).toContain('idx_fsrs_due_date');
+    expect(names).toContain('idx_fsrs_same_day_retry_at');
   });
 
   it('has idx_tags_name_active unique partial index on tags', () => {

@@ -48,7 +48,7 @@ describe('App', () => {
           tags: [],
           contexts: [],
           media: [],
-          fsrs: { due_date: 'now', stability: null, difficulty: null, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
+          fsrs: { due_date: 'now', stability: null, difficulty: null, elapsed_days: 0, scheduled_days: 0, learning_steps: 0, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
         }));
       }
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(json([]));

@@ -175,8 +175,9 @@ export async function buildExportZip(db: Database, uploadsDir: string, type: Exp
 
   if (marked) {
     exportJson.fsrs_states = db.prepare(`
-      SELECT fs.id, fs.card_id, fs.due_date, fs.stability, fs.difficulty, fs.reps, fs.lapses,
-             fs.state, fs.last_reviewed_at, fs.created_at, fs.updated_at
+      SELECT fs.id, fs.card_id, fs.due_date, fs.stability, fs.difficulty, fs.elapsed_days,
+             fs.scheduled_days, fs.learning_steps, fs.reps, fs.lapses, fs.state,
+             fs.last_reviewed_at, fs.created_at, fs.updated_at
       FROM fsrs_states fs
       JOIN word_sense_cards wsc ON wsc.id = fs.card_id
       WHERE wsc.deleted_at IS NULL
@@ -373,14 +374,17 @@ export async function executeImportZip(
       const fsrs = data.export_type === 'marked' ? fsrsByCard.get(card.id) : undefined;
 
       db.prepare(`
-        INSERT INTO fsrs_states (id, card_id, due_date, stability, difficulty, reps, lapses, state, last_reviewed_at, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO fsrs_states (id, card_id, due_date, stability, difficulty, elapsed_days, scheduled_days, learning_steps, reps, lapses, state, last_reviewed_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         randomUUID(),
         localCardId,
         fsrs?.due_date ?? now,
         fsrs?.stability ?? null,
         fsrs?.difficulty ?? null,
+        fsrs?.elapsed_days ?? 0,
+        fsrs?.scheduled_days ?? 0,
+        fsrs?.learning_steps ?? 0,
         fsrs?.reps ?? 0,
         fsrs?.lapses ?? 0,
         fsrs?.state ?? 0,

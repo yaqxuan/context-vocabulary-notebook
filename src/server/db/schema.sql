@@ -83,10 +83,14 @@ CREATE TABLE IF NOT EXISTS fsrs_states (
   due_date         TEXT NOT NULL,
   stability        REAL,
   difficulty       REAL,
+  elapsed_days     INTEGER NOT NULL DEFAULT 0,
+  scheduled_days   INTEGER NOT NULL DEFAULT 0,
+  learning_steps   INTEGER NOT NULL DEFAULT 0,
   reps             INTEGER NOT NULL DEFAULT 0,
   lapses           INTEGER NOT NULL DEFAULT 0,
   state            INTEGER NOT NULL DEFAULT 0 CHECK (state IN (0, 1, 2, 3)),
   last_reviewed_at TEXT,
+  same_day_retry_at TEXT,
   created_at       TEXT NOT NULL,
   updated_at       TEXT NOT NULL
 );
@@ -118,3 +122,20 @@ CREATE TABLE IF NOT EXISTS user_settings (
   created_at                TEXT NOT NULL,
   updated_at                TEXT NOT NULL
 );
+
+-- AI configs: OpenAI-compatible local API settings for V2 card suggestions
+CREATE TABLE IF NOT EXISTS ai_configs (
+  id         TEXT PRIMARY KEY,
+  name       TEXT NOT NULL,
+  base_url   TEXT NOT NULL,
+  -- Local secret storage; API responses and exports must redact this value.
+  api_key    TEXT NOT NULL,
+  model      TEXT NOT NULL,
+  is_active  INTEGER NOT NULL DEFAULT 0 CHECK (is_active IN (0, 1)),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  deleted_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_configs_active ON ai_configs (is_active) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_ai_configs_deleted_at ON ai_configs (deleted_at);

@@ -52,11 +52,11 @@ describe('statistics API', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       due_count: 1,
-      reviewed_today_count: 2,
+      reviewed_today_count: 1,
       again_today_count: 1,
       good_today_count: 1,
       daily_review_limit: 2,
-      is_daily_target_reached: true,
+      is_daily_target_reached: false,
     });
   });
 

@@ -38,7 +38,7 @@ const video: MediaDto = {
   created_at: '2026-01-01T00:00:00Z',
 };
 
-const unavailableImage: MediaDto = {
+const image: MediaDto = {
   id: 'media-2',
   context_example_id: 'ctx-1',
   media_type: 'image',
@@ -46,6 +46,18 @@ const unavailableImage: MediaDto = {
   file_path: '/uploads/screenshot.jpg',
   mime_type: 'image/jpeg',
   file_size: 512,
+  is_available: 1,
+  created_at: '2026-01-01T00:00:00Z',
+};
+
+const unavailableImage: MediaDto = {
+  id: 'media-4',
+  context_example_id: 'ctx-1',
+  media_type: 'image',
+  file_name: 'missing.jpg',
+  file_path: '/uploads/missing.jpg',
+  mime_type: 'image/jpeg',
+  file_size: 128,
   is_available: 0,
   created_at: '2026-01-01T00:00:00Z',
 };
@@ -58,6 +70,18 @@ const audio: MediaDto = {
   file_path: '/uploads/clip.mp3',
   mime_type: 'audio/mpeg',
   file_size: 256,
+  is_available: 1,
+  created_at: '2026-01-01T00:00:00Z',
+};
+
+const secondaryVideo: MediaDto = {
+  id: 'media-5',
+  context_example_id: 'ctx-2',
+  media_type: 'video',
+  file_name: 'other-context.mp4',
+  file_path: '/uploads/other-context.mp4',
+  mime_type: 'video/mp4',
+  file_size: 2048,
   is_available: 1,
   created_at: '2026-01-01T00:00:00Z',
 };
@@ -98,7 +122,7 @@ const dueCard: DueReviewCardDto = {
       updated_at: '2026-01-01T00:00:00Z',
     },
   ],
-  media: [video, unavailableImage, audio],
+  media: [video, image, unavailableImage, audio, secondaryVideo],
 };
 
 const dueResponse: ReviewDueResponseDto = {
@@ -120,7 +144,7 @@ const submitResponse: SubmitReviewResponseDto = {
   reviewed_at: '2026-01-01T01:00:00Z',
   due_date_before: '2026-01-01T00:00:00Z',
   due_date_after: '2026-01-05T00:00:00Z',
-  fsrs: { due_date: '2026-01-05T00:00:00Z', stability: 4.0, difficulty: 5.0, reps: 1, lapses: 0, state: 2, last_reviewed_at: '2026-01-01T01:00:00Z' },
+  fsrs: { due_date: '2026-01-05T00:00:00Z', stability: 4.0, difficulty: 5.0, elapsed_days: 0, scheduled_days: 4, learning_steps: 0, reps: 1, lapses: 0, state: 2, last_reviewed_at: '2026-01-01T01:00:00Z' },
   progress: { ...progress, reviewed_count: 4, good_count: 3 },
 };
 
@@ -143,9 +167,9 @@ describe('ReviewPage', () => {
       // Initially shows loading
       expect(screen.getByText('加载中…')).toBeInTheDocument();
 
-      // Card content appears
+      // Card content appears, but the answer stays hidden until the user rates recall.
       expect(await screen.findByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
-      expect(screen.getByText('短暂的')).toBeInTheDocument();
+      expect(screen.queryByText('短暂的')).not.toBeInTheDocument();
       // The sentence has <mark> wrapping the target word, so use a container check
       expect(screen.getByText((_, el) =>
         el?.tagName === 'P' &&
@@ -203,15 +227,15 @@ describe('ReviewPage', () => {
       // Panel content should appear
       expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
 
-      // Available video media
-      expect(screen.getByText('clip.mp4')).toBeInTheDocument();
+      // Available media should render as playable/viewable elements, not just file names.
+      expect(document.querySelector('video[src="/uploads/clip.mp4"]')).toBeInTheDocument();
+      expect(document.querySelector('video[src="/uploads/other-context.mp4"]')).not.toBeInTheDocument();
+      expect(screen.getByRole('img', { name: 'screenshot.jpg' })).toHaveAttribute('src', '/uploads/screenshot.jpg');
+      expect(document.querySelector('audio[src="/uploads/clip.mp3"]')).toBeInTheDocument();
 
-      // Unavailable image should show badge, not the plain filename alone
-      expect(screen.getByText('screenshot.jpg')).toBeInTheDocument();
+      // Unavailable image should show filename and badge instead of a broken preview.
+      expect(screen.getByText('missing.jpg')).toBeInTheDocument();
       expect(screen.getByText('文件不可用')).toBeInTheDocument();
-
-      // Available audio
-      expect(screen.getByText('clip.mp3')).toBeInTheDocument();
 
       // Other context examples sorted by sort_order
       expect(screen.getByText('Youth is ephemeral.')).toBeInTheDocument();
@@ -262,6 +286,7 @@ describe('ReviewPage', () => {
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
 
+      expect(screen.getByText('短暂的')).toBeInTheDocument();
       expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '记错了，Again' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '下一张' })).toBeInTheDocument();
@@ -320,6 +345,114 @@ describe('ReviewPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: '下一张' }));
       expect(await screen.findByRole('heading', { name: 'laconic' })).toBeInTheDocument();
+    });
+
+    it('shows reveal-state actions and toggles favorite without submitting review', async () => {
+      const favoriteResponse = { ...dueCard, is_favorite: 1 };
+      const calls: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url.startsWith('/api/cards/card-1') && init?.method === 'PATCH') {
+          calls.push('favorite');
+          expect(init.body).toBe(JSON.stringify({ is_favorite: true }));
+          return Promise.resolve(jsonResponse(favoriteResponse));
+        }
+        if (url.startsWith('/api/review/card-1')) {
+          calls.push('review');
+          return Promise.resolve(jsonResponse(submitResponse));
+        }
+        if (url.startsWith('/api/review/due')) {
+          calls.push('due');
+          return Promise.resolve(jsonResponse(dueResponse));
+        }
+        return Promise.resolve(jsonResponse({}));
+      });
+
+      render(<ReviewPage />);
+
+      await screen.findByRole('heading', { name: 'ephemeral' });
+      expect(screen.queryByRole('button', { name: '收藏' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '标记熟记' })).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+
+      const favoriteButton = screen.getByRole('button', { name: '收藏' });
+      const masteredButton = screen.getByRole('button', { name: '标记熟记' });
+      expect(favoriteButton).toBeInTheDocument();
+      expect(masteredButton).toBeInTheDocument();
+      expect(favoriteButton.closest('.phase7-review-card-header-actions')).toBeInTheDocument();
+      expect(masteredButton.closest('.phase7-review-card-header-actions')).toBeInTheDocument();
+      expect(favoriteButton).toHaveClass('ring-1', 'ring-slate-300');
+      expect(masteredButton).toHaveClass('ring-1', 'ring-slate-300');
+      expect(favoriteButton.closest('.phase7-review-footer')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '下一张' }).closest('.phase7-review-rating-row')).toBeInTheDocument();
+
+      fireEvent.click(favoriteButton);
+
+      expect(await screen.findByRole('button', { name: '取消收藏' })).toBeInTheDocument();
+      expect(calls).toEqual(['due', 'favorite']);
+    });
+
+    it('submits the pending rating before marking the revealed card mastered', async () => {
+      const events: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
+          events.push('submit');
+          expect(init.body).toBe(JSON.stringify({ rating: 'good' }));
+          return Promise.resolve(jsonResponse(submitResponse));
+        }
+        if (url.startsWith('/api/cards/card-1') && init?.method === 'PATCH') {
+          events.push('mastered');
+          expect(init.body).toBe(JSON.stringify({ status: 'mastered' }));
+          return Promise.resolve(jsonResponse({ ...dueCard, status: 'mastered' }));
+        }
+        if (url.startsWith('/api/review/due')) {
+          events.push('due');
+          return Promise.resolve(jsonResponse(events.length === 1 ? dueResponse : emptyResponse));
+        }
+        return Promise.resolve(jsonResponse({}));
+      });
+
+      render(<ReviewPage />);
+
+      await screen.findByRole('heading', { name: 'ephemeral' });
+      fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+      fireEvent.click(screen.getByRole('button', { name: '标记熟记' }));
+
+      expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
+      expect(events).toEqual(['due', 'submit', 'mastered', 'due']);
+    });
+
+    it('does not mark mastered when submitting the pending rating fails', async () => {
+      const events: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
+          events.push('submit');
+          return Promise.resolve(jsonResponse({ error: 'review failed' }, 500));
+        }
+        if (url.startsWith('/api/cards/card-1') && init?.method === 'PATCH') {
+          events.push('mastered');
+          return Promise.resolve(jsonResponse({ ...dueCard, status: 'mastered' }));
+        }
+        if (url.startsWith('/api/review/due')) {
+          events.push('due');
+          return Promise.resolve(jsonResponse(dueResponse));
+        }
+        return Promise.resolve(jsonResponse({}));
+      });
+
+      render(<ReviewPage />);
+
+      await screen.findByRole('heading', { name: 'ephemeral' });
+      fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+      fireEvent.click(screen.getByRole('button', { name: '标记熟记' }));
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent('review failed');
+      expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
+      expect(events).toEqual(['due', 'submit']);
     });
 
     it('allows a Good choice to be corrected to Again before next-card submission', async () => {

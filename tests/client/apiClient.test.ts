@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { createAiConfig, deleteAiConfig, listAiConfigs, patchAiConfig, setActiveAiConfig } from '../../src/client/api/aiConfigs';
+import { getAiSuggestion } from '../../src/client/api/aiSuggestions';
 import { listCards } from '../../src/client/api/cards';
 import { ApiError, apiBlob, apiFormData, apiRequest, buildQuery } from '../../src/client/api/client';
 import { executeImport, exportCards } from '../../src/client/api/importExport';
@@ -140,6 +142,30 @@ describe('endpoint modules', () => {
     await getHomeStatistics();
 
     expect(fetchMock).toHaveBeenCalledWith('/api/statistics/home', expect.any(Object));
+  });
+
+  it('calls AI config and suggestion endpoints', async () => {
+    const calls: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      calls.push({ url: String(input), method: init?.method ?? 'GET', body: init?.body ?? null });
+      return Promise.resolve(new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json' } }));
+    });
+
+    await listAiConfigs();
+    await createAiConfig({ name: 'DeepSeek', base_url: 'https://api.deepseek.com/v1', api_key: 'sk-secret', model: 'deepseek-chat' });
+    await patchAiConfig('cfg-1', { model: 'deepseek-chat-v2' });
+    await setActiveAiConfig('cfg-1');
+    await deleteAiConfig('cfg-1');
+    await getAiSuggestion({ target_word: 'charge', sentence: 'They charge extra.' });
+
+    expect(calls.map((call) => [call.url, call.method])).toEqual([
+      ['/api/ai-configs', 'GET'],
+      ['/api/ai-configs', 'POST'],
+      ['/api/ai-configs/cfg-1', 'PATCH'],
+      ['/api/ai-configs/cfg-1/activate', 'POST'],
+      ['/api/ai-configs/cfg-1', 'DELETE'],
+      ['/api/ai/suggestions', 'POST'],
+    ]);
   });
 
   it('downloads pure-card exports', async () => {

@@ -37,6 +37,13 @@ function getFormDataEntry(body: BodyInit | null | undefined, key: string): FormD
 
 // --- Fixtures ---
 
+
+function defaultSettingsFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const url = String(input);
+  if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
+  return Promise.resolve(jsonResponse(settings));
+}
+
 const settings: SettingsDto = {
   id: 1,
   interface_language: '中文',
@@ -95,7 +102,7 @@ describe('SettingsPage', () => {
 
   describe('loading and ready state', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(settings));
+      vi.spyOn(globalThis, 'fetch').mockImplementation(defaultSettingsFetch);
     });
 
     it('shows loading state initially', () => {
@@ -151,6 +158,8 @@ describe('SettingsPage', () => {
 
       let patchBody: unknown = null;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (init?.method === 'PATCH') {
           patchBody = JSON.parse(init.body as string);
           return Promise.resolve(jsonResponse(updatedSettings));
@@ -181,7 +190,9 @@ describe('SettingsPage', () => {
         interface_language: '日本語',
       };
 
-      vi.spyOn(globalThis, 'fetch').mockImplementation((_, init) => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (init?.method === 'PATCH') {
           return Promise.resolve(jsonResponse(updatedSettings));
         }
@@ -204,7 +215,7 @@ describe('SettingsPage', () => {
 
   describe('validation', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(settings));
+      vi.spyOn(globalThis, 'fetch').mockImplementation(defaultSettingsFetch);
     });
 
     it('shows 每日复习数量必须是正整数 when value is zero', async () => {
@@ -250,7 +261,9 @@ describe('SettingsPage', () => {
     it('does not show validation error and proceeds when value is a valid positive integer', async () => {
       vi.restoreAllMocks();
       const updatedSettings = { ...settings, daily_review_limit: 5 };
-      vi.spyOn(globalThis, 'fetch').mockImplementation((_, init) => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (init?.method === 'PATCH') return Promise.resolve(jsonResponse(updatedSettings));
         return Promise.resolve(jsonResponse(settings));
       });
@@ -270,7 +283,7 @@ describe('SettingsPage', () => {
 
   describe('text field validation', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(settings));
+      vi.spyOn(globalThis, 'fetch').mockImplementation(defaultSettingsFetch);
     });
 
     it('shows 界面语言不能为空 when interface_language is blank', async () => {
@@ -306,7 +319,9 @@ describe('SettingsPage', () => {
     it('does not PATCH when any text field is empty', async () => {
       const patchCalls: unknown[] = [];
       vi.restoreAllMocks();
-      vi.spyOn(globalThis, 'fetch').mockImplementation((_, init) => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (init?.method === 'PATCH') {
           patchCalls.push(JSON.parse(init.body as string));
           return Promise.resolve(jsonResponse(settings));
@@ -336,7 +351,9 @@ describe('SettingsPage', () => {
       };
 
       let patchBody: unknown = null;
-      vi.spyOn(globalThis, 'fetch').mockImplementation((_, init) => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (init?.method === 'PATCH') {
           patchBody = JSON.parse(init.body as string);
           return Promise.resolve(jsonResponse(updatedSettings));
@@ -353,6 +370,245 @@ describe('SettingsPage', () => {
 
       await screen.findByText('设置已保存');
       expect((patchBody as Record<string, unknown>).interface_language).toBe('日本語');
+    });
+  });
+
+  // ─── AI API configs ──────────────────────────────────────────────────────────
+
+  describe('AI API configs', () => {
+    it('manages OpenAI-compatible AI configs without exposing API keys', async () => {
+      const calls: Array<{ url: string; method: string; body: unknown }> = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        calls.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(settings));
+        if (url === '/api/ai-configs' && (init?.method ?? 'GET') === 'GET') {
+          return Promise.resolve(
+            jsonResponse([
+              {
+                id: 'cfg-1',
+                name: 'DeepSeek',
+                base_url: 'https://api.deepseek.com/v1',
+                model: 'deepseek-chat',
+                is_active: 1,
+                has_api_key: true,
+                created_at: 'now',
+                updated_at: 'now',
+              },
+            ]),
+          );
+        }
+        if (url === '/api/ai-configs' && init?.method === 'POST') {
+          return Promise.resolve(
+            jsonResponse(
+              {
+                id: 'cfg-2',
+                name: 'Local',
+                base_url: 'http://localhost:11434/v1',
+                model: 'qwen',
+                is_active: 0,
+                has_api_key: true,
+                created_at: 'now',
+                updated_at: 'now',
+              },
+              201,
+            ),
+          );
+        }
+        return Promise.resolve(jsonResponse({ ok: true }));
+      });
+
+      render(<SettingsPage />);
+
+      expect(await screen.findByText('DeepSeek')).toBeInTheDocument();
+      expect(screen.getByText('当前启用')).toBeInTheDocument();
+      expect(screen.getByText('API Key 已保存')).toBeInTheDocument();
+      expect(screen.queryByText('sk-secret')).not.toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('配置名称'), { target: { value: 'Local' } });
+      fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'http://localhost:11434/v1' } });
+      fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'ollama' } });
+      fireEvent.change(screen.getByLabelText('模型'), { target: { value: 'qwen' } });
+      fireEvent.click(screen.getByRole('button', { name: '保存 AI 配置' }));
+
+      await waitFor(() =>
+        expect(calls.some((call) => call.url === '/api/ai-configs' && call.method === 'POST')).toBe(true),
+      );
+      const post = calls.find((call) => call.url === '/api/ai-configs' && call.method === 'POST');
+      expect(post?.body).toBe(
+        JSON.stringify({
+          name: 'Local',
+          base_url: 'http://localhost:11434/v1',
+          api_key: 'ollama',
+          model: 'qwen',
+          is_active: false,
+        }),
+      );
+    });
+
+    it('renders saved AI configs as light settings cards with metadata grouping', async () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        const method = init?.method ?? 'GET';
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(settings));
+        if (url === '/api/ai-configs' && method === 'GET') {
+          return Promise.resolve(jsonResponse([{
+            id: 'cfg-1',
+            name: 'deepseek',
+            base_url: 'https://api.deepseek.com',
+            model: 'deepseek-v4-flash',
+            is_active: 1,
+            has_api_key: true,
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+          }]));
+        }
+        return Promise.resolve(jsonResponse({}));
+      });
+
+      render(<SettingsPage />);
+
+      const card = await screen.findByTestId('ai-config-card-cfg-1');
+      expect(card).toHaveClass('ai-config-card--light');
+      expect(card.querySelector('.ai-config-meta')).toHaveTextContent('deepseek-v4-flash');
+      expect(card.querySelector('.ai-config-meta')).toHaveTextContent('https://api.deepseek.com');
+      expect(screen.getByText('当前启用')).toHaveClass('ai-config-active');
+    });
+
+    it('fetches model list from entered Base URL and API Key', async () => {
+      const calls: Array<{ url: string; method: string; body: unknown }> = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        calls.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(settings));
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
+        if (url === '/api/ai-configs/models') return Promise.resolve(jsonResponse({ models: ['qwen2.5', 'deepseek-chat'] }));
+        return Promise.resolve(jsonResponse({ ok: true }));
+      });
+
+      render(<SettingsPage />);
+      await screen.findByLabelText('Base URL');
+
+      fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'http://localhost:11434/v1' } });
+      fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'ollama' } });
+      fireEvent.click(screen.getByRole('button', { name: '获取模型列表' }));
+
+      await waitFor(() => expect(screen.getByLabelText('模型')).toHaveValue('qwen2.5'));
+      const post = calls.find((call) => call.url === '/api/ai-configs/models' && call.method === 'POST');
+      expect(post?.body).toBe(JSON.stringify({ base_url: 'http://localhost:11434/v1', api_key: 'ollama' }));
+    });
+
+    it('fetches model list for an existing config without re-entering the API key', async () => {
+      const calls: Array<{ url: string; method: string; body: unknown }> = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        const method = init?.method ?? 'GET';
+        calls.push({ url, method, body: init?.body ?? null });
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(settings));
+        if (url === '/api/ai-configs' && method === 'GET') {
+          return Promise.resolve(
+            jsonResponse([
+              {
+                id: 'cfg-1',
+                name: 'DeepSeek',
+                base_url: 'https://api.deepseek.com/v1',
+                model: 'deepseek-chat',
+                is_active: 0,
+                has_api_key: true,
+                created_at: 'now',
+                updated_at: 'now',
+              },
+            ]),
+          );
+        }
+        if (url === '/api/ai-configs/cfg-1/models') return Promise.resolve(jsonResponse({ models: ['deepseek-reasoner'] }));
+        return Promise.resolve(jsonResponse({ ok: true }));
+      });
+
+      render(<SettingsPage />);
+      await screen.findByText('DeepSeek');
+
+      fireEvent.click(screen.getByRole('button', { name: '编辑 DeepSeek' }));
+      expect(screen.getByLabelText('API Key')).toHaveValue('');
+      fireEvent.click(screen.getByRole('button', { name: '获取模型列表' }));
+
+      await screen.findByRole('button', { name: 'deepseek-reasoner' });
+      fireEvent.click(screen.getByRole('button', { name: 'deepseek-reasoner' }));
+      expect(screen.getByLabelText('模型')).toHaveValue('deepseek-reasoner');
+      expect(calls.some((call) => call.url === '/api/ai-configs/cfg-1/models' && call.method === 'GET')).toBe(true);
+    });
+
+    it('edits an existing AI config without sending a blank API key', async () => {
+      const calls: Array<{ url: string; method: string; body: unknown }> = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        const method = init?.method ?? 'GET';
+        calls.push({ url, method, body: init?.body ?? null });
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(settings));
+        if (url === '/api/ai-configs' && method === 'GET') {
+          return Promise.resolve(
+            jsonResponse([
+              {
+                id: 'cfg-1',
+                name: 'DeepSeek',
+                base_url: 'https://api.deepseek.com/v1',
+                model: 'deepseek-chat',
+                is_active: 0,
+                has_api_key: true,
+                created_at: 'now',
+                updated_at: 'now',
+              },
+            ]),
+          );
+        }
+        if (url === '/api/ai-configs/cfg-1' && method === 'PATCH') {
+          return Promise.resolve(
+            jsonResponse({
+              id: 'cfg-1',
+              name: 'DeepSeek Updated',
+              base_url: 'https://api.deepseek.com/v1',
+              model: 'deepseek-reasoner',
+              is_active: 1,
+              has_api_key: true,
+              created_at: 'now',
+              updated_at: 'later',
+            }),
+          );
+        }
+        return Promise.resolve(jsonResponse({ ok: true }));
+      });
+
+      render(<SettingsPage />);
+      await screen.findByText('DeepSeek');
+
+      expect(screen.getByRole('button', { name: '启用 DeepSeek' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '删除 DeepSeek' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '编辑 DeepSeek' }));
+
+      expect(screen.getByLabelText('配置名称')).toHaveValue('DeepSeek');
+      expect(screen.getByLabelText('Base URL')).toHaveValue('https://api.deepseek.com/v1');
+      expect(screen.getByLabelText('模型')).toHaveValue('deepseek-chat');
+      expect(screen.getByLabelText('API Key')).toHaveValue('');
+      expect(screen.getByRole('button', { name: '取消编辑' })).toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('配置名称'), { target: { value: 'DeepSeek Updated' } });
+      fireEvent.change(screen.getByLabelText('API Key'), { target: { value: '   ' } });
+      fireEvent.change(screen.getByLabelText('模型'), { target: { value: 'deepseek-reasoner' } });
+      fireEvent.click(screen.getByLabelText('保存后立即启用'));
+      fireEvent.click(screen.getByRole('button', { name: '保存 AI 配置' }));
+
+      await waitFor(() =>
+        expect(calls.some((call) => call.url === '/api/ai-configs/cfg-1' && call.method === 'PATCH')).toBe(true),
+      );
+      const patch = calls.find((call) => call.url === '/api/ai-configs/cfg-1' && call.method === 'PATCH');
+      expect(patch?.body).toBe(
+        JSON.stringify({
+          name: 'DeepSeek Updated',
+          base_url: 'https://api.deepseek.com/v1',
+          model: 'deepseek-reasoner',
+          is_active: true,
+        }),
+      );
     });
   });
 
@@ -392,6 +648,7 @@ describe('SettingsPage', () => {
     it('triggers marked export download on 导出含有标记的卡片 button click', async () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
         const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (url.includes('/export?type=marked')) {
           return Promise.resolve(blobResponse());
         }
@@ -412,6 +669,7 @@ describe('SettingsPage', () => {
     it('triggers pure export download on 导出纯卡片 button click', async () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
         const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (url.includes('/export?type=pure')) {
           return Promise.resolve(blobResponse());
         }
@@ -434,6 +692,7 @@ describe('SettingsPage', () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
         const url = String(input);
         fetchedUrls.push(url);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (url.includes('/export')) {
           return Promise.resolve(blobResponse());
         }
@@ -453,6 +712,7 @@ describe('SettingsPage', () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
         const url = String(input);
         fetchedUrls.push(url);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (url.includes('/export')) {
           return Promise.resolve(blobResponse());
         }
@@ -470,6 +730,7 @@ describe('SettingsPage', () => {
     it('removes the hidden anchor from the DOM after export, even if click throws', async () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
         const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (url.includes('/export')) {
           return Promise.resolve(blobResponse());
         }
@@ -505,6 +766,7 @@ describe('SettingsPage', () => {
     beforeEach(() => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (url.includes('/import/scan')) {
           return Promise.resolve(jsonResponse(scanResult));
         }
@@ -595,6 +857,7 @@ describe('SettingsPage', () => {
         fetchMock ??
           ((input, init) => {
             const url = String(input);
+            if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
             if (url.includes('/import/scan')) {
               return Promise.resolve(jsonResponse(scanResult));
             }
@@ -623,6 +886,7 @@ describe('SettingsPage', () => {
 
       await setupAndScan((input, init) => {
         const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         if (url.includes('/import/execute')) {
           capturedBody = init?.body;
           return Promise.resolve(jsonResponse(executeResult));
@@ -674,6 +938,7 @@ describe('SettingsPage', () => {
           return Promise.resolve(jsonResponse(executeResult));
         }
         if (url.includes('/import/scan')) return Promise.resolve(jsonResponse(scanResult));
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         return Promise.resolve(jsonResponse(settings));
       });
 
@@ -698,6 +963,7 @@ describe('SettingsPage', () => {
           return Promise.resolve(jsonResponse(executeResult));
         }
         if (url.includes('/import/scan')) return Promise.resolve(jsonResponse(scanResult));
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         return Promise.resolve(jsonResponse(settings));
       });
 
@@ -721,6 +987,7 @@ describe('SettingsPage', () => {
           return Promise.resolve(jsonResponse(executeResult));
         }
         if (url.includes('/import/scan')) return Promise.resolve(jsonResponse(scanResult));
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         return Promise.resolve(jsonResponse(settings));
       });
 
@@ -756,6 +1023,7 @@ describe('SettingsPage', () => {
           return Promise.resolve(jsonResponse(executeResult));
         }
         if (url.includes('/import/scan')) return Promise.resolve(jsonResponse(scanResult));
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         return Promise.resolve(jsonResponse(settings));
       });
 
@@ -782,7 +1050,7 @@ describe('SettingsPage', () => {
 
   describe('non-goals', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(settings));
+      vi.spyOn(globalThis, 'fetch').mockImplementation(defaultSettingsFetch);
     });
 
     it('does not render text "本地 API"', async () => {
@@ -797,11 +1065,10 @@ describe('SettingsPage', () => {
       expect(screen.queryByText(/CLI/)).not.toBeInTheDocument();
     });
 
-    it('does not render text "AI"', async () => {
+    it('does not render text "AI 自动制卡"', async () => {
       render(<SettingsPage />);
       await screen.findByLabelText('界面语言');
-      // Note: "AI" could appear in other text — check for standalone
-      expect(screen.queryByText(/\bAI\b/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/AI 自动制卡/)).not.toBeInTheDocument();
     });
 
     it('does not render text "同步"', async () => {
@@ -828,7 +1095,9 @@ describe('SettingsPage', () => {
 
     it('retries and shows settings form after clicking 重试', async () => {
       let callCount = 0;
-      vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
         callCount++;
         if (callCount === 1) {
           return Promise.resolve(jsonResponse({ error: 'transient error' }, 500));

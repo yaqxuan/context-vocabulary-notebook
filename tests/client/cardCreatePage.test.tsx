@@ -30,6 +30,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') {
+        return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+      }
       return Promise.resolve(jsonResponse({ ok: true }));
     });
   });
@@ -57,6 +60,191 @@ describe('CardCreatePage', () => {
     expect(screen.queryByLabelText(/视频网址/)).not.toBeInTheDocument();
 
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/tags', expect.any(Object)));
+  });
+
+  it('orders create fields as sentence, target word, then meaning', async () => {
+    render(<CardCreatePage />);
+
+    const labels = screen.getAllByLabelText(/原句|目标单词|当前语境释义/);
+    expect(labels.map((el) => el.getAttribute('aria-label'))).toEqual(['原句', '目标单词', '当前语境释义']);
+  });
+
+  it('shows ghost AI meaning suggestion and accepts it with Enter', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') {
+        return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '在句中表示收取费用。' }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+
+    expect(await screen.findByText('AI 建议：收费')).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByLabelText('当前语境释义'), { key: 'Enter' });
+    expect(screen.getByLabelText('当前语境释义')).toHaveValue('收费');
+    expect(screen.getByLabelText('AI 建议')).toHaveValue('在句中表示收取费用。');
+  });
+
+  it('fills meaning when clicking the ghost AI meaning suggestion', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') {
+        return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '' }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'AI 建议：收费' }));
+
+    expect(screen.getByLabelText('当前语境释义')).toHaveValue('收费');
+    expect(screen.queryByText('AI 建议：收费')).not.toBeInTheDocument();
+  });
+
+  it('clears ghost AI meaning suggestion with Backspace and shows none when there is no usage note', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') {
+        return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '' }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+
+    expect(await screen.findByText('AI 建议：收费')).toBeInTheDocument();
+    expect(screen.getByText('none')).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByLabelText('当前语境释义'), { key: 'Backspace' });
+    expect(screen.queryByText('AI 建议：收费')).not.toBeInTheDocument();
+  });
+
+  it('does not show ghost AI meaning suggestion again after user types then clears meaning', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') {
+        return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '' }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+
+    expect(await screen.findByText('AI 建议：收费')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '租赁' } });
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '' } });
+
+    expect(screen.queryByText('AI 建议：收费')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('当前语境释义')).toHaveAttribute('placeholder', '例如：收费');
+  });
+
+  it('shows a new ghost AI meaning suggestion after rejecting one and changing sentence', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') {
+        const body = JSON.parse(String(init?.body ?? '{}')) as { sentence?: string };
+        const second = body.sentence?.includes('extra') ?? false;
+        return Promise.resolve(jsonResponse({
+          status: 'success',
+          meaning_suggestion: second ? '额外收费' : '收费',
+          usage_note: '',
+        }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+
+    expect(await screen.findByText('AI 建议：收费')).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByLabelText('当前语境释义'), { key: 'Backspace' });
+    expect(screen.queryByText('AI 建议：收费')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
+
+    expect(await screen.findByText('AI 建议：额外收费')).toBeInTheDocument();
+  });
+
+  it('replaces an untouched AI-filled usage note when sentence changes', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') {
+        const body = JSON.parse(String(init?.body ?? '{}')) as { sentence?: string };
+        const second = body.sentence?.includes('extra') ?? false;
+        return Promise.resolve(jsonResponse({
+          status: 'success',
+          meaning_suggestion: second ? '额外收费' : '收费',
+          usage_note: second ? '在新句中表示加收费用。' : '在原句中表示按晚收费。',
+        }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+
+    expect(await screen.findByDisplayValue('在原句中表示按晚收费。')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
+
+    expect(screen.getByLabelText('AI 建议')).toHaveValue('');
+    expect(await screen.findByDisplayValue('在新句中表示加收费用。')).toBeInTheDocument();
+  });
+
+  it('clears an old AI meaning ghost while a new request is pending after sentence changes', async () => {
+    let aiCallCount = 0;
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') {
+        aiCallCount += 1;
+        if (aiCallCount === 1) {
+          return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '' }));
+        }
+        return new Promise<Response>(() => undefined);
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+
+    expect(await screen.findByText('AI 建议：收费')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
+
+    expect(screen.queryByText('AI 建议：收费')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('AI 建议')).toHaveAttribute('placeholder', 'AI 建议生成中…');
   });
 
   // Test 2: required field validation
@@ -339,7 +527,7 @@ describe('CardCreatePage', () => {
       tags: [],
       contexts: [],
       media: [],
-      fsrs: { due_date: 'now', stability: 1, difficulty: 5, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
+      fsrs: { due_date: 'now', stability: 1, difficulty: 5, elapsed_days: 0, scheduled_days: 0, learning_steps: 0, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
     };
 
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
@@ -385,7 +573,7 @@ describe('CardCreatePage', () => {
       tags: [],
       contexts: [],
       media: [],
-      fsrs: { due_date: 'now', stability: 1, difficulty: 5, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
+      fsrs: { due_date: 'now', stability: 1, difficulty: 5, elapsed_days: 0, scheduled_days: 0, learning_steps: 0, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
     };
 
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
@@ -418,7 +606,7 @@ describe('CardCreatePage', () => {
 
     // Fill sentence and note, submit
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
-    fireEvent.change(screen.getByLabelText('备注'), { target: { value: 'S01E02' } });
+    fireEvent.change(screen.getByLabelText('AI 建议'), { target: { value: 'S01E02' } });
     fireEvent.click(screen.getByRole('button', { name: '添加为新语境' }));
 
     await waitFor(() => expect(window.location.hash).toBe('#/cards/card-1'));

@@ -51,6 +51,8 @@ describe('HomePage', () => {
     expect(screen.queryByText('今天不熟或答错')).not.toBeInTheDocument();
     expect(screen.queryByText('今天顺利想起')).not.toBeInTheDocument();
     expect(screen.queryByText('soft goal')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '先处理到期，再继续积累。' })).not.toBeInTheDocument();
+    expect(screen.queryByText('先看待复习数量，再用 Good / Again 判断今天的复习节奏。')).not.toBeInTheDocument();
   });
 
   it('does not show the removed soft-goal card when daily target is reached', async () => {

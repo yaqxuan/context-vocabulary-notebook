@@ -155,8 +155,18 @@ describe('StatisticsPage', () => {
       // The sr-only summary paragraph should contain the data for the chart
       const summary = document.getElementById('recent-14-summary');
       expect(summary).toBeInTheDocument();
-      expect(summary?.textContent).toContain('05-02: 10');
-      expect(summary?.textContent).toContain('05-15: 18');
+      expect(summary?.textContent).toContain('05-02: 净复习量 10, Good 0');
+      expect(summary?.textContent).toContain('05-15: 净复习量 18, Good 15');
+    });
+
+    it('renders two bars per recent day: review count and Good count', async () => {
+      render(<StatisticsPage />);
+      await screen.findByText('248');
+      const chartSection = screen.getByTestId('recent-14-chart');
+      expect(chartSection.querySelector('[data-testid="daily-review-bar-2026-05-15"]')).toHaveClass('phase7-statistics-daily-bar--review');
+      expect(chartSection.querySelector('[data-testid="daily-good-bar-2026-05-15"]')).toHaveClass('phase7-statistics-daily-bar--good');
+      expect(chartSection.querySelector('[data-testid="daily-review-bar-2026-05-15"]')).toHaveAttribute('title', '2026-05-15 净复习量: 18');
+      expect(chartSection.querySelector('[data-testid="daily-good-bar-2026-05-15"]')).toHaveAttribute('title', '2026-05-15 Good: 15');
     });
   });
 

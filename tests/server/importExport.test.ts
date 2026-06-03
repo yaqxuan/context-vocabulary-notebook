@@ -121,6 +121,10 @@ describe('import/export API', () => {
       INSERT INTO review_logs (id, card_id, rating, reviewed_at, due_date_before, due_date_after, created_at)
       VALUES ('log-1', ?, 'good', '2026-05-30T00:00:00.000Z', '2026-05-30T00:00:00.000Z', '2026-06-01T00:00:00.000Z', '2026-05-30T00:00:00.000Z')
     `).run(card.id);
+    db.prepare(`
+      INSERT INTO ai_configs (id, name, base_url, api_key, model, is_active, created_at, updated_at)
+      VALUES ('ai-config-1', 'DeepSeek', 'https://api.deepseek.com/v1', 'sk-secret', 'deepseek-chat', 1, '2026-05-30T00:00:00.000Z', '2026-05-30T00:00:00.000Z')
+    `).run();
 
     const response = await request(createApp(db, { uploadsDir }))
       .get('/api/export?type=marked')
@@ -136,6 +140,8 @@ describe('import/export API', () => {
     expect(exported.fsrs_states).toHaveLength(1);
     expect(exported.review_logs).toHaveLength(1);
     expect(exported.settings?.id).toBe(1);
+    expect(JSON.stringify(exported)).not.toContain('sk-secret');
+    expect(exported).not.toHaveProperty('ai_configs');
   });
 
   it('includes available media files under uploads in zip', async () => {
@@ -401,6 +407,9 @@ describe('import/export API', () => {
         due_date: '2026-06-01T00:00:00.000Z',
         stability: 2,
         difficulty: 3,
+        elapsed_days: 0,
+        scheduled_days: 2,
+        learning_steps: 0,
         reps: 4,
         lapses: 1,
         state: 2,

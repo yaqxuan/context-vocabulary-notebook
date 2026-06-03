@@ -963,6 +963,33 @@ body {
   color: #047857 !important;
 }
 
+.card-create-ghost-wrap {
+  position: relative;
+}
+
+.card-create-ghost-wrap input {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.card-create-ghost-text {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: rgba(100, 116, 139, 0.72);
+  cursor: pointer;
+  z-index: 2;
+  font-size: 0.95rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-weight: 520;
+  padding: 0;
+  text-align: left;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1020,6 +1047,32 @@ body {
   padding: clamp(1rem, 2vw, 1.5rem);
   background: linear-gradient(135deg, rgba(255, 247, 232, .96), rgba(236, 253, 245, .84));
   border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.phase7-review-card-title-block {
+  min-width: 0;
+}
+
+.phase7-review-card-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .6rem;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 620px) {
+  .phase7-review-card-header {
+    display: grid;
+  }
+
+  .phase7-review-card-header-actions {
+    justify-content: flex-start;
+  }
 }
 
 .phase7-review-kicker {
@@ -1102,9 +1155,31 @@ body {
 }
 
 .phase7-review-media-item {
+  display: grid;
+  gap: .5rem;
+}
+
+.phase7-review-media-item--unavailable {
   display: flex;
   align-items: center;
-  gap: .5rem;
+}
+
+.phase7-review-media-player,
+.phase7-review-media-image {
+  display: block;
+  width: min(100%, 42rem);
+  border: 1px solid rgba(23, 32, 51, .14);
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, .08);
+}
+
+.phase7-review-media-player {
+  max-height: 24rem;
+}
+
+.phase7-review-media-image {
+  max-height: 28rem;
+  object-fit: contain;
 }
 
 .phase7-review-media-name {
@@ -1154,6 +1229,7 @@ body {
 
 .phase7-review-rating-row {
   display: flex;
+  flex-wrap: wrap;
   gap: .75rem;
 }
 
@@ -1328,6 +1404,49 @@ body {
   border-radius: 1rem 1rem 0.35rem 0.35rem;
   background: linear-gradient(180deg, #2dd4bf, #0f766e);
   box-shadow: 0 6px 14px rgba(15, 118, 110, 0.18);
+}
+
+.phase7-statistics-daily-bars {
+  gap: 1rem;
+}
+
+.phase7-statistics-daily-col {
+  flex-basis: 4.5rem;
+  min-width: 4.5rem;
+}
+
+.phase7-statistics-daily-bar-pair {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: .35rem;
+  width: 100%;
+  height: 124px;
+}
+
+.phase7-statistics-daily-stack {
+  height: 124px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.phase7-statistics-daily-bar {
+  display: block;
+  width: 1.45rem;
+  min-height: 4px;
+  border-radius: .8rem .8rem .3rem .3rem;
+}
+
+.phase7-statistics-daily-bar--review {
+  background: linear-gradient(180deg, #2dd4bf, #0f766e);
+  box-shadow: 0 6px 14px rgba(15, 118, 110, 0.18);
+}
+
+.phase7-statistics-daily-bar--good {
+  background: linear-gradient(180deg, #93c5fd, #2563eb);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.16);
 }
 
 .phase7-statistics-bar-label {
@@ -1876,7 +1995,27 @@ body {
 }
 
 /* Task 3: detail page inline meaning editor */
-.phase6-meaning-row,
+.phase6-detail-title-stack {
+  display: grid;
+  align-content: start;
+  gap: .35rem;
+}
+
+.phase6-detail-meaning {
+  margin: 0;
+  color: #475569;
+  font: 850 1.1rem/1.35 ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase6-detail-meaning-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .25rem;
+  padding-top: .55rem;
+  border-top: 1px solid rgba(23, 32, 51, .12);
+}
+
 .phase6-inline-editor,
 .phase6-inline-editor > div {
   display: flex;
@@ -1885,7 +2024,8 @@ body {
   align-items: center;
 }
 
-.phase6-inline-editor input {
+.phase6-inline-editor input,
+.phase6-tag-create-row input {
   border: 1px solid rgba(15, 23, 42, 0.16);
   border-radius: 0.75rem;
   padding: 0.45rem 0.65rem;
@@ -1908,6 +2048,17 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.phase6-tag-create-row {
+  align-items: center;
+  padding-top: .65rem;
+  border-top: 1px dashed rgba(15, 23, 42, .14);
+}
+
+.phase6-tag-create-row label {
+  color: #64748b;
+  font: 800 .78rem ui-sans-serif, system-ui, sans-serif;
 }
 
 .phase6-tag-editor button.selected {
@@ -1974,4 +2125,100 @@ body {
   .phase6-tags .phase6-tag-editor {
     grid-template-columns: 1fr;
   }
+}
+
+
+.ai-settings-section {
+  gap: 1rem;
+}
+
+.ai-config-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ai-config-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(23, 32, 51, 0.12);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, .68);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.ai-config-main {
+  min-width: 0;
+  display: grid;
+  gap: .35rem;
+}
+
+.ai-config-name {
+  color: #172033;
+  font: 850 .98rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.ai-config-meta {
+  display: grid;
+  gap: .15rem;
+}
+
+.ai-config-meta span {
+  color: #334155;
+  font: 700 .9rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.ai-config-meta small {
+  color: #64748b;
+  font: 600 .82rem/1.35 ui-sans-serif, system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.ai-config-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ai-config-active {
+  padding: .35rem .65rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, .14);
+  color: #047857;
+  font: 800 .78rem ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (max-width: 640px) {
+  .ai-config-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ai-config-actions {
+    justify-content: flex-start;
+  }
+}
+
+.ai-config-form {
+  margin-top: 0.5rem;
+}
+
+.ai-model-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.ai-model-option {
+  border: 1px solid rgba(15, 118, 110, .22);
+  border-radius: 999px;
+  background: rgba(240, 253, 250, .72);
+  color: #0f766e;
+  cursor: pointer;
+  font: 750 .78rem ui-sans-serif, system-ui, sans-serif;
+  padding: .3rem .65rem;
 }

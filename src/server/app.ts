@@ -8,6 +8,8 @@ import { tagsRouter } from './routes/tags.js';
 import { mediaRouter } from './routes/media.js';
 import { reviewRouter } from './routes/review.js';
 import { settingsRouter } from './routes/settings.js';
+import { aiConfigsRouter } from './routes/aiConfigs.js';
+import { aiSuggestionsRouter } from './routes/aiSuggestions.js';
 import { statisticsRouter } from './routes/statistics.js';
 import { importExportRouter } from './routes/importExport.js';
 import { ensureUploadsDir, resolveUploadPath } from './storage/uploads.js';
@@ -62,6 +64,8 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
   application.use('/api/media', mediaRouter(db, uploadsDir, { maxFileSizeBytes: options.uploadMaxBytes, mediaSizeLimitsBytes: options.mediaSizeLimitsBytes }));
   application.use('/api/review', reviewRouter(db));
   application.use('/api/settings', settingsRouter(db));
+  application.use('/api/ai-configs', aiConfigsRouter(db));
+  application.use('/api/ai', aiSuggestionsRouter(db));
   application.use('/api/statistics', statisticsRouter(db));
   application.use('/api', importExportRouter(db, uploadsDir));
 

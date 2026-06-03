@@ -86,6 +86,9 @@ export interface FsrsDto {
   due_date: string;
   stability: number | null;
   difficulty: number | null;
+  elapsed_days: number;
+  scheduled_days: number;
+  learning_steps: number;
   reps: number;
   lapses: number;
   state: number;
@@ -182,6 +185,63 @@ export interface PatchSettingsBody {
   default_definition_language?: string;
   daily_review_limit?: number;
 }
+
+export interface AiConfigDto {
+  id: string;
+  name: string;
+  base_url: string;
+  model: string;
+  // Read DTO mirrors SQLite 0/1; write bodies accept booleans.
+  is_active: number;
+  has_api_key: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAiConfigBody {
+  name: string;
+  base_url: string;
+  api_key: string;
+  model: string;
+  is_active?: boolean;
+}
+
+export interface PatchAiConfigBody {
+  name?: string;
+  base_url?: string;
+  api_key?: string;
+  model?: string;
+  is_active?: boolean;
+}
+
+export interface AiModelListRequestDto {
+  base_url: string;
+  api_key: string;
+}
+
+export interface AiModelListResponseDto {
+  models: string[];
+}
+
+export interface AiSuggestionRequestDto {
+  target_word: string;
+  sentence: string;
+  target_language?: string;
+  definition_language?: string;
+}
+
+export type AiSuggestionResponseDto =
+  | {
+      status: 'success';
+      meaning_suggestion: string;
+      usage_note: string;
+    }
+  | {
+      status: 'none';
+      meaning_suggestion: '';
+      usage_note: '';
+      message: string;
+    };
 
 export interface HomeStatisticsDto {
   due_count: number;
