@@ -78,12 +78,10 @@ curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook
 
 ### Windows PowerShell
 
-复制下面命令运行即可。脚本会把项目安装到当前目录：
+先进入你想安装项目文件的空目录，再复制下面命令运行。脚本会把项目文件直接安装到当前目录，不会再创建下一层目录：
 
 ```powershell
-New-Item -ItemType Directory -Force ".\context-vocabulary-notebook" | Out-Null
-Set-Location ".\context-vocabulary-notebook"
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
 脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。
@@ -94,7 +92,7 @@ https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install
 高级用法：指定安装目录
 
 ```powershell
-$env:CVN_HOME = Join-Path (Get-Location) "context-vocabulary-notebook"
+$env:CVN_HOME = "C:\path\to\empty-folder"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
 ```
 
