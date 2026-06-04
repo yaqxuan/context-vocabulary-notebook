@@ -57,9 +57,10 @@ uploads/
 
 ### Linux / macOS / WSL
 
-复制下面命令运行即可：
+复制下面命令运行即可。脚本会把项目安装到当前目录：
 
 ```bash
+mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
 curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
@@ -77,9 +78,11 @@ curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook
 
 ### Windows PowerShell
 
-复制下面命令运行即可：
+复制下面命令运行即可。脚本会把项目安装到当前目录：
 
 ```powershell
+New-Item -ItemType Directory -Force "$HOME\context-vocabulary-notebook" | Out-Null
+Set-Location "$HOME\context-vocabulary-notebook"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
 ```
 
@@ -128,7 +131,7 @@ npm run dev
 
 也可以重新运行一键安装命令。脚本发现安装目录里已有 Git 仓库时，会自动执行 `git pull --ff-only`、`npm ci` 和 `npm run build`。
 
-如果在项目目录里重新运行一键安装命令，脚本会更新当前项目目录，不会再创建下一层同名目录。如果在项目外运行，请确保运行命令的位置和首次安装时一致，或显式设置同一个 `CVN_HOME`，否则可能会安装到另一个新目录。
+如果在项目目录里重新运行一键安装命令，脚本会更新当前项目目录，不会再创建下一层同名目录。如果在项目外运行，请先进入一个空目录，或显式设置同一个 `CVN_HOME`；脚本不会把项目文件混入非空的普通目录。
 
 ## 手动安装
 

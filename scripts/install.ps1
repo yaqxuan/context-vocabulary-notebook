@@ -2,19 +2,19 @@ $ErrorActionPreference = "Stop"
 
 $RepoUrl = "https://github.com/yaqxuan/context-vocabulary-notebook.git"
 
-function Resolve-InstallDir {
-  if ($env:CVN_HOME) { return $env:CVN_HOME }
-
-  $CurrentDir = (Get-Location).Path
-  $PackageJson = Join-Path $CurrentDir "package.json"
-  if ((Test-Path (Join-Path $CurrentDir ".git")) -and (Test-Path $PackageJson)) {
-    $PackageContent = Get-Content -Raw $PackageJson
-    if ($PackageContent -match '"name"\s*:\s*"context-vocabulary-notebook"') {
-      return $CurrentDir
-    }
+function Test-ProjectDir($Path) {
+  $PackageJson = Join-Path $Path "package.json"
+  if (-not ((Test-Path (Join-Path $Path ".git")) -and (Test-Path $PackageJson))) {
+    return $false
   }
 
-  return Join-Path $CurrentDir "context-vocabulary-notebook"
+  $PackageContent = Get-Content -Raw $PackageJson
+  return $PackageContent -match '"name"\s*:\s*"context-vocabulary-notebook"'
+}
+
+function Resolve-InstallDir {
+  if ($env:CVN_HOME) { return $env:CVN_HOME }
+  return (Get-Location).Path
 }
 
 $InstallDir = Resolve-InstallDir
@@ -92,18 +92,36 @@ function Ensure-Environment {
   npm --version
 }
 
+function Test-EmptyDir($Path) {
+  if (-not (Test-Path $Path)) { return $true }
+  return $null -eq (Get-ChildItem -Force -LiteralPath $Path | Select-Object -First 1)
+}
+
 function Install-Project {
-  $Parent = Split-Path -Parent $InstallDir
-  if ($Parent -and -not (Test-Path $Parent)) {
-    New-Item -ItemType Directory -Path $Parent | Out-Null
+  if (-not (Test-Path $InstallDir)) {
+    New-Item -ItemType Directory -Path $InstallDir | Out-Null
   }
 
-  if (Test-Path (Join-Path $InstallDir ".git")) {
+  if (Test-ProjectDir $InstallDir) {
     Write-Step "发现已有项目目录，更新代码：$InstallDir"
     git -C "$InstallDir" pull --ff-only
   } else {
-    Write-Step "克隆项目到：$InstallDir"
-    git clone $RepoUrl "$InstallDir"
+    if (-not (Test-EmptyDir $InstallDir)) {
+      throw @"
+当前目录不是空目录，也不是 Context Vocabulary Notebook 项目目录：
+  $InstallDir
+
+为避免把项目文件混入其他文件，请换到一个空目录后重新运行，或显式设置 CVN_HOME 指向要安装的目录。
+"@
+    }
+
+    Write-Step "克隆项目到当前目录：$InstallDir"
+    Push-Location $InstallDir
+    try {
+      git clone $RepoUrl .
+    } finally {
+      Pop-Location
+    }
   }
 
   Set-Location $InstallDir

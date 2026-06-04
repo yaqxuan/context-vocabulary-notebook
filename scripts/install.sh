@@ -3,18 +3,17 @@ set -euo pipefail
 
 REPO_URL="https://github.com/yaqxuan/context-vocabulary-notebook.git"
 
+is_project_dir() {
+  [ -d "$1/.git" ] && [ -f "$1/package.json" ] && grep -Eq '"name"[[:space:]]*:[[:space:]]*"context-vocabulary-notebook"' "$1/package.json"
+}
+
 resolve_install_dir() {
   if [ -n "${CVN_HOME:-}" ]; then
     printf '%s\n' "$CVN_HOME"
     return
   fi
 
-  if [ -d "$PWD/.git" ] && [ -f "$PWD/package.json" ] && grep -Eq '"name"[[:space:]]*:[[:space:]]*"context-vocabulary-notebook"' "$PWD/package.json"; then
-    printf '%s\n' "$PWD"
-    return
-  fi
-
-  printf '%s\n' "$PWD/context-vocabulary-notebook"
+  printf '%s\n' "$PWD"
 }
 
 INSTALL_DIR="$(resolve_install_dir)"
@@ -168,15 +167,36 @@ ensure_environment() {
   npm --version
 }
 
-install_project() {
-  mkdir -p "$(dirname "$INSTALL_DIR")"
+is_empty_dir() {
+  [ ! -d "$1" ] && return 0
+  [ -z "$(find "$1" -mindepth 1 -maxdepth 1 -print -quit)" ]
+}
 
-  if [ -d "$INSTALL_DIR/.git" ]; then
+install_project() {
+  mkdir -p "$INSTALL_DIR"
+
+  if is_project_dir "$INSTALL_DIR"; then
     log "发现已有项目目录，更新代码：$INSTALL_DIR"
     git -C "$INSTALL_DIR" pull --ff-only
   else
-    log "克隆项目到：$INSTALL_DIR"
-    git clone "$REPO_URL" "$INSTALL_DIR"
+    if ! is_empty_dir "$INSTALL_DIR"; then
+      cat <<EOF
+当前目录不是空目录，也不是 Context Vocabulary Notebook 项目目录：
+  $INSTALL_DIR
+
+为避免把项目文件混入其他文件，请换到一个空目录后重新运行，或显式设置 CVN_HOME 指向要安装的目录。
+
+示例：
+  mkdir -p "$HOME/context-vocabulary-notebook"
+  cd "$HOME/context-vocabulary-notebook"
+  curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+
+EOF
+      exit 1
+    fi
+
+    log "克隆项目到当前目录：$INSTALL_DIR"
+    (cd "$INSTALL_DIR" && git clone "$REPO_URL" .)
   fi
 
   cd "$INSTALL_DIR"
