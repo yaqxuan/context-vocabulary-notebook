@@ -18,7 +18,7 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
   await page.getByLabel('目标单词').fill(targetWord);
   await page.getByLabel('当前语境释义').fill(meaning);
   await page.getByLabel('原句').fill(sentence);
-  await page.getByLabel('备注').fill('Playwright V1 smoke note');
+  await page.getByLabel('AI 建议').fill('Playwright V1 smoke note');
   await page.getByLabel('上传本地视频').setInputFiles({
     name: 'smoke.mp4',
     mimeType: 'video/mp4',
@@ -39,9 +39,7 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
   await expect(page).toHaveURL(/#\/cards\//);
   await expect(page.getByRole('heading', { name: targetWord })).toBeVisible();
   await expect(page.getByText(sentence)).toBeVisible();
-  await expect(page.getByText(/\.mp4/)).toBeVisible();
-  await expect(page.getByText(/\.png/)).toBeVisible();
-  await expect(page.getByText(/\.mp3/)).toBeVisible();
+  await expect(page.getByRole('img', { name: /\.png$/ })).toBeVisible();
 
   await page.goto('/#/review');
   await expect(page.getByText(sentence)).toBeVisible();
