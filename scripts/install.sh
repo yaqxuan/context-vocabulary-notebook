@@ -2,7 +2,22 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/yaqxuan/context-vocabulary-notebook.git"
-INSTALL_DIR="${CVN_HOME:-$PWD/context-vocabulary-notebook}"
+
+resolve_install_dir() {
+  if [ -n "${CVN_HOME:-}" ]; then
+    printf '%s\n' "$CVN_HOME"
+    return
+  fi
+
+  if [ -d "$PWD/.git" ] && [ -f "$PWD/package.json" ] && grep -Eq '"name"[[:space:]]*:[[:space:]]*"context-vocabulary-notebook"' "$PWD/package.json"; then
+    printf '%s\n' "$PWD"
+    return
+  fi
+
+  printf '%s\n' "$PWD/context-vocabulary-notebook"
+}
+
+INSTALL_DIR="$(resolve_install_dir)"
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$*"
