@@ -81,8 +81,8 @@ curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook
 复制下面命令运行即可。脚本会把项目安装到当前目录：
 
 ```powershell
-New-Item -ItemType Directory -Force "$HOME\context-vocabulary-notebook" | Out-Null
-Set-Location "$HOME\context-vocabulary-notebook"
+New-Item -ItemType Directory -Force ".\context-vocabulary-notebook" | Out-Null
+Set-Location ".\context-vocabulary-notebook"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
 ```
 
@@ -94,7 +94,7 @@ https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install
 高级用法：指定安装目录
 
 ```powershell
-$env:CVN_HOME = "$HOME\context-vocabulary-notebook"
+$env:CVN_HOME = Join-Path (Get-Location) "context-vocabulary-notebook"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
 ```
 
