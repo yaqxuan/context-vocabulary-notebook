@@ -10,13 +10,14 @@ function readDevScript() {
   return fs.readFileSync(devScript, 'utf8');
 }
 
-describe('dev.mjs Windows command spawning', () => {
-  it('uses npm.cmd on Windows when spawning npm scripts', () => {
+describe('dev.mjs npm command spawning', () => {
+  it('uses the current Node executable and npm CLI entrypoint inside npm lifecycle scripts', () => {
     const script = readDevScript();
 
-    expect(script).toContain('process.platform === \'win32\'');
-    expect(script).toContain('npm.cmd');
-    expect(script).toContain("[npmCommand, ['run', 'dev:server']]");
-    expect(script).toContain("[npmCommand, ['run', 'dev:client']]");
+    expect(script).toContain('process.env.npm_execpath');
+    expect(script).toContain('process.execPath');
+    expect(script).toContain("[npmCommand, [...npmArgs, 'run', 'dev:server']]");
+    expect(script).toContain("[npmCommand, [...npmArgs, 'run', 'dev:client']]");
+    expect(script).not.toContain('npm.cmd');
   });
 });
