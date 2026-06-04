@@ -101,6 +101,34 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 - macOS 如果弹出 Xcode Command Line Tools 安装窗口，请点击“安装”，完成后重新运行安装命令。
 - Windows 如果提示需要安装编译环境，请按脚本提示继续；这是部分依赖编译时可能需要的环境。
 
+## 更新到最新版
+
+如果你已经安装过，进入项目目录后运行：
+
+Linux / macOS / WSL / Git Bash：
+
+```bash
+cd context-vocabulary-notebook
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+Windows 原生 PowerShell：
+
+```powershell
+Set-Location context-vocabulary-notebook
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+也可以重新运行一键安装命令。脚本发现安装目录里已有 Git 仓库时，会自动执行 `git pull --ff-only`、`npm ci` 和 `npm run build`。
+
+如果用一键安装命令更新，请确保运行命令的位置和首次安装时一致，或显式设置同一个 `CVN_HOME`，否则可能会安装到另一个新目录。
+
 ## 手动安装
 
 如果一键脚本无法补齐环境，可先手动安装 Node.js 22 LTS、npm、Git，以及可能需要的 native build tools，然后执行下面命令。
