@@ -53,278 +53,53 @@ Linux / WSL 脚本会优先尝试通过 `apt-get` 安装常见依赖。macOS 脚
 
 如果脚本无法自动补齐环境，会输出缺少的工具和建议处理方式；此时需要用户按自己的系统手动安装后再重试。
 
-## 一键安装：Linux / macOS / WSL（Bash）
+## 一键安装
 
-发布到 GitHub 后，把下面脚本里的 `REPO_URL` 改成真实仓库地址。脚本会先检查环境，能自动安装的依赖会先安装；已存在的依赖会显示版本并继续。
+### Linux / macOS / WSL
+
+复制下面命令运行即可：
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-REPO_URL="https://github.com/yaqxuan/context-vocabulary-notebook.git"
-INSTALL_DIR="${CVN_HOME:-$PWD/context-vocabulary-notebook}"
-
-log() {
-  printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$*"
-}
-
-has_cmd() {
-  command -v "$1" >/dev/null 2>&1
-}
-
-node_major() {
-  node -p "Number(process.versions.node.split('.')[0])" 2>/dev/null || echo 0
-}
-
-node_ok() {
-  has_cmd node && has_cmd npm && [ "$(node_major)" -ge 20 ]
-}
-
-need_sudo() {
-  if [ "$(id -u)" -ne 0 ]; then
-    if has_cmd sudo; then
-      sudo "$@"
-    else
-      echo "需要管理员权限，但系统没有 sudo：$*"
-      exit 1
-    fi
-  else
-    "$@"
-  fi
-}
-
-install_linux_deps() {
-  if has_cmd apt-get; then
-    log "使用 apt-get 安装缺失环境"
-    need_sudo apt-get update
-    need_sudo apt-get install -y git curl ca-certificates gnupg build-essential python3 make g++
-
-    if ! node_ok; then
-      log "安装或升级 Node.js 22 LTS"
-      need_sudo install -d -m 0755 /etc/apt/keyrings
-      curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | need_sudo tee /etc/apt/keyrings/nodesource.gpg >/dev/null
-      need_sudo chmod a+r /etc/apt/keyrings/nodesource.gpg
-      echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | need_sudo tee /etc/apt/sources.list.d/nodesource.list >/dev/null
-      need_sudo apt-get update
-      need_sudo apt-get install -y nodejs
-    fi
-  else
-    echo "未发现 apt-get。请手动安装 Git、Node.js 22 LTS、npm、Python3、make、g++ 或对应 build tools 后重试。"
-    exit 1
-  fi
-}
-
-install_macos_deps() {
-  if ! has_cmd brew; then
-    echo "未发现 Homebrew。请先安装 Homebrew，或手动安装 Git、Node.js 22 LTS 和 Xcode Command Line Tools 后重试。"
-    echo "Homebrew: https://brew.sh/"
-    exit 1
-  fi
-
-  log "使用 Homebrew 安装缺失环境"
-  has_cmd git || brew install git
-  node_ok || brew install node
-  xcode-select -p >/dev/null 2>&1 || xcode-select --install || true
-}
-
-ensure_environment() {
-  case "$(uname -s)" in
-    Linux*) install_linux_deps ;;
-    Darwin*) install_macos_deps ;;
-    *)
-      echo "当前 Bash 环境不在 Linux/macOS/WSL 支持范围内。Windows 原生请使用 PowerShell 安装脚本。"
-      exit 1
-      ;;
-  esac
-
-  for cmd in git node npm; do
-    if ! has_cmd "$cmd"; then
-      echo "缺少命令：$cmd。请手动安装后重试。"
-      exit 1
-    fi
-  done
-
-  if ! node_ok; then
-    echo "Node.js 版本过低。请安装 Node.js 20+，推荐 Node.js 22 LTS。"
-    exit 1
-  fi
-
-  log "环境确认"
-  git --version
-  node --version
-  npm --version
-}
-
-install_project() {
-  mkdir -p "$(dirname "$INSTALL_DIR")"
-
-  if [ -d "$INSTALL_DIR/.git" ]; then
-    log "发现已有项目目录，更新代码：$INSTALL_DIR"
-    git -C "$INSTALL_DIR" pull --ff-only
-  else
-    log "克隆项目到：$INSTALL_DIR"
-    git clone "$REPO_URL" "$INSTALL_DIR"
-  fi
-
-  cd "$INSTALL_DIR"
-
-  if [ ! -f .env ]; then
-    cp .env.example .env
-    log "已创建 .env"
-  fi
-
-  log "安装项目依赖"
-  npm ci
-
-  log "构建项目"
-  npm run build
-
-  cat <<EOF
-
-安装完成。
-
-启动应用：
-  cd "$INSTALL_DIR"
-  npm run dev
-
-浏览器打开：
-  http://localhost:5173
-
-本地 API 健康检查：
-  http://localhost:3107/api/health
-
-数据位置：
-  数据库：$INSTALL_DIR/data/context-vocabulary-notebook.sqlite
-  媒体文件：$INSTALL_DIR/uploads
-
-EOF
-}
-
-ensure_environment
-install_project
+curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-如需指定克隆目录，可在运行脚本前设置 `CVN_HOME`。请选择磁盘空间足够、不会被系统自动清理、且不需要管理员权限的位置。
+脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。
 
-## 一键安装：Windows 原生（PowerShell）
+如需先查看脚本内容，可访问：
+https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
 
-Windows 原生环境请使用 PowerShell。脚本会检查 `winget`、Git、Node.js/npm，并尝试安装缺失环境。Visual Studio Build Tools 用于 native module 编译；如果安装器或系统策略阻止安装，需要用户手动处理。
+高级用法：指定安装目录
+
+```bash
+export CVN_HOME="$HOME/context-vocabulary-notebook"
+curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+```
+
+### Windows PowerShell
+
+复制下面命令运行即可：
 
 ```powershell
-$ErrorActionPreference = "Stop"
-
-$RepoUrl = "https://github.com/yaqxuan/context-vocabulary-notebook.git"
-$InstallDir = if ($env:CVN_HOME) { $env:CVN_HOME } else { Join-Path (Get-Location) "context-vocabulary-notebook" }
-
-function Write-Step($Message) {
-  Write-Host "`n[$(Get-Date -Format HH:mm:ss)] $Message"
-}
-
-function Has-Command($Name) {
-  return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
-}
-
-function Get-NodeMajor {
-  if (-not (Has-Command "node")) { return 0 }
-  try { return [int](& node -p "process.versions.node.split('.')[0]") } catch { return 0 }
-}
-
-function Node-IsSupported {
-  return (Has-Command "node") -and (Has-Command "npm") -and ((Get-NodeMajor) -ge 20)
-}
-
-function Has-VCTools {
-  $VsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-  if (-not (Test-Path $VsWhere)) { return $false }
-  $InstallPath = & $VsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-  return -not [string]::IsNullOrWhiteSpace($InstallPath)
-}
-
-function Ensure-Winget {
-  if (-not (Has-Command "winget")) {
-    throw "缺少 winget。请先安装 App Installer，或手动安装 Git、Node.js 22 LTS、Visual Studio Build Tools 后重试。"
-  }
-}
-
-function Ensure-Environment {
-  Ensure-Winget
-
-  if (-not (Has-Command "git")) {
-    Write-Step "安装 Git"
-    winget install --id Git.Git -e --source winget
-  }
-
-  if (-not (Node-IsSupported)) {
-    Write-Step "安装或升级 Node.js 22 LTS"
-    winget install --id OpenJS.NodeJS.LTS -e --source winget
-  }
-
-  if (-not (Has-VCTools)) {
-    Write-Step "准备安装 Visual Studio Build Tools（用于 native module 编译，可能占用数 GB）"
-    $Answer = Read-Host "输入 Y 继续安装 Visual Studio Build Tools；输入其他内容则停止"
-    if ($Answer -notin @("Y", "y")) {
-      throw "已取消 Visual Studio Build Tools 安装。请手动安装 native build 环境后重试。"
-    }
-    winget install --id Microsoft.VisualStudio.2022.BuildTools -e --source winget --override "--wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
-  }
-
-  if (-not (Has-Command "git")) { throw "Git 安装后仍不可用，请重新打开 PowerShell 后重试。" }
-  if (-not (Has-Command "node")) { throw "Node.js 安装后仍不可用，请重新打开 PowerShell 后重试。" }
-  if (-not (Has-Command "npm")) { throw "npm 安装后仍不可用，请重新打开 PowerShell 后重试。" }
-  if (-not (Node-IsSupported)) { throw "Node.js 版本过低。请安装 Node.js 20+，推荐 Node.js 22 LTS。" }
-
-  Write-Step "环境确认"
-  git --version
-  node --version
-  npm --version
-}
-
-function Install-Project {
-  $Parent = Split-Path -Parent $InstallDir
-  if ($Parent -and -not (Test-Path $Parent)) {
-    New-Item -ItemType Directory -Path $Parent | Out-Null
-  }
-
-  if (Test-Path (Join-Path $InstallDir ".git")) {
-    Write-Step "发现已有项目目录，更新代码：$InstallDir"
-    git -C $InstallDir pull --ff-only
-  } else {
-    Write-Step "克隆项目到：$InstallDir"
-    git clone $RepoUrl $InstallDir
-  }
-
-  Set-Location $InstallDir
-
-  if (-not (Test-Path ".env")) {
-    Copy-Item ".env.example" ".env"
-    Write-Step "已创建 .env"
-  }
-
-  Write-Step "安装项目依赖"
-  npm ci
-
-  Write-Step "构建项目"
-  npm run build
-
-  Write-Host ""
-  Write-Host "安装完成。"
-  Write-Host ""
-  Write-Host "启动应用："
-  Write-Host "  Set-Location `"$InstallDir`""
-  Write-Host "  npm run dev"
-  Write-Host ""
-  Write-Host "浏览器打开："
-  Write-Host "  http://localhost:5173"
-  Write-Host ""
-  Write-Host "本地 API 健康检查："
-  Write-Host "  http://localhost:3107/api/health"
-}
-
-Ensure-Environment
-Install-Project
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
 ```
 
-如果脚本安装 Git 或 Node.js 后仍提示命令不可用，请关闭并重新打开 PowerShell，再重新运行脚本。企业设备、受限账户、杀毒软件或系统策略可能阻止 `winget` 或 Visual Studio Build Tools 安装。
+脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。
+
+如需先查看脚本内容，可访问：
+https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
+
+高级用法：指定安装目录
+
+```powershell
+$env:CVN_HOME = "$HOME\context-vocabulary-notebook"
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
+```
+
+### 遇到问题怎么办
+
+- 如果提示命令不存在，请关闭终端后重新打开，再运行一次安装命令。
+- macOS 如果弹出 Xcode Command Line Tools 安装窗口，请点击“安装”，完成后重新运行安装命令。
+- Windows 如果提示需要安装编译环境，请按脚本提示继续；这是部分依赖编译时可能需要的环境。
 
 ## 手动安装
 
