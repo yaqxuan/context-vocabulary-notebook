@@ -43,7 +43,7 @@ uploads/
 | 浏览器 | Chrome / Edge / Firefox / Safari 等现代浏览器 | 应用通过本地 Web 页面使用。 |
 | C/C++ 构建工具 | 可能需要 | `better-sqlite3` 是 native module；如果当前系统和 Node 版本没有可用预编译包，`npm ci` 会尝试本地编译。 |
 
-Linux / WSL 脚本会优先尝试通过 `apt-get` 安装常见依赖。macOS 脚本会优先尝试使用 Homebrew。Windows 原生脚本会优先尝试使用 `winget`。如果这些包管理器不可用，或当前用户没有安装权限，需要手动安装缺失环境后重试。
+安装脚本会先检查本机已有环境。Linux / WSL 只有在缺少 Git 或 Node.js/npm 时，才会尝试通过 `apt-get` 补齐依赖；如果基础环境已满足，会跳过 `apt-get`，避免触发系统里无关的第三方软件源问题。macOS 脚本会在缺少依赖时尝试使用 Homebrew。Windows 原生脚本会在缺少依赖时尝试使用 `winget`。如果这些包管理器不可用，或当前用户没有安装权限，需要手动安装缺失环境后重试。
 
 ## 安装前说明与免责声明
 
@@ -63,7 +63,7 @@ Linux / WSL 脚本会优先尝试通过 `apt-get` 安装常见依赖。macOS 脚
 curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。
+脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。Linux / WSL 如果基础依赖已满足，会跳过 `apt-get`。
 
 如需先查看脚本内容，可访问：
 https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
@@ -98,6 +98,7 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 ### 遇到问题怎么办
 
 - 如果提示命令不存在，请关闭终端后重新打开，再运行一次安装命令。
+- Linux / WSL 如果 `apt-get update` 报 Docker、Chromium、Snap、GPG key 等错误，通常是系统已有 apt 源或未完成包配置异常，不是本项目依赖这些软件。可以先修复/禁用对应 apt 源，或手动安装 Git、Node.js 20+ 和 npm 后重试。
 - macOS 如果弹出 Xcode Command Line Tools 安装窗口，请点击“安装”，完成后重新运行安装命令。
 - Windows 如果提示需要安装编译环境，请按脚本提示继续；这是部分依赖编译时可能需要的环境。
 

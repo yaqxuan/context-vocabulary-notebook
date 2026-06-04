@@ -33,32 +33,77 @@ need_sudo() {
   fi
 }
 
-install_linux_deps() {
-  if has_cmd apt-get; then
-    log "使用 apt-get 安装缺失环境"
-    need_sudo apt-get update
-    need_sudo apt-get install -y git curl ca-certificates gnupg build-essential python3 make g++
+linux_core_ok() {
+  has_cmd git && node_ok
+}
 
-    if ! node_ok; then
-      log "安装或升级 Node.js 22 LTS"
-      need_sudo install -d -m 0755 /etc/apt/keyrings
-      tmp_nodesource_key="$(mktemp)"
-      trap 'rm -f "$tmp_nodesource_key"' EXIT
-      curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
-        | gpg --dearmor > "$tmp_nodesource_key"
-      need_sudo install -m 0644 "$tmp_nodesource_key" /etc/apt/keyrings/nodesource.gpg
-      rm -f "$tmp_nodesource_key"
-      trap - EXIT
-      need_sudo chmod a+r /etc/apt/keyrings/nodesource.gpg
-      echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | need_sudo tee /etc/apt/sources.list.d/nodesource.list >/dev/null
-      need_sudo apt-get update
-      need_sudo apt-get install -y nodejs
-      export PATH="/usr/local/bin:/usr/bin:$PATH"
-      log "已更新 PATH，若仍提示命令不存在请重新打开终端再试"
+linux_native_tools_ok() {
+  has_cmd python3 && has_cmd make && has_cmd g++
+}
+
+explain_apt_failure() {
+  cat <<'EOF'
+
+apt-get 失败。这通常不是本项目问题，而是当前系统已有 apt 源或未完成包配置异常。
+常见例子：Docker / Chrome / NVIDIA 等第三方源缺 GPG key，或 chromium-browser / snapd 配置卡住。
+
+你可以选择：
+  1. 修复或禁用系统里损坏的 apt 源后重试；
+  2. 手动安装 Git、Node.js 20+ 和 npm 后重试；
+  3. 如果 npm ci 后续提示 native module 编译失败，再安装 python3、make、g++ 或 build-essential。
+
+EOF
+}
+
+install_linux_deps() {
+  if linux_core_ok; then
+    log "Linux 基础依赖已满足，跳过 apt-get"
+    if ! linux_native_tools_ok; then
+      log "未检测到完整 native build tools；如果 npm ci 编译 better-sqlite3 失败，请再安装 python3、make、g++ 或 build-essential。"
     fi
-  else
+    return
+  fi
+
+  if ! has_cmd apt-get; then
     echo "未发现 apt-get。请手动安装 Git、Node.js 22 LTS、npm、Python3、make、g++ 或对应 build tools 后重试。"
     exit 1
+  fi
+
+  log "检测到缺少 Git 或 Node.js/npm，准备使用 apt-get 安装缺失环境"
+  echo "提示：apt-get 会检查系统里所有 apt 源；如果 Docker、Chromium 等无关源报错，请先修复或禁用对应源后重试。"
+
+  if ! need_sudo apt-get update; then
+    explain_apt_failure
+    exit 1
+  fi
+
+  if ! need_sudo apt-get install -y git curl ca-certificates gnupg build-essential python3 make g++; then
+    explain_apt_failure
+    exit 1
+  fi
+
+  if ! node_ok; then
+    log "安装或升级 Node.js 22 LTS"
+    need_sudo install -d -m 0755 /etc/apt/keyrings
+    tmp_nodesource_key="$(mktemp)"
+    trap 'rm -f "$tmp_nodesource_key"' EXIT
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+      | gpg --dearmor > "$tmp_nodesource_key"
+    need_sudo install -m 0644 "$tmp_nodesource_key" /etc/apt/keyrings/nodesource.gpg
+    rm -f "$tmp_nodesource_key"
+    trap - EXIT
+    need_sudo chmod a+r /etc/apt/keyrings/nodesource.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | need_sudo tee /etc/apt/sources.list.d/nodesource.list >/dev/null
+    if ! need_sudo apt-get update; then
+      explain_apt_failure
+      exit 1
+    fi
+    if ! need_sudo apt-get install -y nodejs; then
+      explain_apt_failure
+      exit 1
+    fi
+    export PATH="/usr/local/bin:/usr/bin:$PATH"
+    log "已更新 PATH，若仍提示命令不存在请重新打开终端再试"
   fi
 }
 
@@ -127,7 +172,18 @@ install_project() {
   fi
 
   log "安装项目依赖"
-  npm ci
+  if ! npm ci; then
+    cat <<'EOF'
+
+npm ci 失败。请先查看上方 npm 错误。
+如果错误提到 better-sqlite3、node-gyp、Python、make 或 g++，通常是 native build tools 不完整。
+Ubuntu / Debian / WSL 可尝试：
+  sudo apt-get update
+  sudo apt-get install -y python3 make g++ build-essential
+
+EOF
+    exit 1
+  fi
 
   log "构建项目"
   npm run build
