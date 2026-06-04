@@ -3,12 +3,13 @@ $ErrorActionPreference = "Stop"
 $RepoUrl = "https://github.com/yaqxuan/context-vocabulary-notebook.git"
 
 function Test-ProjectDir($Path) {
+  $GitDir = Join-Path $Path ".git"
   $PackageJson = Join-Path $Path "package.json"
-  if (-not ((Test-Path (Join-Path $Path ".git")) -and (Test-Path $PackageJson))) {
+  if (-not ((Test-Path -LiteralPath $GitDir) -and (Test-Path -LiteralPath $PackageJson))) {
     return $false
   }
 
-  $PackageContent = Get-Content -Raw $PackageJson
+  $PackageContent = Get-Content -Raw -LiteralPath $PackageJson
   return $PackageContent -match '"name"\s*:\s*"context-vocabulary-notebook"'
 }
 
@@ -28,9 +29,11 @@ function Has-Command($Name) {
 }
 
 function Refresh-Path {
+  $CurrentPath = $env:Path
   $MachinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
   $UserPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
-  $env:Path = $MachinePath + ";" + $UserPath
+  $PathParts = @($CurrentPath, $MachinePath, $UserPath) -join ";"
+  $env:Path = ($PathParts -split ";" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique) -join ";"
   Write-Step "已刷新当前 PowerShell 的 PATH，若仍提示命令不可用请重新打开 PowerShell 后重试"
 }
 
@@ -43,41 +46,24 @@ function Node-IsSupported {
   return (Has-Command "node") -and (Has-Command "npm") -and ((Get-NodeMajor) -ge 20)
 }
 
-function Has-VCTools {
-  $VsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-  if (-not (Test-Path $VsWhere)) { return $false }
-  $InstallPath = & $VsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-  return -not [string]::IsNullOrWhiteSpace($InstallPath)
-}
-
 function Ensure-Winget {
   if (-not (Has-Command "winget")) {
-    throw "缺少 winget。请先安装 App Installer，或手动安装 Git、Node.js 22 LTS、Visual Studio Build Tools 后重试。"
+    throw "缺少 winget。请先安装 App Installer，或手动安装 Git、Node.js 22 LTS 后重试。"
   }
 }
 
 function Ensure-Environment {
-  Ensure-Winget
-
   if (-not (Has-Command "git")) {
+    Ensure-Winget
     Write-Step "安装 Git"
     winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements
     Refresh-Path
   }
 
   if (-not (Node-IsSupported)) {
+    Ensure-Winget
     Write-Step "安装或升级 Node.js 22 LTS"
     winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-package-agreements --accept-source-agreements
-    Refresh-Path
-  }
-
-  if (-not (Has-VCTools)) {
-    Write-Step "准备安装 Visual Studio Build Tools（用于 native module 编译，可能占用数 GB）"
-    $Answer = Read-Host "输入 Y 继续安装 Visual Studio Build Tools；输入其他内容则停止"
-    if ($Answer -notin @("Y", "y")) {
-      throw "已取消 Visual Studio Build Tools 安装。请手动安装 native build 环境后重试。"
-    }
-    winget install --id Microsoft.VisualStudio.2022.BuildTools -e --source winget --accept-package-agreements --accept-source-agreements --override "--wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
     Refresh-Path
   }
 
@@ -93,13 +79,18 @@ function Ensure-Environment {
 }
 
 function Test-EmptyDir($Path) {
-  if (-not (Test-Path $Path)) { return $true }
+  if (-not (Test-Path -LiteralPath $Path)) { return $true }
   return $null -eq (Get-ChildItem -Force -LiteralPath $Path | Select-Object -First 1)
 }
 
+function Invoke-NpmCi {
+  npm ci
+  return $LASTEXITCODE -eq 0
+}
+
 function Install-Project {
-  if (-not (Test-Path $InstallDir)) {
-    New-Item -ItemType Directory -Path $InstallDir | Out-Null
+  if (-not (Test-Path -LiteralPath $InstallDir)) {
+    [System.IO.Directory]::CreateDirectory($InstallDir) | Out-Null
   }
 
   if (Test-ProjectDir $InstallDir) {
@@ -112,11 +103,16 @@ function Install-Project {
   $InstallDir
 
 为避免把项目文件混入其他文件，请换到一个空目录后重新运行，或显式设置 CVN_HOME 指向要安装的目录。
+
+示例：
+  New-Item -ItemType Directory -Path "$HOME\context-vocabulary-notebook"
+  Set-Location "$HOME\context-vocabulary-notebook"
+  irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
 "@
     }
 
     Write-Step "克隆项目到当前目录：$InstallDir"
-    Push-Location $InstallDir
+    Push-Location -LiteralPath $InstallDir
     try {
       git clone $RepoUrl .
     } finally {
@@ -124,15 +120,27 @@ function Install-Project {
     }
   }
 
-  Set-Location $InstallDir
+  Set-Location -LiteralPath $InstallDir
 
-  if (-not (Test-Path ".env")) {
-    Copy-Item ".env.example" ".env"
+  if (-not (Test-Path -LiteralPath ".env")) {
+    Copy-Item -LiteralPath ".env.example" -Destination ".env"
     Write-Step "已创建 .env"
   }
 
   Write-Step "安装项目依赖"
-  npm ci
+  if (-not (Invoke-NpmCi)) {
+    throw @"
+
+npm ci 失败。请先查看上方 npm 错误。
+如果错误提到 better-sqlite3、node-gyp、Python、Visual Studio Build Tools、MSVC 或 C++ build tools，通常是 native build tools 不完整。
+Windows 可尝试：
+  1. 安装 Python 3: winget install --id Python.Python.3.12 -e --source winget
+  2. 安装 Visual Studio Build Tools（包含 MSVC C++ 工具）:
+     winget install --id Microsoft.VisualStudio.2022.BuildTools -e --source winget --accept-package-agreements --accept-source-agreements --override "--wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+  3. 重新打开 PowerShell 后再运行本安装命令。
+
+"@
+  }
 
   Write-Step "构建项目"
   npm run build
@@ -157,6 +165,10 @@ function Install-Project {
   Write-Host "  npm run build"
   Write-Host ""
   Write-Host "也可以重新运行本安装命令；请保持相同 CVN_HOME 或相同运行目录。"
+  Write-Host ""
+  Write-Host "数据位置："
+  Write-Host "  数据库：$InstallDir\data\context-vocabulary-notebook.sqlite"
+  Write-Host "  媒体文件：$InstallDir\uploads"
 }
 
 Ensure-Environment
