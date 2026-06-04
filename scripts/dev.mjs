@@ -1,8 +1,10 @@
 import { spawn } from 'node:child_process';
 
+const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
 const commands = [
-  ['npm', ['run', 'dev:server']],
-  ['npm', ['run', 'dev:client']]
+  [npmCommand, ['run', 'dev:server']],
+  [npmCommand, ['run', 'dev:client']]
 ];
 
 const children = commands.map(([command, args]) => {

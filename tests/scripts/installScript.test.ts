@@ -165,4 +165,15 @@ describe('install.ps1 installer safeguards', () => {
     expect(installProject).toContain('Python');
     expect(installProject).toContain('Visual Studio Build Tools');
   });
+
+  it('uses the current PowerShell location rather than HOME in install examples', () => {
+    const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
+    const installProject = functionBody(readPowerShellInstallScript(), 'Install-Project');
+
+    expect(readme).not.toContain('$HOME\\context-vocabulary-notebook');
+    expect(readme).toContain('.\\context-vocabulary-notebook');
+    expect(readme).toContain('$env:CVN_HOME = Join-Path (Get-Location) "context-vocabulary-notebook"');
+    expect(installProject).not.toContain('$HOME\\context-vocabulary-notebook');
+    expect(installProject).toContain('.\\context-vocabulary-notebook');
+  });
 });

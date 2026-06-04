@@ -105,8 +105,8 @@ function Install-Project {
 为避免把项目文件混入其他文件，请换到一个空目录后重新运行，或显式设置 CVN_HOME 指向要安装的目录。
 
 示例：
-  New-Item -ItemType Directory -Path "$HOME\context-vocabulary-notebook"
-  Set-Location "$HOME\context-vocabulary-notebook"
+  New-Item -ItemType Directory -Force ".\context-vocabulary-notebook" | Out-Null
+  Set-Location ".\context-vocabulary-notebook"
   irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
 "@
     }
