@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import {
   getGreetingContext,
   getHomeGreeting,
+  GREETING_PHRASES,
   StorageLike,
 } from '../../src/client/lib/homeGreetings';
 
@@ -32,31 +33,30 @@ class ThrowingStorage implements StorageLike {
 
 describe('homeGreetings', () => {
   describe('getGreetingContext', () => {
-    it('returns weekday and correct bucket for 04:00 Monday', () => {
-      // 2026-06-01 is a Monday
+    it('returns shared and correct bucket for 04:00 Monday', () => {
       const d = new Date('2026-06-01T04:00:00');
       expect(getGreetingContext(d)).toEqual({
         date: '2026-06-01',
         bucket: '04:00-07:00',
-        audience: 'weekday',
+        audience: 'shared',
       });
     });
 
-    it('returns weekday and correct bucket for 06:59 Monday', () => {
+    it('returns shared and correct bucket for 06:59 Monday', () => {
       const d = new Date('2026-06-01T06:59:59');
       expect(getGreetingContext(d)).toEqual({
         date: '2026-06-01',
         bucket: '04:00-07:00',
-        audience: 'weekday',
+        audience: 'shared',
       });
     });
 
-    it('returns weekday and correct bucket for 07:00 Monday', () => {
+    it('returns shared and correct bucket for 07:00 Monday', () => {
       const d = new Date('2026-06-01T07:00:00');
       expect(getGreetingContext(d)).toEqual({
         date: '2026-06-01',
         bucket: '07:00-11:00',
-        audience: 'weekday',
+        audience: 'shared',
       });
     });
 
@@ -70,7 +70,6 @@ describe('homeGreetings', () => {
     });
 
     it('returns shared and correct bucket for 03:59 Tuesday', () => {
-      // 2026-06-02 is Tuesday
       const d = new Date('2026-06-02T03:59:59');
       expect(getGreetingContext(d)).toEqual({
         date: '2026-06-02',
@@ -79,23 +78,57 @@ describe('homeGreetings', () => {
       });
     });
 
-    it('returns weekend and correct bucket for 04:00 Saturday', () => {
-      // 2026-06-06 is Saturday
+    it('returns shared and correct bucket for 04:00 Saturday', () => {
       const d = new Date('2026-06-06T04:00:00');
       expect(getGreetingContext(d)).toEqual({
         date: '2026-06-06',
         bucket: '04:00-07:00',
-        audience: 'weekend',
+        audience: 'shared',
       });
     });
 
-    it('returns weekend and correct bucket for 18:00 Sunday', () => {
-      // 2026-06-07 is Sunday
+    it('returns shared and correct bucket for 18:00 Sunday', () => {
       const d = new Date('2026-06-07T18:00:00');
       expect(getGreetingContext(d)).toEqual({
         date: '2026-06-07',
         bucket: '18:00-21:00',
-        audience: 'weekend',
+        audience: 'shared',
+      });
+    });
+  });
+
+  describe('GREETING_PHRASES', () => {
+    it('uses 20 bilingual entries per shared time bucket', () => {
+      const allPhrases = Object.values(GREETING_PHRASES).flat();
+      expect(allPhrases).toHaveLength(140);
+      expect(new Set(allPhrases.map((phrase) => phrase.text)).size).toBe(140);
+      expect(new Set(allPhrases.map((phrase) => phrase.translation)).size).toBe(140);
+
+      for (const phrases of Object.values(GREETING_PHRASES)) {
+        expect(phrases).toHaveLength(20);
+        for (const phrase of phrases) {
+          expect(phrase.text).toEqual(expect.any(String));
+          expect(phrase.translation).toEqual(expect.any(String));
+          expect(phrase.text.length).toBeGreaterThan(20);
+          expect(phrase.translation.length).toBeGreaterThan(20);
+        }
+      }
+    });
+
+    it('keeps weekday and weekend out of the phrase bank shape', () => {
+      expect(Array.isArray(GREETING_PHRASES['07:00-11:00'])).toBe(true);
+      expect(GREETING_PHRASES['07:00-11:00']).not.toHaveProperty('weekday');
+      expect(GREETING_PHRASES['07:00-11:00']).not.toHaveProperty('weekend');
+    });
+
+    it('includes the supplied dawn and morning source copy with English translations', () => {
+      expect(GREETING_PHRASES['04:00-07:00'][0]).toEqual({
+        text: '天光未亮，世界还在沉睡，你已经翻开单词本——你是今天第一个醒来的灵魂，也是第一个拥抱词语的人。',
+        translation: 'Before daylight, while the world still sleeps, you have already opened your vocabulary notebook—the first soul awake today, and the first to embrace words.',
+      });
+      expect(GREETING_PHRASES['07:00-11:00'][0]).toEqual({
+        text: '阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。',
+        translation: 'Sunlight is like a peeled orange, falling segment by segment onto your vocabulary notebook. Each segment hides a new word.',
       });
     });
   });
@@ -107,35 +140,39 @@ describe('homeGreetings', () => {
       storage = new MockStorage();
     });
 
-    it('returns a stable selection if nothing in storage', () => {
+    it('returns a stable bilingual selection if nothing in storage', () => {
       const now = new Date('2026-06-01T05:00:00');
       const selection1 = getHomeGreeting({ now, storage });
       expect(selection1.date).toBe('2026-06-01');
       expect(selection1.bucket).toBe('04:00-07:00');
-      expect(selection1.audience).toBe('weekday');
+      expect(selection1.audience).toBe('shared');
       expect(selection1.text).toBeTruthy();
+      expect(selection1.translation).toBeTruthy();
 
       const selection2 = getHomeGreeting({ now, storage });
       expect(selection2.text).toBe(selection1.text);
+      expect(selection2.translation).toBe(selection1.translation);
     });
 
-    it('uses stored selection if valid', () => {
-      const now = new Date('2026-06-01T08:00:00'); // 07:00-11:00 weekday
+    it('uses stored bilingual selection if valid', () => {
+      const now = new Date('2026-06-01T08:00:00');
 
       const storedSelection = {
         date: '2026-06-01',
         bucket: '07:00-11:00',
-        audience: 'weekday',
-        text: '早上好，今天刚刚开始。',
+        audience: 'shared',
+        text: '阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。',
+        translation: 'Sunlight is like a peeled orange, falling segment by segment onto your vocabulary notebook. Each segment hides a new word.',
       };
 
       storage.setItem(
-        'homeGreetingSelection:07:00-11:00:weekday',
+        'homeGreetingSelection:07:00-11:00:shared',
         JSON.stringify(storedSelection)
       );
 
       const selection = getHomeGreeting({ now, storage });
-      expect(selection.text).toBe('早上好，今天刚刚开始。');
+      expect(selection.text).toBe(storedSelection.text);
+      expect(selection.translation).toBe(storedSelection.translation);
     });
 
     it('ignores invalid stored selection and chooses a new one', () => {
@@ -144,47 +181,44 @@ describe('homeGreetings', () => {
       const storedSelection = {
         date: '2026-06-01',
         bucket: '07:00-11:00',
-        audience: 'weekday',
+        audience: 'shared',
         text: 'This is not in the phrase bank.',
+        translation: 'This is not in the phrase bank.',
       };
 
       storage.setItem(
-        'homeGreetingSelection:07:00-11:00:weekday',
+        'homeGreetingSelection:07:00-11:00:shared',
         JSON.stringify(storedSelection)
       );
 
       const selection = getHomeGreeting({ now, storage });
       expect(selection.text).not.toBe('This is not in the phrase bank.');
-      expect(selection.text).toBeTruthy();
+      expect(selection.translation).not.toBe('This is not in the phrase bank.');
     });
 
     it('avoids repeat from last selection when choosing new', () => {
-      const now = new Date('2026-06-02T05:00:00'); // 04:00-07:00 weekday
-
-      // Determine what the hash would normally pick for this date, bucket, audience
-      // To reliably test this, let's inject a last text that is EXACTLY what it would have picked.
+      const now = new Date('2026-06-02T05:00:00');
       const firstSelection = getHomeGreeting({ now, storage: new MockStorage() });
-      const defaultText = firstSelection.text;
 
-      storage.setItem('homeGreetingLast:04:00-07:00:weekday', defaultText);
+      storage.setItem('homeGreetingLast:04:00-07:00:shared', firstSelection.text);
 
       const selection = getHomeGreeting({ now, storage });
-      expect(selection.text).not.toBe(defaultText);
-      expect(selection.text).toBeTruthy();
+      expect(selection.text).not.toBe(firstSelection.text);
+      expect(selection.translation).toBeTruthy();
     });
 
     it('falls back gracefully when storage throws', () => {
       const throwingStorage = new ThrowingStorage();
       const now = new Date('2026-06-01T05:00:00');
 
-      // Should not throw
       const selection = getHomeGreeting({ now, storage: throwingStorage });
       expect(selection.text).toBeTruthy();
+      expect(selection.translation).toBeTruthy();
       expect(selection.bucket).toBe('04:00-07:00');
+      expect(selection.audience).toBe('shared');
     });
 
     it('uses different strings for different days with no storage', () => {
-      // Just test that the hash distributes a bit.
       const s = new MockStorage();
       const texts = new Set<string>();
       for (let day = 1; day <= 10; day++) {
