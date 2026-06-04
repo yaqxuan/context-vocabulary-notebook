@@ -115,6 +115,14 @@ function Install-Project {
   Write-Host ""
   Write-Host "本地 API 健康检查："
   Write-Host "  http://localhost:3107/api/health"
+  Write-Host ""
+  Write-Host "以后更新："
+  Write-Host "  Set-Location `"$InstallDir`""
+  Write-Host "  git pull --ff-only"
+  Write-Host "  npm ci"
+  Write-Host "  npm run build"
+  Write-Host ""
+  Write-Host "也可以重新运行本安装命令；请保持相同 CVN_HOME 或相同运行目录。"
 }
 
 Ensure-Environment

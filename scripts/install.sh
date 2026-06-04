@@ -146,6 +146,14 @@ install_project() {
 本地 API 健康检查：
   http://localhost:3107/api/health
 
+以后更新：
+  cd "$INSTALL_DIR"
+  git pull --ff-only
+  npm ci
+  npm run build
+
+也可以重新运行本安装命令；请保持相同 CVN_HOME 或相同运行目录。
+
 数据位置：
   数据库：$INSTALL_DIR/data/context-vocabulary-notebook.sqlite
   媒体文件：$INSTALL_DIR/uploads
