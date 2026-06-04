@@ -1,7 +1,23 @@
 $ErrorActionPreference = "Stop"
 
 $RepoUrl = "https://github.com/yaqxuan/context-vocabulary-notebook.git"
-$InstallDir = if ($env:CVN_HOME) { $env:CVN_HOME } else { Join-Path (Get-Location) "context-vocabulary-notebook" }
+
+function Resolve-InstallDir {
+  if ($env:CVN_HOME) { return $env:CVN_HOME }
+
+  $CurrentDir = (Get-Location).Path
+  $PackageJson = Join-Path $CurrentDir "package.json"
+  if ((Test-Path (Join-Path $CurrentDir ".git")) -and (Test-Path $PackageJson)) {
+    $PackageContent = Get-Content -Raw $PackageJson
+    if ($PackageContent -match '"name"\s*:\s*"context-vocabulary-notebook"') {
+      return $CurrentDir
+    }
+  }
+
+  return Join-Path $CurrentDir "context-vocabulary-notebook"
+}
+
+$InstallDir = Resolve-InstallDir
 
 function Write-Step($Message) {
   Write-Host "`n[$(Get-Date -Format HH:mm:ss)] $Message"
