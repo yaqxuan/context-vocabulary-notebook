@@ -61,7 +61,7 @@ Linux / WSL 脚本会优先尝试通过 `apt-get` 安装常见依赖。macOS 脚
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="https://github.com/your-name/context-vocabulary-notebook.git"
+REPO_URL="https://github.com/yaqxuan/context-vocabulary-notebook.git"
 INSTALL_DIR="${CVN_HOME:-$PWD/context-vocabulary-notebook}"
 
 log() {
@@ -213,7 +213,7 @@ Windows 原生环境请使用 PowerShell。脚本会检查 `winget`、Git、Node
 ```powershell
 $ErrorActionPreference = "Stop"
 
-$RepoUrl = "https://github.com/your-name/context-vocabulary-notebook.git"
+$RepoUrl = "https://github.com/yaqxuan/context-vocabulary-notebook.git"
 $InstallDir = if ($env:CVN_HOME) { $env:CVN_HOME } else { Join-Path (Get-Location) "context-vocabulary-notebook" }
 
 function Write-Step($Message) {
@@ -333,7 +333,7 @@ Install-Project
 Linux / macOS / WSL / Git Bash：
 
 ```bash
-git clone https://github.com/your-name/context-vocabulary-notebook.git
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
 cd context-vocabulary-notebook
 cp .env.example .env
 npm ci
@@ -343,7 +343,7 @@ npm run dev
 Windows 原生 PowerShell：
 
 ```powershell
-git clone https://github.com/your-name/context-vocabulary-notebook.git
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
 Set-Location context-vocabulary-notebook
 Copy-Item .env.example .env
 npm ci
@@ -507,4 +507,4 @@ http://localhost:3107/api/health
 
 ## 许可证
 
-当前仓库未提供 `LICENSE` 文件。上传到 GitHub 前建议补充开源许可证，例如 MIT、Apache-2.0 或其他你选择的许可证。
+本项目使用 MIT License。详见 [`LICENSE`](./LICENSE)。

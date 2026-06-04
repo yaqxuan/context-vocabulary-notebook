@@ -4,6 +4,11 @@ coverage/
 .vite/
 .env
 *.local
+CLAUDE.md
+PROJECT_MEMORY.md
+diff.patch
+docs/superpowers/
+.claude/
 *.db
 *.sqlite
 *.sqlite3
