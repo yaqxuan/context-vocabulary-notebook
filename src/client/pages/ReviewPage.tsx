@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { DueReviewCardDto, MediaDto, ReviewDueResponseDto, ReviewProgressDto } from '../../shared/types';
 import { patchCard } from '../api/cards';
@@ -151,20 +151,26 @@ interface ReviewCardProps {
 
 function ReviewCard({ card, progress, submitting, submitError, pendingRating, pendingRequiresConfirm, lastRating, onChooseRating, onConfirmRating, onToggleFavorite, onMarkMastered, onNext }: ReviewCardProps) {
   const [contextOpen, setContextOpen] = useState(false);
+  const contextOpenRef = useRef(false);
   const answerRevealed = Boolean(pendingRating || lastRating);
+
+  const setContextOpenNow = (open: boolean) => {
+    contextOpenRef.current = open;
+    setContextOpen(open);
+  };
+
+  const toggleContextOpen = () => {
+    setContextOpenNow(!contextOpenRef.current);
+  };
 
   // Reset context panel when a new card loads
   useEffect(() => {
-    setContextOpen(false);
+    setContextOpenNow(false);
   }, [card.id]);
 
   // Reveal context after choosing or recording a rating so mistakes can be caught before advancing.
   useEffect(() => {
-    if (pendingRating || lastRating) {
-      setContextOpen(true);
-    } else {
-      setContextOpen(false);
-    }
+    setContextOpenNow(Boolean(pendingRating || lastRating));
   }, [pendingRating, lastRating]);
 
   return (
@@ -195,7 +201,7 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
           type="button"
           className="phase7-review-toggle"
           aria-expanded={contextOpen}
-          onClick={() => setContextOpen((v) => !v)}
+          onClick={toggleContextOpen}
         >
           {contextOpen ? '收起语境' : '查看当时语境'}
         </button>
@@ -237,8 +243,8 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
           </div>
         ) : (
           <div className="phase7-review-rating-row">
-            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again', contextOpen)}>Again</Button>
-            <Button variant="primary" disabled={submitting} onClick={() => onChooseRating('good', contextOpen)}>Good</Button>
+            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again', contextOpenRef.current)}>Again</Button>
+            <Button variant="primary" disabled={submitting} onClick={() => onChooseRating('good', contextOpenRef.current)}>Good</Button>
           </div>
         )}
       </div>
