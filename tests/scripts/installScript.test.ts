@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 const repoRoot = path.resolve(__dirname, '../..');
 const installScript = path.join(repoRoot, 'scripts/install.sh');
+const powerShellInstallScript = path.join(repoRoot, 'scripts/install.ps1');
 const repoUrl = 'https://github.com/yaqxuan/context-vocabulary-notebook.git';
 
 function writeExecutable(filePath: string, content: string) {
@@ -48,6 +49,17 @@ function runInstall(cwd: string, binDir: string, extraEnv: Record<string, string
     },
     stdio: 'pipe',
   }).toString();
+}
+
+function readPowerShellInstallScript() {
+  return fs.readFileSync(powerShellInstallScript, 'utf8');
+}
+
+function functionBody(script: string, name: string) {
+  const start = script.indexOf(`function ${name}`);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const nextFunction = script.indexOf('\nfunction ', start + 1);
+  return script.slice(start, nextFunction === -1 ? script.length : nextFunction);
 }
 
 describe('install.sh path selection', () => {
@@ -102,5 +114,55 @@ describe('install.sh path selection', () => {
     expect(output).toContain('当前目录不是空目录');
     const commands = fs.readFileSync(logPath, 'utf8');
     expect(commands).not.toContain('git clone');
+  });
+});
+
+describe('install.ps1 installer safeguards', () => {
+  it('only requires winget when a missing dependency must be installed', () => {
+    const script = readPowerShellInstallScript();
+    const ensureEnvironment = functionBody(script, 'Ensure-Environment');
+
+    const meaningfulLines = ensureEnvironment.split('\n').map((line) => line.trim()).filter(Boolean);
+
+    expect(ensureEnvironment).toContain('if (-not (Has-Command "git"))');
+    expect(ensureEnvironment).toContain('Ensure-Winget');
+    expect(ensureEnvironment.indexOf('if (-not (Has-Command "git"))')).toBeLessThan(ensureEnvironment.indexOf('Ensure-Winget'));
+    expect(meaningfulLines[1]).toBe('if (-not (Has-Command "git")) {');
+  });
+
+  it('preserves process-scoped PATH entries when refreshing installed tool locations', () => {
+    const refreshPath = functionBody(readPowerShellInstallScript(), 'Refresh-Path');
+
+    expect(refreshPath).toContain('$CurrentPath = $env:Path');
+    expect(refreshPath).toContain('$CurrentPath');
+    expect(refreshPath).not.toContain('$env:Path = $MachinePath + ";" + $UserPath');
+  });
+
+  it('uses literal path operations for user-selected install directories', () => {
+    const script = readPowerShellInstallScript();
+    const projectDir = functionBody(script, 'Test-ProjectDir');
+    const installProject = functionBody(script, 'Install-Project');
+
+    expect(projectDir).toContain('-LiteralPath');
+    expect(installProject).toContain('[System.IO.Directory]::CreateDirectory($InstallDir)');
+    expect(installProject).toContain('Push-Location -LiteralPath $InstallDir');
+    expect(installProject).toContain('Set-Location -LiteralPath $InstallDir');
+  });
+
+  it('does not block on Visual Studio Build Tools before trying npm install', () => {
+    const ensureEnvironment = functionBody(readPowerShellInstallScript(), 'Ensure-Environment');
+
+    expect(ensureEnvironment).not.toContain('Has-VCTools');
+    expect(ensureEnvironment).not.toContain('Visual Studio Build Tools');
+  });
+
+  it('prints Windows native-build guidance when npm install fails', () => {
+    const installProject = functionBody(readPowerShellInstallScript(), 'Install-Project');
+
+    expect(installProject).toContain('if (-not (Invoke-NpmCi))');
+    expect(installProject).toContain('better-sqlite3');
+    expect(installProject).toContain('node-gyp');
+    expect(installProject).toContain('Python');
+    expect(installProject).toContain('Visual Studio Build Tools');
   });
 });
