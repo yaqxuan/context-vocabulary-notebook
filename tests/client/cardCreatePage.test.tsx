@@ -761,7 +761,7 @@ describe('CardCreatePage', () => {
       definition_language: '中文',
       tags: [{ id: 'tag-1', name: '美剧' }],
     };
-    
+
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
@@ -776,7 +776,7 @@ describe('CardCreatePage', () => {
     render(<CardCreatePage />);
 
     expect(await screen.findByDisplayValue('charge')).toBeInTheDocument();
-    
+
     // Add sentence only (tags unchanged)
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'another sentence' } });
 
@@ -788,10 +788,119 @@ describe('CardCreatePage', () => {
       const cardReq = requests.find((req) => req.url === '/api/cards' && req.method === 'POST');
       expect(cardReq).toBeTruthy();
     });
-    
+
     // Check no patch occurred
     const patchReq = requests.find((req) => req.url === '/api/cards/card-1' && req.method === 'PATCH');
     expect(patchReq).toBeUndefined();
+  });
+
+  it('exact match mode fetches existing card details and preselects its tags', async () => {
+    const detail = {
+      id: 'card-1',
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      tags: [{ id: 'tag-1', name: '美剧' }],
+    };
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/cards/suggestions?target_word=charge') return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
+      if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
+
+    expect(await screen.findByText('已找到相同词义：charge = 收费')).toBeInTheDocument();
+    await waitFor(() => expect(requests.some((request) => request.url === '/api/cards/card-1' && request.method === 'GET')).toBe(true));
+    expect(await screen.findByRole('button', { name: '美剧' })).toHaveClass('selected');
+    expect(screen.getByRole('button', { name: '电影' })).not.toHaveClass('selected');
+  });
+
+  it('exact match mode patches tags when changed during append submit', async () => {
+    const detail = {
+      id: 'card-1',
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      tags: [{ id: 'tag-1', name: '美剧' }],
+    };
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/cards/suggestions?target_word=charge') return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
+      if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ok: true }));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
+      if (url === '/api/cards' && init?.method === 'POST') return Promise.resolve(jsonResponse({ card: { id: 'card-1' }, context: { id: 'ctx-1' } }, 201));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
+    expect(await screen.findByText('已找到相同词义：charge = 收费')).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: '电影' }));
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
+    fireEvent.submit(screen.getByRole('button', { name: '添加为新语境' }));
+
+    await waitFor(() => {
+      const cardReq = requests.find((req) => req.url === '/api/cards' && req.method === 'POST');
+      expect(cardReq).toBeTruthy();
+      expect(JSON.parse(cardReq!.body as string)).toEqual({
+        card_id: 'card-1',
+        sentence: 'They charge extra for breakfast.',
+      });
+      const patchReq = requests.find((req) => req.url === '/api/cards/card-1' && req.method === 'PATCH');
+      expect(patchReq).toBeTruthy();
+      expect(JSON.parse(patchReq!.body as string)).toEqual({ tag_ids: ['tag-1', 'tag-2'] });
+    });
+  });
+
+  it('exact match mode with unchanged tags does not PATCH', async () => {
+    const detail = {
+      id: 'card-1',
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      tags: [{ id: 'tag-1', name: '美剧' }],
+    };
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/cards/suggestions?target_word=charge') return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
+      if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ok: true }));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
+      if (url === '/api/cards' && init?.method === 'POST') return Promise.resolve(jsonResponse({ card: { id: 'card-1' }, context: { id: 'ctx-1' } }, 201));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
+    expect(await screen.findByText('已找到相同词义：charge = 收费')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
+    fireEvent.submit(screen.getByRole('button', { name: '添加为新语境' }));
+
+    await waitFor(() => expect(requests.some((req) => req.url === '/api/cards' && req.method === 'POST')).toBe(true));
+    expect(requests.find((req) => req.url === '/api/cards/card-1' && req.method === 'PATCH')).toBeUndefined();
   });
 
 });
