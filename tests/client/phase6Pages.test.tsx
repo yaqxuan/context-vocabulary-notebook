@@ -136,6 +136,7 @@ describe('Phase 6 pages', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(futureDetail));
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse(tags));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
@@ -193,6 +194,7 @@ describe('Phase 6 pages', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse(tags));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 

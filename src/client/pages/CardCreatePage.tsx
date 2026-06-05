@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
 
-import { createCard, getCard } from '../api/cards';
+import { createCard, getCard, patchCard } from '../api/cards';
 import { getCardSuggestions } from '../api/cards';
 import { uploadMedia } from '../api/media';
 import { getAiSuggestion } from '../api/aiSuggestions';
-import { listTags } from '../api/tags';
+import { TagAssignmentEditor } from '../components/TagAssignmentEditor';
 import { getSettings } from '../api/settings';
-import type { CardDetailDto, SuggestionDto, TagDto } from '../../shared/types';
+import type { CardDetailDto, SuggestionDto } from '../../shared/types';
 import { MEDIA_SIZE_LIMIT_MESSAGES, MEDIA_SIZE_LIMITS_BYTES } from '../../shared/constants';
 
 type SaveMode = { kind: 'new' } | { kind: 'existing'; cardId: string; meaning: string; targetWord: string };
@@ -71,8 +71,8 @@ export function CardCreatePage() {
   const [targetLanguage, setTargetLanguage] = useState(DEFAULT_TARGET_LANGUAGE);
   const [definitionLanguage, setDefinitionLanguage] = useState(DEFAULT_DEFINITION_LANGUAGE);
   const [note, setNote] = useState('');
-  const [tags, setTags] = useState<TagDto[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [originalTagIds, setOriginalTagIds] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<SuggestionDto[]>([]);
   const [suggestionState, setSuggestionState] = useState<'idle' | 'loading' | 'empty' | 'success' | 'error'>('idle');
   const [aiMeaningSuggestion, setAiMeaningSuggestion] = useState('');
@@ -92,15 +92,6 @@ export function CardCreatePage() {
   const noteTouchedRef = useRef(false);
 
   const [explicitCardId] = useState(() => parseExplicitCardId());
-
-  // Load tags on mount
-  useEffect(() => {
-    let active = true;
-    listTags()
-      .then((items) => { if (active) setTags(items); })
-      .catch(() => { if (active) setTags([]); });
-    return () => { active = false; };
-  }, []);
 
   // Load settings defaults for new-card mode
   useEffect(() => {
@@ -130,6 +121,9 @@ export function CardCreatePage() {
         setMeaning(card.context_meaning);
         setTargetLanguage(card.target_language);
         setDefinitionLanguage(card.definition_language);
+        const tIds = card.tags.map((t) => t.id);
+        setSelectedTagIds(tIds);
+        setOriginalTagIds(tIds);
       })
       .catch((err) => {
         if (!active) return;
@@ -365,6 +359,14 @@ export function CardCreatePage() {
 
       const result = await createCard(body);
 
+      // Only patch tags if this is append mode and tags actually changed
+      if (mode.kind === 'existing' && explicitCardId) {
+        const tagsChanged = selectedTagIds.length !== originalTagIds.length || !selectedTagIds.every((id) => originalTagIds.includes(id));
+        if (tagsChanged) {
+          await patchCard(mode.cardId, { tag_ids: selectedTagIds });
+        }
+      }
+
       if (video) await uploadMedia(result.context.id, video);
       if (screenshot) await uploadMedia(result.context.id, screenshot);
       if (audio) await uploadMedia(result.context.id, audio);
@@ -376,12 +378,6 @@ export function CardCreatePage() {
     } finally {
       setIsSaving(false);
     }
-  }
-
-  function toggleTag(tagId: string) {
-    setSelectedTagIds((cur) =>
-      cur.includes(tagId) ? cur.filter((id) => id !== tagId) : [...cur, tagId]
-    );
   }
 
   const saveLabel = isSaving ? '保存中…' : mode.kind === 'existing' ? '添加为新语境' : '保存词义条目';
@@ -484,18 +480,10 @@ export function CardCreatePage() {
           {/* Tags */}
           <fieldset className="card-create-tags">
             <legend>标签</legend>
-            <div>
-              {tags.length ? tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  className={selectedTagIds.includes(tag.id) ? 'selected' : ''}
-                  onClick={() => toggleTag(tag.id)}
-                >
-                  {tag.name}
-                </button>
-              )) : <p>暂无标签，可先保存词义，稍后在标签页管理。</p>}
-            </div>
+            <TagAssignmentEditor
+              selectedTagIds={selectedTagIds}
+              onSelectedTagIdsChange={setSelectedTagIds}
+            />
           </fieldset>
 
           {/* AI usage suggestion */}

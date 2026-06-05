@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { CardDetailDto, ContextDto, TagDto } from '../../shared/types';
+import type { CardDetailDto, ContextDto } from '../../shared/types';
 import { deleteCard, getCard, patchCard } from '../api/cards';
-import { createTag, listTags } from '../api/tags';
 import { deleteContext, moveContextDown, moveContextUp, setPrimaryContext } from '../api/contexts';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { MediaPreview } from '../components/MediaPreview';
+import { TagAssignmentEditor } from '../components/TagAssignmentEditor';
 import { ErrorState, LoadingState } from '../components/UiStates';
 
 function currentCardId(): string {
@@ -42,13 +42,7 @@ export function CardDetailPage() {
   const [meaningDraft, setMeaningDraft] = useState('');
   const [meaningError, setMeaningError] = useState<string | null>(null);
   const [editingTags, setEditingTags] = useState(false);
-  const [allTags, setAllTags] = useState<TagDto[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [newTagName, setNewTagName] = useState('');
-  const [tagsError, setTagsError] = useState<string | null>(null);
-  const [tagsLoading, setTagsLoading] = useState(false);
-  const [creatingTag, setCreatingTag] = useState(false);
-  const tagLoadSeq = useRef(0);
   const mountedRef = useRef(true);
   const cardId = useMemo(currentCardId, []);
 
@@ -106,54 +100,12 @@ export function CardDetailPage() {
 
   const startTagEdit = async () => {
     if (!card) return;
-    const seq = tagLoadSeq.current + 1;
-    tagLoadSeq.current = seq;
     setEditingTags(true);
     setSelectedTagIds(card.tags.map((tag) => tag.id));
-    setAllTags([]);
-    setNewTagName('');
-    setTagsError(null);
-    setTagsLoading(true);
-    try {
-      const tags = await listTags();
-      if (mountedRef.current && tagLoadSeq.current === seq) setAllTags(tags);
-    } catch (err) {
-      if (mountedRef.current && tagLoadSeq.current === seq) setTagsError(err instanceof Error ? err.message : '标签列表加载失败');
-    } finally {
-      if (mountedRef.current && tagLoadSeq.current === seq) setTagsLoading(false);
-    }
-  };
-
-  const toggleTag = (tagId: string) => {
-    setSelectedTagIds((cur) => cur.includes(tagId) ? cur.filter((id) => id !== tagId) : [...cur, tagId]);
   };
 
   const cancelTagEdit = () => {
-    tagLoadSeq.current += 1;
-    setTagsLoading(false);
-    setCreatingTag(false);
-    setNewTagName('');
     setEditingTags(false);
-  };
-
-  const createAndSelectTag = async () => {
-    const name = newTagName.trim();
-    if (!name) {
-      setTagsError('标签名称必填');
-      return;
-    }
-    try {
-      setCreatingTag(true);
-      setTagsError(null);
-      const tag = await createTag({ name });
-      setAllTags((cur) => cur.some((item) => item.id === tag.id) ? cur : [...cur, tag]);
-      setSelectedTagIds((cur) => cur.includes(tag.id) ? cur : [...cur, tag.id]);
-      setNewTagName('');
-    } catch (err) {
-      setTagsError(err instanceof Error ? err.message : '新增标签失败');
-    } finally {
-      setCreatingTag(false);
-    }
   };
 
   const saveTags = async () => {
@@ -163,7 +115,7 @@ export function CardDetailPage() {
       cancelTagEdit();
       load();
     } catch (err) {
-      setTagsError(err instanceof Error ? err.message : '保存标签失败');
+      setError(err instanceof Error ? err.message : '保存标签失败');
     }
   };
 
@@ -247,36 +199,13 @@ export function CardDetailPage() {
           <p>{reviewStatusCopy(card)}</p>
           <p>复习次数：{card.fsrs.reps}</p>
           <p>遗忘次数：{card.fsrs.lapses}</p>
-          <h3>标签</h3>
+          <h3>词义标签</h3>
           {editingTags ? (
-            <div className="phase6-tag-editor">
-              {tagsError ? <em>{tagsError}</em> : null}
-              <div>
-                {tagsLoading ? <p>加载标签中…</p> : allTags.length ? allTags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    className={selectedTagIds.includes(tag.id) ? 'selected' : ''}
-                    onClick={() => toggleTag(tag.id)}
-                  >
-                    {tag.name}
-                  </button>
-                )) : <p>暂无可选标签</p>}
-              </div>
-              <div className="phase6-tag-create-row">
-                <label htmlFor="detail-new-tag">新增标签名称</label>
-                <input
-                  id="detail-new-tag"
-                  aria-label="新增标签名称"
-                  value={newTagName}
-                  onChange={(event) => {
-                    setNewTagName(event.target.value);
-                    setTagsError(null);
-                  }}
-                  placeholder="例如：电影"
-                />
-                <button type="button" disabled={creatingTag} onClick={createAndSelectTag}>新增并选中标签</button>
-              </div>
+            <div className="phase6-tag-editor-container">
+              <TagAssignmentEditor
+                selectedTagIds={selectedTagIds}
+                onSelectedTagIdsChange={setSelectedTagIds}
+              />
               <div>
                 <button type="button" onClick={saveTags}>保存标签</button>
                 <button type="button" onClick={cancelTagEdit}>取消</button>
@@ -284,7 +213,7 @@ export function CardDetailPage() {
             </div>
           ) : (
             <div className="phase6-tag-readonly">
-              <div>{card.tags.length ? card.tags.map((tag) => <span key={tag.id}>{tag.name}</span>) : '暂无标签'}</div>
+              <div>{card.tags.length ? card.tags.map((tag) => <span key={tag.id}>{tag.name}</span>) : '暂无标签，可点击“编辑标签”添加'}</div>
               <button type="button" onClick={startTagEdit}>编辑标签</button>
             </div>
           )}
