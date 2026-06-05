@@ -1,3 +1,5 @@
+[中文](./README.md) | [English](./README.en.md) | [日本語](./README.ja.md) | [Español](./README.es.md) | [العربية](./README.ar.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md) | [Italiano](./README.it.md) | [Latina](./README.la.md)
+
 # Context Vocabulary Notebook（语境单词本）
 
 本地优先的轻量语境词汇复习工具。适合在看外语视频时记录生词、原句、本地视频片段、截图、音频和标签，再用 FSRS 算法安排复习。
