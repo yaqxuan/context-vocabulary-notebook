@@ -617,4 +617,148 @@ describe('CardCreatePage', () => {
       note: 'S01E02',
     }));
   });
+
+
+  it('creates an inline tag and submits it when creating a new card', async () => {
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/tags' && init?.method === 'POST') return Promise.resolve(jsonResponse({ id: 'tag-1', name: '电影', created_at: 'now', updated_at: 'now' }, 201));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/cards' && init?.method === 'POST') return Promise.resolve(jsonResponse({ card: { id: 'card-1' }, context: { id: 'ctx-1' } }, 201));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    // Fill form
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'test sentence' } });
+
+    // Create inline tag
+    fireEvent.change(await screen.findByLabelText('新增标签名称'), { target: { value: '电影' } });
+    fireEvent.click(screen.getByRole('button', { name: '新增并选中标签' }));
+
+    // Wait for the tag to appear as a selected button
+    expect(await screen.findByRole('button', { name: '电影' })).toHaveClass('selected');
+
+    // Submit the form
+    fireEvent.submit(screen.getByRole('button', { name: '保存词义条目' }));
+
+    // Verify tag POST
+    await waitFor(() => expect(requests.some((req) => req.url === '/api/tags' && req.method === 'POST' && req.body === JSON.stringify({ name: '电影' }))).toBe(true));
+
+    // Verify cards POST includes tag_ids
+    await waitFor(() => {
+      const cardReq = requests.find((req) => req.url === '/api/cards' && req.method === 'POST');
+      expect(cardReq).toBeTruthy();
+      expect(JSON.parse(cardReq!.body as string)).toMatchObject({
+        target_word: 'charge',
+        context_meaning: '收费',
+        sentence: 'test sentence',
+        tag_ids: ['tag-1'],
+      });
+    });
+  });
+
+  it('explicit append mode preselects tags and sends PATCH only when changed', async () => {
+    window.location.hash = '#/create?card_id=card-1';
+    const detail = {
+      id: 'card-1',
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      tags: [{ id: 'tag-1', name: '美剧' }],
+    };
+    
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
+      if (url === '/api/cards' && init?.method === 'POST') return Promise.resolve(jsonResponse({ card: { id: 'card-1' }, context: { id: 'ctx-1' } }, 201));
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ok: true }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    expect(await screen.findByDisplayValue('charge')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('收费')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '美剧' })).toHaveClass('selected');
+
+    // Add tag-2
+    fireEvent.click(await screen.findByRole('button', { name: '电影' }));
+
+    // Add sentence
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'another sentence' } });
+
+    // Submit
+    fireEvent.submit(screen.getByRole('button', { name: '添加为新语境' }));
+
+    // Wait for the append POST and tag PATCH
+    await waitFor(() => {
+      const cardReq = requests.find((req) => req.url === '/api/cards' && req.method === 'POST');
+      expect(cardReq).toBeTruthy();
+      expect(JSON.parse(cardReq!.body as string)).toEqual({
+        card_id: 'card-1',
+        sentence: 'another sentence',
+      });
+      
+      const patchReq = requests.find((req) => req.url === '/api/cards/card-1' && req.method === 'PATCH');
+      expect(patchReq).toBeTruthy();
+      expect(JSON.parse(patchReq!.body as string)).toEqual({
+        tag_ids: ['tag-1', 'tag-2'],
+      });
+    });
+  });
+
+  it('explicit append mode with unchanged tags does not PATCH', async () => {
+    window.location.hash = '#/create?card_id=card-1';
+    const detail = {
+      id: 'card-1',
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      tags: [{ id: 'tag-1', name: '美剧' }],
+    };
+    
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
+      if (url === '/api/cards' && init?.method === 'POST') return Promise.resolve(jsonResponse({ card: { id: 'card-1' }, context: { id: 'ctx-1' } }, 201));
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ok: true }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+
+    expect(await screen.findByDisplayValue('charge')).toBeInTheDocument();
+    
+    // Add sentence only (tags unchanged)
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'another sentence' } });
+
+    // Submit
+    fireEvent.submit(screen.getByRole('button', { name: '添加为新语境' }));
+
+    // Wait for the append POST and ensure NO tag PATCH
+    await waitFor(() => {
+      const cardReq = requests.find((req) => req.url === '/api/cards' && req.method === 'POST');
+      expect(cardReq).toBeTruthy();
+    });
+    
+    // Check no patch occurred
+    const patchReq = requests.find((req) => req.url === '/api/cards/card-1' && req.method === 'PATCH');
+    expect(patchReq).toBeUndefined();
+  });
+
 });
