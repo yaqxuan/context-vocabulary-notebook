@@ -1,6 +1,8 @@
-import { useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { TagDto } from '../../shared/types';
 import { createTag, listTags } from '../api/tags';
+
+export const TAG_LOAD_TIMEOUT_MS = 8000;
 
 export interface TagAssignmentEditorProps {
   selectedTagIds: string[];
@@ -14,29 +16,62 @@ export function TagAssignmentEditor({
   const [allTags, setAllTags] = useState<TagDto[]>([]);
   const [tagsLoading, setTagsLoading] = useState(false);
   const [tagsError, setTagsError] = useState<string | null>(null);
+  const [canRetryTags, setCanRetryTags] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [creatingTag, setCreatingTag] = useState(false);
   const newTagInputId = useId();
   const mountedRef = useRef(true);
+  const loadSeqRef = useRef(0);
+  const loadTimeoutRef = useRef<number | null>(null);
+
+  const clearLoadTimeout = useCallback(() => {
+    if (loadTimeoutRef.current === null) return;
+    window.clearTimeout(loadTimeoutRef.current);
+    loadTimeoutRef.current = null;
+  }, []);
+
+  const loadTagOptions = useCallback(() => {
+    const seq = loadSeqRef.current + 1;
+    loadSeqRef.current = seq;
+    clearLoadTimeout();
+    setTagsLoading(true);
+    setTagsError(null);
+    setCanRetryTags(false);
+
+    loadTimeoutRef.current = window.setTimeout(() => {
+      if (!mountedRef.current || loadSeqRef.current !== seq) return;
+      loadSeqRef.current += 1;
+      loadTimeoutRef.current = null;
+      setTagsLoading(false);
+      setTagsError('标签列表加载超时，请重试');
+      setCanRetryTags(true);
+    }, TAG_LOAD_TIMEOUT_MS);
+
+    listTags()
+      .then((tags) => {
+        if (mountedRef.current && loadSeqRef.current === seq) setAllTags(Array.isArray(tags) ? tags : []);
+      })
+      .catch((err: unknown) => {
+        if (mountedRef.current && loadSeqRef.current === seq) {
+          setTagsError(err instanceof Error ? err.message : '标签列表加载失败');
+          setCanRetryTags(true);
+        }
+      })
+      .finally(() => {
+        if (loadSeqRef.current === seq) clearLoadTimeout();
+        if (mountedRef.current && loadSeqRef.current === seq) setTagsLoading(false);
+      });
+  }, [clearLoadTimeout]);
 
   useEffect(() => {
     mountedRef.current = true;
-    setTagsLoading(true);
-    setTagsError(null);
-    listTags()
-      .then((tags) => {
-        if (mountedRef.current) setAllTags(Array.isArray(tags) ? tags : []);
-      })
-      .catch((err: unknown) => {
-        if (mountedRef.current) setTagsError(err instanceof Error ? err.message : '标签列表加载失败');
-      })
-      .finally(() => {
-        if (mountedRef.current) setTagsLoading(false);
-      });
+    loadTagOptions();
     return () => {
       mountedRef.current = false;
+      loadSeqRef.current += 1;
+      clearLoadTimeout();
     };
-  }, []);
+  }, [clearLoadTimeout, loadTagOptions]);
 
   const toggleTag = (tagId: string) => {
     onSelectedTagIdsChange((cur) =>
@@ -48,17 +83,20 @@ export function TagAssignmentEditor({
     const name = newTagName.trim();
     if (!name) {
       setTagsError('标签名称必填');
+      setCanRetryTags(false);
       return;
     }
     try {
       setCreatingTag(true);
       setTagsError(null);
+      setCanRetryTags(false);
       const tag = await createTag({ name });
       setAllTags((cur) => (cur.some((item) => item.id === tag.id) ? cur : [...cur, tag]));
       onSelectedTagIdsChange((cur) => (cur.includes(tag.id) ? cur : [...cur, tag.id]));
       setNewTagName('');
     } catch (err) {
       setTagsError(err instanceof Error ? err.message : '新增标签失败');
+      setCanRetryTags(false);
     } finally {
       setCreatingTag(false);
     }
@@ -66,7 +104,12 @@ export function TagAssignmentEditor({
 
   return (
     <div className="phase6-tag-editor">
-      {tagsError ? <em>{tagsError}</em> : null}
+      {tagsError ? (
+        <div>
+          <em>{tagsError}</em>
+          {canRetryTags ? <button type="button" onClick={loadTagOptions}>重新加载标签</button> : null}
+        </div>
+      ) : null}
       <div>
         {tagsLoading ? (
           <p>加载标签中…</p>
