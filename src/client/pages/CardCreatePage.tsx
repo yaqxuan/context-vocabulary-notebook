@@ -64,6 +64,12 @@ function findExactMatch(suggestions: SuggestionDto[], targetWord: string, meanin
   ) ?? null;
 }
 
+function sameTagSet(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const bSet = new Set(b);
+  return a.every((id) => bSet.has(id));
+}
+
 export function CardCreatePage() {
   const [targetWord, setTargetWord] = useState('');
   const [meaning, setMeaning] = useState('');
@@ -87,9 +93,12 @@ export function CardCreatePage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [appendCard, setAppendCard] = useState<CardDetailDto | null>(null);
   const [appendLoadError, setAppendLoadError] = useState<string | null>(null);
+  const [exactMatchTagLoadError, setExactMatchTagLoadError] = useState<string | null>(null);
+  const [tagSourceCardId, setTagSourceCardId] = useState<string | null>(null);
   const aiAutoFilledNoteRef = useRef(false);
   const aiMeaningInputKeyRef = useRef('');
   const noteTouchedRef = useRef(false);
+  const originalTagIdsRef = useRef<string[]>([]);
 
   const [explicitCardId] = useState(() => parseExplicitCardId());
 
@@ -124,6 +133,8 @@ export function CardCreatePage() {
         const tIds = card.tags.map((t) => t.id);
         setSelectedTagIds(tIds);
         setOriginalTagIds(tIds);
+        originalTagIdsRef.current = tIds;
+        setTagSourceCardId(card.id);
       })
       .catch((err) => {
         if (!active) return;
@@ -239,6 +250,44 @@ export function CardCreatePage() {
     () => findExactMatch(suggestions, targetWord, meaning),
     [suggestions, targetWord, meaning]
   );
+
+  const exactMatchId = exactMatch?.id ?? null;
+
+  useEffect(() => {
+    if (explicitCardId) return;
+    if (!exactMatchId) {
+      setExactMatchTagLoadError(null);
+      setSelectedTagIds((cur) => sameTagSet(cur, originalTagIdsRef.current) ? [] : cur);
+      setOriginalTagIds([]);
+      originalTagIdsRef.current = [];
+      setTagSourceCardId(null);
+      return;
+    }
+
+    let active = true;
+    setExactMatchTagLoadError(null);
+    getCard(exactMatchId)
+      .then((card) => {
+        if (!active) return;
+        const tIds = card.tags.map((tag) => tag.id);
+        setSelectedTagIds(tIds);
+        setOriginalTagIds(tIds);
+        originalTagIdsRef.current = tIds;
+        setTagSourceCardId(card.id);
+        setTargetLanguage(card.target_language.trim() || DEFAULT_TARGET_LANGUAGE);
+        setDefinitionLanguage(card.definition_language.trim() || DEFAULT_DEFINITION_LANGUAGE);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setExactMatchTagLoadError(err instanceof Error ? err.message : '加载已有词义标签失败');
+        setSelectedTagIds((cur) => sameTagSet(cur, originalTagIdsRef.current) ? [] : cur);
+        setOriginalTagIds([]);
+        originalTagIdsRef.current = [];
+        setTagSourceCardId(null);
+      });
+
+    return () => { active = false; };
+  }, [exactMatchId, explicitCardId]);
 
   const mode: SaveMode = useMemo(() => {
     if (appendCard) {
@@ -359,12 +408,9 @@ export function CardCreatePage() {
 
       const result = await createCard(body);
 
-      // Only patch tags if this is append mode and tags actually changed
-      if (mode.kind === 'existing' && explicitCardId) {
-        const tagsChanged = selectedTagIds.length !== originalTagIds.length || !selectedTagIds.every((id) => originalTagIds.includes(id));
-        if (tagsChanged) {
-          await patchCard(mode.cardId, { tag_ids: selectedTagIds });
-        }
+      // Only patch tags when append mode has loaded the existing card tags and the selection changed.
+      if (mode.kind === 'existing' && tagSourceCardId === mode.cardId && !sameTagSet(selectedTagIds, originalTagIds)) {
+        await patchCard(mode.cardId, { tag_ids: selectedTagIds });
       }
 
       if (video) await uploadMedia(result.context.id, video);
@@ -484,6 +530,7 @@ export function CardCreatePage() {
               selectedTagIds={selectedTagIds}
               onSelectedTagIdsChange={setSelectedTagIds}
             />
+            {exactMatchTagLoadError ? <em>{exactMatchTagLoadError}</em> : null}
           </fieldset>
 
           {/* AI usage suggestion */}
