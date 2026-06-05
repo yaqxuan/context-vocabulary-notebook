@@ -7,7 +7,15 @@ import { getAiSuggestion } from '../api/aiSuggestions';
 import { TagAssignmentEditor } from '../components/TagAssignmentEditor';
 import { getSettings } from '../api/settings';
 import type { CardDetailDto, SuggestionDto } from '../../shared/types';
-import { MEDIA_SIZE_LIMIT_MESSAGES, MEDIA_SIZE_LIMITS_BYTES } from '../../shared/constants';
+import {
+  DEFAULT_DEFINITION_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  MEDIA_SIZE_LIMIT_MESSAGES,
+  MEDIA_SIZE_LIMITS_BYTES,
+  SUPPORTED_LANGUAGES,
+  normalizeSupportedLanguage,
+  type SupportedLanguage,
+} from '../../shared/constants';
 
 type SaveMode = { kind: 'new' } | { kind: 'existing'; cardId: string; meaning: string; targetWord: string };
 type FieldErrors = Partial<Record<'targetWord' | 'meaning' | 'sentence' | 'video' | 'screenshot' | 'audio' | 'submit', string>>;
@@ -18,9 +26,6 @@ function parseExplicitCardId(): string | null {
   if (qIndex === -1) return null;
   return new URLSearchParams(hash.slice(qIndex + 1)).get('card_id');
 }
-
-const DEFAULT_TARGET_LANGUAGE = '英语';
-const DEFAULT_DEFINITION_LANGUAGE = '中文';
 
 function mediaSizeError(kind: 'video' | 'screenshot' | 'audio', file: File): string | null {
   const mediaKind = kind === 'screenshot' ? 'image' : kind;
@@ -100,8 +105,8 @@ export function CardCreatePage() {
     getSettings()
       .then((s) => {
         if (!active) return;
-        setTargetLanguage(s.default_target_language ?? DEFAULT_TARGET_LANGUAGE);
-        setDefinitionLanguage(s.default_definition_language ?? DEFAULT_DEFINITION_LANGUAGE);
+        setTargetLanguage(normalizeSupportedLanguage(s.default_target_language) ?? DEFAULT_TARGET_LANGUAGE);
+        setDefinitionLanguage(normalizeSupportedLanguage(s.default_definition_language) ?? DEFAULT_DEFINITION_LANGUAGE);
       })
       .catch(() => {
         if (!active) return;
@@ -119,8 +124,8 @@ export function CardCreatePage() {
         setAppendCard(card);
         setTargetWord(card.target_word);
         setMeaning(card.context_meaning);
-        setTargetLanguage(card.target_language);
-        setDefinitionLanguage(card.definition_language);
+        setTargetLanguage(normalizeSupportedLanguage(card.target_language) ?? DEFAULT_TARGET_LANGUAGE);
+        setDefinitionLanguage(normalizeSupportedLanguage(card.definition_language) ?? DEFAULT_DEFINITION_LANGUAGE);
         const tIds = card.tags.map((t) => t.id);
         setSelectedTagIds(tIds);
         setOriginalTagIds(tIds);
@@ -201,8 +206,8 @@ export function CardCreatePage() {
       getAiSuggestion({
         target_word: trimmedWord,
         sentence: trimmedSentence,
-        target_language: targetLanguage.trim() || DEFAULT_TARGET_LANGUAGE,
-        definition_language: definitionLanguage.trim() || DEFAULT_DEFINITION_LANGUAGE,
+        target_language: targetLanguage,
+        definition_language: definitionLanguage,
       })
         .then((result) => {
           if (!active) return;
@@ -350,8 +355,8 @@ export function CardCreatePage() {
           : {
               target_word: targetWord.trim(),
               context_meaning: meaning.trim(),
-              target_language: targetLanguage.trim() || DEFAULT_TARGET_LANGUAGE,
-              definition_language: definitionLanguage.trim() || DEFAULT_DEFINITION_LANGUAGE,
+              target_language: targetLanguage,
+              definition_language: definitionLanguage,
               sentence: sentence.trim(),
               ...(note.trim() ? { note: note.trim() } : {}),
               tag_ids: selectedTagIds,
@@ -459,21 +464,29 @@ export function CardCreatePage() {
           <div className="card-create-language-row">
             <label className="card-create-field" htmlFor="cc-target-lang">
               <span>学习语言</span>
-              <input
+              <select
                 id="cc-target-lang"
                 aria-label="学习语言"
                 value={targetLanguage}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setTargetLanguage(e.target.value)}
-              />
+                onChange={(e) => setTargetLanguage(e.target.value as SupportedLanguage)}
+              >
+                {SUPPORTED_LANGUAGES.map((language) => (
+                  <option key={language} value={language}>{language}</option>
+                ))}
+              </select>
             </label>
             <label className="card-create-field" htmlFor="cc-def-lang">
               <span>释义语言</span>
-              <input
+              <select
                 id="cc-def-lang"
                 aria-label="释义语言"
                 value={definitionLanguage}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setDefinitionLanguage(e.target.value)}
-              />
+                onChange={(e) => setDefinitionLanguage(e.target.value as SupportedLanguage)}
+              >
+                {SUPPORTED_LANGUAGES.map((language) => (
+                  <option key={language} value={language}>{language}</option>
+                ))}
+              </select>
             </label>
           </div>
 

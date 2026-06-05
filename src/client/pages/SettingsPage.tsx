@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import {
+  DEFAULT_DEFINITION_LANGUAGE,
+  DEFAULT_INTERFACE_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  SUPPORTED_LANGUAGES,
+  normalizeSupportedLanguage,
+  type SupportedLanguage,
+} from '../../shared/constants';
 import type {
   AiConfigDto,
   ImportConflictDecision,
@@ -34,14 +42,32 @@ interface SettingsFormProps {
   onSaved: (updated: SettingsDto) => void;
 }
 
+interface LanguageSelectProps {
+  id: string;
+  value: SupportedLanguage;
+  onChange: (value: SupportedLanguage) => void;
+}
+
+function LanguageSelect({ id, value, onChange }: LanguageSelectProps) {
+  return (
+    <select
+      id={id}
+      className="phase7-settings-input"
+      value={value}
+      onChange={(e) => onChange(e.target.value as SupportedLanguage)}
+    >
+      {SUPPORTED_LANGUAGES.map((language) => (
+        <option key={language} value={language}>{language}</option>
+      ))}
+    </select>
+  );
+}
+
 function SettingsForm({ initial, onSaved }: SettingsFormProps) {
-  const [interfaceLang, setInterfaceLang] = useState(initial.interface_language);
-  const [targetLang, setTargetLang] = useState(initial.default_target_language);
-  const [defLang, setDefLang] = useState(initial.default_definition_language);
+  const [interfaceLang, setInterfaceLang] = useState(normalizeSupportedLanguage(initial.interface_language) ?? DEFAULT_INTERFACE_LANGUAGE);
+  const [targetLang, setTargetLang] = useState(normalizeSupportedLanguage(initial.default_target_language) ?? DEFAULT_TARGET_LANGUAGE);
+  const [defLang, setDefLang] = useState(normalizeSupportedLanguage(initial.default_definition_language) ?? DEFAULT_DEFINITION_LANGUAGE);
   const [dailyLimit, setDailyLimit] = useState(String(initial.daily_review_limit));
-  const [interfaceLangError, setInterfaceLangError] = useState<string | null>(null);
-  const [targetLangError, setTargetLangError] = useState<string | null>(null);
-  const [defLangError, setDefLangError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -49,24 +75,6 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
 
   function validateAll(): boolean {
     let ok = true;
-    if (!interfaceLang.trim()) {
-      setInterfaceLangError('界面语言不能为空');
-      ok = false;
-    } else {
-      setInterfaceLangError(null);
-    }
-    if (!targetLang.trim()) {
-      setTargetLangError('默认学习语言不能为空');
-      ok = false;
-    } else {
-      setTargetLangError(null);
-    }
-    if (!defLang.trim()) {
-      setDefLangError('默认释义语言不能为空');
-      ok = false;
-    } else {
-      setDefLangError(null);
-    }
     const n = Number(dailyLimit);
     if (!dailyLimit.trim() || !Number.isInteger(n) || n <= 0) {
       setValidationError('每日复习数量必须是正整数');
@@ -84,9 +92,9 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
     setSaveError(null);
     try {
       const updated = await patchSettings({
-        interface_language: interfaceLang.trim(),
-        default_target_language: targetLang.trim(),
-        default_definition_language: defLang.trim(),
+        interface_language: interfaceLang,
+        default_target_language: targetLang,
+        default_definition_language: defLang,
         daily_review_limit: Number(dailyLimit),
       });
       onSaved(updated);
@@ -107,48 +115,33 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
           <label htmlFor="setting-interface-lang" className="phase7-settings-label">
             界面语言
           </label>
-          <input
+          <LanguageSelect
             id="setting-interface-lang"
-            className="phase7-settings-input"
-            type="text"
             value={interfaceLang}
-            onChange={(e) => setInterfaceLang(e.target.value)}
+            onChange={setInterfaceLang}
           />
-          {interfaceLangError && (
-            <p className="phase7-settings-field-error">{interfaceLangError}</p>
-          )}
         </div>
 
         <div className="phase7-settings-field">
           <label htmlFor="setting-target-lang" className="phase7-settings-label">
             默认学习语言
           </label>
-          <input
+          <LanguageSelect
             id="setting-target-lang"
-            className="phase7-settings-input"
-            type="text"
             value={targetLang}
-            onChange={(e) => setTargetLang(e.target.value)}
+            onChange={setTargetLang}
           />
-          {targetLangError && (
-            <p className="phase7-settings-field-error">{targetLangError}</p>
-          )}
         </div>
 
         <div className="phase7-settings-field">
           <label htmlFor="setting-def-lang" className="phase7-settings-label">
             默认释义语言
           </label>
-          <input
+          <LanguageSelect
             id="setting-def-lang"
-            className="phase7-settings-input"
-            type="text"
             value={defLang}
-            onChange={(e) => setDefLang(e.target.value)}
+            onChange={setDefLang}
           />
-          {defLangError && (
-            <p className="phase7-settings-field-error">{defLangError}</p>
-          )}
         </div>
 
         <div className="phase7-settings-field">
@@ -667,6 +660,7 @@ function ImportSection() {
                     {mode === 'per_item' && (
                       <select
                         className="phase7-settings-conflict-select"
+                        aria-label={`冲突处理：${c.target_word}`}
                         value={perItem[c.import_card_id] ?? 'skip'}
                         onChange={(e) =>
                           setPerItem((prev) => ({

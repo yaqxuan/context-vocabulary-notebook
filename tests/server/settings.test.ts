@@ -64,7 +64,7 @@ describe('settings API', () => {
 
   it('updates V1 settings using fixed id=1', async () => {
     const res = await request(app).patch('/api/settings').send({
-      interface_language: 'en-US',
+      interface_language: '英语',
       default_target_language: '日语',
       default_definition_language: '英语',
       daily_review_limit: 50,
@@ -73,7 +73,7 @@ describe('settings API', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       id: 1,
-      interface_language: 'en-US',
+      interface_language: '英语',
       default_target_language: '日语',
       default_definition_language: '英语',
       daily_review_limit: 50,
@@ -113,6 +113,15 @@ describe('settings API', () => {
         expect(res.status).toBe(400);
         expect(res.body.message).toBe(`${field} must be a non-empty string`);
       }
+    }
+  });
+
+  it('rejects unsupported language settings', async () => {
+    for (const field of ['interface_language', 'default_target_language', 'default_definition_language']) {
+      const res = await request(app).patch('/api/settings').send({ [field]: '意大利语' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe(`${field} must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语`);
     }
   });
 

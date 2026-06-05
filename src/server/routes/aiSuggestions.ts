@@ -1,11 +1,22 @@
 import { Router } from 'express';
 import type { Database } from 'better-sqlite3';
+import { SUPPORTED_LANGUAGES } from '../../shared/constants.js';
 import type { AiSuggestionRequestDto } from '../../shared/types.js';
-import { isNonEmptyString } from '../../shared/validators.js';
+import { isNonEmptyString, isSupportedLanguage } from '../../shared/validators.js';
 import { BadRequestError } from '../http/errors.js';
 import { asyncRoute } from '../http/asyncRoute.js';
 import { getActiveAiConfigWithKey } from '../domain/aiConfigs.js';
 import { requestAiSuggestion } from '../domain/aiSuggestions.js';
+
+function optionalSupportedLanguage(field: string, value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (!isNonEmptyString(value)) throw new BadRequestError(`${field} must be a non-empty string`);
+  const trimmed = value.trim();
+  if (!isSupportedLanguage(trimmed)) {
+    throw new BadRequestError(`${field} must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`);
+  }
+  return trimmed;
+}
 
 export function aiSuggestionsRouter(db: Database): Router {
   const router = Router();
@@ -23,8 +34,8 @@ export function aiSuggestionsRouter(db: Database): Router {
     const input: AiSuggestionRequestDto = {
       target_word: targetWord,
       sentence,
-      target_language: isNonEmptyString(body.target_language) ? body.target_language.trim() : undefined,
-      definition_language: isNonEmptyString(body.definition_language) ? body.definition_language.trim() : undefined,
+      target_language: optionalSupportedLanguage('target_language', body.target_language),
+      definition_language: optionalSupportedLanguage('definition_language', body.definition_language),
     };
 
     res.json(await requestAiSuggestion(getActiveAiConfigWithKey(db), input));

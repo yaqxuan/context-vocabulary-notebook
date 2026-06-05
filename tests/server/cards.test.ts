@@ -412,8 +412,42 @@ describe('POST /api/cards', () => {
     expect(res.status).toBe(201);
     expect(res.body.card).toBeTruthy();
     expect(res.body.card.target_word).toBe('charge');
+    expect(res.body.card.target_language).toBe('英语');
+    expect(res.body.card.definition_language).toBe('中文');
     expect(res.body.context).toBeTruthy();
     expect(res.body.context.sentence).toBe('The hotel charges $100.');
+  });
+
+  it('creates a new card with supported language fields', async () => {
+    const res = await request(app)
+      .post('/api/cards')
+      .send({
+        target_word: '走る',
+        context_meaning: 'run',
+        sentence: '彼は駅まで走った。',
+        target_language: '日语',
+        definition_language: '英语',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.card.target_language).toBe('日语');
+    expect(res.body.card.definition_language).toBe('英语');
+  });
+
+  it('returns 400 for unsupported card languages', async () => {
+    for (const field of ['target_language', 'definition_language']) {
+      const res = await request(app)
+        .post('/api/cards')
+        .send({
+          target_word: 'charge',
+          context_meaning: '收费',
+          sentence: 'The hotel charges $100.',
+          [field]: '意大利语',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe(`${field} must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语`);
+    }
   });
 
   it('returns 400 when target_word is missing', async () => {

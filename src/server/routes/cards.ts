@@ -15,15 +15,26 @@ import { addTagToCard, getCardTags, getTag } from '../domain/tags.js';
 import { getMediaForCard } from '../domain/media.js';
 import {
   isNonEmptyString,
+  isSupportedLanguage,
   isValidCardStatus,
   isValidPageSize,
   parsePageNumber,
   parsePageSize,
 } from '../../shared/validators.js';
-import { DEFAULT_PAGE_SIZE } from '../../shared/constants.js';
+import { DEFAULT_DEFINITION_LANGUAGE, DEFAULT_PAGE_SIZE, DEFAULT_TARGET_LANGUAGE, SUPPORTED_LANGUAGES } from '../../shared/constants.js';
 
 function paramStr(p: string | string[]): string {
   return Array.isArray(p) ? p[0]! : p;
+}
+
+function optionalSupportedLanguage(field: string, value: unknown, fallback: string): string {
+  if (value === undefined) return fallback;
+  if (!isNonEmptyString(value)) throw new BadRequestError(`${field} must be a non-empty string`);
+  const trimmed = value.trim();
+  if (!isSupportedLanguage(trimmed)) {
+    throw new BadRequestError(`${field} must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`);
+  }
+  return trimmed;
 }
 
 export function cardsRouter(db: Database): Router {
@@ -112,16 +123,16 @@ export function cardsRouter(db: Database): Router {
     }
 
     const card = createCard(db, {
-      target_word: body.target_word,
-      context_meaning: body.context_meaning,
-      target_language: isNonEmptyString(body.target_language) ? body.target_language : '英语',
-      definition_language: isNonEmptyString(body.definition_language) ? body.definition_language : '中文',
+      target_word: body.target_word.trim(),
+      context_meaning: body.context_meaning.trim(),
+      target_language: optionalSupportedLanguage('target_language', body.target_language, DEFAULT_TARGET_LANGUAGE),
+      definition_language: optionalSupportedLanguage('definition_language', body.definition_language, DEFAULT_DEFINITION_LANGUAGE),
     });
 
     const ctx = createContext(db, {
       card_id: card.id,
-      sentence: body.sentence,
-      note: isNonEmptyString(body.note) ? body.note : undefined,
+      sentence: body.sentence.trim(),
+      note: isNonEmptyString(body.note) ? body.note.trim() : undefined,
     });
 
     // Optionally attach tags

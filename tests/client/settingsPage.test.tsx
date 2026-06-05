@@ -125,8 +125,8 @@ describe('SettingsPage', () => {
       expect(await screen.findByLabelText('界面语言')).toBeInTheDocument();
       // interface_language and default_definition_language are both '中文' in fixture;
       // check the interface_language field specifically by label association
-      const interfaceInput = screen.getByLabelText('界面语言') as HTMLInputElement;
-      expect(interfaceInput.value).toBe('中文');
+      const interfaceSelect = screen.getByLabelText('界面语言') as HTMLSelectElement;
+      expect(interfaceSelect.value).toBe('中文');
     });
 
     it('renders all four settings form fields', async () => {
@@ -143,6 +143,39 @@ describe('SettingsPage', () => {
       await screen.findByLabelText('每日复习数量');
       const input = screen.getByLabelText('每日复习数量') as HTMLInputElement;
       expect(input.value).toBe('20');
+    });
+
+    it('renders the common 8 language options for each language selector', async () => {
+      render(<SettingsPage />);
+      await screen.findByLabelText('界面语言');
+
+      const expected = ['中文', '英语', '日语', '韩语', '法语', '德语', '西班牙语', '俄语'];
+      for (const label of ['界面语言', '默认学习语言', '默认释义语言']) {
+        const select = screen.getByLabelText(label) as HTMLSelectElement;
+        expect(Array.from(select.options).map((option) => option.value)).toEqual(expected);
+      }
+    });
+
+    it('normalizes legacy persisted language values into supported selector values', async () => {
+      const legacySettings: SettingsDto = {
+        ...settings,
+        interface_language: 'zh-CN',
+        default_target_language: '英文',
+        default_definition_language: '日本語',
+      };
+      vi.restoreAllMocks();
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
+        return Promise.resolve(jsonResponse(legacySettings));
+      });
+
+      render(<SettingsPage />);
+      await screen.findByLabelText('界面语言');
+
+      expect((screen.getByLabelText('界面语言') as HTMLSelectElement).value).toBe('中文');
+      expect((screen.getByLabelText('默认学习语言') as HTMLSelectElement).value).toBe('英语');
+      expect((screen.getByLabelText('默认释义语言') as HTMLSelectElement).value).toBe('日语');
     });
   });
 
@@ -170,8 +203,9 @@ describe('SettingsPage', () => {
       render(<SettingsPage />);
       await screen.findByLabelText('每日复习数量');
 
-      // Change daily limit
       fireEvent.change(screen.getByLabelText('每日复习数量'), { target: { value: '30' } });
+      fireEvent.change(screen.getByLabelText('默认学习语言'), { target: { value: '日语' } });
+      fireEvent.change(screen.getByLabelText('默认释义语言'), { target: { value: '韩语' } });
 
       fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
 
@@ -179,15 +213,15 @@ describe('SettingsPage', () => {
       expect(patchBody).toMatchObject({
         daily_review_limit: 30,
         interface_language: '中文',
-        default_target_language: '英语',
-        default_definition_language: '中文',
+        default_target_language: '日语',
+        default_definition_language: '韩语',
       });
     });
 
     it('keeps updated values visible after successful save', async () => {
       const updatedSettings: SettingsDto = {
         ...settings,
-        interface_language: '日本語',
+        interface_language: '日语',
       };
 
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
@@ -202,12 +236,12 @@ describe('SettingsPage', () => {
       render(<SettingsPage />);
       await screen.findByLabelText('界面语言');
 
-      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '日本語' } });
+      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '日语' } });
       fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
 
       await screen.findByText('设置已保存');
-      const input = screen.getByLabelText('界面语言') as HTMLInputElement;
-      expect(input.value).toBe('日本語');
+      const select = screen.getByLabelText('界面语言') as HTMLSelectElement;
+      expect(select.value).toBe('日语');
     });
   });
 
@@ -276,100 +310,6 @@ describe('SettingsPage', () => {
 
       await screen.findByText('设置已保存');
       expect(screen.queryByText('每日复习数量必须是正整数')).not.toBeInTheDocument();
-    });
-  });
-
-  // ─── Validation: text fields must be non-empty after trimming ─────────────
-
-  describe('text field validation', () => {
-    beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(defaultSettingsFetch);
-    });
-
-    it('shows 界面语言不能为空 when interface_language is blank', async () => {
-      render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
-
-      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '   ' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
-
-      expect(await screen.findByText('界面语言不能为空')).toBeInTheDocument();
-    });
-
-    it('shows 默认学习语言不能为空 when default_target_language is blank', async () => {
-      render(<SettingsPage />);
-      await screen.findByLabelText('默认学习语言');
-
-      fireEvent.change(screen.getByLabelText('默认学习语言'), { target: { value: '' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
-
-      expect(await screen.findByText('默认学习语言不能为空')).toBeInTheDocument();
-    });
-
-    it('shows 默认释义语言不能为空 when default_definition_language is blank', async () => {
-      render(<SettingsPage />);
-      await screen.findByLabelText('默认释义语言');
-
-      fireEvent.change(screen.getByLabelText('默认释义语言'), { target: { value: '   ' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
-
-      expect(await screen.findByText('默认释义语言不能为空')).toBeInTheDocument();
-    });
-
-    it('does not PATCH when any text field is empty', async () => {
-      const patchCalls: unknown[] = [];
-      vi.restoreAllMocks();
-      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-        const url = String(input);
-        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
-        if (init?.method === 'PATCH') {
-          patchCalls.push(JSON.parse(init.body as string));
-          return Promise.resolve(jsonResponse(settings));
-        }
-        return Promise.resolve(jsonResponse(settings));
-      });
-
-      render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
-
-      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
-
-      // Wait a tick; PATCH must not have been called
-      await waitFor(() => expect(screen.getByText('界面语言不能为空')).toBeInTheDocument());
-      expect(patchCalls).toHaveLength(0);
-    });
-  });
-
-  // ─── PATCH payload trimming ────────────────────────────────────────────────
-
-  describe('PATCH payload trimming', () => {
-    it('sends trimmed values for text fields', async () => {
-      const updatedSettings: SettingsDto = {
-        ...settings,
-        interface_language: '日本語',
-      };
-
-      let patchBody: unknown = null;
-      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-        const url = String(input);
-        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
-        if (init?.method === 'PATCH') {
-          patchBody = JSON.parse(init.body as string);
-          return Promise.resolve(jsonResponse(updatedSettings));
-        }
-        return Promise.resolve(jsonResponse(settings));
-      });
-
-      render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
-
-      // Type value with leading/trailing whitespace
-      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '  日本語  ' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
-
-      await screen.findByText('设置已保存');
-      expect((patchBody as Record<string, unknown>).interface_language).toBe('日本語');
     });
   });
 
@@ -1006,10 +946,8 @@ describe('SettingsPage', () => {
       const perItemOption = screen.getByLabelText('逐项处理');
       fireEvent.click(perItemOption);
 
-      // Each conflict should have a select for per-item decision
-      // Two conflicts: ephemeral and laconic
-      const selects = screen.getAllByRole('combobox');
-      expect(selects.length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByLabelText('冲突处理：ephemeral')).toBeInTheDocument();
+      expect(screen.getByLabelText('冲突处理：laconic')).toBeInTheDocument();
     });
 
     it('sends per_item mode with items array when 逐项处理 is selected', async () => {
@@ -1030,9 +968,7 @@ describe('SettingsPage', () => {
       const perItemOption = screen.getByLabelText('逐项处理');
       fireEvent.click(perItemOption);
 
-      // Change first conflict decision to 'merge'
-      const selects = screen.getAllByRole('combobox');
-      fireEvent.change(selects[0], { target: { value: 'merge' } });
+      fireEvent.change(screen.getByLabelText('冲突处理：ephemeral'), { target: { value: 'merge' } });
 
       fireEvent.click(screen.getByRole('button', { name: '执行导入' }));
 

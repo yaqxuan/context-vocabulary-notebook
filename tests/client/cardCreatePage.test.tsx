@@ -91,6 +91,35 @@ describe('CardCreatePage', () => {
     expect(screen.getByLabelText('AI 建议')).toHaveValue('在句中表示收取费用。');
   });
 
+  it('sends selected languages when requesting AI suggestions', async () => {
+    let aiBody: Record<string, unknown> | null = null;
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') {
+        aiBody = JSON.parse(String(init?.body ?? '{}'));
+        return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<CardCreatePage />);
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/settings', expect.any(Object)));
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('学习语言'), { target: { value: '日语' } });
+    fireEvent.change(screen.getByLabelText('释义语言'), { target: { value: '英语' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: '彼は駅まで走った。' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: '走った' } });
+
+    await waitFor(() => expect(aiBody).not.toBeNull());
+    expect(aiBody).toMatchObject({
+      target_language: '日语',
+      definition_language: '英语',
+    });
+  });
+
   it('fills meaning when clicking the ghost AI meaning suggestion', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
@@ -383,10 +412,14 @@ describe('CardCreatePage', () => {
     });
 
     render(<CardCreatePage />);
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/settings', expect.any(Object)));
+    await flushPromises();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('学习语言'), { target: { value: '日语' } });
+    fireEvent.change(screen.getByLabelText('释义语言'), { target: { value: '英语' } });
     fireEvent.change(screen.getByLabelText('上传本地视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
     fireEvent.change(screen.getByLabelText('上传截图'), { target: { files: [file('shot.png', 'image/png')] } });
     fireEvent.change(screen.getByLabelText('上传音频'), { target: { files: [file('line.mp3', 'audio/mpeg')] } });
@@ -398,8 +431,8 @@ describe('CardCreatePage', () => {
     expect(cardRequest?.body).toBe(JSON.stringify({
       target_word: 'charge',
       context_meaning: '收费',
-      target_language: '英语',
-      definition_language: '中文',
+      target_language: '日语',
+      definition_language: '英语',
       sentence: 'The hotel charges $100 per night.',
       tag_ids: ['tag-1'],
     }));
@@ -487,7 +520,7 @@ describe('CardCreatePage', () => {
     render(<CardCreatePage />);
 
     await waitFor(() => expect(screen.getByLabelText('学习语言')).toHaveValue('日语'));
-    expect(screen.getByLabelText('释义语言')).toHaveValue('英文');
+    expect(screen.getByLabelText('释义语言')).toHaveValue('英语');
   });
 
   // Test 11: settings fetch failure falls back to defaults
