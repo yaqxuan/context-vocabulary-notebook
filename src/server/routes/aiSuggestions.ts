@@ -18,18 +18,23 @@ function optionalSupportedLanguage(field: string, value: unknown): string | unde
   return trimmed;
 }
 
+function parseAiTextInput(body: Record<string, unknown>): { targetWord: string; sentence: string } {
+  if (!isNonEmptyString(body.target_word)) throw new BadRequestError('target_word is required');
+  if (!isNonEmptyString(body.sentence)) throw new BadRequestError('sentence is required');
+
+  const targetWord = body.target_word.trim();
+  const sentence = body.sentence.trim();
+  if (targetWord.length > 200) throw new BadRequestError('target_word must be at most 200 characters');
+  if (sentence.length > 2000) throw new BadRequestError('sentence must be at most 2000 characters');
+  return { targetWord, sentence };
+}
+
 export function aiSuggestionsRouter(db: Database): Router {
   const router = Router();
 
   router.post('/suggestions', asyncRoute(async (req, res) => {
     const body = req.body as Record<string, unknown>;
-    if (!isNonEmptyString(body.target_word)) throw new BadRequestError('target_word is required');
-    if (!isNonEmptyString(body.sentence)) throw new BadRequestError('sentence is required');
-
-    const targetWord = body.target_word.trim();
-    const sentence = body.sentence.trim();
-    if (targetWord.length > 200) throw new BadRequestError('target_word must be at most 200 characters');
-    if (sentence.length > 2000) throw new BadRequestError('sentence must be at most 2000 characters');
+    const { targetWord, sentence } = parseAiTextInput(body);
 
     const input: AiSuggestionRequestDto = {
       target_word: targetWord,
@@ -43,13 +48,7 @@ export function aiSuggestionsRouter(db: Database): Router {
 
   router.post('/spelling-check', asyncRoute(async (req, res) => {
     const body = req.body as Record<string, unknown>;
-    if (!isNonEmptyString(body.target_word)) throw new BadRequestError('target_word is required');
-    if (!isNonEmptyString(body.sentence)) throw new BadRequestError('sentence is required');
-
-    const targetWord = body.target_word.trim();
-    const sentence = body.sentence.trim();
-    if (targetWord.length > 200) throw new BadRequestError('target_word must be at most 200 characters');
-    if (sentence.length > 2000) throw new BadRequestError('sentence must be at most 2000 characters');
+    const { targetWord, sentence } = parseAiTextInput(body);
 
     const input: AiSpellingCheckRequestDto = {
       target_word: targetWord,
