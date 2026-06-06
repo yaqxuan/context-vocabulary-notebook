@@ -40,7 +40,7 @@ describe('I18nProvider', () => {
       daily_review_limit: 50,
       id: 1,
       updated_at: '2026-01-01',
-      version: 1,
+      created_at: '2026-01-01',
     });
 
     render(
@@ -80,7 +80,7 @@ describe('I18nProvider', () => {
       daily_review_limit: 50,
       id: 1,
       updated_at: '2026-01-01',
-      version: 1,
+      created_at: '2026-01-01',
     });
 
     render(
@@ -112,7 +112,7 @@ describe('I18nProvider', () => {
       daily_review_limit: 50,
       id: 1,
       updated_at: '2026-01-01',
-      version: 1,
+      created_at: '2026-01-01',
     });
 
     render(
