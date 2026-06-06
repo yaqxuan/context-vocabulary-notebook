@@ -4,7 +4,7 @@ import type { Database } from 'better-sqlite3';
 import { lookup } from 'node:dns/promises';
 
 vi.mock('node:dns/promises', () => {
-  const lookupMock = vi.fn(async () => []);
+  const lookupMock = vi.fn(async () => [{ address: '203.0.113.10', family: 4 }]);
   return { default: { lookup: lookupMock }, lookup: lookupMock };
 });
 
@@ -196,6 +196,47 @@ describe('AI suggestions API', () => {
     createAiConfig(db, {
       name: 'Unsafe AI',
       base_url: 'http://169.254.169.254/v1',
+      api_key: 'sk-secret',
+      model: 'test-model',
+      is_active: true,
+    });
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    const res = await request(createApp(db)).post('/api/ai/suggestions').send({
+      target_word: 'charge',
+      sentence: 'The hotel charges $100 per night.',
+    }).expect(200);
+
+    expect(res.body.status).toBe('none');
+    expect(res.body.message).toBe('AI suggestion unavailable');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns none without calling fetch for localhost AI URLs', async () => {
+    createAiConfig(db, {
+      name: 'Unsafe AI',
+      base_url: 'http://localhost:11434/v1',
+      api_key: 'sk-secret',
+      model: 'test-model',
+      is_active: true,
+    });
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    const res = await request(createApp(db)).post('/api/ai/suggestions').send({
+      target_word: 'charge',
+      sentence: 'The hotel charges $100 per night.',
+    }).expect(200);
+
+    expect(res.body.status).toBe('none');
+    expect(res.body.message).toBe('AI suggestion unavailable');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns none without calling fetch for hostnames resolving to private addresses', async () => {
+    vi.mocked(lookup).mockResolvedValueOnce([{ address: '10.0.0.5', family: 4 }] as never);
+    createAiConfig(db, {
+      name: 'Unsafe AI',
+      base_url: 'https://ai.example/v1',
       api_key: 'sk-secret',
       model: 'test-model',
       is_active: true,

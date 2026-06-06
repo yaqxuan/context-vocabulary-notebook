@@ -249,6 +249,26 @@ export interface AiSpellingCheckRequestDto {
   target_language?: string;
 }
 
+export interface TranscriptSegmentDto {
+  start: number;
+  end: number;
+  text: string;
+}
+
+export type TranscribeMediaResponseDto =
+  | {
+      status: 'success';
+      text: string;
+      segments: TranscriptSegmentDto[];
+      language?: string;
+    }
+  | {
+      status: 'none';
+      text: '';
+      segments: [];
+      message: string;
+    };
+
 export interface AiSpellingIssueDto {
   original: string;
   suggestion: string;

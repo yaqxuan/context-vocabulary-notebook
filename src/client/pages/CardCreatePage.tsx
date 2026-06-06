@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 
 import { createCard, getCard, patchCard } from '../api/cards';
 import { getCardSuggestions } from '../api/cards';
 import { uploadMedia } from '../api/media';
+import { transcribeUpload } from '../api/transcriptions';
 import { checkAiSpelling, getAiSuggestion } from '../api/aiSuggestions';
 import { TagAssignmentEditor } from '../components/TagAssignmentEditor';
 import { getSettings } from '../api/settings';
@@ -14,7 +15,10 @@ import {
   DEFAULT_TARGET_LANGUAGE,
   MEDIA_SIZE_LIMIT_MESSAGES,
   MEDIA_SIZE_LIMITS_BYTES,
+  TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES,
+  TRANSCRIPTION_MESSAGES,
   SUPPORTED_LANGUAGES,
+  getLanguageIso6391Code,
   getNativeLanguageLabel,
   normalizeSupportedLanguage,
   type SupportedLanguage,
@@ -115,6 +119,9 @@ export function CardCreatePage() {
   const [video, setVideo] = useState<File | null>(null);
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [audio, setAudio] = useState<File | null>(null);
+  const [transcriptState, setTranscriptState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [transcriptText, setTranscriptText] = useState('');
+  const [transcriptError, setTranscriptError] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -126,6 +133,7 @@ export function CardCreatePage() {
   const aiMeaningInputKeyRef = useRef('');
   const noteTouchedRef = useRef(false);
   const originalTagIdsRef = useRef<string[]>([]);
+  const currentVideoRef = useRef<File | null>(null);
 
   const [explicitCardId] = useState(() => parseExplicitCardId());
 
@@ -332,14 +340,24 @@ export function CardCreatePage() {
     setErrors((cur) => ({ ...cur, [kind]: undefined }));
 
     if (!next) {
-      if (kind === 'video') setVideo(null);
+      if (kind === 'video') {
+        currentVideoRef.current = null;
+        setVideo(null);
+        setTranscriptState('idle');
+        setTranscriptText('');
+        setTranscriptError('');
+      }
       if (kind === 'screenshot') setScreenshot(null);
       if (kind === 'audio') setAudio(null);
       return;
     }
 
     if (kind === 'video' && !isMp4(next)) {
+      currentVideoRef.current = null;
       setVideo(null);
+      setTranscriptState('idle');
+      setTranscriptText('');
+      setTranscriptError('');
       setErrors((cur) => ({ ...cur, video: t('create.videoTypeError') }));
       return;
     }
@@ -356,14 +374,26 @@ export function CardCreatePage() {
 
     const sizeError = mediaSizeError(kind, next);
     if (sizeError) {
-      if (kind === 'video') setVideo(null);
+      if (kind === 'video') {
+        currentVideoRef.current = null;
+        setVideo(null);
+        setTranscriptState('idle');
+        setTranscriptText('');
+        setTranscriptError('');
+      }
       if (kind === 'screenshot') setScreenshot(null);
       if (kind === 'audio') setAudio(null);
       setErrors((cur) => ({ ...cur, [kind]: sizeError }));
       return;
     }
 
-    if (kind === 'video') setVideo(next);
+    if (kind === 'video') {
+      currentVideoRef.current = next;
+      setVideo(next);
+      setTranscriptState('idle');
+      setTranscriptText('');
+      setTranscriptError('');
+    }
     if (kind === 'screenshot') setScreenshot(next);
     if (kind === 'audio') setAudio(next);
   }
@@ -403,6 +433,34 @@ export function CardCreatePage() {
     noteTouchedRef.current = true;
     aiAutoFilledNoteRef.current = false;
     setNote(value);
+  }
+
+  async function handleTranscribeVideo() {
+    if (!video || video.size > TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES || transcriptState === 'loading') return;
+
+    const requestVideo = video;
+    setTranscriptState('loading');
+    setTranscriptError('');
+    try {
+      const result = await transcribeUpload(requestVideo, getLanguageIso6391Code(targetLanguage));
+      if (currentVideoRef.current !== requestVideo) return;
+      if (result.status === 'success') {
+        setTranscriptText(result.text);
+        setTranscriptState('success');
+      } else {
+        setTranscriptError(result.message || t('create.transcriptFailed'));
+        setTranscriptState('error');
+      }
+    } catch (err) {
+      if (currentVideoRef.current !== requestVideo) return;
+      setTranscriptError(err instanceof Error ? err.message : t('create.transcriptFailed'));
+      setTranscriptState('error');
+    }
+  }
+
+  function useTranscriptAsSentence() {
+    if (!transcriptText.trim()) return;
+    handleSentenceChange(transcriptText);
   }
 
   async function handleSpellingCheck() {
@@ -500,6 +558,8 @@ export function CardCreatePage() {
   const showAiMeaningGhost = Boolean(!currentMeaning && aiMeaningSuggestion && !meaningTouched);
   const showSuggestionPanel = Boolean(targetWord.trim());
   const suggestionTitle = appendCard ? t('create.findExistingTitle') : t('create.findExisting');
+  const isVideoTooLargeForTranscription = Boolean(video && video.size > TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES);
+  const isTranscribeDisabled = !video || transcriptState === 'loading' || isVideoTooLargeForTranscription;
 
   if (appendLoadError) {
     return (
@@ -656,7 +716,30 @@ export function CardCreatePage() {
               error={errors.video}
               onChange={(e) => handleMediaChange('video', e.target.files)}
               t={t}
-            />
+            >
+              <div className="card-create-transcription">
+                <p className="card-create-transcription-notice">{t('create.transcriptNotice')}</p>
+                {isVideoTooLargeForTranscription ? (
+                  <em>{TRANSCRIPTION_MESSAGES.sizeLimit}</em>
+                ) : null}
+                <button
+                  type="button"
+                  className="card-create-transcribe-button"
+                  onClick={handleTranscribeVideo}
+                  disabled={isTranscribeDisabled}
+                >
+                  {transcriptState === 'loading' ? t('create.transcribing') : t('create.transcribe')}
+                </button>
+                <TranscriptPanel
+                  state={transcriptState}
+                  text={transcriptText}
+                  error={transcriptError}
+                  onTextChange={setTranscriptText}
+                  onUseAsSentence={useTranscriptAsSentence}
+                  t={t}
+                />
+              </div>
+            </MediaPicker>
             <MediaPicker
               title={t('create.media.screenshot')}
               badge={t('create.media.badgeOptional')}
@@ -768,9 +851,10 @@ interface MediaPickerProps {
   error?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   t: Translator;
+  children?: ReactNode;
 }
 
-function MediaPicker({ title, badge, label, accept, file, error, onChange, t }: MediaPickerProps) {
+function MediaPicker({ title, badge, label, accept, file, error, onChange, t, children }: MediaPickerProps) {
   const inputId = `media-${label.replace(/\s+/g, '-')}`;
   return (
     <div className="card-create-media-picker">
@@ -787,6 +871,37 @@ function MediaPicker({ title, badge, label, accept, file, error, onChange, t }: 
         onChange={onChange}
       />
       {error ? <em>{error}</em> : null}
+      {children}
+    </div>
+  );
+}
+
+interface TranscriptPanelProps {
+  state: 'idle' | 'loading' | 'success' | 'error';
+  text: string;
+  error: string;
+  onTextChange: (value: string) => void;
+  onUseAsSentence: () => void;
+  t: Translator;
+}
+
+function TranscriptPanel({ state, text, error, onTextChange, onUseAsSentence, t }: TranscriptPanelProps) {
+  if (state === 'idle' || state === 'loading') return null;
+  if (state === 'error') return <p className="card-create-transcription-error" role="alert">{error || t('create.transcriptFailed')}</p>;
+
+  return (
+    <div className="card-create-transcription-result">
+      <label htmlFor="cc-transcript">{t('create.transcript')}</label>
+      <textarea
+        id="cc-transcript"
+        aria-label={t('create.transcript')}
+        value={text}
+        onChange={(event) => onTextChange(event.target.value)}
+        rows={5}
+      />
+      <button type="button" onClick={onUseAsSentence} disabled={!text.trim()}>
+        {t('create.useTranscriptAsSentence')}
+      </button>
     </div>
   );
 }

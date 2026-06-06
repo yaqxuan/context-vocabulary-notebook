@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { MediaType } from '../shared/constants.js';
+import type { AudioExtractor, SpeechToTextProvider } from './domain/transcriptions.js';
 import { cardsRouter } from './routes/cards.js';
 import { contextsRouter } from './routes/contexts.js';
 import { tagsRouter } from './routes/tags.js';
@@ -10,6 +11,7 @@ import { reviewRouter } from './routes/review.js';
 import { settingsRouter } from './routes/settings.js';
 import { aiConfigsRouter } from './routes/aiConfigs.js';
 import { aiSuggestionsRouter } from './routes/aiSuggestions.js';
+import { transcriptionsRouter } from './routes/transcriptions.js';
 import { statisticsRouter } from './routes/statistics.js';
 import { importExportRouter } from './routes/importExport.js';
 import { ensureUploadsDir, resolveUploadPath } from './storage/uploads.js';
@@ -19,6 +21,11 @@ export interface AppOptions {
   uploadsDir?: string;
   uploadMaxBytes?: number;
   mediaSizeLimitsBytes?: Partial<Record<MediaType, number>>;
+  transcriptionUploadMaxBytes?: number;
+  transcription?: {
+    extractor?: AudioExtractor;
+    stt?: SpeechToTextProvider;
+  };
 }
 
 const DEFAULT_UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
@@ -66,6 +73,11 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
   application.use('/api/settings', settingsRouter(db));
   application.use('/api/ai-configs', aiConfigsRouter(db));
   application.use('/api/ai', aiSuggestionsRouter(db));
+  application.use('/api/transcriptions', transcriptionsRouter(db, uploadsDir, {
+    maxFileSizeBytes: options.transcriptionUploadMaxBytes,
+    extractor: options.transcription?.extractor,
+    stt: options.transcription?.stt,
+  }));
   application.use('/api/statistics', statisticsRouter(db));
   application.use('/api', importExportRouter(db, uploadsDir));
 

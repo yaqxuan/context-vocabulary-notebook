@@ -1,7 +1,5 @@
-import { lookup } from 'node:dns/promises';
-import net from 'node:net';
-
 import { DEFAULT_DEFINITION_LANGUAGE, DEFAULT_TARGET_LANGUAGE } from '../../shared/constants.js';
+import { AI_FETCH_TIMEOUT_MS, closeUnreadSafeAiResponse, fetchSafeAiProvider } from './aiProviderHttp.js';
 import type {
   AiSpellingCheckRequestDto,
   AiSpellingCheckResponseDto,
@@ -122,63 +120,8 @@ function parseSpellingContent(content: string, targetWord: string): AiSpellingCh
   }
 }
 
-const AI_FETCH_TIMEOUT_MS = 15_000;
-
-function stripIpv6Brackets(hostname: string): string {
-  return hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
-}
-
-function ipv4MappedToIpv4(address: string): string | null {
-  const lower = stripIpv6Brackets(address).toLowerCase();
-  const dottedMatch = lower.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
-  if (dottedMatch) return dottedMatch[1];
-
-  const hexMatch = lower.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
-  if (!hexMatch) return null;
-
-  const high = Number.parseInt(hexMatch[1], 16);
-  const low = Number.parseInt(hexMatch[2], 16);
-  if (!Number.isFinite(high) || !Number.isFinite(low) || high > 0xffff || low > 0xffff) return null;
-
-  return [high >> 8, high & 0xff, low >> 8, low & 0xff].join('.');
-}
-
-function isMetadataAddress(address: string): boolean {
-  const normalized = (ipv4MappedToIpv4(address) ?? stripIpv6Brackets(address)).toLowerCase();
-  if (net.isIP(normalized) === 4) return normalized.startsWith('169.254.');
-  return normalized === 'fd00:ec2::254';
-}
-
-async function isSafeAiBaseUrl(baseUrl: string): Promise<boolean> {
-  let url: URL;
-  try {
-    url = new URL(baseUrl);
-  } catch {
-    return false;
-  }
-
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
-
-  const hostname = url.hostname.toLowerCase();
-  const dnsName = hostname.endsWith('.') ? hostname.slice(0, -1) : hostname;
-  if (dnsName === 'metadata.google.internal') return false;
-  if (isMetadataAddress(hostname)) return false;
-
-  if (net.isIP(stripIpv6Brackets(hostname)) !== 0) return true;
-
-  try {
-    const results = await lookup(dnsName, { all: true, verbatim: true });
-    return !results.some((result) => isMetadataAddress(result.address));
-  } catch {
-    return false;
-  }
-}
-
 export async function requestAiModelList(baseUrl: string, apiKey: string): Promise<string[]> {
-  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
-  if (!(await isSafeAiBaseUrl(normalizedBaseUrl))) throw new Error('AI model list unavailable');
-
-  const response = await fetch(`${normalizedBaseUrl}/models`, {
+  const upstream = await fetchSafeAiProvider(baseUrl, '/models', {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -187,13 +130,20 @@ export async function requestAiModelList(baseUrl: string, apiKey: string): Promi
     redirect: 'manual',
     signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
   });
-  if (!response.ok) throw new Error('AI model list unavailable');
+  if (!upstream?.response.ok) {
+    if (upstream) await closeUnreadSafeAiResponse(upstream);
+    throw new Error('AI model list unavailable');
+  }
 
-  const data = await response.json() as OpenAiModelsResponse;
-  const models = (data.data ?? [])
-    .map((item) => (typeof item.id === 'string' ? item.id.trim() : ''))
-    .filter((id) => id.length > 0);
-  return Array.from(new Set(models)).sort((a, b) => a.localeCompare(b));
+  try {
+    const data = await upstream.response.json() as OpenAiModelsResponse;
+    const models = (data.data ?? [])
+      .map((item) => (typeof item.id === 'string' ? item.id.trim() : ''))
+      .filter((id) => id.length > 0);
+    return Array.from(new Set(models)).sort((a, b) => a.localeCompare(b));
+  } finally {
+    await upstream.close();
+  }
 }
 
 export async function requestAiSuggestion(
@@ -201,10 +151,9 @@ export async function requestAiSuggestion(
   input: AiSuggestionRequestDto,
 ): Promise<AiSuggestionResponseDto> {
   if (!config) return none('No active AI config');
-  if (!(await isSafeAiBaseUrl(config.base_url))) return none('AI suggestion unavailable');
 
   try {
-    const response = await fetch(`${config.base_url.replace(/\/+$/, '')}/chat/completions`, {
+    const upstream = await fetchSafeAiProvider(config.base_url, '/chat/completions', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -223,11 +172,19 @@ export async function requestAiSuggestion(
       signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
     });
 
-    if (!response.ok) return none('AI suggestion unavailable');
-    const data = await response.json() as OpenAiChatResponse;
-    const content = data.choices?.[0]?.message?.content;
-    if (typeof content !== 'string') return none('AI suggestion empty');
-    return parseSuggestionContent(content);
+    if (!upstream?.response.ok) {
+      if (upstream) await closeUnreadSafeAiResponse(upstream);
+      return none('AI suggestion unavailable');
+    }
+
+    try {
+      const data = await upstream.response.json() as OpenAiChatResponse;
+      const content = data.choices?.[0]?.message?.content;
+      if (typeof content !== 'string') return none('AI suggestion empty');
+      return parseSuggestionContent(content);
+    } finally {
+      await upstream.close();
+    }
   } catch {
     return none('AI suggestion unavailable');
   }
@@ -238,10 +195,9 @@ export async function requestAiSpellingCheck(
   input: AiSpellingCheckRequestDto,
 ): Promise<AiSpellingCheckResponseDto> {
   if (!config) return spellingNone('No active AI config');
-  if (!(await isSafeAiBaseUrl(config.base_url))) return spellingNone('AI spelling check unavailable');
 
   try {
-    const response = await fetch(`${config.base_url.replace(/\/+$/, '')}/chat/completions`, {
+    const upstream = await fetchSafeAiProvider(config.base_url, '/chat/completions', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -260,11 +216,19 @@ export async function requestAiSpellingCheck(
       signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
     });
 
-    if (!response.ok) return spellingNone('AI spelling check unavailable');
-    const data = await response.json() as OpenAiChatResponse;
-    const content = data.choices?.[0]?.message?.content;
-    if (typeof content !== 'string') return spellingNone('AI spelling check empty');
-    return parseSpellingContent(content, input.target_word);
+    if (!upstream?.response.ok) {
+      if (upstream) await closeUnreadSafeAiResponse(upstream);
+      return spellingNone('AI spelling check unavailable');
+    }
+
+    try {
+      const data = await upstream.response.json() as OpenAiChatResponse;
+      const content = data.choices?.[0]?.message?.content;
+      if (typeof content !== 'string') return spellingNone('AI spelling check empty');
+      return parseSpellingContent(content, input.target_word);
+    } finally {
+      await upstream.close();
+    }
   } catch {
     return spellingNone('AI spelling check unavailable');
   }

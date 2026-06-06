@@ -2341,3 +2341,61 @@ body {
   font: 750 .78rem ui-sans-serif, system-ui, sans-serif;
   padding: .3rem .65rem;
 }
+
+
+.card-create-transcription {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.card-create-transcription-notice,
+.card-create-transcription-error {
+  margin: 0;
+  color: rgba(23, 32, 51, 0.68);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.card-create-transcription-error {
+  color: #b91c1c;
+}
+
+.card-create-transcribe-button,
+.card-create-transcription-result button {
+  justify-self: start;
+  border: 0;
+  border-radius: 999px;
+  background: #172033;
+  color: #fff7e8;
+  font: 800 0.86rem ui-sans-serif, system-ui, sans-serif;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+}
+
+.card-create-transcribe-button:disabled,
+.card-create-transcription-result button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.card-create-transcription-result {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.card-create-transcription-result label {
+  font: 800 0.85rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.card-create-transcription-result textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(23, 32, 51, 0.16);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+  color: #172033;
+  font: 500 0.95rem/1.5 ui-sans-serif, system-ui, sans-serif;
+  padding: 0.85rem;
+  resize: vertical;
+}
