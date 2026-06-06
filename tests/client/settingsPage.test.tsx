@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { I18nProvider } from '../../src/client/i18n/I18nProvider';
 import { SettingsPage } from '../../src/client/pages/SettingsPage';
+import { NATIVE_LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '../../src/shared/constants';
 import type {
   ImportConflictDto,
   ImportExecuteResponseDto,
@@ -148,14 +149,16 @@ describe('SettingsPage', () => {
       expect(input.value).toBe('20');
     });
 
-    it('renders the common 8 language options for each language selector', async () => {
+    it('renders native labels while preserving canonical language values', async () => {
       render(<SettingsPage />);
       await screen.findByLabelText('界面语言');
 
-      const expected = ['中文', '英语', '日语', '韩语', '法语', '德语', '西班牙语', '俄语'];
       for (const label of ['界面语言', '默认学习语言', '默认释义语言']) {
         const select = screen.getByLabelText(label) as HTMLSelectElement;
-        expect(Array.from(select.options).map((option) => option.value)).toEqual(expected);
+        expect(Array.from(select.options).map((option) => option.value)).toEqual([...SUPPORTED_LANGUAGES]);
+        expect(Array.from(select.options).map((option) => option.textContent)).toEqual(
+          SUPPORTED_LANGUAGES.map((language) => NATIVE_LANGUAGE_LABELS[language]),
+        );
       }
     });
 

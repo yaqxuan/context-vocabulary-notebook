@@ -63,6 +63,8 @@ describe('Phase 6 pages', () => {
     render(<I18nProvider><CardCatalogue title="词义条目" subtitle="管理所有词义" cards={cards} total={1} loading={false} error={null} tags={tags} filters={filters} emptyMessage="还没有词义条目" filteredEmptyMessage="没有匹配的词义条目" onFiltersChange={onFiltersChange} onRetry={onRetry} onToggleStatus={onToggleStatus} onToggleFavorite={onToggleFavorite} /></I18nProvider>);
 
     expect(screen.getByText('charge')).toBeInTheDocument();
+    expect(screen.getByText('English → 中文')).toBeInTheDocument();
+    expect(screen.queryByText('英语 → 中文')).not.toBeInTheDocument();
     expect(screen.getByText('收费')).toBeInTheDocument();
     expect(screen.getByText('The hotel charges $100 per night.')).toBeInTheDocument();
     expect(screen.getAllByText('美剧').length).toBeGreaterThan(0);

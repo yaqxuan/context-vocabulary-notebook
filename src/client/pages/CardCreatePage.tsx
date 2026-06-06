@@ -15,6 +15,7 @@ import {
   MEDIA_SIZE_LIMIT_MESSAGES,
   MEDIA_SIZE_LIMITS_BYTES,
   SUPPORTED_LANGUAGES,
+  getNativeLanguageLabel,
   normalizeSupportedLanguage,
   type SupportedLanguage,
 } from '../../shared/constants';
@@ -173,7 +174,7 @@ export function CardCreatePage() {
     let active = true;
     setSuggestionState('loading');
     const timer = window.setTimeout(() => {
-      getCardSuggestions(trimmed)
+      getCardSuggestions(trimmed, targetLanguage)
         .then((items) => {
           if (!active) return;
           setSuggestions(items);
@@ -190,7 +191,7 @@ export function CardCreatePage() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [targetWord, explicitCardId]);
+  }, [targetWord, targetLanguage, explicitCardId]);
 
   // Load AI suggestions when both target word and sentence are present
   useEffect(() => {
@@ -520,7 +521,7 @@ export function CardCreatePage() {
                 onChange={(e) => setTargetLanguage(e.target.value as SupportedLanguage)}
               >
                 {SUPPORTED_LANGUAGES.map((language) => (
-                  <option key={language} value={language}>{language}</option>
+                  <option key={language} value={language}>{getNativeLanguageLabel(language)}</option>
                 ))}
               </select>
             </label>
@@ -533,7 +534,7 @@ export function CardCreatePage() {
                 onChange={(e) => setDefinitionLanguage(e.target.value as SupportedLanguage)}
               >
                 {SUPPORTED_LANGUAGES.map((language) => (
-                  <option key={language} value={language}>{language}</option>
+                  <option key={language} value={language}>{getNativeLanguageLabel(language)}</option>
                 ))}
               </select>
             </label>

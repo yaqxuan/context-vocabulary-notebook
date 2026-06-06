@@ -29,6 +29,7 @@ afterEach(() => {
   db.prepare('DELETE FROM context_examples').run();
   db.prepare('DELETE FROM word_sense_cards').run();
   db.prepare('DELETE FROM tags').run();
+  db.prepare("UPDATE user_settings SET interface_language = 'zh-CN', default_target_language = '英语', default_definition_language = '中文', daily_review_limit = 20 WHERE id = 1").run();
 });
 
 describe('createCard (domain)', () => {
@@ -162,6 +163,16 @@ describe('listCards (domain)', () => {
     const result = listCards(db, { is_favorite: true });
     expect(result.items.length).toBe(1);
     expect(result.items[0]!.target_word).toBe('beta');
+  });
+
+  it('filters by target_language', () => {
+    const english = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    const result = listCards(db, { target_language: '英语' });
+
+    expect(result.total).toBe(1);
+    expect(result.items.map((card) => card.id)).toEqual([english.id]);
   });
 
   it('searches by target_word', () => {
@@ -298,6 +309,37 @@ describe('GET /api/cards', () => {
     expect(res.body.items[0].target_word).toBe('charge');
   });
 
+  it('defaults to the configured default target language', async () => {
+    db.prepare("UPDATE user_settings SET default_target_language = '日语' WHERE id = 1").run();
+    createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    const japanese = createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    const res = await request(app).get('/api/cards');
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items.map((card: { id: string }) => card.id)).toEqual([japanese.id]);
+  });
+
+  it('allows target_language to override the settings default', async () => {
+    db.prepare("UPDATE user_settings SET default_target_language = '日语' WHERE id = 1").run();
+    const english = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    const res = await request(app).get('/api/cards').query({ target_language: '英语' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items.map((card: { id: string }) => card.id)).toEqual([english.id]);
+  });
+
+  it('rejects unsupported target_language values', async () => {
+    const res = await request(app).get('/api/cards').query({ target_language: 'Klingon' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('target_language must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语');
+  });
+
   it('rejects invalid page_size with 400', async () => {
     const res = await request(app).get('/api/cards?page_size=99');
     expect(res.status).toBe(400);
@@ -373,6 +415,35 @@ describe('GET /api/cards/suggestions', () => {
     const meanings = res.body.map((c: { context_meaning: string }) => c.context_meaning);
     expect(meanings).toContain('收费');
     expect(meanings).toContain('指控');
+  });
+
+  it('scopes suggestions to the configured default target language', async () => {
+    db.prepare("UPDATE user_settings SET default_target_language = '日语' WHERE id = 1").run();
+    createCard(db, { target_word: 'charge', context_meaning: 'fee', target_language: '英语', definition_language: '中文' });
+    const japanese = createCard(db, { target_word: 'charge', context_meaning: '担当', target_language: '日语', definition_language: '中文' });
+
+    const res = await request(app).get('/api/cards/suggestions').query({ target_word: 'charge' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.map((item: { id: string }) => item.id)).toEqual([japanese.id]);
+  });
+
+  it('allows suggestions target_language to override the settings default', async () => {
+    db.prepare("UPDATE user_settings SET default_target_language = '日语' WHERE id = 1").run();
+    const english = createCard(db, { target_word: 'charge', context_meaning: 'fee', target_language: '英语', definition_language: '中文' });
+    createCard(db, { target_word: 'charge', context_meaning: '担当', target_language: '日语', definition_language: '中文' });
+
+    const res = await request(app).get('/api/cards/suggestions').query({ target_word: 'charge', target_language: '英语' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.map((item: { id: string }) => item.id)).toEqual([english.id]);
+  });
+
+  it('rejects unsupported suggestions target_language values', async () => {
+    const res = await request(app).get('/api/cards/suggestions').query({ target_word: 'charge', target_language: 'Klingon' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('target_language must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语');
   });
 
   it('returns 400 when target_word is missing', async () => {

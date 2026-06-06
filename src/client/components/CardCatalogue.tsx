@@ -1,4 +1,4 @@
-import type { CardStatus, PageSize } from '../../shared/constants';
+import { getNativeLanguageLabel, normalizeSupportedLanguage, type CardStatus, type PageSize } from '../../shared/constants';
 import type { CardSummaryDto, TagDto } from '../../shared/types';
 import { Pagination } from './Pagination';
 import { useI18n } from '../i18n/I18nProvider';
@@ -34,6 +34,11 @@ function favoriteParam(value: CardCatalogueFilters['favorite']): boolean | undef
   if (value === 'true') return true;
   if (value === 'false') return false;
   return undefined;
+}
+
+function languageLabel(value: string): string {
+  const language = normalizeSupportedLanguage(value);
+  return language ? getNativeLanguageLabel(language) : value;
 }
 
 export function hasActiveFilters(filters: CardCatalogueFilters): boolean {
@@ -146,7 +151,7 @@ export function CardCatalogue(props: CardCatalogueProps) {
           <div className="phase6-card-list">
             {cards.map((card) => (
               <article className="phase6-word-card" key={card.id}>
-                <div className="phase6-word"><strong>{card.target_word}</strong><span>{card.target_language} → {card.definition_language}</span></div>
+                <div className="phase6-word"><strong>{card.target_word}</strong><span>{languageLabel(card.target_language)} → {languageLabel(card.definition_language)}</span></div>
                 <div className="phase6-card-main">
                   <h3>{card.context_meaning}</h3>
                   <p>{sentenceFor(card)}</p>

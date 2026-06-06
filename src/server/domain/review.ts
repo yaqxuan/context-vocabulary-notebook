@@ -44,6 +44,10 @@ export interface DailyReviewProgress {
   is_limit_reached: boolean;
 }
 
+export interface ReviewScopeOptions {
+  target_language?: string;
+}
+
 export interface SubmitReviewResult {
   card_id: string;
   rating: ReviewRating;
@@ -60,10 +64,24 @@ function startOfLocalDayIso(now: Date): string {
   return start.toISOString();
 }
 
-export function getDueQueue(db: Database): DueCardRow[] {
+export function getDueQueue(db: Database, options: ReviewScopeOptions = {}): DueCardRow[] {
   const nowDate = new Date();
   const now = nowDate.toISOString();
   const todayStart = startOfLocalDayIso(nowDate);
+  const conditions: string[] = [
+    "wsc.status = 'reviewing'",
+    'wsc.deleted_at IS NULL',
+    `(
+        fs.due_date <= ?
+        OR (fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ?)
+      )`,
+  ];
+  const params: unknown[] = [now, todayStart];
+
+  if (options.target_language) {
+    conditions.push('wsc.target_language = ?');
+    params.push(options.target_language);
+  }
 
   return db.prepare(`
     SELECT
@@ -98,29 +116,35 @@ export function getDueQueue(db: Database): DueCardRow[] {
       ) AS primary_sentence
     FROM word_sense_cards wsc
     JOIN fsrs_states fs ON fs.card_id = wsc.id
-    WHERE wsc.status = 'reviewing'
-      AND wsc.deleted_at IS NULL
-      AND (
-        fs.due_date <= ?
-        OR (fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ?)
-      )
+    WHERE ${conditions.join(' AND ')}
     ORDER BY
       CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN 1 ELSE 0 END ASC,
       CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN fs.same_day_retry_at ELSE fs.due_date END ASC,
       wsc.created_at ASC,
       wsc.id ASC
-  `).all(now, todayStart, todayStart, todayStart) as DueCardRow[];
+  `).all(...params, todayStart, todayStart) as DueCardRow[];
 }
 
-export function getNextDueCard(db: Database): DueCardRow | null {
-  return getDueQueue(db)[0] ?? null;
+export function getNextDueCard(db: Database, options: ReviewScopeOptions = {}): DueCardRow | null {
+  return getDueQueue(db, options)[0] ?? null;
 }
 
-export function getDailyReviewProgress(db: Database, now = new Date()): DailyReviewProgress {
+export function getDailyReviewProgress(db: Database, now = new Date(), options: ReviewScopeOptions = {}): DailyReviewProgress {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
+  const conditions: string[] = [
+    'wsc.deleted_at IS NULL',
+    'rl.reviewed_at >= ?',
+    'rl.reviewed_at < ?',
+  ];
+  const params: unknown[] = [start.toISOString(), end.toISOString()];
+
+  if (options.target_language) {
+    conditions.push('wsc.target_language = ?');
+    params.push(options.target_language);
+  }
 
   const counts = db.prepare(`
     SELECT
@@ -129,10 +153,8 @@ export function getDailyReviewProgress(db: Database, now = new Date()): DailyRev
       SUM(CASE WHEN rl.rating = 'good' THEN 1 ELSE 0 END) AS good_count
     FROM review_logs rl
     JOIN word_sense_cards wsc ON wsc.id = rl.card_id
-    WHERE wsc.deleted_at IS NULL
-      AND rl.reviewed_at >= ?
-      AND rl.reviewed_at < ?
-  `).get(start.toISOString(), end.toISOString()) as { reviewed_count: number; again_count: number | null; good_count: number | null };
+    WHERE ${conditions.join(' AND ')}
+  `).get(...params) as { reviewed_count: number; again_count: number | null; good_count: number | null };
 
   const settings = getSettings(db);
   const reviewedCount = counts.reviewed_count;
@@ -146,17 +168,17 @@ export function getDailyReviewProgress(db: Database, now = new Date()): DailyRev
   };
 }
 
-export function submitReview(db: Database, cardId: string, rating: ReviewRating, reviewedAt = new Date()): SubmitReviewResult | undefined {
+export function submitReview(db: Database, cardId: string, rating: ReviewRating, reviewedAt = new Date(), options: ReviewScopeOptions = {}): SubmitReviewResult | undefined {
   const reviewedAtIso = reviewedAt.toISOString();
   const grade = rating === 'again' ? Rating.Again : Rating.Good;
 
   const transaction = db.transaction(() => {
     const fsrsBefore = db.prepare(`
-      SELECT fs.*
+      SELECT fs.*, wsc.target_language
       FROM fsrs_states fs
       JOIN word_sense_cards wsc ON wsc.id = fs.card_id
       WHERE fs.card_id = ? AND wsc.deleted_at IS NULL AND wsc.status = 'reviewing'
-    `).get(cardId) as FsrsStateRow | undefined;
+    `).get(cardId) as (FsrsStateRow & { target_language: string }) | undefined;
 
     if (!fsrsBefore) return undefined;
 
@@ -222,7 +244,7 @@ export function submitReview(db: Database, cardId: string, rating: ReviewRating,
       due_date_before: fsrsBefore.due_date,
       due_date_after: dueDateAfter,
       fsrs: fsrsAfter,
-      progress: getDailyReviewProgress(db, reviewedAt),
+      progress: getDailyReviewProgress(db, reviewedAt, { target_language: options.target_language ?? fsrsBefore.target_language }),
     };
   });
 

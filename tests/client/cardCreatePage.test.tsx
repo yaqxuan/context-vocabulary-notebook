@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { I18nProvider } from '../../src/client/i18n/I18nProvider';
 import { CardCreatePage } from '../../src/client/pages/CardCreatePage';
-import { MEDIA_SIZE_LIMITS_BYTES } from '../../src/shared/constants';
+import { MEDIA_SIZE_LIMITS_BYTES, NATIVE_LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '../../src/shared/constants';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -77,6 +77,12 @@ describe('CardCreatePage', () => {
     expect(screen.getByLabelText('目标单词')).toHaveAttribute('placeholder', '例如：charge');
     expect(screen.getByLabelText('学习语言')).toHaveValue('英语');
     expect(screen.getByLabelText('释义语言')).toHaveValue('中文');
+    for (const label of ['学习语言', '释义语言']) {
+      const select = screen.getByLabelText(label) as HTMLSelectElement;
+      expect(Array.from(select.options).map((option) => option.textContent)).toEqual(
+        SUPPORTED_LANGUAGES.map((language) => NATIVE_LANGUAGE_LABELS[language]),
+      );
+    }
     expect(screen.getByText('本地视频 mp4')).toBeInTheDocument();
     expect(screen.getByText('推荐')).toBeInTheDocument();
     expect(screen.queryByLabelText(/视频网址/)).not.toBeInTheDocument();
@@ -829,7 +835,7 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
-      if (url === '/api/cards/suggestions?target_word=charge') return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
+      if (url.startsWith('/api/cards/suggestions?target_word=charge')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
@@ -860,7 +866,7 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
-      if (url === '/api/cards/suggestions?target_word=charge') return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
+      if (url.startsWith('/api/cards/suggestions?target_word=charge')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
       if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ok: true }));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
@@ -904,7 +910,7 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
-      if (url === '/api/cards/suggestions?target_word=charge') return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
+      if (url.startsWith('/api/cards/suggestions?target_word=charge')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
       if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ok: true }));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));

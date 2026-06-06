@@ -20,9 +20,9 @@ describe('HomePage', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows bilingual greeting, actions, and metric values without removed helper modules', async () => {
+  it('shows bilingual greeting, selected languages, actions, and metric values without removed helper modules', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
-      if (String(input) === '/api/settings') return Promise.resolve(new Response(JSON.stringify({ interface_language: '中文' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      if (String(input) === '/api/settings') return Promise.resolve(new Response(JSON.stringify({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
       return Promise.resolve(new Response(JSON.stringify({
         due_count: 3,
         reviewed_today_count: 5,
@@ -37,6 +37,10 @@ describe('HomePage', () => {
 
     expect(screen.getByText('加载中...')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: '欢迎回来' })).toBeInTheDocument();
+    expect(screen.getByText('学习语言')).toBeInTheDocument();
+    expect(screen.getByText('English')).toBeInTheDocument();
+    expect(screen.getByText('释义语言')).toBeInTheDocument();
+    expect(screen.getByText('中文')).toBeInTheDocument();
     expect(screen.getByText('阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。')).toBeInTheDocument();
     expect(screen.getByText('Sunlight is like a peeled orange, falling segment by segment onto your vocabulary notebook. Each segment hides a new word.')).toBeInTheDocument();
     expect(document.querySelector('.home-content-stack')).toContainElement(screen.getByLabelText('首页统计'));

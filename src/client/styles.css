@@ -223,6 +223,31 @@ body {
   margin-top: 1.125rem;
 }
 
+.home-greeting-languages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.home-greeting-language {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.7rem;
+  border: 1px solid rgba(23, 32, 51, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.54);
+  color: rgba(23, 32, 51, 0.7);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+.home-greeting-language strong {
+  color: #172033;
+  font-weight: 700;
+}
+
 .home-greeting {
   margin: 0;
   color: rgba(23, 32, 51, 0.72);

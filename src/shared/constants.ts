@@ -51,6 +51,21 @@ export type ReviewRating = (typeof REVIEW_RATINGS)[number];
 export const SUPPORTED_LANGUAGES = ['中文', '英语', '日语', '韩语', '法语', '德语', '西班牙语', '俄语'] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
+export const NATIVE_LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
+  中文: '中文',
+  英语: 'English',
+  日语: '日本語',
+  韩语: '한국어',
+  法语: 'Français',
+  德语: 'Deutsch',
+  西班牙语: 'Español',
+  俄语: 'Русский',
+};
+
+export function getNativeLanguageLabel(language: SupportedLanguage): string {
+  return NATIVE_LANGUAGE_LABELS[language];
+}
+
 export const DEFAULT_INTERFACE_LANGUAGE: SupportedLanguage = '中文';
 export const DEFAULT_TARGET_LANGUAGE: SupportedLanguage = '英语';
 export const DEFAULT_DEFINITION_LANGUAGE: SupportedLanguage = '中文';

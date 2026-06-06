@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createAiConfig, deleteAiConfig, listAiConfigs, patchAiConfig, setActiveAiConfig } from '../../src/client/api/aiConfigs';
 import { getAiSuggestion } from '../../src/client/api/aiSuggestions';
-import { listCards } from '../../src/client/api/cards';
+import { getCardSuggestions, listCards } from '../../src/client/api/cards';
 import { ApiError, apiBlob, apiFormData, apiRequest, buildQuery } from '../../src/client/api/client';
 import { executeImport, exportCards } from '../../src/client/api/importExport';
 import { getHomeStatistics } from '../../src/client/api/statistics';
@@ -126,9 +126,22 @@ describe('endpoint modules', () => {
       }),
     );
 
-    await listCards({ search: 'charge', page: 1, page_size: 20, favorite: true });
+    await listCards({ search: 'charge', page: 1, page_size: 20, favorite: true, target_language: '日语' });
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/cards?search=charge&page=1&page_size=20&favorite=true', expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith('/api/cards?search=charge&page=1&page_size=20&favorite=true&target_language=%E6%97%A5%E8%AF%AD', expect.any(Object));
+  });
+
+  it('requests card suggestions with target language scope', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await getCardSuggestions('charge', '日语');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/cards/suggestions?target_word=charge&target_language=%E6%97%A5%E8%AF%AD', expect.any(Object));
   });
 
   it('requests home statistics', async () => {

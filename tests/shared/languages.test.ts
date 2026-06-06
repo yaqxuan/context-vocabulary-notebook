@@ -4,7 +4,9 @@ import {
   DEFAULT_DEFINITION_LANGUAGE,
   DEFAULT_INTERFACE_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
+  NATIVE_LANGUAGE_LABELS,
   SUPPORTED_LANGUAGES,
+  getNativeLanguageLabel,
   normalizeSupportedLanguage,
 } from '../../src/shared/constants.js';
 import { isSupportedLanguage } from '../../src/shared/validators.js';
@@ -15,6 +17,21 @@ describe('shared language helpers', () => {
     expect(DEFAULT_INTERFACE_LANGUAGE).toBe('中文');
     expect(DEFAULT_TARGET_LANGUAGE).toBe('英语');
     expect(DEFAULT_DEFINITION_LANGUAGE).toBe('中文');
+  });
+
+  it('renders language selector labels in each language native name', () => {
+    expect(NATIVE_LANGUAGE_LABELS).toEqual({
+      中文: '中文',
+      英语: 'English',
+      日语: '日本語',
+      韩语: '한국어',
+      法语: 'Français',
+      德语: 'Deutsch',
+      西班牙语: 'Español',
+      俄语: 'Русский',
+    });
+    expect(getNativeLanguageLabel('英语')).toBe('English');
+    expect(getNativeLanguageLabel('韩语')).toBe('한국어');
   });
 
   it('normalizes legacy aliases to supported display values', () => {

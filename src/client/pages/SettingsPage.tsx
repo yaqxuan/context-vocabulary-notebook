@@ -5,6 +5,7 @@ import {
   DEFAULT_INTERFACE_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   SUPPORTED_LANGUAGES,
+  getNativeLanguageLabel,
   normalizeSupportedLanguage,
   type SupportedLanguage,
 } from '../../shared/constants';
@@ -58,7 +59,7 @@ function LanguageSelect({ id, value, onChange }: LanguageSelectProps) {
       onChange={(e) => onChange(e.target.value as SupportedLanguage)}
     >
       {SUPPORTED_LANGUAGES.map((language) => (
-        <option key={language} value={language}>{language}</option>
+        <option key={language} value={language}>{getNativeLanguageLabel(language)}</option>
       ))}
     </select>
   );
