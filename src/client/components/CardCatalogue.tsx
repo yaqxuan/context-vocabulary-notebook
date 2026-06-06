@@ -155,7 +155,7 @@ export function CardCatalogue(props: CardCatalogueProps) {
                 <div className="phase6-card-actions">
                   <span>{card.status === 'reviewing' ? t('status.reviewing') : t('status.mastered')}</span>
                   {card.is_favorite ? <span>★ {t('catalogue.addFavorite')}</span> : <span>{t('catalogue.notFavorite')}</span>}
-                  <span>{card.context_count} 条语境</span>
+                  <span>{t('catalogue.contextCount', { count: card.context_count })}</span>
                   <button type="button" onClick={() => onToggleStatus(card)}>{nextStatusLabel(card)}</button>
                   <button type="button" onClick={() => onToggleFavorite(card)}>{card.is_favorite ? t('catalogue.removeFavorite') : t('catalogue.addFavorite')}</button>
                   <a href={`#/cards/${card.id}`}>{t('catalogue.viewDetail')}</a>

@@ -100,7 +100,8 @@ export const zh = {
     "allFavorite": "全部",
     "onlyFavorite": "仅收藏",
     "itemUnit": " 个词义条目",
-    "viewDetail": "查看详情"
+    "viewDetail": "查看详情",
+    "contextCount": "{count} 条语境"
   },
   "tags": {
     "title": "标签",
@@ -266,7 +267,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "allFavorite": "All",
     "onlyFavorite": "Only favorites",
     "itemUnit": " items",
-    "viewDetail": "View detail"
+    "viewDetail": "View detail",
+    "contextCount": "{count} contexts"
   },
   "tags": {
     "title": "Tags",
@@ -429,7 +431,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "allFavorite": "全部",
     "onlyFavorite": "仅收藏",
     "itemUnit": " 个词义条目",
-    "viewDetail": "查看详情"
+    "viewDetail": "查看详情",
+    "contextCount": "{count} 条语境"
   },
   "tags": {
     "title": "标签",
@@ -592,7 +595,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "allFavorite": "全部",
     "onlyFavorite": "仅收藏",
     "itemUnit": " 个词义条目",
-    "viewDetail": "查看详情"
+    "viewDetail": "查看详情",
+    "contextCount": "{count} 条语境"
   },
   "tags": {
     "title": "标签",
@@ -755,7 +759,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "allFavorite": "全部",
     "onlyFavorite": "仅收藏",
     "itemUnit": " 个词义条目",
-    "viewDetail": "查看详情"
+    "viewDetail": "查看详情",
+    "contextCount": "{count} 条语境"
   },
   "tags": {
     "title": "标签",
@@ -918,7 +923,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "allFavorite": "全部",
     "onlyFavorite": "仅收藏",
     "itemUnit": " 个词义条目",
-    "viewDetail": "查看详情"
+    "viewDetail": "查看详情",
+    "contextCount": "{count} 条语境"
   },
   "tags": {
     "title": "标签",
@@ -1081,7 +1087,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "allFavorite": "全部",
     "onlyFavorite": "仅收藏",
     "itemUnit": " 个词义条目",
-    "viewDetail": "查看详情"
+    "viewDetail": "查看详情",
+    "contextCount": "{count} 条语境"
   },
   "tags": {
     "title": "标签",
@@ -1244,7 +1251,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "allFavorite": "全部",
     "onlyFavorite": "仅收藏",
     "itemUnit": " 个词义条目",
-    "viewDetail": "查看详情"
+    "viewDetail": "查看详情",
+    "contextCount": "{count} 条语境"
   },
   "tags": {
     "title": "标签",
