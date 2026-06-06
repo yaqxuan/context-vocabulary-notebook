@@ -117,6 +117,7 @@ export const zh = {
     "createAction": "新增并选中标签"
   },
   "settings": {
+    "loadFailed": "无法加载设置",
     "learning": {
       "title": "学习与界面设置",
       "interfaceLanguage": "界面语言",
@@ -143,6 +144,11 @@ export const zh = {
       "apiKey": "API Key",
       "fetchModels": "获取模型列表",
       "fetching": "获取中…",
+      "fetchModelsFailed": "模型列表获取失败",
+      "noModels": "未获取到模型",
+      "saveFailed": "AI 配置保存失败",
+      "activateFailed": "AI 配置启用失败",
+      "deleteFailed": "AI 配置删除失败",
       "model": "模型",
       "makeActive": "保存后立即启用",
       "save": "保存 AI 配置",
@@ -161,6 +167,8 @@ export const zh = {
       "fileSelect": "选择导入 zip",
       "scan": "扫描导入文件",
       "execute": "执行导入",
+      "scanFailed": "扫描失败",
+      "executeFailed": "导入失败",
       "cards": "卡片",
       "contexts": "语境",
       "media": "媒体文件",
@@ -323,6 +331,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "createAction": "Create and select tag"
   },
   "settings": {
+    "loadFailed": "无法加载设置",
     "learning": {
       "title": "学习与界面设置",
       "interfaceLanguage": "界面语言",
@@ -349,6 +358,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "apiKey": "API Key",
       "fetchModels": "获取模型列表",
       "fetching": "获取中…",
+      "fetchModelsFailed": "模型列表获取失败",
+      "noModels": "未获取到模型",
+      "saveFailed": "AI 配置保存失败",
+      "activateFailed": "AI 配置启用失败",
+      "deleteFailed": "AI 配置删除失败",
       "model": "模型",
       "makeActive": "保存后立即启用",
       "save": "保存 AI 配置",
@@ -367,6 +381,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "fileSelect": "选择导入 zip",
       "scan": "扫描导入文件",
       "execute": "执行导入",
+      "scanFailed": "扫描失败",
+      "executeFailed": "导入失败",
       "cards": "卡片",
       "contexts": "语境",
       "media": "媒体文件",
@@ -526,6 +542,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "createAction": "新增并选中标签"
   },
   "settings": {
+    "loadFailed": "无法加载设置",
     "learning": {
       "title": "学习与界面设置",
       "interfaceLanguage": "界面语言",
@@ -552,6 +569,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "apiKey": "API Key",
       "fetchModels": "获取模型列表",
       "fetching": "获取中…",
+      "fetchModelsFailed": "模型列表获取失败",
+      "noModels": "未获取到模型",
+      "saveFailed": "AI 配置保存失败",
+      "activateFailed": "AI 配置启用失败",
+      "deleteFailed": "AI 配置删除失败",
       "model": "模型",
       "makeActive": "保存后立即启用",
       "save": "保存 AI 配置",
@@ -570,6 +592,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "fileSelect": "选择导入 zip",
       "scan": "扫描导入文件",
       "execute": "执行导入",
+      "scanFailed": "扫描失败",
+      "executeFailed": "导入失败",
       "cards": "卡片",
       "contexts": "语境",
       "media": "媒体文件",
@@ -729,6 +753,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "createAction": "新增并选中标签"
   },
   "settings": {
+    "loadFailed": "无法加载设置",
     "learning": {
       "title": "学习与界面设置",
       "interfaceLanguage": "界面语言",
@@ -755,6 +780,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "apiKey": "API Key",
       "fetchModels": "获取模型列表",
       "fetching": "获取中…",
+      "fetchModelsFailed": "模型列表获取失败",
+      "noModels": "未获取到模型",
+      "saveFailed": "AI 配置保存失败",
+      "activateFailed": "AI 配置启用失败",
+      "deleteFailed": "AI 配置删除失败",
       "model": "模型",
       "makeActive": "保存后立即启用",
       "save": "保存 AI 配置",
@@ -773,6 +803,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "fileSelect": "选择导入 zip",
       "scan": "扫描导入文件",
       "execute": "执行导入",
+      "scanFailed": "扫描失败",
+      "executeFailed": "导入失败",
       "cards": "卡片",
       "contexts": "语境",
       "media": "媒体文件",
@@ -932,6 +964,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "createAction": "新增并选中标签"
   },
   "settings": {
+    "loadFailed": "无法加载设置",
     "learning": {
       "title": "学习与界面设置",
       "interfaceLanguage": "Langue de l’interface",
@@ -958,6 +991,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "apiKey": "API Key",
       "fetchModels": "获取模型列表",
       "fetching": "获取中…",
+      "fetchModelsFailed": "模型列表获取失败",
+      "noModels": "未获取到模型",
+      "saveFailed": "AI 配置保存失败",
+      "activateFailed": "AI 配置启用失败",
+      "deleteFailed": "AI 配置删除失败",
       "model": "模型",
       "makeActive": "保存后立即启用",
       "save": "保存 AI 配置",
@@ -976,6 +1014,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "fileSelect": "选择导入 zip",
       "scan": "扫描导入文件",
       "execute": "执行导入",
+      "scanFailed": "扫描失败",
+      "executeFailed": "导入失败",
       "cards": "卡片",
       "contexts": "语境",
       "media": "媒体文件",
@@ -1135,6 +1175,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "createAction": "新增并选中标签"
   },
   "settings": {
+    "loadFailed": "无法加载设置",
     "learning": {
       "title": "学习与界面设置",
       "interfaceLanguage": "界面语言",
@@ -1161,6 +1202,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "apiKey": "API Key",
       "fetchModels": "获取模型列表",
       "fetching": "获取中…",
+      "fetchModelsFailed": "模型列表获取失败",
+      "noModels": "未获取到模型",
+      "saveFailed": "AI 配置保存失败",
+      "activateFailed": "AI 配置启用失败",
+      "deleteFailed": "AI 配置删除失败",
       "model": "模型",
       "makeActive": "保存后立即启用",
       "save": "保存 AI 配置",
@@ -1179,6 +1225,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "fileSelect": "选择导入 zip",
       "scan": "扫描导入文件",
       "execute": "执行导入",
+      "scanFailed": "扫描失败",
+      "executeFailed": "导入失败",
       "cards": "卡片",
       "contexts": "语境",
       "media": "媒体文件",
@@ -1338,6 +1386,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "createAction": "新增并选中标签"
   },
   "settings": {
+    "loadFailed": "无法加载设置",
     "learning": {
       "title": "学习与界面设置",
       "interfaceLanguage": "界面语言",
@@ -1364,6 +1413,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "apiKey": "API Key",
       "fetchModels": "获取模型列表",
       "fetching": "获取中…",
+      "fetchModelsFailed": "模型列表获取失败",
+      "noModels": "未获取到模型",
+      "saveFailed": "AI 配置保存失败",
+      "activateFailed": "AI 配置启用失败",
+      "deleteFailed": "AI 配置删除失败",
       "model": "模型",
       "makeActive": "保存后立即启用",
       "save": "保存 AI 配置",
@@ -1382,6 +1436,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "fileSelect": "选择导入 zip",
       "scan": "扫描导入文件",
       "execute": "执行导入",
+      "scanFailed": "扫描失败",
+      "executeFailed": "导入失败",
       "cards": "卡片",
       "contexts": "语境",
       "media": "媒体文件",
@@ -1541,6 +1597,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "createAction": "新增并选中标签"
   },
   "settings": {
+    "loadFailed": "无法加载设置",
     "learning": {
       "title": "学习与界面设置",
       "interfaceLanguage": "界面语言",
@@ -1567,6 +1624,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "apiKey": "API Key",
       "fetchModels": "获取模型列表",
       "fetching": "获取中…",
+      "fetchModelsFailed": "模型列表获取失败",
+      "noModels": "未获取到模型",
+      "saveFailed": "AI 配置保存失败",
+      "activateFailed": "AI 配置启用失败",
+      "deleteFailed": "AI 配置删除失败",
       "model": "模型",
       "makeActive": "保存后立即启用",
       "save": "保存 AI 配置",
@@ -1585,6 +1647,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "fileSelect": "选择导入 zip",
       "scan": "扫描导入文件",
       "execute": "执行导入",
+      "scanFailed": "扫描失败",
+      "executeFailed": "导入失败",
       "cards": "卡片",
       "contexts": "语境",
       "media": "媒体文件",

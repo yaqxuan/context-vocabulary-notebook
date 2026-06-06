@@ -201,7 +201,7 @@ function AiConfigSection() {
     try {
       setConfigs(await listAiConfigs());
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('settings.ai.loading').replace('加载中…', '加载失败'));
+      setError(err instanceof Error ? err.message : t('common.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -255,10 +255,10 @@ function AiConfigSection() {
         : await listSavedAiConfigModels(editingConfigId!);
       setModelOptions(result.models);
       if (!model.trim() && result.models[0]) setModel(result.models[0]);
-      if (result.models.length === 0) setError('未获取到模型');
+      if (result.models.length === 0) setError(t('settings.ai.noModels'));
     } catch (err) {
       setModelOptions([]);
-      setError(err instanceof Error ? err.message : '模型列表获取失败');
+      setError(err instanceof Error ? err.message : t('settings.ai.fetchModelsFailed'));
     } finally {
       setFetchingModels(false);
     }
@@ -290,7 +290,7 @@ function AiConfigSection() {
       setSaved(true);
       await loadConfigs();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'AI 配置保存失败');
+      setError(err instanceof Error ? err.message : t('settings.ai.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -303,7 +303,7 @@ function AiConfigSection() {
       await setActiveAiConfig(id);
       await loadConfigs();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'AI 配置启用失败');
+      setError(err instanceof Error ? err.message : t('settings.ai.activateFailed'));
     }
   }
 
@@ -314,7 +314,7 @@ function AiConfigSection() {
       await deleteAiConfig(id);
       await loadConfigs();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'AI 配置删除失败');
+      setError(err instanceof Error ? err.message : t('settings.ai.deleteFailed'));
     }
   }
 
@@ -333,7 +333,7 @@ function AiConfigSection() {
           <div key={config.id} className="ai-config-card ai-config-card--light" data-testid={`ai-config-card-${config.id}`}>
             <div className="ai-config-main">
               <strong className="ai-config-name">{config.name}</strong>
-              <div className="ai-config-meta" aria-label={`${config.name} 配置详情`}>
+              <div className="ai-config-meta" aria-label={config.name}>
                 <span>{config.model}</span>
                 <small>{config.base_url}</small>
                 <small>{config.has_api_key ? t('settings.ai.keySaved') : t('settings.ai.keyNotSaved')}</small>
@@ -413,7 +413,7 @@ function AiConfigSection() {
             placeholder="deepseek-chat"
           />
           {modelOptions.length > 0 && (
-            <div className="ai-model-options" aria-label="模型列表">
+            <div className="ai-model-options" >
               {modelOptions.map((option) => (
                 <button key={option} type="button" className="ai-model-option" onClick={() => setModel(option)}>
                   {option}
@@ -569,7 +569,7 @@ function ImportSection() {
       }
       setPerItem(initial);
     } catch (err: unknown) {
-      setScanError(err instanceof Error ? err.message : '扫描失败');
+      setScanError(err instanceof Error ? err.message : t('settings.import.scanFailed'));
     } finally {
       setScanning(false);
     }
@@ -585,7 +585,7 @@ function ImportSection() {
       const result = await executeImport(file, decision);
       setExecuteResult(result);
     } catch (err: unknown) {
-      setExecuteError(err instanceof Error ? err.message : '导入失败');
+      setExecuteError(err instanceof Error ? err.message : t('settings.import.executeFailed'));
     } finally {
       setExecuting(false);
     }
@@ -807,7 +807,7 @@ export function SettingsPage() {
         setState({ kind: 'ready', data });
       })
       .catch((err: unknown) => {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : '无法加载设置' });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : t('settings.loadFailed') });
       });
   }, []);
 
