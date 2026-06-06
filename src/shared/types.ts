@@ -243,6 +243,28 @@ export type AiSuggestionResponseDto =
       message: string;
     };
 
+export interface AiSpellingCheckRequestDto {
+  target_word: string;
+  sentence: string;
+  target_language?: string;
+}
+
+export interface AiSpellingIssueDto {
+  original: string;
+  suggestion: string;
+}
+
+export type AiSpellingCheckResponseDto =
+  | {
+      status: 'success';
+      issues: AiSpellingIssueDto[];
+    }
+  | {
+      status: 'none';
+      issues: [];
+      message: string;
+    };
+
 export interface HomeStatisticsDto {
   due_count: number;
   reviewed_today_count: number;

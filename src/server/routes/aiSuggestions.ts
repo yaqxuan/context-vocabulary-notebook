@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import type { Database } from 'better-sqlite3';
 import { SUPPORTED_LANGUAGES } from '../../shared/constants.js';
-import type { AiSuggestionRequestDto } from '../../shared/types.js';
+import type { AiSpellingCheckRequestDto, AiSuggestionRequestDto } from '../../shared/types.js';
 import { isNonEmptyString, isSupportedLanguage } from '../../shared/validators.js';
 import { BadRequestError } from '../http/errors.js';
 import { asyncRoute } from '../http/asyncRoute.js';
 import { getActiveAiConfigWithKey } from '../domain/aiConfigs.js';
-import { requestAiSuggestion } from '../domain/aiSuggestions.js';
+import { requestAiSpellingCheck, requestAiSuggestion } from '../domain/aiSuggestions.js';
 
 function optionalSupportedLanguage(field: string, value: unknown): string | undefined {
   if (value === undefined) return undefined;
@@ -39,6 +39,25 @@ export function aiSuggestionsRouter(db: Database): Router {
     };
 
     res.json(await requestAiSuggestion(getActiveAiConfigWithKey(db), input));
+  }));
+
+  router.post('/spelling-check', asyncRoute(async (req, res) => {
+    const body = req.body as Record<string, unknown>;
+    if (!isNonEmptyString(body.target_word)) throw new BadRequestError('target_word is required');
+    if (!isNonEmptyString(body.sentence)) throw new BadRequestError('sentence is required');
+
+    const targetWord = body.target_word.trim();
+    const sentence = body.sentence.trim();
+    if (targetWord.length > 200) throw new BadRequestError('target_word must be at most 200 characters');
+    if (sentence.length > 2000) throw new BadRequestError('sentence must be at most 2000 characters');
+
+    const input: AiSpellingCheckRequestDto = {
+      target_word: targetWord,
+      sentence,
+      target_language: optionalSupportedLanguage('target_language', body.target_language),
+    };
+
+    res.json(await requestAiSpellingCheck(getActiveAiConfigWithKey(db), input));
   }));
 
   return router;

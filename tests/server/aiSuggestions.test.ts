@@ -385,4 +385,127 @@ describe('AI suggestions API', () => {
 
     expect(sentenceRes.body.message).toBe('sentence must be at most 2000 characters');
   });
+
+  it('checks spelling through active OpenAI-compatible endpoint', async () => {
+    createAiConfig(db, {
+      name: 'Local AI',
+      base_url: 'https://ai.example/v1',
+      api_key: 'sk-secret',
+      model: 'test-model',
+      is_active: true,
+    });
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(aiResponse({
+      choices: [{
+        message: {
+          content: JSON.stringify({ issues: [{ original: 'hte', suggestion: 'the' }] }),
+        },
+      }],
+    }));
+
+    const res = await request(createApp(db)).post('/api/ai/spelling-check').send({
+      target_word: 'hotel',
+      sentence: 'Hte hotel charges $100 per night.',
+      target_language: '英语',
+    }).expect(200);
+
+    expect(res.body).toEqual({
+      status: 'success',
+      issues: [{ original: 'hte', suggestion: 'the' }],
+    });
+    expect(fetchMock).toHaveBeenCalledWith('https://ai.example/v1/chat/completions', expect.objectContaining({
+      method: 'POST',
+      headers: expect.objectContaining({ Authorization: 'Bearer sk-secret' }),
+      redirect: 'manual',
+      signal: expect.any(AbortSignal),
+    }));
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    const prompt = body.messages[1].content as string;
+    expect(prompt).toContain('只检查拼写');
+    expect(prompt).toContain('不要检查语法、措辞、语气或风格');
+    expect(prompt).toContain('不要改写整句');
+    expect(prompt).toContain('不要建议修改目标单词');
+    expect(prompt).toContain('学习语言：英语');
+    expect(prompt).toContain('目标单词：hotel');
+  });
+
+  it('ignores spelling issues that match the target word', async () => {
+    createAiConfig(db, {
+      name: 'Local AI',
+      base_url: 'https://ai.example/v1',
+      api_key: 'sk-secret',
+      model: 'test-model',
+      is_active: true,
+    });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(aiResponse({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            issues: [
+              { original: 'charge', suggestion: 'charged' },
+              { original: 'hte', suggestion: 'the' },
+            ],
+          }),
+        },
+      }],
+    }));
+
+    const res = await request(createApp(db)).post('/api/ai/spelling-check').send({
+      target_word: 'charge',
+      sentence: 'Hte hotel charge $100 per night.',
+    }).expect(200);
+
+    expect(res.body).toEqual({
+      status: 'success',
+      issues: [{ original: 'hte', suggestion: 'the' }],
+    });
+  });
+
+  it('returns none for spelling check when no active AI config exists', async () => {
+    const res = await request(createApp(db)).post('/api/ai/spelling-check').send({
+      target_word: 'hotel',
+      sentence: 'Hte hotel charges $100 per night.',
+    }).expect(200);
+
+    expect(res.body).toEqual({
+      status: 'none',
+      issues: [],
+      message: 'No active AI config',
+    });
+  });
+
+  it('returns none for malformed spelling check content', async () => {
+    createAiConfig(db, {
+      name: 'Local AI',
+      base_url: 'https://ai.example/v1',
+      api_key: 'sk-secret',
+      model: 'test-model',
+      is_active: true,
+    });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(aiResponse({
+      choices: [{ message: { content: 'not json' } }],
+    }));
+
+    const res = await request(createApp(db)).post('/api/ai/spelling-check').send({
+      target_word: 'hotel',
+      sentence: 'Hte hotel charges $100 per night.',
+    }).expect(200);
+
+    expect(res.body).toEqual({
+      status: 'none',
+      issues: [],
+      message: 'AI spelling check unavailable',
+    });
+  });
+
+  it('rejects invalid spelling check input', async () => {
+    await request(createApp(db)).post('/api/ai/spelling-check').send({ target_word: '', sentence: '' }).expect(400);
+
+    const languageRes = await request(createApp(db)).post('/api/ai/spelling-check').send({
+      target_word: 'hotel',
+      sentence: 'Hte hotel charges $100 per night.',
+      target_language: '意大利语',
+    }).expect(400);
+
+    expect(languageRes.body.message).toBe('target_language must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语');
+  });
 });
