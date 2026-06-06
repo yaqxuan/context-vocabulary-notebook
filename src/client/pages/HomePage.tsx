@@ -4,6 +4,7 @@ import type { HomeStatisticsDto } from '../../shared/types';
 import { ErrorState, LoadingState } from '../components/UiStates';
 import { getHomeStatistics } from '../api/statistics';
 import { getHomeGreeting, type GreetingSelection } from '../lib/homeGreetings';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface StatCardProps {
   label: string;
@@ -25,19 +26,21 @@ function progressWidth(reviewed: number, limit: number): string {
 }
 
 function HomeActions() {
+  const { t } = useI18n();
   return (
     <div className="home-actions">
-      <a className="home-btn home-btn-primary" href="#/review">开始复习</a>
-      <a className="home-btn home-btn-secondary" href="#/create">快速制卡</a>
+      <a className="home-btn home-btn-primary" href="#/review">{t('home.startReview')}</a>
+      <a className="home-btn home-btn-secondary" href="#/create">{t('home.createCard')}</a>
     </div>
   );
 }
 
 function HomeHero({ greeting }: { greeting: GreetingSelection }) {
+  const { t } = useI18n();
   return (
-    <section className="home-hero" aria-label="今日问候和复习入口">
+    <section className="home-hero" aria-label={t('home.heroAria')}>
       <div>
-        <h2 className="home-welcome">欢迎回来</h2>
+        <h2 className="home-welcome">{t('home.welcome')}</h2>
         <div className="home-greeting-stack">
           <p className="home-greeting">{greeting.text}</p>
           <p className="home-greeting" lang="en">{greeting.translation}</p>
@@ -51,6 +54,7 @@ export function HomePage() {
   const [data, setData] = useState<HomeStatisticsDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useI18n();
 
   const load = () => {
     setLoading(true);
@@ -59,7 +63,7 @@ export function HomePage() {
       .then(setData)
       .catch((err: unknown) => {
         setData(null);
-        setError(err instanceof Error ? err.message : '无法加载首页数据');
+        setError(err instanceof Error ? err.message : t('home.loadFailed'));
       })
       .finally(() => setLoading(false));
   };
@@ -70,7 +74,7 @@ export function HomePage() {
 
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} onRetry={load} />;
-  if (!data) return <ErrorState message="无法加载首页数据" onRetry={load} />;
+  if (!data) return <ErrorState message={t('home.loadFailed')} onRetry={load} />;
 
   const greeting = getHomeGreeting();
 
@@ -81,19 +85,19 @@ export function HomePage() {
       <div className="home-content-stack">
         <HomeActions />
 
-        <section className="home-metrics" aria-label="首页统计">
-          <StatCard label="今日待复习" value={data.due_count} />
-          <StatCard label="今日已复习" value={`${data.reviewed_today_count}/${data.daily_review_limit}`} />
-          <StatCard label="Again" value={data.again_today_count} />
-          <StatCard label="Good" value={data.good_today_count} />
+        <section className="home-metrics" aria-label={t('home.metricsAria')}>
+          <StatCard label={t('home.dueToday')} value={data.due_count} />
+          <StatCard label={t('home.reviewedToday')} value={`${data.reviewed_today_count}/${data.daily_review_limit}`} />
+          <StatCard label={t('home.again')} value={data.again_today_count} />
+          <StatCard label={t('home.good')} value={data.good_today_count} />
         </section>
 
         <div className="home-bottom-grid">
-          <section className="home-focus-card" aria-label="复习节奏摘要">
+          <section className="home-focus-card" aria-label={t('home.focusAria')}>
             <div className="home-mini-queue" aria-hidden="true">
-              <div className="home-queue-row"><span>待复习</span><span className="home-track"><i style={{ width: progressWidth(data.due_count, Math.max(data.due_count + data.reviewed_today_count, 1)) }} /></span><strong>{data.due_count}</strong></div>
-              <div className="home-queue-row"><span>Good</span><span className="home-track"><i style={{ width: progressWidth(data.good_today_count, Math.max(data.reviewed_today_count, 1)) }} /></span><strong>{data.good_today_count}</strong></div>
-              <div className="home-queue-row"><span>Again</span><span className="home-track"><i style={{ width: progressWidth(data.again_today_count, Math.max(data.reviewed_today_count, 1)) }} /></span><strong>{data.again_today_count}</strong></div>
+              <div className="home-queue-row"><span>{t('home.dueToday')}</span><span className="home-track"><i style={{ width: progressWidth(data.due_count, Math.max(data.due_count + data.reviewed_today_count, 1)) }} /></span><strong>{data.due_count}</strong></div>
+              <div className="home-queue-row"><span>{t('home.good')}</span><span className="home-track"><i style={{ width: progressWidth(data.good_today_count, Math.max(data.reviewed_today_count, 1)) }} /></span><strong>{data.good_today_count}</strong></div>
+              <div className="home-queue-row"><span>{t('home.again')}</span><span className="home-track"><i style={{ width: progressWidth(data.again_today_count, Math.max(data.reviewed_today_count, 1)) }} /></span><strong>{data.again_today_count}</strong></div>
             </div>
           </section>
         </div>

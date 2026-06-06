@@ -1,6 +1,11 @@
 import type { SupportedLanguage } from '../../shared/constants';
 
 export const zh = {
+  "placeholder": {
+    "message": "{message}。此功能将在 {phase} 实现。",
+    "backHome": "返回首页",
+    "text": "占位符"
+  },
   "app": {
     "brand": "语境单词本",
     "brandSubtitle": "在语境中学习单词",
@@ -123,16 +128,30 @@ export const zh = {
   },
   "tags": {
     "title": "标签",
+    "editTag": "编辑标签",
+    "newTag": "新增标签",
+    "editingDesc": "正在修改“{name}”",
+    "newDesc": "给词义条目准备可复用分类。",
+    "nameLabel": "标签名称",
+    "nameAria": "标签名称",
+    "namePlaceholder": "例如：Friends",
+    "saveTag": "保存标签",
+    "empty": "暂无可选标签",
+    "viewCards": "查看词义",
+    "deleteTitle": "删除标签",
+    "deleteMessage": "确认删除标签“{name}”？词义条目不会被删除。",
+    "deleteFailed": "删除标签失败",
+    "saveFailed": "保存标签失败",
     "loadTimeout": "标签列表加载超时，请重试",
     "loadFailed": "标签列表加载失败",
     "nameRequired": "标签名称必填",
     "createFailed": "新增标签失败",
     "reload": "重新加载标签",
     "loading": "加载标签中…",
-    "empty": "暂无可选标签",
     "newLabel": "新增标签名称",
     "newPlaceholder": "例如：电影",
-    "createAction": "新增并选中标签"
+    "createAction": "新增并选中标签",
+    "cancelEdit": "取消编辑"
   },
   "settings": {
     "loadFailed": "无法加载设置",
@@ -211,7 +230,18 @@ export const zh = {
     }
   },
   "home": {
-    "title": "首页"
+    "title": "首页",
+    "startReview": "开始复习",
+    "createCard": "快速制卡",
+    "heroAria": "今日问候和复习入口",
+    "welcome": "欢迎回来",
+    "loadFailed": "无法加载首页数据",
+    "metricsAria": "首页统计",
+    "dueToday": "今日待复习",
+    "reviewedToday": "今日已复习",
+    "again": "Again",
+    "good": "Good",
+    "focusAria": "复习节奏摘要"
   },
   "create": {
     "title": "创建",
@@ -311,19 +341,74 @@ export const zh = {
     "deleteContextMessage": "会软删除这个语境和它的媒体记录。确认删除？"
   },
   "review": {
-    "title": "复习"
+    "title": "复习",
+    "media": {
+      "video": "视频",
+      "screenshot": "截图",
+      "audio": "音频",
+      "note": "语境笔记",
+      "otherContexts": "其他语境"
+    },
+    "progress": "今日已复习 {reviewed} / {limit}",
+    "doneToday": "今日目标已完成，休息一下也没关系。",
+    "endReview": "结束复习",
+    "continueReview": "继续复习",
+    "removeFavorite": "取消收藏",
+    "favorite": "收藏",
+    "markMastered": "标记熟记",
+    "collapseContext": "收起语境",
+    "viewContext": "查看当时语境",
+    "pendingGood": "Good 已选择，请查看语境；确认无误后进入下一张。",
+    "pendingRating": "已选择 {rating}，请查看语境后确认。",
+    "recorded": "{rating} 已记录",
+    "next": "下一张",
+    "wrongAgain": "记错了，Again",
+    "confirmGood": "确认 Good",
+    "confirmAgain": "确认",
+    "loadFailed": "无法加载复习内容",
+    "submitFailed": "提交失败，请重试",
+    "favoriteFailed": "收藏状态更新失败，请重试",
+    "masteredFailed": "标记熟记失败，请重试",
+    "empty": "今天没有待复习内容",
+    "backHome": "返回首页",
+    "viewAllCards": "查看全部词义条目"
   },
   "statistics": {
-    "title": "统计"
-  },
-  "placeholder": {
-    "text": "占位符"
+    "title": "统计",
+    "loadFailed": "无法加载统计数据",
+    "totalCards": "总词义条目数量",
+    "reviewingCards": "复习中数量",
+    "masteredCards": "已熟记数量",
+    "favoriteCards": "收藏数量",
+    "empty": "还没有统计数据",
+    "recentTitle": "最近 14 天数量图",
+    "recentSub": "每日净复习量 / Good 数量（最新 14 天）",
+    "monthlyTitle": "历史月份数量图",
+    "monthlySub": "按月汇总的复习总量",
+    "accuracyTitle": "每日正确率折线图",
+    "accuracySub": "每天 Good 占总复习比",
+    "tagTitle": "标签分布",
+    "tagSub": "各标签下的词义条目数",
+    "ratingTrendTitle": "Again / Good 趋势",
+    "ratingTrendSub": "每一天的 Again / Good 次数对比",
+    "dailyReview": "净复习量",
+    "dailySummary": "{label}: 净复习量 {reviewCount}, Good {goodCount}",
+    "dailyTitle": "{date} 净复习量: {count}",
+    "accuracyAria": "每日正确率：{summary}",
+    "againLegend": "Again：没想起 / 记错",
+    "goodLegend": "Good：顺利想起",
+    "noData": "暂无数据"
   }
 };
 
 export const translations: Record<SupportedLanguage, typeof zh> = {
   '中文': zh,
   '英语': {
+  "placeholder": {
+    "message": "{message}. This feature will be implemented in {phase}.",
+    "backHome": "Back home",
+    "text": "Placeholder"
+  },
   "app": {
     "brand": "语境单词本",
     "brandSubtitle": "在语境中学习单词",
@@ -446,16 +531,30 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "tags": {
     "title": "Tags",
+    "editTag": "Edit tag",
+    "newTag": "New tag",
+    "editingDesc": "Editing \"{name}\"",
+    "newDesc": "Prepare reusable categories for word cards.",
+    "nameLabel": "Tag name",
+    "nameAria": "New tag name",
+    "namePlaceholder": "e.g. Friends",
+    "saveTag": "Save tag",
+    "empty": "No available tags",
+    "viewCards": "View cards",
+    "deleteTitle": "Delete tag",
+    "deleteMessage": "Are you sure you want to delete tag \"{name}\"? Word cards will not be deleted.",
+    "deleteFailed": "Failed to delete tag",
+    "saveFailed": "Failed to save tag",
     "loadTimeout": "Loading tags timed out, please try again",
     "loadFailed": "Loading tags failed",
     "nameRequired": "Tag name is required",
     "createFailed": "Failed to create tag",
     "reload": "Reload tags",
     "loading": "Loading tags...",
-    "empty": "No available tags",
     "newLabel": "New tag name",
     "newPlaceholder": "e.g. Movie",
-    "createAction": "Create and select tag"
+    "createAction": "Create and select tag",
+    "cancelEdit": "Cancel edit"
   },
   "settings": {
     "loadFailed": "无法加载设置",
@@ -534,7 +633,18 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     }
   },
   "home": {
-    "title": "首页"
+    "title": "Home",
+    "startReview": "Start review",
+    "createCard": "Quick create",
+    "heroAria": "Today's greeting and review entry",
+    "welcome": "Welcome back",
+    "loadFailed": "Failed to load home page data",
+    "metricsAria": "Home metrics",
+    "dueToday": "Due today",
+    "reviewedToday": "Today reviewed",
+    "again": "Again",
+    "good": "Good",
+    "focusAria": "Review rhythm summary"
   },
   "create": {
     "title": "创建",
@@ -634,16 +744,71 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "deleteContextMessage": "This will soft-delete this context and its media records. Confirm?"
   },
   "review": {
-    "title": "复习"
+    "title": "Review",
+    "media": {
+      "video": "Video",
+      "screenshot": "Screenshot",
+      "audio": "Audio",
+      "note": "Context note",
+      "otherContexts": "Other contexts"
+    },
+    "progress": "Today reviewed {reviewed} / {limit}",
+    "doneToday": "Today’s goal is complete. It is fine to take a break.",
+    "endReview": "End review",
+    "continueReview": "Continue review",
+    "removeFavorite": "Remove favorite",
+    "favorite": "Favorite",
+    "markMastered": "Mark mastered",
+    "collapseContext": "Collapse context",
+    "viewContext": "View original context",
+    "pendingGood": "Good selected. Review the context, then move to the next card if it looks right.",
+    "pendingRating": "{rating} selected. Review the context, then confirm.",
+    "recorded": "{rating} recorded",
+    "next": "Next",
+    "wrongAgain": "I was wrong, Again",
+    "confirmGood": "Confirm Good",
+    "confirmAgain": "Confirm",
+    "loadFailed": "Failed to load review content",
+    "submitFailed": "Submit failed. Please try again.",
+    "favoriteFailed": "Failed to update favorite status. Please try again.",
+    "masteredFailed": "Failed to mark mastered. Please try again.",
+    "empty": "No cards due today",
+    "backHome": "Back home",
+    "viewAllCards": "View all meaning entries"
   },
   "statistics": {
-    "title": "统计"
-  },
-  "placeholder": {
-    "text": "占位符"
+    "title": "Statistics",
+    "loadFailed": "Failed to load statistics",
+    "totalCards": "Total meaning entries",
+    "reviewingCards": "Reviewing",
+    "masteredCards": "Mastered",
+    "favoriteCards": "Favorites",
+    "empty": "No statistics yet",
+    "recentTitle": "Recent 14-day volume",
+    "recentSub": "Net daily reviews / Good count (latest 14 days)",
+    "monthlyTitle": "Historical monthly volume",
+    "monthlySub": "Monthly review totals",
+    "accuracyTitle": "Daily accuracy line chart",
+    "accuracySub": "Daily Good ratio among all reviews",
+    "tagTitle": "Tag distribution",
+    "tagSub": "Meaning entry count by tag",
+    "ratingTrendTitle": "Again / Good trend",
+    "ratingTrendSub": "Daily Again / Good comparison",
+    "dailyReview": "Net reviews",
+    "dailySummary": "{label}: net reviews {reviewCount}, Good {goodCount}",
+    "dailyTitle": "{date} net reviews: {count}",
+    "accuracyAria": "Daily accuracy: {summary}",
+    "againLegend": "Again: forgotten / wrong",
+    "goodLegend": "Good: recalled smoothly",
+    "noData": "No data"
   }
 },
   '日语': {
+  "placeholder": {
+    "message": "{message}。この機能は {phase} で実装されます。",
+    "backHome": "ホームへ戻る",
+    "text": "プレースホルダー"
+  },
   "app": {
     "brand": "语境单词本",
     "brandSubtitle": "在语境中学习单词",
@@ -766,16 +931,30 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "tags": {
     "title": "标签",
+    "editTag": "タグを編集",
+    "newTag": "新規タグ",
+    "editingDesc": "「{name}」を編集中",
+    "newDesc": "カード用の再利用可能なカテゴリを準備します。",
+    "nameLabel": "タグ名",
+    "nameAria": "タグ名",
+    "namePlaceholder": "例：フレンズ",
+    "saveTag": "タグを保存",
+    "empty": "暂无可选标签",
+    "viewCards": "カードを表示",
+    "deleteTitle": "タグを削除",
+    "deleteMessage": "タグ「{name}」を削除してもよろしいですか？カードは削除されません。",
+    "deleteFailed": "タグの削除に失敗しました",
+    "saveFailed": "タグの保存に失敗しました",
     "loadTimeout": "标签列表加载超时，请重试",
     "loadFailed": "标签列表加载失败",
     "nameRequired": "标签名称必填",
     "createFailed": "新增标签失败",
     "reload": "重新加载标签",
     "loading": "加载标签中…",
-    "empty": "暂无可选标签",
     "newLabel": "新增标签名称",
     "newPlaceholder": "例如：电影",
-    "createAction": "新增并选中标签"
+    "createAction": "新增并选中标签",
+    "cancelEdit": "編集をキャンセル"
   },
   "settings": {
     "loadFailed": "无法加载设置",
@@ -854,7 +1033,18 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     }
   },
   "home": {
-    "title": "首页"
+    "title": "ホーム",
+    "startReview": "復習を開始",
+    "createCard": "クイック作成",
+    "heroAria": "今日の挨拶と復習の入り口",
+    "welcome": "おかえりなさい",
+    "loadFailed": "ホームページデータの読み込みに失敗しました",
+    "metricsAria": "ホームの統計",
+    "dueToday": "今日の復習予定",
+    "reviewedToday": "今日の復習済み",
+    "again": "Again",
+    "good": "Good",
+    "focusAria": "復習リズムの概要"
   },
   "create": {
     "title": "创建",
@@ -954,16 +1144,71 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "deleteContextMessage": "この文脈とそのメディア記録が論理削除されます。よろしいですか？"
   },
   "review": {
-    "title": "复习"
+    "title": "復習",
+    "media": {
+      "video": "動画",
+      "screenshot": "スクリーンショット",
+      "audio": "音声",
+      "note": "文脈メモ",
+      "otherContexts": "その他の文脈"
+    },
+    "progress": "今日の復習 {reviewed} / {limit}",
+    "doneToday": "今日の目標は完了しました。少し休んでも大丈夫です。",
+    "endReview": "復習を終了",
+    "continueReview": "復習を続ける",
+    "removeFavorite": "お気に入り解除",
+    "favorite": "お気に入り",
+    "markMastered": "習得済みにする",
+    "collapseContext": "文脈を閉じる",
+    "viewContext": "当時の文脈を見る",
+    "pendingGood": "Good を選択しました。文脈を確認し、問題なければ次へ進んでください。",
+    "pendingRating": "{rating} を選択しました。文脈を確認してから確定してください。",
+    "recorded": "{rating} を記録しました",
+    "next": "次へ",
+    "wrongAgain": "間違えたので Again",
+    "confirmGood": "Good を確定",
+    "confirmAgain": "確定",
+    "loadFailed": "復習内容を読み込めませんでした",
+    "submitFailed": "送信に失敗しました。再試行してください。",
+    "favoriteFailed": "お気に入り状態の更新に失敗しました。",
+    "masteredFailed": "習得済みへの変更に失敗しました。",
+    "empty": "今日は復習するカードがありません",
+    "backHome": "ホームへ戻る",
+    "viewAllCards": "すべての語義を見る"
   },
   "statistics": {
-    "title": "统计"
-  },
-  "placeholder": {
-    "text": "占位符"
+    "title": "統計",
+    "loadFailed": "統計データを読み込めませんでした",
+    "totalCards": "語義エントリ総数",
+    "reviewingCards": "復習中",
+    "masteredCards": "習得済み",
+    "favoriteCards": "お気に入り",
+    "empty": "統計データはまだありません",
+    "recentTitle": "最近14日間の数",
+    "recentSub": "日別純復習数 / Good 数（最新14日）",
+    "monthlyTitle": "月別履歴数",
+    "monthlySub": "月別復習合計",
+    "accuracyTitle": "日別正答率折れ線グラフ",
+    "accuracySub": "毎日の Good 比率",
+    "tagTitle": "タグ分布",
+    "tagSub": "タグごとの語義数",
+    "ratingTrendTitle": "Again / Good 傾向",
+    "ratingTrendSub": "日別 Again / Good 比較",
+    "dailyReview": "純復習数",
+    "dailySummary": "{label}: 純復習数 {reviewCount}, Good {goodCount}",
+    "dailyTitle": "{date} 純復習数: {count}",
+    "accuracyAria": "日別正答率：{summary}",
+    "againLegend": "Again：思い出せない / 間違い",
+    "goodLegend": "Good：順調に思い出した",
+    "noData": "データなし"
   }
 },
   '韩语': {
+  "placeholder": {
+    "message": "{message}. 이 기능은 {phase}에서 구현됩니다.",
+    "backHome": "홈으로 돌아가기",
+    "text": "자리 표시자"
+  },
   "app": {
     "brand": "语境单词本",
     "brandSubtitle": "在语境中学习单词",
@@ -1086,16 +1331,30 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "tags": {
     "title": "标签",
+    "editTag": "태그 편집",
+    "newTag": "새 태그",
+    "editingDesc": "\"{name}\" 편집 중",
+    "newDesc": "단어 카드를 위한 재사용 가능한 카테고리를 준비합니다.",
+    "nameLabel": "태그 이름",
+    "nameAria": "태그 이름",
+    "namePlaceholder": "예: 프렌즈",
+    "saveTag": "태그 저장",
+    "empty": "暂无可选标签",
+    "viewCards": "카드 보기",
+    "deleteTitle": "태그 삭제",
+    "deleteMessage": "\"{name}\" 태그를 삭제하시겠습니까? 단어 카드는 삭제되지 않습니다.",
+    "deleteFailed": "태그를 삭제하지 못했습니다",
+    "saveFailed": "태그를 저장하지 못했습니다",
     "loadTimeout": "标签列表加载超时，请重试",
     "loadFailed": "标签列表加载失败",
     "nameRequired": "标签名称必填",
     "createFailed": "新增标签失败",
     "reload": "重新加载标签",
     "loading": "加载标签中…",
-    "empty": "暂无可选标签",
     "newLabel": "新增标签名称",
     "newPlaceholder": "例如：电影",
-    "createAction": "新增并选中标签"
+    "createAction": "新增并选中标签",
+    "cancelEdit": "편집 취소"
   },
   "settings": {
     "loadFailed": "无法加载设置",
@@ -1174,7 +1433,18 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     }
   },
   "home": {
-    "title": "首页"
+    "title": "홈",
+    "startReview": "복습 시작",
+    "createCard": "빠른 생성",
+    "heroAria": "오늘의 인사 및 복습 진입점",
+    "welcome": "환영합니다",
+    "loadFailed": "홈페이지 데이터를 불러오지 못했습니다",
+    "metricsAria": "홈 통계",
+    "dueToday": "오늘의 복습",
+    "reviewedToday": "오늘 복습함",
+    "again": "Again",
+    "good": "Good",
+    "focusAria": "복습 리듬 요약"
   },
   "create": {
     "title": "创建",
@@ -1274,16 +1544,71 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "deleteContextMessage": "이 문맥과 관련 미디어 기록이 소프트 삭제됩니다. 삭제하시겠습니까?"
   },
   "review": {
-    "title": "复习"
+    "title": "복습",
+    "media": {
+      "video": "동영상",
+      "screenshot": "스크린샷",
+      "audio": "오디오",
+      "note": "맥락 메모",
+      "otherContexts": "다른 맥락"
+    },
+    "progress": "오늘 복습 {reviewed} / {limit}",
+    "doneToday": "오늘 목표를 완료했습니다. 잠시 쉬어도 괜찮아요.",
+    "endReview": "복습 종료",
+    "continueReview": "계속 복습",
+    "removeFavorite": "즐겨찾기 해제",
+    "favorite": "즐겨찾기",
+    "markMastered": "숙달로 표시",
+    "collapseContext": "맥락 접기",
+    "viewContext": "당시 맥락 보기",
+    "pendingGood": "Good을 선택했습니다. 맥락을 확인한 뒤 다음 카드로 이동하세요.",
+    "pendingRating": "{rating}을 선택했습니다. 맥락을 확인한 뒤 확정하세요.",
+    "recorded": "{rating} 기록됨",
+    "next": "다음",
+    "wrongAgain": "틀렸어요, Again",
+    "confirmGood": "Good 확정",
+    "confirmAgain": "확정",
+    "loadFailed": "복습 내용을 불러오지 못했습니다",
+    "submitFailed": "제출 실패. 다시 시도하세요.",
+    "favoriteFailed": "즐겨찾기 상태 업데이트 실패. 다시 시도하세요.",
+    "masteredFailed": "숙달 표시 실패. 다시 시도하세요.",
+    "empty": "오늘 복습할 카드가 없습니다",
+    "backHome": "홈으로 돌아가기",
+    "viewAllCards": "모든 의미 항목 보기"
   },
   "statistics": {
-    "title": "统计"
-  },
-  "placeholder": {
-    "text": "占位符"
+    "title": "통계",
+    "loadFailed": "통계 데이터를 불러오지 못했습니다",
+    "totalCards": "전체 의미 항목 수",
+    "reviewingCards": "복습 중",
+    "masteredCards": "숙달됨",
+    "favoriteCards": "즐겨찾기",
+    "empty": "아직 통계 데이터가 없습니다",
+    "recentTitle": "최근 14일 수량",
+    "recentSub": "일별 순 복습 수 / Good 수 (최근 14일)",
+    "monthlyTitle": "월별 기록 수량",
+    "monthlySub": "월별 복습 합계",
+    "accuracyTitle": "일별 정확도 선 그래프",
+    "accuracySub": "일별 Good 비율",
+    "tagTitle": "태그 분포",
+    "tagSub": "태그별 의미 항목 수",
+    "ratingTrendTitle": "Again / Good 추세",
+    "ratingTrendSub": "일별 Again / Good 비교",
+    "dailyReview": "순 복습 수",
+    "dailySummary": "{label}: 순 복습 수 {reviewCount}, Good {goodCount}",
+    "dailyTitle": "{date} 순 복습 수: {count}",
+    "accuracyAria": "일별 정확도: {summary}",
+    "againLegend": "Again: 기억 못 함 / 틀림",
+    "goodLegend": "Good: 잘 기억함",
+    "noData": "데이터 없음"
   }
 },
   '法语': {
+  "placeholder": {
+    "message": "{message}. Cette fonctionnalité sera implémentée dans {phase}.",
+    "backHome": "Retour à l’accueil",
+    "text": "Espace réservé"
+  },
   "app": {
     "brand": "语境单词本",
     "brandSubtitle": "在语境中学习单词",
@@ -1406,16 +1731,30 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "tags": {
     "title": "标签",
+    "editTag": "Modifier le tag",
+    "newTag": "Nouveau tag",
+    "editingDesc": "Modification de \"{name}\"",
+    "newDesc": "Préparez des catégories réutilisables pour les cartes.",
+    "nameLabel": "Nom du tag",
+    "nameAria": "Nom du tag",
+    "namePlaceholder": "ex : Friends",
+    "saveTag": "Enregistrer le tag",
+    "empty": "暂无可选标签",
+    "viewCards": "Voir les cartes",
+    "deleteTitle": "Supprimer le tag",
+    "deleteMessage": "Êtes-vous sûr de vouloir supprimer le tag \"{name}\" ? Les cartes ne seront pas supprimées.",
+    "deleteFailed": "Échec de la suppression du tag",
+    "saveFailed": "Échec de l'enregistrement du tag",
     "loadTimeout": "标签列表加载超时，请重试",
     "loadFailed": "标签列表加载失败",
     "nameRequired": "标签名称必填",
     "createFailed": "新增标签失败",
     "reload": "重新加载标签",
     "loading": "加载标签中…",
-    "empty": "暂无可选标签",
     "newLabel": "新增标签名称",
     "newPlaceholder": "例如：电影",
-    "createAction": "新增并选中标签"
+    "createAction": "新增并选中标签",
+    "cancelEdit": "Annuler la modification"
   },
   "settings": {
     "loadFailed": "无法加载设置",
@@ -1494,7 +1833,18 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     }
   },
   "home": {
-    "title": "首页"
+    "title": "Accueil",
+    "startReview": "Commencer la révision",
+    "createCard": "Création rapide",
+    "heroAria": "Accueil du jour et entrée des révisions",
+    "welcome": "Bon retour",
+    "loadFailed": "Échec du chargement des données de la page d'accueil",
+    "metricsAria": "Statistiques de l'accueil",
+    "dueToday": "À réviser aujourd'hui",
+    "reviewedToday": "Révisé aujourd’hui",
+    "again": "Again",
+    "good": "Good",
+    "focusAria": "Résumé du rythme de révision"
   },
   "create": {
     "title": "创建",
@@ -1594,16 +1944,71 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "deleteContextMessage": "Ceci supprimera (soft-delete) ce contexte et ses enregistrements de médias. Confirmer ?"
   },
   "review": {
-    "title": "复习"
+    "title": "Révision",
+    "media": {
+      "video": "Vidéo",
+      "screenshot": "Capture d’écran",
+      "audio": "Audio",
+      "note": "Note de contexte",
+      "otherContexts": "Autres contextes"
+    },
+    "progress": "Révisé aujourd’hui {reviewed} / {limit}",
+    "doneToday": "L’objectif du jour est terminé. Vous pouvez faire une pause.",
+    "endReview": "Terminer la révision",
+    "continueReview": "Continuer la révision",
+    "removeFavorite": "Retirer des favoris",
+    "favorite": "Favori",
+    "markMastered": "Marquer comme maîtrisé",
+    "collapseContext": "Masquer le contexte",
+    "viewContext": "Voir le contexte original",
+    "pendingGood": "Good sélectionné. Vérifiez le contexte, puis passez à la carte suivante si tout est correct.",
+    "pendingRating": "{rating} sélectionné. Vérifiez le contexte puis confirmez.",
+    "recorded": "{rating} enregistré",
+    "next": "Suivant",
+    "wrongAgain": "Je me suis trompé, Again",
+    "confirmGood": "Confirmer Good",
+    "confirmAgain": "Confirmer",
+    "loadFailed": "Échec du chargement du contenu de révision",
+    "submitFailed": "Échec de l’envoi. Veuillez réessayer.",
+    "favoriteFailed": "Échec de la mise à jour du favori. Veuillez réessayer.",
+    "masteredFailed": "Échec du marquage comme maîtrisé. Veuillez réessayer.",
+    "empty": "Aucune carte à réviser aujourd’hui",
+    "backHome": "Retour à l’accueil",
+    "viewAllCards": "Voir toutes les entrées de sens"
   },
   "statistics": {
-    "title": "统计"
-  },
-  "placeholder": {
-    "text": "占位符"
+    "title": "Statistiques",
+    "loadFailed": "Échec du chargement des statistiques",
+    "totalCards": "Nombre total d’entrées de sens",
+    "reviewingCards": "En révision",
+    "masteredCards": "Maîtrisées",
+    "favoriteCards": "Favorites",
+    "empty": "Pas encore de statistiques",
+    "recentTitle": "Volume des 14 derniers jours",
+    "recentSub": "Révisions nettes quotidiennes / nombre Good (14 derniers jours)",
+    "monthlyTitle": "Volume mensuel historique",
+    "monthlySub": "Totaux mensuels de révision",
+    "accuracyTitle": "Courbe de précision quotidienne",
+    "accuracySub": "Part quotidienne de Good",
+    "tagTitle": "Répartition des tags",
+    "tagSub": "Nombre d’entrées de sens par tag",
+    "ratingTrendTitle": "Tendance Again / Good",
+    "ratingTrendSub": "Comparaison quotidienne Again / Good",
+    "dailyReview": "Révisions nettes",
+    "dailySummary": "{label} : révisions nettes {reviewCount}, Good {goodCount}",
+    "dailyTitle": "{date} révisions nettes : {count}",
+    "accuracyAria": "Précision quotidienne : {summary}",
+    "againLegend": "Again : oublié / faux",
+    "goodLegend": "Good : rappel fluide",
+    "noData": "Aucune donnée"
   }
 },
   '德语': {
+  "placeholder": {
+    "message": "{message}. Diese Funktion wird in {phase} umgesetzt.",
+    "backHome": "Zur Startseite",
+    "text": "Platzhalter"
+  },
   "app": {
     "brand": "语境单词本",
     "brandSubtitle": "在语境中学习单词",
@@ -1726,16 +2131,30 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "tags": {
     "title": "标签",
+    "editTag": "Tag bearbeiten",
+    "newTag": "Neuer Tag",
+    "editingDesc": "Bearbeite \"{name}\"",
+    "newDesc": "Bereiten Sie wiederverwendbare Kategorien für Karten vor.",
+    "nameLabel": "Tag-Name",
+    "nameAria": "Tag-Name",
+    "namePlaceholder": "z. B. Friends",
+    "saveTag": "Tag speichern",
+    "empty": "暂无可选标签",
+    "viewCards": "Karten ansehen",
+    "deleteTitle": "Tag löschen",
+    "deleteMessage": "Möchten Sie den Tag \"{name}\" wirklich löschen? Karten werden nicht gelöscht.",
+    "deleteFailed": "Fehler beim Löschen des Tags",
+    "saveFailed": "Fehler beim Speichern des Tags",
     "loadTimeout": "标签列表加载超时，请重试",
     "loadFailed": "标签列表加载失败",
     "nameRequired": "标签名称必填",
     "createFailed": "新增标签失败",
     "reload": "重新加载标签",
     "loading": "加载标签中…",
-    "empty": "暂无可选标签",
     "newLabel": "新增标签名称",
     "newPlaceholder": "例如：电影",
-    "createAction": "新增并选中标签"
+    "createAction": "新增并选中标签",
+    "cancelEdit": "Bearbeitung abbrechen"
   },
   "settings": {
     "loadFailed": "无法加载设置",
@@ -1814,7 +2233,18 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     }
   },
   "home": {
-    "title": "首页"
+    "title": "Startseite",
+    "startReview": "Wiederholung starten",
+    "createCard": "Schnellerstellung",
+    "heroAria": "Heutige Begrüßung und Wiederholungseinstieg",
+    "welcome": "Willkommen zurück",
+    "loadFailed": "Fehler beim Laden der Startseitendaten",
+    "metricsAria": "Startseitenmetriken",
+    "dueToday": "Heute fällig",
+    "reviewedToday": "Heute wiederholt",
+    "again": "Again",
+    "good": "Good",
+    "focusAria": "Zusammenfassung des Wiederholungsrhythmus"
   },
   "create": {
     "title": "创建",
@@ -1914,16 +2344,71 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "deleteContextMessage": "Dies wird diesen Kontext und seine Medienaufzeichnungen soft-löschen. Bestätigen?"
   },
   "review": {
-    "title": "复习"
+    "title": "Wiederholung",
+    "media": {
+      "video": "Video",
+      "screenshot": "Screenshot",
+      "audio": "Audio",
+      "note": "Kontextnotiz",
+      "otherContexts": "Andere Kontexte"
+    },
+    "progress": "Heute wiederholt {reviewed} / {limit}",
+    "doneToday": "Das Tagesziel ist erreicht. Eine Pause ist in Ordnung.",
+    "endReview": "Wiederholung beenden",
+    "continueReview": "Weiter wiederholen",
+    "removeFavorite": "Favorit entfernen",
+    "favorite": "Favorit",
+    "markMastered": "Als beherrscht markieren",
+    "collapseContext": "Kontext einklappen",
+    "viewContext": "Originalkontext ansehen",
+    "pendingGood": "Good ausgewählt. Prüfen Sie den Kontext und gehen Sie dann zur nächsten Karte.",
+    "pendingRating": "{rating} ausgewählt. Prüfen Sie den Kontext und bestätigen Sie.",
+    "recorded": "{rating} gespeichert",
+    "next": "Weiter",
+    "wrongAgain": "Falsch, Again",
+    "confirmGood": "Good bestätigen",
+    "confirmAgain": "Bestätigen",
+    "loadFailed": "Wiederholungsinhalt konnte nicht geladen werden",
+    "submitFailed": "Senden fehlgeschlagen. Bitte erneut versuchen.",
+    "favoriteFailed": "Favoritenstatus konnte nicht aktualisiert werden.",
+    "masteredFailed": "Als beherrscht markieren fehlgeschlagen.",
+    "empty": "Heute sind keine Karten fällig",
+    "backHome": "Zur Startseite",
+    "viewAllCards": "Alle Bedeutungseinträge ansehen"
   },
   "statistics": {
-    "title": "统计"
-  },
-  "placeholder": {
-    "text": "占位符"
+    "title": "Statistik",
+    "loadFailed": "Statistiken konnten nicht geladen werden",
+    "totalCards": "Bedeutungseinträge insgesamt",
+    "reviewingCards": "In Wiederholung",
+    "masteredCards": "Beherrscht",
+    "favoriteCards": "Favoriten",
+    "empty": "Noch keine Statistiken",
+    "recentTitle": "Volumen der letzten 14 Tage",
+    "recentSub": "Tägliche Netto-Wiederholungen / Good-Anzahl (letzte 14 Tage)",
+    "monthlyTitle": "Historisches Monatsvolumen",
+    "monthlySub": "Monatliche Wiederholungssummen",
+    "accuracyTitle": "Tägliche Genauigkeitslinie",
+    "accuracySub": "Täglicher Good-Anteil",
+    "tagTitle": "Tag-Verteilung",
+    "tagSub": "Bedeutungseinträge pro Tag",
+    "ratingTrendTitle": "Again / Good Trend",
+    "ratingTrendSub": "Täglicher Again / Good Vergleich",
+    "dailyReview": "Netto-Wiederholungen",
+    "dailySummary": "{label}: Netto-Wiederholungen {reviewCount}, Good {goodCount}",
+    "dailyTitle": "{date} Netto-Wiederholungen: {count}",
+    "accuracyAria": "Tägliche Genauigkeit: {summary}",
+    "againLegend": "Again: vergessen / falsch",
+    "goodLegend": "Good: sicher erinnert",
+    "noData": "Keine Daten"
   }
 },
   '西班牙语': {
+  "placeholder": {
+    "message": "{message}. Esta función se implementará en {phase}.",
+    "backHome": "Volver al inicio",
+    "text": "Marcador"
+  },
   "app": {
     "brand": "语境单词本",
     "brandSubtitle": "在语境中学习单词",
@@ -2046,16 +2531,30 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "tags": {
     "title": "标签",
+    "editTag": "Editar etiqueta",
+    "newTag": "Nueva etiqueta",
+    "editingDesc": "Editando \"{name}\"",
+    "newDesc": "Prepara categorías reutilizables para las tarjetas.",
+    "nameLabel": "Nombre de la etiqueta",
+    "nameAria": "Nombre de la etiqueta",
+    "namePlaceholder": "ej: Friends",
+    "saveTag": "Guardar etiqueta",
+    "empty": "暂无可选标签",
+    "viewCards": "Ver tarjetas",
+    "deleteTitle": "Eliminar etiqueta",
+    "deleteMessage": "¿Estás seguro de que quieres eliminar la etiqueta \"{name}\"? Las tarjetas no se eliminarán.",
+    "deleteFailed": "Error al eliminar la etiqueta",
+    "saveFailed": "Error al guardar la etiqueta",
     "loadTimeout": "标签列表加载超时，请重试",
     "loadFailed": "标签列表加载失败",
     "nameRequired": "标签名称必填",
     "createFailed": "新增标签失败",
     "reload": "重新加载标签",
     "loading": "加载标签中…",
-    "empty": "暂无可选标签",
     "newLabel": "新增标签名称",
     "newPlaceholder": "例如：电影",
-    "createAction": "新增并选中标签"
+    "createAction": "新增并选中标签",
+    "cancelEdit": "Cancelar edición"
   },
   "settings": {
     "loadFailed": "无法加载设置",
@@ -2134,7 +2633,18 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     }
   },
   "home": {
-    "title": "首页"
+    "title": "Inicio",
+    "startReview": "Empezar repaso",
+    "createCard": "Creación rápida",
+    "heroAria": "Saludo de hoy y entrada de repasos",
+    "welcome": "Bienvenido de nuevo",
+    "loadFailed": "Error al cargar los datos de la página de inicio",
+    "metricsAria": "Métricas de inicio",
+    "dueToday": "Para repasar hoy",
+    "reviewedToday": "Repasado hoy",
+    "again": "Again",
+    "good": "Good",
+    "focusAria": "Resumen del ritmo de repaso"
   },
   "create": {
     "title": "创建",
@@ -2234,16 +2744,71 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "deleteContextMessage": "Esto eliminará (soft-delete) este contexto y sus registros de medios. ¿Confirmar?"
   },
   "review": {
-    "title": "复习"
+    "title": "Repaso",
+    "media": {
+      "video": "Vídeo",
+      "screenshot": "Captura",
+      "audio": "Audio",
+      "note": "Nota de contexto",
+      "otherContexts": "Otros contextos"
+    },
+    "progress": "Repasado hoy {reviewed} / {limit}",
+    "doneToday": "La meta de hoy está completa. Puedes descansar.",
+    "endReview": "Terminar repaso",
+    "continueReview": "Continuar repaso",
+    "removeFavorite": "Quitar de favoritos",
+    "favorite": "Favorito",
+    "markMastered": "Marcar como dominado",
+    "collapseContext": "Ocultar contexto",
+    "viewContext": "Ver contexto original",
+    "pendingGood": "Good seleccionado. Revisa el contexto y pasa a la siguiente tarjeta si está correcto.",
+    "pendingRating": "{rating} seleccionado. Revisa el contexto y confirma.",
+    "recorded": "{rating} registrado",
+    "next": "Siguiente",
+    "wrongAgain": "Me equivoqué, Again",
+    "confirmGood": "Confirmar Good",
+    "confirmAgain": "Confirmar",
+    "loadFailed": "No se pudo cargar el contenido de repaso",
+    "submitFailed": "Error al enviar. Inténtalo de nuevo.",
+    "favoriteFailed": "No se pudo actualizar favorito.",
+    "masteredFailed": "No se pudo marcar como dominado.",
+    "empty": "No hay tarjetas para repasar hoy",
+    "backHome": "Volver al inicio",
+    "viewAllCards": "Ver todas las entradas de significado"
   },
   "statistics": {
-    "title": "统计"
-  },
-  "placeholder": {
-    "text": "占位符"
+    "title": "Estadísticas",
+    "loadFailed": "No se pudieron cargar las estadísticas",
+    "totalCards": "Total de entradas de significado",
+    "reviewingCards": "En repaso",
+    "masteredCards": "Dominadas",
+    "favoriteCards": "Favoritas",
+    "empty": "Aún no hay estadísticas",
+    "recentTitle": "Volumen de los últimos 14 días",
+    "recentSub": "Repasos netos diarios / cantidad Good (últimos 14 días)",
+    "monthlyTitle": "Volumen mensual histórico",
+    "monthlySub": "Totales mensuales de repaso",
+    "accuracyTitle": "Gráfico de precisión diaria",
+    "accuracySub": "Proporción diaria de Good",
+    "tagTitle": "Distribución de etiquetas",
+    "tagSub": "Entradas de significado por etiqueta",
+    "ratingTrendTitle": "Tendencia Again / Good",
+    "ratingTrendSub": "Comparación diaria Again / Good",
+    "dailyReview": "Repasos netos",
+    "dailySummary": "{label}: repasos netos {reviewCount}, Good {goodCount}",
+    "dailyTitle": "{date} repasos netos: {count}",
+    "accuracyAria": "Precisión diaria: {summary}",
+    "againLegend": "Again: olvidado / incorrecto",
+    "goodLegend": "Good: recordado bien",
+    "noData": "Sin datos"
   }
 },
   '俄语': {
+  "placeholder": {
+    "message": "{message}. Эта функция будет реализована в {phase}.",
+    "backHome": "На главную",
+    "text": "Заполнитель"
+  },
   "app": {
     "brand": "语境单词本",
     "brandSubtitle": "在语境中学习单词",
@@ -2366,16 +2931,30 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "tags": {
     "title": "标签",
+    "editTag": "Редактировать тег",
+    "newTag": "Новый тег",
+    "editingDesc": "Редактирование \"{name}\"",
+    "newDesc": "Подготовьте повторно используемые категории для карточек.",
+    "nameLabel": "Имя тега",
+    "nameAria": "Имя тега",
+    "namePlaceholder": "например, Friends",
+    "saveTag": "Сохранить тег",
+    "empty": "暂无可选标签",
+    "viewCards": "Просмотр карточек",
+    "deleteTitle": "Удалить тег",
+    "deleteMessage": "Вы уверены, что хотите удалить тег \"{name}\"? Карточки не будут удалены.",
+    "deleteFailed": "Не удалось удалить тег",
+    "saveFailed": "Не удалось сохранить тег",
     "loadTimeout": "标签列表加载超时，请重试",
     "loadFailed": "标签列表加载失败",
     "nameRequired": "标签名称必填",
     "createFailed": "新增标签失败",
     "reload": "重新加载标签",
     "loading": "加载标签中…",
-    "empty": "暂无可选标签",
     "newLabel": "新增标签名称",
     "newPlaceholder": "例如：电影",
-    "createAction": "新增并选中标签"
+    "createAction": "新增并选中标签",
+    "cancelEdit": "Отменить редактирование"
   },
   "settings": {
     "loadFailed": "无法加载设置",
@@ -2454,7 +3033,18 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     }
   },
   "home": {
-    "title": "首页"
+    "title": "Главная",
+    "startReview": "Начать повторение",
+    "createCard": "Быстрое создание",
+    "heroAria": "Сегодняшнее приветствие и вход для повторения",
+    "welcome": "С возвращением",
+    "loadFailed": "Не удалось загрузить данные главной страницы",
+    "metricsAria": "Метрики главной страницы",
+    "dueToday": "К повторению сегодня",
+    "reviewedToday": "Повторено сегодня",
+    "again": "Again",
+    "good": "Good",
+    "focusAria": "Краткая сводка ритма повторений"
   },
   "create": {
     "title": "创建",
@@ -2554,13 +3144,63 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "deleteContextMessage": "Это приведет к программному удалению этого контекста и его медиа-записей. Подтверждаете?"
   },
   "review": {
-    "title": "复习"
+    "title": "Повторение",
+    "media": {
+      "video": "Видео",
+      "screenshot": "Скриншот",
+      "audio": "Аудио",
+      "note": "Заметка контекста",
+      "otherContexts": "Другие контексты"
+    },
+    "progress": "Повторено сегодня {reviewed} / {limit}",
+    "doneToday": "Цель на сегодня выполнена. Можно отдохнуть.",
+    "endReview": "Завершить повторение",
+    "continueReview": "Продолжить повторение",
+    "removeFavorite": "Убрать из избранного",
+    "favorite": "Избранное",
+    "markMastered": "Отметить как освоенное",
+    "collapseContext": "Скрыть контекст",
+    "viewContext": "Показать исходный контекст",
+    "pendingGood": "Выбрано Good. Проверьте контекст и переходите к следующей карточке, если всё верно.",
+    "pendingRating": "Выбрано {rating}. Проверьте контекст и подтвердите.",
+    "recorded": "{rating} записано",
+    "next": "Следующая",
+    "wrongAgain": "Ошибся, Again",
+    "confirmGood": "Подтвердить Good",
+    "confirmAgain": "Подтвердить",
+    "loadFailed": "Не удалось загрузить материалы повторения",
+    "submitFailed": "Не удалось отправить. Попробуйте снова.",
+    "favoriteFailed": "Не удалось обновить избранное.",
+    "masteredFailed": "Не удалось отметить как освоенное.",
+    "empty": "Сегодня нет карточек для повторения",
+    "backHome": "На главную",
+    "viewAllCards": "Все записи значений"
   },
   "statistics": {
-    "title": "统计"
-  },
-  "placeholder": {
-    "text": "占位符"
+    "title": "Статистика",
+    "loadFailed": "Не удалось загрузить статистику",
+    "totalCards": "Всего записей значений",
+    "reviewingCards": "На повторении",
+    "masteredCards": "Освоено",
+    "favoriteCards": "Избранное",
+    "empty": "Статистики пока нет",
+    "recentTitle": "Объем за последние 14 дней",
+    "recentSub": "Чистые повторы за день / количество Good (последние 14 дней)",
+    "monthlyTitle": "Исторический месячный объем",
+    "monthlySub": "Месячные итоги повторений",
+    "accuracyTitle": "График дневной точности",
+    "accuracySub": "Дневная доля Good",
+    "tagTitle": "Распределение тегов",
+    "tagSub": "Количество записей по тегам",
+    "ratingTrendTitle": "Тренд Again / Good",
+    "ratingTrendSub": "Дневное сравнение Again / Good",
+    "dailyReview": "Чистые повторы",
+    "dailySummary": "{label}: чистые повторы {reviewCount}, Good {goodCount}",
+    "dailyTitle": "{date} чистые повторы: {count}",
+    "accuracyAria": "Дневная точность: {summary}",
+    "againLegend": "Again: забыто / неверно",
+    "goodLegend": "Good: вспомнил уверенно",
+    "noData": "Нет данных"
   }
 }
 };

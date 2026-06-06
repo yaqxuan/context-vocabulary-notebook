@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StatisticsPage } from '../../src/client/pages/StatisticsPage';
+import { I18nProvider } from '../../src/client/i18n/I18nProvider';
 import type { StatisticsPageDto } from '../../src/shared/types';
 
 // --- Helpers ---
@@ -83,12 +84,12 @@ describe('StatisticsPage', () => {
     });
 
     it('shows loading state initially', () => {
-      render(<StatisticsPage />);
-      expect(screen.getByText('加载中…')).toBeInTheDocument();
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
+      expect(screen.getByText('加载中...')).toBeInTheDocument();
     });
 
     it('does not render the top statistics hero header', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
 
       await screen.findByText('248');
       expect(screen.queryByText('REVIEW ANALYTICS')).not.toBeInTheDocument();
@@ -97,27 +98,27 @@ describe('StatisticsPage', () => {
     });
 
     it('renders 总词义条目数量 248', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       expect(await screen.findByText('248')).toBeInTheDocument();
       expect(screen.getByText(/总词义条目数量/)).toBeInTheDocument();
     });
 
     it('renders 复习中数量 183', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText('183')).toBeInTheDocument();
       expect(screen.getByText(/复习中数量/)).toBeInTheDocument();
     });
 
     it('renders 已熟记数量 41', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText('41')).toBeInTheDocument();
       expect(screen.getByText(/已熟记数量/)).toBeInTheDocument();
     });
 
     it('renders 收藏数量 24', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText('24')).toBeInTheDocument();
       expect(screen.getByText(/收藏数量/)).toBeInTheDocument();
@@ -130,13 +131,13 @@ describe('StatisticsPage', () => {
     });
 
     it('renders 最近 14 天数量图 section heading', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText(/最近 14 天数量图/)).toBeInTheDocument();
     });
 
     it('uses only the latest 14 records from daily_review_counts (15 entries fixture)', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       // Scope bar labels to the recent 14-day chart section only
       const chartSection = screen.getByTestId('recent-14-chart');
@@ -150,7 +151,7 @@ describe('StatisticsPage', () => {
     });
 
     it('renders accessible summary for recent 14-day chart', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       // The sr-only summary paragraph should contain the data for the chart
       const summary = document.getElementById('recent-14-summary');
@@ -160,7 +161,7 @@ describe('StatisticsPage', () => {
     });
 
     it('renders two bars per recent day: review count and Good count', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       const chartSection = screen.getByTestId('recent-14-chart');
       expect(chartSection.querySelector('[data-testid="daily-review-bar-2026-05-15"]')).toHaveClass('phase7-statistics-daily-bar--review');
@@ -176,20 +177,20 @@ describe('StatisticsPage', () => {
     });
 
     it('renders 历史月份数量图 section heading', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText(/历史月份数量图/)).toBeInTheDocument();
     });
 
     it('renders month entry 2026-05 with count 531', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText('531')).toBeInTheDocument();
       expect(screen.getByText('2026-05')).toBeInTheDocument();
     });
 
     it('renders month entry 2026-04 with count 310', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText('310')).toBeInTheDocument();
       expect(screen.getByText('2026-04')).toBeInTheDocument();
@@ -202,13 +203,13 @@ describe('StatisticsPage', () => {
     });
 
     it('renders 每日正确率折线图 section heading', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText(/每日正确率折线图/)).toBeInTheDocument();
     });
 
     it('renders 80% accuracy from daily_accuracy fixture', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       // 0.8 should render as 80%
       expect(screen.getByText('80%')).toBeInTheDocument();
@@ -221,20 +222,20 @@ describe('StatisticsPage', () => {
     });
 
     it('renders 标签分布 section heading', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       // The section h2 has exactly "标签分布"; the hero copy also contains it, so target the heading
       expect(screen.getByRole('heading', { name: '标签分布' })).toBeInTheDocument();
     });
 
     it('renders tag name 美剧 from tag_distribution', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText('美剧')).toBeInTheDocument();
     });
 
     it('renders tag name 读书 from tag_distribution', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText('读书')).toBeInTheDocument();
     });
@@ -246,21 +247,21 @@ describe('StatisticsPage', () => {
     });
 
     it('renders Again explanation and bars in trend area', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText('Again：没想起 / 记错')).toBeInTheDocument();
       expect(screen.getByTestId('rating-trend-again-2026-05-14')).toHaveClass('phase7-statistics-rating-bar--again');
     });
 
     it('renders Good explanation and bars in trend area', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       expect(screen.getByText('Good：顺利想起')).toBeInTheDocument();
       expect(screen.getByTestId('rating-trend-good-2026-05-14')).toHaveClass('phase7-statistics-rating-bar--good');
     });
 
     it('renders accessible summary for Again trend spark chart', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       const summary = screen.getByTestId('again-trend-summary');
       expect(summary).toBeInTheDocument();
@@ -269,7 +270,7 @@ describe('StatisticsPage', () => {
     });
 
     it('renders accessible summary for Good trend spark chart', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       await screen.findByText('248');
       const summary = screen.getByTestId('good-trend-summary');
       expect(summary).toBeInTheDocument();
@@ -284,7 +285,7 @@ describe('StatisticsPage', () => {
     });
 
     it('renders 还没有统计数据 when all arrays are empty', async () => {
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
       // totals should still show 0 values; empty message for charts
       expect(await screen.findByText(/还没有统计数据/)).toBeInTheDocument();
     });
@@ -296,7 +297,7 @@ describe('StatisticsPage', () => {
         jsonResponse({ error: 'database unavailable' }, 500),
       );
 
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
 
       const alert = await screen.findByRole('alert');
       expect(alert).toHaveTextContent('database unavailable');
@@ -305,7 +306,10 @@ describe('StatisticsPage', () => {
 
     it('retries and shows data after clicking 重试', async () => {
       let callCount = 0;
-      vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        if (String(input) === '/api/settings') {
+          return Promise.resolve(jsonResponse({ interface_language: '中文' }));
+        }
         callCount++;
         if (callCount === 1) {
           return Promise.resolve(jsonResponse({ error: 'transient error' }, 500));
@@ -313,7 +317,7 @@ describe('StatisticsPage', () => {
         return Promise.resolve(jsonResponse(fullStats));
       });
 
-      render(<StatisticsPage />);
+      render(<I18nProvider><StatisticsPage /></I18nProvider>);
 
       await screen.findByRole('alert');
 
@@ -322,4 +326,17 @@ describe('StatisticsPage', () => {
       expect(await screen.findByText('248')).toBeInTheDocument();
     });
   });
+
+  it('renders English UI chrome when interface language is English', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      if (String(input) === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '英语' }));
+      return Promise.resolve(jsonResponse(fullStats));
+    });
+
+    render(<I18nProvider><StatisticsPage /></I18nProvider>);
+
+    expect(await screen.findByText('Total meaning entries')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recent 14-day volume' })).toBeInTheDocument();
+  });
+
 });

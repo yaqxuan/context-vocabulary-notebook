@@ -287,4 +287,18 @@ describe('Phase 6 pages', () => {
     fireEvent.click(screen.getByRole('button', { name: '保存标签' }));
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/tags/tag-1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ name: '美剧 updated' }) })));
   });
+
+  it('renders English UI chrome when interface language is English for Tags page', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+      console.log('FETCH CALLED IN TEST:', url);
+      if (url === '/api/settings') return Promise.resolve(new Response(JSON.stringify({ interface_language: '英语' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      if (url.startsWith('/api/tags')) return Promise.resolve(new Response(JSON.stringify([{ id: 'tag-1', name: '美剧', created_at: 'now', updated_at: 'now' }]), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    });
+
+    render(<I18nProvider><TagsPage /></I18nProvider>);
+
+    await waitFor(() => expect(screen.getByLabelText('New tag name')).toBeInTheDocument());
+  });
 });

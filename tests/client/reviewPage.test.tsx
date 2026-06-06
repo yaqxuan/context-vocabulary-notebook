@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ReviewPage } from '../../src/client/pages/ReviewPage';
+import { I18nProvider } from '../../src/client/i18n/I18nProvider';
 import type { DueReviewCardDto, MediaDto, ReviewDueResponseDto, ReviewProgressDto, SubmitReviewResponseDto } from '../../src/shared/types';
 
 // --- Helpers ---
@@ -162,10 +163,10 @@ describe('ReviewPage', () => {
     });
 
     it('renders due card from mocked /api/review/due response', async () => {
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       // Initially shows loading
-      expect(screen.getByText('加载中…')).toBeInTheDocument();
+      expect(screen.getByText('加载中...')).toBeInTheDocument();
 
       // Card content appears, but the answer stays hidden until the user rates recall.
       expect(await screen.findByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
@@ -186,7 +187,7 @@ describe('ReviewPage', () => {
     });
 
     it('highlights target word in sentence with <mark>', async () => {
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -206,7 +207,7 @@ describe('ReviewPage', () => {
         },
       } satisfies ReviewDueResponseDto));
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'go' });
       const marks = [...document.querySelectorAll('mark')].map((mark) => mark.textContent);
@@ -214,7 +215,7 @@ describe('ReviewPage', () => {
     });
 
     it('toggles context panel showing media, unavailable media badge, note, other contexts', async () => {
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -242,7 +243,7 @@ describe('ReviewPage', () => {
     });
 
     it('hides context panel when toggled again', async () => {
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -281,7 +282,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -292,7 +293,7 @@ describe('ReviewPage', () => {
       expect(screen.getByRole('button', { name: '下一张' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '确认 Good' })).not.toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'laconic' })).not.toBeInTheDocument();
-      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
 
       fireEvent.click(screen.getByRole('button', { name: '下一张' }));
 
@@ -325,7 +326,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: /查看当时语境/ }));
@@ -335,7 +336,7 @@ describe('ReviewPage', () => {
       expect(screen.getByRole('button', { name: '确认 Good' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '下一张' })).not.toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'laconic' })).not.toBeInTheDocument();
-      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
 
       fireEvent.click(screen.getByRole('button', { name: '确认 Good' }));
 
@@ -368,7 +369,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       expect(screen.queryByRole('button', { name: '收藏' })).not.toBeInTheDocument();
@@ -414,7 +415,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -443,7 +444,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -477,7 +478,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -512,7 +513,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Again' }));
@@ -544,7 +545,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -579,7 +580,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -597,7 +598,7 @@ describe('ReviewPage', () => {
     it('shows empty queue message when no due cards', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(emptyResponse));
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Again/ })).not.toBeInTheDocument();
@@ -621,7 +622,7 @@ describe('ReviewPage', () => {
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(limitResponse));
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -646,7 +647,7 @@ describe('ReviewPage', () => {
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(limitResponse));
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       expect(screen.getByText(/今日目标已完成/)).toBeInTheDocument();
@@ -666,7 +667,7 @@ describe('ReviewPage', () => {
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(limitResponse));
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -715,7 +716,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       // Initial load shows banner
       await screen.findByRole('heading', { name: 'ephemeral' });
@@ -741,7 +742,7 @@ describe('ReviewPage', () => {
         jsonResponse({ error: 'database unavailable' }, 500),
       );
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       // Error state appears
       const alert = await screen.findByRole('alert');
@@ -759,7 +760,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse(dueResponse));
       });
 
-      render(<ReviewPage />);
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
 
       await screen.findByRole('alert');
 
@@ -767,5 +768,22 @@ describe('ReviewPage', () => {
 
       expect(await screen.findByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
     });
+  });
+
+  it('renders English UI chrome when interface language is English', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '英语' }));
+      if (url === '/api/review/due') return Promise.resolve(jsonResponse({
+        status: 'due',
+        card: dueCard,
+        progress: limitReachedProgress,
+      }));
+      return Promise.resolve(jsonResponse({}));
+    });
+
+    render(<I18nProvider><ReviewPage /></I18nProvider>);
+
+    expect(await screen.findByRole('button', { name: 'End review' })).toBeInTheDocument();
   });
 });
