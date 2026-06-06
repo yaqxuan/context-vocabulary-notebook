@@ -11,7 +11,7 @@ import {
 import { ErrorState, LoadingState } from '../components/UiStates';
 import { getHomeStatistics } from '../api/statistics';
 import { getSettings } from '../api/settings';
-import { getHomeGreeting, type GreetingSelection } from '../lib/homeGreetings';
+import { getHomeGreeting, getHomeGreetingText, type GreetingSelection } from '../lib/homeGreetings';
 import { useI18n } from '../i18n/I18nProvider';
 
 interface StatCardProps {
@@ -27,6 +27,17 @@ interface HomeLanguageSettings {
 const DEFAULT_HOME_LANGUAGES: HomeLanguageSettings = {
   target: DEFAULT_TARGET_LANGUAGE,
   definition: DEFAULT_DEFINITION_LANGUAGE,
+};
+
+const HOME_GREETING_LANG_ATTRS: Record<SupportedLanguage, string> = {
+  中文: 'zh',
+  英语: 'en',
+  日语: 'ja',
+  韩语: 'ko',
+  法语: 'fr',
+  德语: 'de',
+  西班牙语: 'es',
+  俄语: 'ru',
 };
 
 function getHomeLanguages(settings: SettingsDto | null): HomeLanguageSettings {
@@ -69,6 +80,12 @@ function HomeLanguageBadge({ label, language }: { label: string; language: Suppo
   );
 }
 
+function HomeGreetingLine({ greeting, language }: { greeting: GreetingSelection; language: SupportedLanguage }) {
+  return (
+    <p className="home-greeting" lang={HOME_GREETING_LANG_ATTRS[language]}>{getHomeGreetingText(greeting, language)}</p>
+  );
+}
+
 function HomeHero({ greeting, languages }: { greeting: GreetingSelection; languages: HomeLanguageSettings }) {
   const { t } = useI18n();
   return (
@@ -80,8 +97,8 @@ function HomeHero({ greeting, languages }: { greeting: GreetingSelection; langua
             <HomeLanguageBadge label={t('create.targetLanguage')} language={languages.target} />
             <HomeLanguageBadge label={t('create.definitionLanguage')} language={languages.definition} />
           </div>
-          <p className="home-greeting">{greeting.text}</p>
-          <p className="home-greeting" lang="en">{greeting.translation}</p>
+          <HomeGreetingLine greeting={greeting} language={languages.target} />
+          <HomeGreetingLine greeting={greeting} language={languages.definition} />
         </div>
       </div>
     </section>

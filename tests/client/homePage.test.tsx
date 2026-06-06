@@ -12,6 +12,13 @@ vi.mock('../../src/client/lib/homeGreetings', () => ({
     text: '阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。',
     translation: 'Sunlight is like a peeled orange, falling segment by segment onto your vocabulary notebook. Each segment hides a new word.',
   }),
+  getHomeGreetingText: vi.fn((greeting, language) => {
+    if (language === '中文') return greeting.text;
+    if (language === '英语') return greeting.translation;
+    if (language === '韩语') return '아침에 단어장을 열면 새로운 말들이 하루를 밝게 합니다.';
+    if (language === '日语') return '朝の時間に単語帳を開けば、新しい言葉が一日を明るくします。';
+    return greeting.translation;
+  }),
 }));
 
 describe('HomePage', () => {
@@ -59,6 +66,29 @@ describe('HomePage', () => {
     expect(screen.queryByText('soft goal')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '先处理到期，再继续积累。' })).not.toBeInTheDocument();
     expect(screen.queryByText('先看待复习数量，再用 Good / Again 判断今天的复习节奏。')).not.toBeInTheDocument();
+  });
+
+  it('renders greeting body in target and definition languages', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      if (String(input) === '/api/settings') return Promise.resolve(new Response(JSON.stringify({ interface_language: '中文', default_target_language: '韩语', default_definition_language: '日语' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      return Promise.resolve(new Response(JSON.stringify({
+        due_count: 3,
+        reviewed_today_count: 5,
+        again_today_count: 1,
+        good_today_count: 4,
+        daily_review_limit: 20,
+        is_daily_target_reached: false,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    });
+
+    render(<I18nProvider><HomePage /></I18nProvider>);
+
+    expect(await screen.findByText('한국어')).toBeInTheDocument();
+    expect(screen.getByText('日本語')).toBeInTheDocument();
+    expect(screen.getByText('아침에 단어장을 열면 새로운 말들이 하루를 밝게 합니다.')).toBeInTheDocument();
+    expect(screen.getByText('朝の時間に単語帳を開けば、新しい言葉が一日を明るくします。')).toBeInTheDocument();
+    expect(screen.queryByText('阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sunlight is like a peeled orange, falling segment by segment onto your vocabulary notebook. Each segment hides a new word.')).not.toBeInTheDocument();
   });
 
   it('does not show the removed soft-goal card when daily target is reached', async () => {

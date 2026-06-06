@@ -1,3 +1,5 @@
+import type { SupportedLanguage } from '../../shared/constants';
+
 export type GreetingAudience = 'shared';
 
 export type GreetingBucket =
@@ -25,6 +27,69 @@ export interface GreetingSelection extends GreetingContext, GreetingPhrase {}
 export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+}
+
+const LOCALIZED_GREETING_TEXT: Record<Exclude<SupportedLanguage, '中文' | '英语'>, Record<GreetingBucket, string>> = {
+  日语: {
+    '04:00-07:00': '夜明け前の静けさの中で、今日の最初の言葉を迎えましょう。',
+    '07:00-11:00': '朝の時間に単語帳を開けば、新しい言葉が一日を明るくします。',
+    '11:00-13:00': '昼の区切りに、ひとつの単語をもう一度確かめましょう。',
+    '13:00-18:00': '午後の光の中で、覚えた言葉をゆっくり自分のものにしましょう。',
+    '18:00-21:00': '夕方の復習は、今日出会った言葉をやさしく定着させます。',
+    '21:00-23:00': '夜の静けさの中で、言葉は記憶の中に深く根を下ろします。',
+    '23:00-04:00': '深夜の短い復習でも、明日の理解につながります。',
+  },
+  韩语: {
+    '04:00-07:00': '새벽빛이 오기 전, 오늘의 첫 단어를 조용히 맞이해요.',
+    '07:00-11:00': '아침에 단어장을 열면 새로운 말들이 하루를 밝게 합니다.',
+    '11:00-13:00': '점심 무렵, 한 단어를 다시 확인하며 기억을 단단히 해요.',
+    '13:00-18:00': '오후 햇살 속에서 배운 단어를 천천히 내 것으로 만들어요.',
+    '18:00-21:00': '저녁 복습은 오늘 만난 단어를 부드럽게 붙잡아 줍니다.',
+    '21:00-23:00': '밤의 고요 속에서 단어들이 기억 속에 깊이 자리 잡습니다.',
+    '23:00-04:00': '늦은 밤의 짧은 복습도 내일의 이해로 이어집니다.',
+  },
+  法语: {
+    '04:00-07:00': 'Avant l’aube, accueillez doucement le premier mot de la journée.',
+    '07:00-11:00': 'Le matin, chaque mot nouveau peut éclairer toute la journée.',
+    '11:00-13:00': 'À midi, revoyez un mot et laissez-le se fixer tranquillement.',
+    '13:00-18:00': 'Dans la lumière de l’après-midi, les mots appris deviennent les vôtres.',
+    '18:00-21:00': 'La révision du soir aide les mots du jour à rester près de vous.',
+    '21:00-23:00': 'Dans le calme de la nuit, les mots prennent racine dans la mémoire.',
+    '23:00-04:00': 'Même une courte révision tardive nourrit la compréhension de demain.',
+  },
+  德语: {
+    '04:00-07:00': 'Vor dem Morgengrauen begrüßt du leise das erste Wort des Tages.',
+    '07:00-11:00': 'Am Morgen macht jedes neue Wort deinen Tag ein wenig heller.',
+    '11:00-13:00': 'Zur Mittagszeit festigt ein kurzer Blick zurück deine Erinnerung.',
+    '13:00-18:00': 'Im Nachmittagslicht werden gelernte Wörter langsam zu deinen eigenen.',
+    '18:00-21:00': 'Die Wiederholung am Abend hält die Wörter des Tages sanft fest.',
+    '21:00-23:00': 'In der Ruhe der Nacht schlagen Wörter Wurzeln im Gedächtnis.',
+    '23:00-04:00': 'Auch eine kurze späte Wiederholung stärkt das Verstehen von morgen.',
+  },
+  西班牙语: {
+    '04:00-07:00': 'Antes del amanecer, saluda en silencio a la primera palabra del día.',
+    '07:00-11:00': 'Por la mañana, cada palabra nueva puede iluminar todo el día.',
+    '11:00-13:00': 'Al mediodía, repasa una palabra y deja que se afirme en la memoria.',
+    '13:00-18:00': 'Con la luz de la tarde, las palabras aprendidas se vuelven tuyas.',
+    '18:00-21:00': 'El repaso de la tarde ayuda a conservar las palabras de hoy.',
+    '21:00-23:00': 'En la calma de la noche, las palabras echan raíces en la memoria.',
+    '23:00-04:00': 'Incluso un repaso breve de madrugada alimenta la comprensión de mañana.',
+  },
+  俄语: {
+    '04:00-07:00': 'До рассвета тихо встретьте первое слово этого дня.',
+    '07:00-11:00': 'Утром каждое новое слово делает день немного светлее.',
+    '11:00-13:00': 'В полдень повторите одно слово и дайте памяти укрепиться.',
+    '13:00-18:00': 'В дневном свете выученные слова постепенно становятся вашими.',
+    '18:00-21:00': 'Вечернее повторение мягко закрепляет слова, встреченные сегодня.',
+    '21:00-23:00': 'В ночной тишине слова глубже укореняются в памяти.',
+    '23:00-04:00': 'Даже короткое позднее повторение помогает завтрашнему пониманию.',
+  },
+};
+
+export function getHomeGreetingText(greeting: GreetingSelection, language: SupportedLanguage): string {
+  if (language === '中文') return greeting.text;
+  if (language === '英语') return greeting.translation;
+  return LOCALIZED_GREETING_TEXT[language][greeting.bucket];
 }
 
 export const GREETING_PHRASES: Record<GreetingBucket, GreetingPhrase[]> = {
