@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import {
   getGreetingContext,
   getHomeGreeting,
+  getHomeGreetingText,
   GREETING_PHRASES,
   StorageLike,
 } from '../../src/client/lib/homeGreetings';
@@ -130,6 +131,23 @@ describe('homeGreetings', () => {
         text: '阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。',
         translation: 'Sunlight is like a peeled orange, falling segment by segment onto your vocabulary notebook. Each segment hides a new word.',
       });
+    });
+  });
+
+  describe('getHomeGreetingText', () => {
+    it('returns the selected greeting body language instead of fixed Chinese and English', () => {
+      const greeting = {
+        date: '2026-06-01',
+        bucket: '07:00-11:00',
+        audience: 'shared',
+        text: '阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。',
+        translation: 'Sunlight is like a peeled orange, falling segment by segment onto your vocabulary notebook. Each segment hides a new word.',
+      } as const;
+
+      expect(getHomeGreetingText(greeting, '中文')).toBe(greeting.text);
+      expect(getHomeGreetingText(greeting, '英语')).toBe(greeting.translation);
+      expect(getHomeGreetingText(greeting, '韩语')).toBe('아침에 단어장을 열면 새로운 말들이 하루를 밝게 합니다.');
+      expect(getHomeGreetingText(greeting, '日语')).toBe('朝の時間に単語帳を開けば、新しい言葉が一日を明るくします。');
     });
   });
 
