@@ -242,8 +242,8 @@ describe('SettingsPage', () => {
       fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '日语' } });
       fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
-      await screen.findByText('设置已保存');
-      const select = screen.getByLabelText('界面语言') as HTMLSelectElement;
+      await screen.findByText('設定を保存しました');
+      const select = screen.getByLabelText('インターフェース言語') as HTMLSelectElement;
       expect(select.value).toBe('日语');
     });
 

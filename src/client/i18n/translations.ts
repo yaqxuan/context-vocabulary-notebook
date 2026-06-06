@@ -815,17 +815,17 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "navigation": "メインナビゲーション"
   },
   "common": {
-    "loading": "加载中...",
-    "loadFailed": "加载失败",
-    "retry": "重试",
-    "confirm": "确认",
-    "cancel": "取消",
+    "loading": "読み込み中...",
+    "loadFailed": "読み込みに失敗しました",
+    "retry": "再試行",
+    "confirm": "確定",
+    "cancel": "キャンセル",
     "save": "保存",
     "saving": "保存中...",
-    "delete": "删除",
-    "edit": "编辑",
-    "none": "无",
-    "fileUnavailable": "文件不可用"
+    "delete": "削除",
+    "edit": "編集",
+    "none": "なし",
+    "fileUnavailable": "ファイルを利用できません"
   },
   "cards": {
     "list": {
@@ -847,39 +847,39 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "nav": {
     "home": {
-      "label": "主页",
-      "title": "主页",
-      "description": "返回主页"
+      "label": "ホーム",
+      "title": "ホーム",
+      "description": "今日の復習とクイック操作"
     },
     "create": {
-      "label": "新建",
-      "title": "新建卡片",
-      "description": "创建新卡片"
+      "label": "作成",
+      "title": "作成",
+      "description": "語義と文脈を作成"
     },
     "cards": {
-      "label": "卡片",
-      "title": "所有卡片",
-      "description": "浏览卡片"
+      "label": "語義一覧",
+      "title": "語義一覧",
+      "description": "検索、絞り込み、管理"
     },
     "review": {
-      "label": "复习",
-      "title": "开始复习",
-      "description": "复习卡片"
+      "label": "復習",
+      "title": "復習",
+      "description": "Again / Good 復習"
     },
     "tags": {
-      "label": "标签",
-      "title": "标签管理",
-      "description": "管理标签"
+      "label": "タグ",
+      "title": "タグ管理",
+      "description": "分類とソース"
     },
     "favorites": {
-      "label": "收藏",
-      "title": "我的收藏",
-      "description": "收藏的卡片"
+      "label": "お気に入り",
+      "title": "お気に入り",
+      "description": "重要な語義"
     },
     "statistics": {
-      "label": "统计",
-      "title": "学习统计",
-      "description": "查看统计"
+      "label": "統計",
+      "title": "統計",
+      "description": "復習分析"
     },
     "settings": {
       "label": "設定",
@@ -887,8 +887,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "言語、目標、インポートとエクスポート"
     },
     "notFound": {
-      "title": "未找到",
-      "message": "页面不存在"
+      "title": "ページが見つかりません",
+      "message": "対応するページがありません"
     }
   },
   "status": {
@@ -957,79 +957,79 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "cancelEdit": "編集をキャンセル"
   },
   "settings": {
-    "loadFailed": "无法加载设置",
+    "loadFailed": "設定を読み込めませんでした",
     "learning": {
-      "title": "学习与界面设置",
-      "interfaceLanguage": "界面语言",
-      "targetLanguage": "默认学习语言",
-      "defLanguage": "默认释义语言",
-      "dailyLimit": "每日复习数量",
-      "positiveInteger": "每日复习数量必须是正整数",
-      "saveFailed": "保存失败",
-      "saved": "设置已保存"
+      "title": "学習とインターフェース設定",
+      "interfaceLanguage": "インターフェース言語",
+      "targetLanguage": "既定の学習言語",
+      "defLanguage": "既定の定義言語",
+      "dailyLimit": "1日の復習数",
+      "positiveInteger": "1日の復習数は正の整数である必要があります",
+      "saveFailed": "保存に失敗しました",
+      "saved": "設定を保存しました"
     },
     "ai": {
-      "title": "AI API 配置",
-      "desc": "使用 OpenAI-compatible 接口生成制卡建议。API Key 只保存在本地，导出数据不包含 Key。",
-      "loading": "AI 配置加载中…",
-      "empty": "暂无 AI 配置",
-      "keySaved": "API Key 已保存",
+      "title": "AI API 設定",
+      "desc": "OpenAI 互換 API を使ってカード作成の提案を生成します。API Key はローカルにのみ保存され、エクスポートには含まれません。",
+      "loading": "AI 設定を読み込み中…",
+      "empty": "AI 設定はまだありません",
+      "keySaved": "API Key 保存済み",
       "keyNotSaved": "API Key 未保存",
-      "active": "当前启用",
-      "activate": "启用",
-      "edit": "编辑",
-      "delete": "删除",
-      "name": "配置名称",
+      "active": "現在有効",
+      "activate": "有効化",
+      "edit": "編集",
+      "delete": "削除",
+      "name": "設定名",
       "baseUrl": "Base URL",
       "apiKey": "API Key",
-      "fetchModels": "获取模型列表",
-      "fetching": "获取中…",
-      "fetchModelsFailed": "模型列表获取失败",
-      "noModels": "未获取到模型",
-      "saveFailed": "AI 配置保存失败",
-      "activateFailed": "AI 配置启用失败",
-      "deleteFailed": "AI 配置删除失败",
-      "model": "模型",
-      "makeActive": "保存后立即启用",
-      "save": "保存 AI 配置",
-      "cancelEdit": "取消编辑",
-      "saved": "AI 配置已保存"
+      "fetchModels": "モデル一覧を取得",
+      "fetching": "取得中…",
+      "fetchModelsFailed": "モデル一覧の取得に失敗しました",
+      "noModels": "モデルを取得できませんでした",
+      "saveFailed": "AI 設定の保存に失敗しました",
+      "activateFailed": "AI 設定の有効化に失敗しました",
+      "deleteFailed": "AI 設定の削除に失敗しました",
+      "model": "モデル",
+      "makeActive": "保存後すぐ有効化",
+      "save": "AI 設定を保存",
+      "cancelEdit": "編集をキャンセル",
+      "saved": "AI 設定を保存しました"
     },
     "export": {
-      "title": "导出数据",
-      "markedDesc": "完整备份：包含卡片、语境、媒体、标签、复习记录、FSRS 状态和设置。",
-      "markedBtn": "导出含有标记的卡片",
-      "pureDesc": "纯内容分享：仅包含卡片和语境，不含个人状态、收藏或复习记录。",
-      "pureBtn": "导出纯卡片"
+      "title": "データをエクスポート",
+      "markedDesc": "完全バックアップ：カード、文脈、メディア、タグ、復習記録、FSRS 状態、設定を含みます。",
+      "markedBtn": "マーク付きカードをエクスポート",
+      "pureDesc": "コンテンツ共有：カードと文脈のみ。個人状態、收藏、復習記録は含みません。",
+      "pureBtn": "純粋なカードをエクスポート"
     },
     "import": {
-      "title": "导入数据",
-      "fileSelect": "选择导入 zip",
-      "scan": "扫描导入文件",
-      "execute": "执行导入",
-      "scanFailed": "扫描失败",
-      "executeFailed": "导入失败",
-      "cards": "卡片",
-      "contexts": "语境",
-      "media": "媒体文件",
-      "tags": "标签",
-      "conflicts": "冲突",
-      "conflictWord": "冲突处理：",
-      "skip": "跳过",
-      "merge": "合并",
-      "importAsNew": "作为新条目",
-      "missingMedia": "缺少媒体文件",
-      "modeTitle": "冲突处理方式",
-      "modeSkip": "全部跳过",
-      "modeMerge": "全部合并为已有词义条目的新语境",
-      "modeNew": "全部作为新词义条目导入",
-      "modePerItem": "逐项处理",
-      "done": "导入完成",
-      "importedCards": "已导入卡片",
-      "importedContexts": "已导入语境",
-      "importedMedia": "已导入媒体",
-      "skipped": "已跳过",
-      "merged": "已合并"
+      "title": "データをインポート",
+      "fileSelect": "インポート zip を選択",
+      "scan": "インポートファイルをスキャン",
+      "execute": "インポートを実行",
+      "scanFailed": "スキャンに失敗しました",
+      "executeFailed": "インポートに失敗しました",
+      "cards": "カード",
+      "contexts": "文脈",
+      "media": "メディアファイル",
+      "tags": "タグ",
+      "conflicts": "競合",
+      "conflictWord": "競合処理：",
+      "skip": "スキップ",
+      "merge": "結合",
+      "importAsNew": "新規項目としてインポート",
+      "missingMedia": "不足メディア",
+      "modeTitle": "競合処理方式",
+      "modeSkip": "すべてスキップ",
+      "modeMerge": "既存語義の新しい文脈としてすべて結合",
+      "modeNew": "すべて新しい語義としてインポート",
+      "modePerItem": "項目ごとに処理",
+      "done": "インポート完了",
+      "importedCards": "インポート済みカード",
+      "importedContexts": "インポート済み文脈",
+      "importedMedia": "インポート済みメディア",
+      "skipped": "スキップ済み",
+      "merged": "結合済み"
     }
   },
   "home": {
@@ -1615,17 +1615,17 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "navigation": "Navigation principale"
   },
   "common": {
-    "loading": "加载中...",
-    "loadFailed": "加载失败",
-    "retry": "重试",
-    "confirm": "确认",
-    "cancel": "取消",
-    "save": "保存",
-    "saving": "保存中...",
-    "delete": "删除",
-    "edit": "编辑",
-    "none": "无",
-    "fileUnavailable": "文件不可用"
+    "loading": "Chargement...",
+    "loadFailed": "Échec du chargement",
+    "retry": "Réessayer",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "none": "Aucun",
+    "fileUnavailable": "Fichier indisponible"
   },
   "cards": {
     "list": {
@@ -1647,39 +1647,39 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "nav": {
     "home": {
-      "label": "主页",
-      "title": "主页",
-      "description": "返回主页"
+      "label": "Accueil",
+      "title": "Accueil",
+      "description": "Révisions du jour et accès rapide"
     },
     "create": {
-      "label": "新建",
-      "title": "新建卡片",
-      "description": "创建新卡片"
+      "label": "Créer",
+      "title": "Créer",
+      "description": "Créer des sens et des contextes"
     },
     "cards": {
-      "label": "卡片",
-      "title": "所有卡片",
-      "description": "浏览卡片"
+      "label": "Entrées de sens",
+      "title": "Entrées de sens",
+      "description": "Rechercher, filtrer, gérer"
     },
     "review": {
-      "label": "复习",
-      "title": "开始复习",
-      "description": "复习卡片"
+      "label": "Révision",
+      "title": "Révision",
+      "description": "Révision Again / Good"
     },
     "tags": {
-      "label": "标签",
-      "title": "标签管理",
-      "description": "管理标签"
+      "label": "Tags",
+      "title": "Gestion des tags",
+      "description": "Catégories et sources"
     },
     "favorites": {
-      "label": "收藏",
-      "title": "我的收藏",
-      "description": "收藏的卡片"
+      "label": "Favoris",
+      "title": "Favoris",
+      "description": "Sens importants"
     },
     "statistics": {
-      "label": "统计",
-      "title": "学习统计",
-      "description": "查看统计"
+      "label": "Statistiques",
+      "title": "Statistiques",
+      "description": "Analyse des révisions"
     },
     "settings": {
       "label": "Paramètres",
@@ -1687,8 +1687,8 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "Langues, objectifs, importation et exportation"
     },
     "notFound": {
-      "title": "未找到",
-      "message": "页面不存在"
+      "title": "Page introuvable",
+      "message": "Aucune page correspondante"
     }
   },
   "status": {
@@ -1757,79 +1757,79 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "cancelEdit": "Annuler la modification"
   },
   "settings": {
-    "loadFailed": "无法加载设置",
+    "loadFailed": "Échec du chargement des paramètres",
     "learning": {
-      "title": "学习与界面设置",
+      "title": "Paramètres d’apprentissage et d’interface",
       "interfaceLanguage": "Langue de l’interface",
-      "targetLanguage": "默认学习语言",
-      "defLanguage": "默认释义语言",
-      "dailyLimit": "每日复习数量",
-      "positiveInteger": "每日复习数量必须是正整数",
-      "saveFailed": "保存失败",
+      "targetLanguage": "Langue d’apprentissage par défaut",
+      "defLanguage": "Langue de définition par défaut",
+      "dailyLimit": "Nombre de révisions quotidiennes",
+      "positiveInteger": "Le nombre de révisions quotidiennes doit être un entier positif",
+      "saveFailed": "Échec de l’enregistrement",
       "saved": "Paramètres enregistrés"
     },
     "ai": {
-      "title": "AI API 配置",
-      "desc": "使用 OpenAI-compatible 接口生成制卡建议。API Key 只保存在本地，导出数据不包含 Key。",
-      "loading": "AI 配置加载中…",
-      "empty": "暂无 AI 配置",
-      "keySaved": "API Key 已保存",
-      "keyNotSaved": "API Key 未保存",
-      "active": "当前启用",
-      "activate": "启用",
-      "edit": "编辑",
-      "delete": "删除",
-      "name": "配置名称",
+      "title": "Configuration API IA",
+      "desc": "Utilisez une API compatible OpenAI pour générer des suggestions de cartes. La clé API reste locale et n’est pas exportée.",
+      "loading": "Chargement de la configuration IA…",
+      "empty": "Aucune configuration IA",
+      "keySaved": "Clé API enregistrée",
+      "keyNotSaved": "Clé API non enregistrée",
+      "active": "Actif",
+      "activate": "Activer",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "name": "Nom de la configuration",
       "baseUrl": "Base URL",
       "apiKey": "API Key",
-      "fetchModels": "获取模型列表",
-      "fetching": "获取中…",
-      "fetchModelsFailed": "模型列表获取失败",
-      "noModels": "未获取到模型",
-      "saveFailed": "AI 配置保存失败",
-      "activateFailed": "AI 配置启用失败",
-      "deleteFailed": "AI 配置删除失败",
-      "model": "模型",
-      "makeActive": "保存后立即启用",
-      "save": "保存 AI 配置",
-      "cancelEdit": "取消编辑",
-      "saved": "AI 配置已保存"
+      "fetchModels": "Récupérer la liste des modèles",
+      "fetching": "Récupération…",
+      "fetchModelsFailed": "Échec de la récupération des modèles",
+      "noModels": "Aucun modèle récupéré",
+      "saveFailed": "Échec de l’enregistrement de la configuration IA",
+      "activateFailed": "Échec de l’activation de la configuration IA",
+      "deleteFailed": "Échec de la suppression de la configuration IA",
+      "model": "Modèle",
+      "makeActive": "Activer après enregistrement",
+      "save": "Enregistrer la configuration IA",
+      "cancelEdit": "Annuler la modification",
+      "saved": "Configuration IA enregistrée"
     },
     "export": {
-      "title": "导出数据",
-      "markedDesc": "完整备份：包含卡片、语境、媒体、标签、复习记录、FSRS 状态和设置。",
-      "markedBtn": "导出含有标记的卡片",
-      "pureDesc": "纯内容分享：仅包含卡片和语境，不含个人状态、收藏或复习记录。",
-      "pureBtn": "导出纯卡片"
+      "title": "Exporter les données",
+      "markedDesc": "Sauvegarde complète : cartes, contextes, médias, tags, journaux de révision, état FSRS et paramètres.",
+      "markedBtn": "Exporter les cartes avec marquages",
+      "pureDesc": "Partage de contenu : cartes et contextes uniquement, sans état personnel ni révisions.",
+      "pureBtn": "Exporter les cartes seules"
     },
     "import": {
-      "title": "导入数据",
-      "fileSelect": "选择导入 zip",
-      "scan": "扫描导入文件",
-      "execute": "执行导入",
-      "scanFailed": "扫描失败",
-      "executeFailed": "导入失败",
-      "cards": "卡片",
-      "contexts": "语境",
-      "media": "媒体文件",
-      "tags": "标签",
-      "conflicts": "冲突",
-      "conflictWord": "冲突处理：",
-      "skip": "跳过",
-      "merge": "合并",
-      "importAsNew": "作为新条目",
-      "missingMedia": "缺少媒体文件",
-      "modeTitle": "冲突处理方式",
-      "modeSkip": "全部跳过",
-      "modeMerge": "全部合并为已有词义条目的新语境",
-      "modeNew": "全部作为新词义条目导入",
-      "modePerItem": "逐项处理",
-      "done": "导入完成",
-      "importedCards": "已导入卡片",
-      "importedContexts": "已导入语境",
-      "importedMedia": "已导入媒体",
-      "skipped": "已跳过",
-      "merged": "已合并"
+      "title": "Importer des données",
+      "fileSelect": "Choisir un zip à importer",
+      "scan": "Analyser le fichier d’import",
+      "execute": "Exécuter l’import",
+      "scanFailed": "Échec de l’analyse",
+      "executeFailed": "Échec de l’import",
+      "cards": "Cartes",
+      "contexts": "Contextes",
+      "media": "Médias",
+      "tags": "Tags",
+      "conflicts": "Conflits",
+      "conflictWord": "Traitement du conflit :",
+      "skip": "Ignorer",
+      "merge": "Fusionner",
+      "importAsNew": "Importer comme nouvelle entrée",
+      "missingMedia": "Médias manquants",
+      "modeTitle": "Mode de résolution des conflits",
+      "modeSkip": "Tout ignorer",
+      "modeMerge": "Tout fusionner comme nouveaux contextes",
+      "modeNew": "Tout importer comme nouvelles entrées",
+      "modePerItem": "Traiter élément par élément",
+      "done": "Import terminé",
+      "importedCards": "Cartes importées",
+      "importedContexts": "Contextes importés",
+      "importedMedia": "Médias importés",
+      "skipped": "Ignorés",
+      "merged": "Fusionnés"
     }
   },
   "home": {
