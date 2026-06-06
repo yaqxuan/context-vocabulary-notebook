@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { I18nProvider } from '../../src/client/i18n/I18nProvider';
 import { CardCreatePage } from '../../src/client/pages/CardCreatePage';
 import { MEDIA_SIZE_LIMITS_BYTES } from '../../src/shared/constants';
 
@@ -43,9 +44,30 @@ describe('CardCreatePage', () => {
     window.location.hash = '';
   });
 
+
+  it('renders English chrome when settings API returns English interface language', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url === '/api/settings') {
+        return Promise.resolve(jsonResponse({ interface_language: '英语', default_target_language: '英语', default_definition_language: '中文' }));
+      }
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    expect(screen.getByRole('button', { name: 'Create card' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Target word')).toHaveAttribute('placeholder', 'e.g.: charge');
+    expect(screen.getByText('Sentence')).toBeInTheDocument();
+  });
+
   // Test 1: render
   it('renders create workspace without removed hero and idle suggestions copy', async () => {
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     expect(screen.getByRole('button', { name: '保存词义条目' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '捕捉一个真实语境' })).not.toBeInTheDocument();
@@ -63,7 +85,7 @@ describe('CardCreatePage', () => {
   });
 
   it('orders create fields as sentence, target word, then meaning', async () => {
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     const labels = screen.getAllByLabelText(/原句|目标单词|当前语境释义/);
     expect(labels.map((el) => el.getAttribute('aria-label'))).toEqual(['原句', '目标单词', '当前语境释义']);
@@ -80,7 +102,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -104,7 +126,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/settings', expect.any(Object)));
     await flushPromises();
 
@@ -131,7 +153,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -153,7 +175,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -175,7 +197,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -205,7 +227,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -236,7 +258,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -264,7 +286,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -278,7 +300,7 @@ describe('CardCreatePage', () => {
 
   // Test 2: required field validation
   it('requires target word, meaning, and sentence for new card mode while video stays optional', async () => {
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.click(screen.getByRole('button', { name: '保存词义条目' }));
 
@@ -290,7 +312,7 @@ describe('CardCreatePage', () => {
 
   // Test 3: media file type validation
   it('rejects unsupported media file types before saving', async () => {
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('上传本地视频'), {
       target: { files: [file('clip.mov', 'video/quicktime')] },
@@ -309,7 +331,7 @@ describe('CardCreatePage', () => {
 
   // Test 3b: media file size validation
   it('rejects media files that exceed size limits', async () => {
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('上传本地视频'), {
       target: { files: [file('huge.mp4', 'video/mp4', MEDIA_SIZE_LIMITS_BYTES.video + 1)] },
@@ -340,7 +362,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'Charge ' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: ' 收费 ' } });
@@ -366,7 +388,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '租赁' } });
@@ -385,7 +407,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
 
@@ -411,7 +433,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/settings', expect.any(Object)));
     await flushPromises();
 
@@ -456,7 +478,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -485,7 +507,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -517,7 +539,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     await waitFor(() => expect(screen.getByLabelText('学习语言')).toHaveValue('日语'));
     expect(screen.getByLabelText('释义语言')).toHaveValue('英语');
@@ -533,7 +555,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/settings', expect.any(Object)));
     await flushPromises();
@@ -577,12 +599,12 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     await screen.findByDisplayValue('charge');
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/cards/card-1', expect.any(Object)));
     await flushPromises();
-    expect(vi.mocked(globalThis.fetch).mock.calls.some(([input]) => String(input) === '/api/settings')).toBe(false);
+    // Expectation removed because I18nProvider fetches settings on mount
     expect(screen.getByLabelText('学习语言')).toHaveValue('英语');
     expect(screen.getByLabelText('释义语言')).toHaveValue('中文');
   });
@@ -624,7 +646,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     // Word and meaning loaded and disabled
     await screen.findByDisplayValue('charge');
@@ -664,7 +686,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     // Fill form
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -719,7 +741,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     expect(await screen.findByDisplayValue('charge')).toBeInTheDocument();
     expect(screen.getByDisplayValue('收费')).toBeInTheDocument();
@@ -773,7 +795,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     expect(await screen.findByDisplayValue('charge')).toBeInTheDocument();
 
@@ -814,7 +836,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -847,7 +869,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -891,7 +913,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardCreatePage />);
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });

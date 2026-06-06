@@ -7,6 +7,8 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { MediaPreview } from '../components/MediaPreview';
 import { TagAssignmentEditor } from '../components/TagAssignmentEditor';
 import { ErrorState, LoadingState } from '../components/UiStates';
+import { useI18n } from '../i18n/I18nProvider';
+import type { Translator } from '../i18n/types';
 
 function currentCardId(): string {
   return decodeURIComponent(window.location.hash.replace(/^#\/cards\//, '').split('?')[0] ?? '');
@@ -22,18 +24,18 @@ function formatReviewTime(value: string): string {
   return date.toLocaleString('zh-CN', { hour12: false });
 }
 
-function reviewStatusCopy(card: CardDetailDto): string {
-  if (card.status === 'mastered') {
-    return '已熟记：暂不进入复习队列，恢复复习后继续使用当前复习状态。';
-  }
+function statusSummary(card: CardDetailDto, t: Translator): string {
+  if (card.status === 'mastered') return t('detail.statusMastered');
+  if (!card.fsrs.due_date) return t('detail.statusReviewingNoDue');
   const due = new Date(card.fsrs.due_date).getTime();
   if (!Number.isNaN(due) && due <= Date.now()) {
-    return '正在复习中：已进入复习队列，可以现在复习。';
+    return t('detail.statusReviewingNow');
   }
-  return `复习中：下次复习 ${formatReviewTime(card.fsrs.due_date)}。`;
+  return t('detail.statusReviewingDue', { date: formatReviewTime(card.fsrs.due_date) });
 }
 
 export function CardDetailPage() {
+  const { t } = useI18n();
   const [card, setCard] = useState<CardDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export function CardDetailPage() {
       .then(setCard)
       .catch((err: unknown) => {
         setCard(null);
-        setError(err instanceof Error ? err.message : '无法加载词义详情');
+        setError(err instanceof Error ? err.message : t('detail.loadFailed'));
       })
       .finally(() => setLoading(false));
   }, [cardId]);
@@ -71,7 +73,7 @@ export function CardDetailPage() {
       await action();
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '操作失败');
+      setError(err instanceof Error ? err.message : t('detail.actionFailed'));
     }
   };
 
@@ -86,7 +88,7 @@ export function CardDetailPage() {
     if (!card) return;
     const nextMeaning = meaningDraft.trim();
     if (!nextMeaning) {
-      setMeaningError('当前语境释义必填');
+      setMeaningError(t('create.meaningRequired'));
       return;
     }
     try {
@@ -94,7 +96,7 @@ export function CardDetailPage() {
       setEditingMeaning(false);
       load();
     } catch (err) {
-      setMeaningError(err instanceof Error ? err.message : '保存释义失败');
+      setMeaningError(err instanceof Error ? err.message : t('detail.saveMeaningFailed'));
     }
   };
 
@@ -115,13 +117,13 @@ export function CardDetailPage() {
       cancelTagEdit();
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存标签失败');
+      setError(err instanceof Error ? err.message : t('detail.saveTagsFailed'));
     }
   };
 
-  if (loading) return <LoadingState message="正在加载词义详情……" />;
+  if (loading) return <LoadingState message={t('detail.loading')} />;
   if (error) return <ErrorState message={error} onRetry={load} />;
-  if (!card) return <ErrorState message="词义条目不存在" onRetry={load} />;
+  if (!card) return <ErrorState message={t('detail.notFound')} onRetry={load} />;
 
   return (
     <section className="phase6-detail">
@@ -130,10 +132,10 @@ export function CardDetailPage() {
           <h2>{card.target_word}</h2>
           {editingMeaning ? (
             <div className="phase6-inline-editor">
-              <label htmlFor="detail-meaning-edit">当前语境释义</label>
+              <label htmlFor="detail-meaning-edit">{t('create.meaning')}</label>
               <input
                 id="detail-meaning-edit"
-                aria-label="编辑当前语境释义"
+                aria-label={t('detail.editMeaningAria')}
                 value={meaningDraft}
                 onChange={(event) => {
                   setMeaningDraft(event.target.value);
@@ -142,34 +144,34 @@ export function CardDetailPage() {
               />
               {meaningError ? <em>{meaningError}</em> : null}
               <div>
-                <button type="button" onClick={saveMeaning}>保存释义</button>
-                <button type="button" onClick={() => setEditingMeaning(false)}>取消</button>
+                <button type="button" onClick={saveMeaning}>{t('detail.saveMeaning')}</button>
+                <button type="button" onClick={() => setEditingMeaning(false)}>{t('common.cancel')}</button>
               </div>
             </div>
           ) : (
             <>
               <p className="phase6-detail-meaning">{card.context_meaning}</p>
               <div className="phase6-detail-meaning-actions" data-testid="detail-meaning-actions">
-                <button type="button" onClick={startMeaningEdit}>编辑释义</button>
+                <button type="button" onClick={startMeaningEdit}>{t('detail.editMeaning')}</button>
               </div>
             </>
           )}
         </div>
         <div className="phase6-detail-actions">
-          <button type="button" onClick={() => { window.location.hash = `#/create?card_id=${encodeURIComponent(card.id)}`; }}>添加语境</button>
-          <button type="button" onClick={() => runAndReload(() => patchCard(card.id, { is_favorite: !card.is_favorite }))}>{card.is_favorite ? '取消收藏' : '收藏'}</button>
-          <button type="button" onClick={() => runAndReload(() => patchCard(card.id, { status: card.status === 'reviewing' ? 'mastered' : 'reviewing' }))}>{card.status === 'reviewing' ? '标记熟记' : '恢复复习'}</button>
-          <button type="button" onClick={() => setConfirmDelete('card')}>删除词义</button>
+          <button type="button" onClick={() => { window.location.hash = `#/create?card_id=${encodeURIComponent(card.id)}`; }}>{t('detail.addContext')}</button>
+          <button type="button" onClick={() => runAndReload(() => patchCard(card.id, { is_favorite: !card.is_favorite }))}>{card.is_favorite ? t('catalogue.removeFavorite') : t('catalogue.addFavorite')}</button>
+          <button type="button" onClick={() => runAndReload(() => patchCard(card.id, { status: card.status === 'reviewing' ? 'mastered' : 'reviewing' }))}>{card.status === 'reviewing' ? t('catalogue.markMastered') : t('catalogue.restoreReview')}</button>
+          <button type="button" onClick={() => setConfirmDelete('card')}>{t('detail.deleteCard')}</button>
         </div>
       </div>
 
       <div className="phase6-detail-grid">
         <section className="phase6-contexts">
-          <h3>全部语境</h3>
-          {card.contexts.length === 0 ? <p>暂无语境</p> : null}
+          <h3>{t('detail.allContexts')}</h3>
+          {card.contexts.length === 0 ? <p>{t('catalogue.noContext')}</p> : null}
           {card.contexts.map((context, index) => (
             <article key={context.id} className="phase6-context-card">
-              <div><strong>语境 {index + 1}</strong>{context.is_primary ? <span>主语境</span> : null}</div>
+              <div><strong>{t('detail.contextNumber', { number: index + 1 })}</strong>{context.is_primary ? <span>{t('detail.primaryContext')}</span> : null}</div>
               <p>{context.sentence}</p>
               {context.note ? <small>{context.note}</small> : null}
               <div className="phase6-media-row">
@@ -184,22 +186,22 @@ export function CardDetailPage() {
                 ))}
               </div>
               <div className="phase6-context-actions">
-                <button type="button" disabled={index === 0} onClick={() => runAndReload(() => moveContextUp(context.id))}>上移</button>
-                <button type="button" disabled={index === card.contexts.length - 1} onClick={() => runAndReload(() => moveContextDown(context.id))}>下移</button>
-                <button type="button" disabled={Boolean(context.is_primary)} onClick={() => runAndReload(() => setPrimaryContext(context.id))}>设为主语境</button>
-                <button type="button" onClick={() => setConfirmDelete(context)}>删除语境</button>
+                <button type="button" disabled={index === 0} onClick={() => runAndReload(() => moveContextUp(context.id))}>{t('detail.moveUp')}</button>
+                <button type="button" disabled={index === card.contexts.length - 1} onClick={() => runAndReload(() => moveContextDown(context.id))}>{t('detail.moveDown')}</button>
+                <button type="button" disabled={Boolean(context.is_primary)} onClick={() => runAndReload(() => setPrimaryContext(context.id))}>{t('detail.setPrimary')}</button>
+                <button type="button" onClick={() => setConfirmDelete(context)}>{t('detail.deleteContext')}</button>
               </div>
             </article>
           ))}
         </section>
 
         <aside className="phase6-detail-side">
-          <h3>复习信息</h3>
-          <p>状态：{card.status === 'reviewing' ? '复习中' : '已熟记'}</p>
-          <p>{reviewStatusCopy(card)}</p>
-          <p>复习次数：{card.fsrs.reps}</p>
-          <p>遗忘次数：{card.fsrs.lapses}</p>
-          <h3>词义标签</h3>
+          <h3>{t('detail.reviewInfo')}</h3>
+          <p>{t('catalogue.statusLabel')}：{card.status === 'reviewing' ? t('status.reviewing') : t('status.mastered')}</p>
+          <p>{statusSummary(card, t)}</p>
+          <p>{t('detail.repsCount', { count: card.fsrs.reps })}</p>
+          <p>{t('detail.lapsesCount', { count: card.fsrs.lapses })}</p>
+          <h3>{t('detail.tagsTitle')}</h3>
           {editingTags ? (
             <div className="phase6-tag-editor-container">
               <TagAssignmentEditor
@@ -207,29 +209,29 @@ export function CardDetailPage() {
                 onSelectedTagIdsChange={setSelectedTagIds}
               />
               <div>
-                <button type="button" onClick={saveTags}>保存标签</button>
-                <button type="button" onClick={cancelTagEdit}>取消</button>
+                <button type="button" onClick={saveTags}>{t('detail.saveTags')}</button>
+                <button type="button" onClick={cancelTagEdit}>{t('common.cancel')}</button>
               </div>
             </div>
           ) : (
             <div className="phase6-tag-readonly">
-              <div>{card.tags.length ? card.tags.map((tag) => <span key={tag.id}>{tag.name}</span>) : '暂无标签，可点击“编辑标签”添加'}</div>
-              <button type="button" onClick={startTagEdit}>编辑标签</button>
+              <div>{card.tags.length ? card.tags.map((tag) => <span key={tag.id}>{tag.name}</span>) : t('detail.noTagsHint')}</div>
+              <button type="button" onClick={startTagEdit}>{t('detail.editTags')}</button>
             </div>
           )}
         </aside>
       </div>
 
-      {confirmDelete === 'card' ? <ConfirmDialog title="删除词义条目" message="会软删除这个词义条目、语境实例和媒体记录。确认删除？" confirmLabel="删除" onCancel={() => setConfirmDelete(null)} onConfirm={async () => {
+      {confirmDelete === 'card' ? <ConfirmDialog title={t('detail.deleteCardTitle')} message={t('detail.deleteCardMessage')} confirmLabel={t('common.delete')} onCancel={() => setConfirmDelete(null)} onConfirm={async () => {
         try {
           await deleteCard(card.id);
           window.location.hash = '#/cards';
         } catch (err) {
           setConfirmDelete(null);
-          setError(err instanceof Error ? err.message : '删除词义失败');
+          setError(err instanceof Error ? err.message : t('detail.deleteCardFailed'));
         }
       }} /> : null}
-      {confirmDelete && confirmDelete !== 'card' ? <ConfirmDialog title="删除语境实例" message="会软删除这个语境和它的媒体记录。确认删除？" confirmLabel="删除" onCancel={() => setConfirmDelete(null)} onConfirm={() => runAndReload(() => deleteContext(confirmDelete.id)).then(() => setConfirmDelete(null))} /> : null}
+      {confirmDelete && confirmDelete !== 'card' ? <ConfirmDialog title={t('detail.deleteContextTitle')} message={t('detail.deleteContextMessage')} confirmLabel={t('common.delete')} onCancel={() => setConfirmDelete(null)} onConfirm={() => runAndReload(() => deleteContext(confirmDelete.id)).then(() => setConfirmDelete(null))} /> : null}
     </section>
   );
 }

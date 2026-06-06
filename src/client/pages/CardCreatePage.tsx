@@ -6,6 +6,8 @@ import { uploadMedia } from '../api/media';
 import { getAiSuggestion } from '../api/aiSuggestions';
 import { TagAssignmentEditor } from '../components/TagAssignmentEditor';
 import { getSettings } from '../api/settings';
+import { useI18n } from '../i18n/I18nProvider';
+import type { Translator } from '../i18n/types';
 import type { CardDetailDto, SuggestionDto } from '../../shared/types';
 import {
   DEFAULT_DEFINITION_LANGUAGE,
@@ -50,8 +52,8 @@ function isMp3(f: File): boolean {
   return f.type === 'audio/mpeg' || hasExtension(f, ['.mp3']);
 }
 
-function fileLabel(f: File | null): string {
-  if (!f) return '尚未选择文件';
+function fileLabel(f: File | null, t: Translator): string {
+  if (!f) return t('create.noFile');
   const kb = Math.max(1, Math.round(f.size / 1024));
   return `${f.name} · ${kb} KB`;
 }
@@ -76,6 +78,7 @@ function sameTagSet(a: string[], b: string[]): boolean {
 }
 
 export function CardCreatePage() {
+  const { t } = useI18n();
   const [targetWord, setTargetWord] = useState('');
   const [meaning, setMeaning] = useState('');
   const [sentence, setSentence] = useState('');
@@ -143,7 +146,7 @@ export function CardCreatePage() {
       })
       .catch((err) => {
         if (!active) return;
-        setAppendLoadError(err instanceof Error ? err.message : '加载词义失败');
+        setAppendLoadError(err instanceof Error ? err.message : t('create.loadFailed'));
       });
     return () => { active = false; };
   }, [explicitCardId]);
@@ -284,7 +287,7 @@ export function CardCreatePage() {
       })
       .catch((err) => {
         if (!active) return;
-        setExactMatchTagLoadError(err instanceof Error ? err.message : '加载已有词义标签失败');
+        setExactMatchTagLoadError(err instanceof Error ? err.message : t('create.loadTagsFailed'));
         setSelectedTagIds((cur) => sameTagSet(cur, originalTagIdsRef.current) ? [] : cur);
         setOriginalTagIds([]);
         originalTagIdsRef.current = [];
@@ -318,17 +321,17 @@ export function CardCreatePage() {
 
     if (kind === 'video' && !isMp4(next)) {
       setVideo(null);
-      setErrors((cur) => ({ ...cur, video: '仅支持 mp4 本地视频文件' }));
+      setErrors((cur) => ({ ...cur, video: t('create.videoTypeError') }));
       return;
     }
     if (kind === 'screenshot' && !isScreenshot(next)) {
       setScreenshot(null);
-      setErrors((cur) => ({ ...cur, screenshot: '仅支持 jpg、png 或 webp 截图' }));
+      setErrors((cur) => ({ ...cur, screenshot: t('create.screenshotTypeError') }));
       return;
     }
     if (kind === 'audio' && !isMp3(next)) {
       setAudio(null);
-      setErrors((cur) => ({ ...cur, audio: '仅支持 mp3 音频文件' }));
+      setErrors((cur) => ({ ...cur, audio: t('create.audioTypeError') }));
       return;
     }
 
@@ -377,18 +380,18 @@ export function CardCreatePage() {
     setNote(value);
   }
 
-  function validate(): FieldErrors {
+  function validate(t: Translator): FieldErrors {
     const errs: FieldErrors = {};
-    if (!targetWord.trim()) errs.targetWord = '目标单词必填';
-    if (mode.kind === 'new' && !meaning.trim()) errs.meaning = '当前语境释义必填';
-    if (!sentence.trim()) errs.sentence = '原句必填';
+    if (!targetWord.trim()) errs.targetWord = t('create.targetWordRequired');
+    if (mode.kind === 'new' && !meaning.trim()) errs.meaning = t('create.meaningRequired');
+    if (!sentence.trim()) errs.sentence = t('create.sentenceRequired');
     return errs;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSuccessMessage('');
-    const nextErrors = validate();
+    const nextErrors = validate(t);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -422,26 +425,26 @@ export function CardCreatePage() {
       if (screenshot) await uploadMedia(result.context.id, screenshot);
       if (audio) await uploadMedia(result.context.id, audio);
 
-      setSuccessMessage(mode.kind === 'existing' ? '已添加新语境' : '已创建词义条目');
+      setSuccessMessage(mode.kind === 'existing' ? t('create.appendSuccess') : t('create.createSuccess'));
       window.location.hash = `#/cards/${result.card.id}`;
     } catch (err) {
-      setErrors({ submit: err instanceof Error ? err.message : '保存失败' });
+      setErrors({ submit: err instanceof Error ? err.message : t('create.saveFailed') });
     } finally {
       setIsSaving(false);
     }
   }
 
-  const saveLabel = isSaving ? '保存中…' : mode.kind === 'existing' ? '添加为新语境' : '保存词义条目';
+  const saveLabel = isSaving ? t('create.saving') : mode.kind === 'existing' ? t('create.addToExisting') : t('create.createCard');
   const currentMeaning = mode.kind === 'existing' ? mode.meaning : meaning;
   const showAiMeaningGhost = Boolean(!currentMeaning && aiMeaningSuggestion && !meaningTouched);
   const showSuggestionPanel = Boolean(targetWord.trim());
-  const suggestionTitle = appendCard ? '添加到已有词义' : '查找已有词义，避免重复建卡';
+  const suggestionTitle = appendCard ? t('create.findExistingTitle') : t('create.findExisting');
 
   if (appendLoadError) {
     return (
       <div className="card-create-studio">
         <div className="card-create-alert" role="alert">{appendLoadError}</div>
-        <a href="#/cards">查看全部词义条目</a>
+        <a href="#/cards">{t('create.viewAllCards')}</a>
       </div>
     );
   }
@@ -453,31 +456,31 @@ export function CardCreatePage() {
 
       <div className={`card-create-grid${showSuggestionPanel ? '' : ' card-create-grid--single'}`}>
         {/* Main form panel */}
-        <section className="card-create-panel card-create-panel-main" aria-label="制卡表单">
+        <section className="card-create-panel card-create-panel-main" aria-label={t('create.formAria')}>
           {/* Sentence */}
           <label className="card-create-field card-create-field-wide" htmlFor="cc-sentence">
-            <span>原句</span>
+            <span>{t('create.sentence')}</span>
             <textarea
               id="cc-sentence"
-              aria-label="原句"
+              aria-label={t('create.sentence')}
               value={sentence}
               onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setSentence(e.target.value)}
               placeholder="The hotel charges $100 per night."
               rows={4}
             />
-            <small>先写完整语境句子，再填写生词。</small>
+            <small>{t('create.sentenceHelp')}</small>
             {errors.sentence ? <em>{errors.sentence}</em> : null}
           </label>
 
           {/* Target word */}
           <label className="card-create-field" htmlFor="cc-target-word">
-            <span>目标单词</span>
+            <span>{t('create.targetWord')}</span>
             <input
               id="cc-target-word"
-              aria-label="目标单词"
+              aria-label={t('create.targetWord')}
               value={targetWord}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setTargetWord(e.target.value)}
-              placeholder="例如：charge"
+              placeholder={t('create.targetWordPlaceholder')}
               disabled={Boolean(explicitCardId)}
             />
             {errors.targetWord ? <em>{errors.targetWord}</em> : null}
@@ -485,34 +488,34 @@ export function CardCreatePage() {
 
           {/* Current context meaning */}
           <label className="card-create-field card-create-meaning-field" htmlFor="cc-meaning">
-            <span>当前语境释义</span>
+            <span>{t('create.meaning')}</span>
             <div className="card-create-ghost-wrap">
               <input
                 id="cc-meaning"
-                aria-label="当前语境释义"
+                aria-label={t('create.meaning')}
                 value={currentMeaning}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => handleMeaningChange(e.target.value)}
                 onKeyDown={handleMeaningKeyDown}
                 disabled={mode.kind === 'existing' || Boolean(explicitCardId)}
-                placeholder={showAiMeaningGhost ? '' : '例如：收费'}
+                placeholder={showAiMeaningGhost ? '' : t('create.meaningPlaceholder')}
               />
               {showAiMeaningGhost ? (
                 <button type="button" className="card-create-ghost-text" onClick={acceptAiMeaningSuggestion}>
-                  AI 建议：{aiMeaningSuggestion}
+                  {t('create.aiSuggestionPrefix')}{aiMeaningSuggestion}
                 </button>
               ) : null}
             </div>
-            <small>只写这个语境下的意思。Enter 或点击建议采纳，Backspace 删除建议。</small>
+            <small>{t('create.meaningHelp')}</small>
             {errors.meaning ? <em>{errors.meaning}</em> : null}
           </label>
 
           {/* Language row */}
           <div className="card-create-language-row">
             <label className="card-create-field" htmlFor="cc-target-lang">
-              <span>学习语言</span>
+              <span>{t('create.targetLanguage')}</span>
               <select
                 id="cc-target-lang"
-                aria-label="学习语言"
+                aria-label={t('create.targetLanguage')}
                 value={targetLanguage}
                 onChange={(e) => setTargetLanguage(e.target.value as SupportedLanguage)}
               >
@@ -522,10 +525,10 @@ export function CardCreatePage() {
               </select>
             </label>
             <label className="card-create-field" htmlFor="cc-def-lang">
-              <span>释义语言</span>
+              <span>{t('create.definitionLanguage')}</span>
               <select
                 id="cc-def-lang"
-                aria-label="释义语言"
+                aria-label={t('create.definitionLanguage')}
                 value={definitionLanguage}
                 onChange={(e) => setDefinitionLanguage(e.target.value as SupportedLanguage)}
               >
@@ -538,7 +541,7 @@ export function CardCreatePage() {
 
           {/* Tags */}
           <fieldset className="card-create-tags">
-            <legend>标签</legend>
+            <legend>{t('create.tags')}</legend>
             <TagAssignmentEditor
               selectedTagIds={selectedTagIds}
               onSelectedTagIdsChange={setSelectedTagIds}
@@ -548,50 +551,53 @@ export function CardCreatePage() {
 
           {/* AI usage suggestion */}
           <label className="card-create-field card-create-field-wide" htmlFor="cc-note">
-            <span>AI 建议</span>
+            <span>{t('create.aiSuggestion')}</span>
             <textarea
               id="cc-note"
-              aria-label="AI 建议"
+              aria-label={t('create.aiSuggestion')}
               value={note}
               onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleNoteChange(e.target.value)}
-              placeholder={aiSuggestionState === 'loading' ? 'AI 建议生成中…' : 'none'}
+              placeholder={aiSuggestionState === 'loading' ? t('create.aiGenerating') : 'none'}
               rows={3}
             />
-            <small>{aiUsageSuggestion ? '可保留、修改或删除这条语境用法说明。' : 'none'}</small>
+            <small>{aiUsageSuggestion ? t('create.aiNoteHelp') : 'none'}</small>
           </label>
 
           {/* Media section */}
-          <section className="card-create-media" aria-label="语境附件">
+          <section className="card-create-media" aria-label={t('create.mediaSectionAria')}>
             <div className="card-create-section-heading">
-              <p>语境附件</p>
-              <span>本地视频强烈推荐但不强制，截图和音频可补充当时语境。</span>
+              <p>{t('create.mediaSectionTitle')}</p>
+              <span>{t('create.mediaSectionHelp')}</span>
             </div>
             <MediaPicker
-              title="本地视频 mp4"
-              badge="推荐"
-              label="上传本地视频"
+              title={t('create.media.video')}
+              badge={t('create.media.badgeRecommended')}
+              label={t('create.media.uploadVideo')}
               accept="video/mp4,.mp4"
               file={video}
               error={errors.video}
               onChange={(e) => handleMediaChange('video', e.target.files)}
+              t={t}
             />
             <MediaPicker
-              title="截图 jpg / png / webp"
-              badge="可选"
-              label="上传截图"
+              title={t('create.media.screenshot')}
+              badge={t('create.media.badgeOptional')}
+              label={t('create.media.uploadScreenshot')}
               accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
               file={screenshot}
               error={errors.screenshot}
               onChange={(e) => handleMediaChange('screenshot', e.target.files)}
+              t={t}
             />
             <MediaPicker
-              title="音频 mp3"
-              badge="可选"
-              label="上传音频"
+              title={t('create.media.audio')}
+              badge={t('create.media.badgeOptional')}
+              label={t('create.media.uploadAudio')}
               accept="audio/mpeg,.mp3"
               file={audio}
               error={errors.audio}
               onChange={(e) => handleMediaChange('audio', e.target.files)}
+              t={t}
             />
           </section>
         </section>
@@ -607,6 +613,7 @@ export function CardCreatePage() {
               exactMatch={exactMatch}
               mode={mode}
               appendCard={appendCard}
+              t={t}
             />
           </aside>
         ) : null}
@@ -632,16 +639,17 @@ interface MediaPickerProps {
   file: File | null;
   error?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  t: Translator;
 }
 
-function MediaPicker({ title, badge, label, accept, file, error, onChange }: MediaPickerProps) {
+function MediaPicker({ title, badge, label, accept, file, error, onChange, t }: MediaPickerProps) {
   const inputId = `media-${label.replace(/\s+/g, '-')}`;
   return (
     <div className="card-create-media-picker">
       <span className="card-create-media-title">
         {title}<strong>{badge}</strong>
       </span>
-      <span className="card-create-media-file">{fileLabel(file)}</span>
+      <span className="card-create-media-file">{fileLabel(file, t)}</span>
       <label htmlFor={inputId} className="sr-only">{label}</label>
       <input
         id={inputId}
@@ -665,13 +673,14 @@ interface SuggestionPanelProps {
   exactMatch: SuggestionDto | null;
   mode: SaveMode;
   appendCard: CardDetailDto | null;
+  t: Translator;
 }
 
-function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch, mode, appendCard }: SuggestionPanelProps) {
+function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch, mode, appendCard, t }: SuggestionPanelProps) {
   if (appendCard) {
     return (
       <p className="card-create-side-copy card-create-exact-notice">
-        {`正在为已有词义添加语境：${appendCard.target_word} = ${appendCard.context_meaning}`}
+        {t('create.appendContext', { word: appendCard.target_word, meaning: appendCard.context_meaning })}
       </p>
     );
   }
@@ -679,10 +688,10 @@ function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch, 
     return null;
   }
   if (state === 'loading') {
-    return <p className="card-create-side-copy">正在查找已有词义……</p>;
+    return <p className="card-create-side-copy">{t('create.findingExisting')}</p>;
   }
   if (state === 'error') {
-    return <p className="card-create-side-copy">已有词义加载失败，可以继续创建新条目</p>;
+    return <p className="card-create-side-copy">{t('create.findExistingError')}</p>;
   }
 
   const hasMeaning = meaning.trim().length > 0;
@@ -693,18 +702,18 @@ function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch, 
     return (
       <div className="card-create-suggestion-list">
         <p className="card-create-side-copy card-create-exact-notice">
-          {`已找到相同词义：${exactMatch.target_word} = ${exactMatch.context_meaning}`}
+          {t('create.exactMatchFound', { word: exactMatch.target_word, meaning: exactMatch.context_meaning })}
         </p>
         <div className="card-create-suggestion-card card-create-suggestion-card--exact">
           <span>{exactMatch.target_word}</span>
           <strong>{exactMatch.context_meaning}</strong>
-          <small>{mode.kind === 'existing' && mode.cardId === exactMatch.id ? '添加为新语境' : '添加为新语境'}</small>
+          <small>{t('create.addToExisting')}</small>
         </div>
         {others.map((s) => (
           <div key={s.id} className="card-create-suggestion-card card-create-suggestion-card--info">
             <span>{s.target_word}</span>
             <strong>{s.context_meaning}</strong>
-            <small>不同语义，仅供参考</small>
+            <small>{t('create.otherMeaningNotice')}</small>
           </div>
         ))}
       </div>
@@ -715,11 +724,11 @@ function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch, 
   if (state === 'empty' || suggestions.length === 0) {
     return (
       <div className="card-create-suggestion-list">
-        <p className="card-create-side-copy">还没有这个单词的词义条目</p>
+        <p className="card-create-side-copy">{t('create.noCardsYet')}</p>
         <div className="card-create-suggestion-card card-create-suggestion-card--new">
-          <span>创建新的词义条目</span>
-          <strong>{targetWord.trim() || '新单词'}</strong>
-          <small>当前语境会成为第一条主语境</small>
+          <span>{t('create.createNewCard')}</span>
+          <strong>{targetWord.trim() || t('create.newWordFallback')}</strong>
+          <small>{t('create.firstContextNotice')}</small>
         </div>
       </div>
     );
@@ -731,21 +740,21 @@ function SuggestionPanel({ state, targetWord, meaning, suggestions, exactMatch, 
   return (
     <div className="card-create-suggestion-list">
       {noMatch ? (
-        <p className="card-create-side-copy">未找到相同词义</p>
+        <p className="card-create-side-copy">{t('create.noSameMeaning')}</p>
       ) : (
-        <p className="card-create-side-copy">已找到同名词义，请确认是否相同：</p>
+        <p className="card-create-side-copy">{t('create.foundSameWord')}</p>
       )}
       {suggestions.map((s) => (
         <div key={s.id} className="card-create-suggestion-card card-create-suggestion-card--info">
           <span>{s.target_word}</span>
           <strong>{s.context_meaning}</strong>
-          <small>不同语义，仅供参考</small>
+          <small>{t('create.otherMeaningNotice')}</small>
         </div>
       ))}
       <div className="card-create-suggestion-card card-create-suggestion-card--new">
-        <span>创建新的词义条目</span>
-        <strong>{targetWord.trim() || '新单词'}</strong>
-        <small>当前语境会成为第一条主语境</small>
+        <span>{t('create.createNewCard')}</span>
+        <strong>{targetWord.trim() || t('create.newWordFallback')}</strong>
+        <small>{t('create.firstContextNotice')}</small>
       </div>
     </div>
   );

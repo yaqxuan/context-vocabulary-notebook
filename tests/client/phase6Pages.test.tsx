@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CardCatalogue, type CardCatalogueFilters } from '../../src/client/components/CardCatalogue';
 import { CardDetailPage } from '../../src/client/pages/CardDetailPage';
 import { CardListPage } from '../../src/client/pages/CardListPage';
+import { I18nProvider } from '../../src/client/i18n/I18nProvider';
 import { FavoritesPage } from '../../src/client/pages/FavoritesPage';
 import { TagsPage } from '../../src/client/pages/TagsPage';
 import type { CardSummaryDto, TagDto } from '../../src/shared/types';
@@ -59,7 +60,7 @@ describe('Phase 6 pages', () => {
     const onToggleStatus = vi.fn();
     const onToggleFavorite = vi.fn();
 
-    render(<CardCatalogue title="词义条目" subtitle="管理所有词义" cards={cards} total={1} loading={false} error={null} tags={tags} filters={filters} emptyMessage="还没有词义条目" filteredEmptyMessage="没有匹配的词义条目" onFiltersChange={onFiltersChange} onRetry={onRetry} onToggleStatus={onToggleStatus} onToggleFavorite={onToggleFavorite} />);
+    render(<I18nProvider><CardCatalogue title="词义条目" subtitle="管理所有词义" cards={cards} total={1} loading={false} error={null} tags={tags} filters={filters} emptyMessage="还没有词义条目" filteredEmptyMessage="没有匹配的词义条目" onFiltersChange={onFiltersChange} onRetry={onRetry} onToggleStatus={onToggleStatus} onToggleFavorite={onToggleFavorite} /></I18nProvider>);
 
     expect(screen.getByText('charge')).toBeInTheDocument();
     expect(screen.getByText('收费')).toBeInTheDocument();
@@ -68,10 +69,10 @@ describe('Phase 6 pages', () => {
     expect(screen.getByText('2 条语境')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '查看详情' })).toHaveAttribute('href', '#/cards/card-1');
 
-    fireEvent.change(screen.getByLabelText('搜索词义条目'), { target: { value: 'charge' } });
+    fireEvent.change(screen.getByLabelText('搜索单词、释义、原句、标签或备注'), { target: { value: 'charge' } });
     expect(onFiltersChange).toHaveBeenCalledWith({ ...filters, search: 'charge', page: 1 });
 
-    fireEvent.click(screen.getByRole('button', { name: '标记熟记' }));
+    fireEvent.click(screen.getByRole('button', { name: '标记为已掌握' }));
     expect(onToggleStatus).toHaveBeenCalledWith(cards[0]);
 
     fireEvent.click(screen.getByRole('button', { name: '取消收藏' }));
@@ -79,19 +80,19 @@ describe('Phase 6 pages', () => {
   });
 
   it('loads card list page and toggles card status', async () => {
-    render(<CardListPage />);
+    render(<I18nProvider><CardListPage /></I18nProvider>);
 
     expect(await screen.findByText('charge')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '标记熟记' }));
+    fireEvent.click(screen.getByRole('button', { name: '标记为已掌握' }));
 
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/cards/card-1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ status: 'mastered' }) })));
   });
 
   it('loads favorites page with favorite filter forced', async () => {
-    render(<FavoritesPage />);
+    render(<I18nProvider><FavoritesPage /></I18nProvider>);
 
     expect(await screen.findByText('charge')).toBeInTheDocument();
-    expect(screen.getByLabelText('搜索词义条目')).toBeInTheDocument();
+    expect(screen.getByLabelText('搜索单词、释义、原句、标签或备注')).toBeInTheDocument();
     await waitFor(() => expect(String(vi.mocked(globalThis.fetch).mock.calls.find(([input]) => String(input).startsWith('/api/cards'))?.[0])).toContain('favorite=true'));
   });
 
@@ -105,7 +106,7 @@ describe('Phase 6 pages', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardDetailPage />);
+    render(<I18nProvider><CardDetailPage /></I18nProvider>);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
     const titleStack = screen.getByTestId('detail-title-stack');
@@ -118,7 +119,7 @@ describe('Phase 6 pages', () => {
     expect(screen.getByText('复习次数：0')).toBeInTheDocument();
     expect(screen.getByText('遗忘次数：0')).toBeInTheDocument();
     expect(screen.getByLabelText('clip.mp4')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '标记熟记' }));
+    fireEvent.click(screen.getByRole('button', { name: '标记为已掌握' }));
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/cards/card-1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ status: 'mastered' }) })));
   });
 
@@ -140,7 +141,7 @@ describe('Phase 6 pages', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardDetailPage />);
+    render(<I18nProvider><CardDetailPage /></I18nProvider>);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
     expect(screen.getByText('状态：复习中')).toBeInTheDocument();
@@ -161,7 +162,7 @@ describe('Phase 6 pages', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardDetailPage />);
+    render(<I18nProvider><CardDetailPage /></I18nProvider>);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '添加语境' }));
@@ -179,7 +180,7 @@ describe('Phase 6 pages', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardDetailPage />);
+    render(<I18nProvider><CardDetailPage /></I18nProvider>);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '编辑释义' }));
@@ -198,7 +199,7 @@ describe('Phase 6 pages', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardDetailPage />);
+    render(<I18nProvider><CardDetailPage /></I18nProvider>);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '编辑释义' }));
@@ -225,7 +226,7 @@ describe('Phase 6 pages', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardDetailPage />);
+    render(<I18nProvider><CardDetailPage /></I18nProvider>);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '编辑标签' }));
@@ -251,7 +252,7 @@ describe('Phase 6 pages', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<CardDetailPage />);
+    render(<I18nProvider><CardDetailPage /></I18nProvider>);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '编辑标签' }));
@@ -274,7 +275,7 @@ describe('Phase 6 pages', () => {
       return Promise.resolve(jsonResponse({}));
     });
 
-    render(<TagsPage />);
+    render(<I18nProvider><TagsPage /></I18nProvider>);
 
     expect(await screen.findByText('美剧')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('标签名称'), { target: { value: '电影' } });
