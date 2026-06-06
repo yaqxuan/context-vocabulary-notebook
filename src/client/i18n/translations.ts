@@ -410,9 +410,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "text": "Placeholder"
   },
   "app": {
-    "brand": "语境单词本",
-    "brandSubtitle": "在语境中学习单词",
-    "navigation": "导航"
+    "brand": "Context Vocabulary Notebook",
+    "brandSubtitle": "Context Review Desk",
+    "navigation": "Main navigation"
   },
   "common": {
     "loading": "Loading...",
@@ -447,48 +447,48 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "nav": {
     "home": {
-      "label": "主页",
-      "title": "主页",
-      "description": "返回主页"
+      "label": "Home",
+      "title": "Home",
+      "description": "Today’s review and quick actions"
     },
     "create": {
-      "label": "新建",
-      "title": "新建卡片",
-      "description": "创建新卡片"
+      "label": "Create",
+      "title": "Create",
+      "description": "Create meanings and contexts"
     },
     "cards": {
-      "label": "卡片",
-      "title": "所有卡片",
-      "description": "浏览卡片"
+      "label": "Meaning entries",
+      "title": "Meaning entries",
+      "description": "Search, filter, and manage"
     },
     "review": {
-      "label": "复习",
-      "title": "开始复习",
-      "description": "复习卡片"
+      "label": "Review",
+      "title": "Review",
+      "description": "Again / Good review"
     },
     "tags": {
-      "label": "标签",
-      "title": "标签管理",
-      "description": "管理标签"
+      "label": "Tags",
+      "title": "Tag management",
+      "description": "Categories and source markers"
     },
     "favorites": {
-      "label": "收藏",
-      "title": "我的收藏",
-      "description": "收藏的卡片"
+      "label": "Favorites",
+      "title": "Favorites",
+      "description": "Important meanings"
     },
     "statistics": {
-      "label": "统计",
-      "title": "学习统计",
-      "description": "查看统计"
+      "label": "Statistics",
+      "title": "Statistics",
+      "description": "Review analysis"
     },
     "settings": {
       "label": "Settings",
-      "title": "系统设置",
-      "description": "修改设置"
+      "title": "Settings",
+      "description": "Languages, goals, import and export"
     },
     "notFound": {
-      "title": "未找到",
-      "message": "页面不存在"
+      "title": "Page not found",
+      "message": "No matching page found"
     }
   },
   "status": {
@@ -557,16 +557,16 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "cancelEdit": "Cancel edit"
   },
   "settings": {
-    "loadFailed": "无法加载设置",
+    "loadFailed": "Failed to load settings",
     "learning": {
-      "title": "学习与界面设置",
-      "interfaceLanguage": "界面语言",
-      "targetLanguage": "默认学习语言",
-      "defLanguage": "默认释义语言",
-      "dailyLimit": "每日复习数量",
-      "positiveInteger": "每日复习数量必须是正整数",
-      "saveFailed": "保存失败",
-      "saved": "设置已保存"
+      "title": "Learning and interface settings",
+      "interfaceLanguage": "Interface language",
+      "targetLanguage": "Default learning language",
+      "defLanguage": "Default definition language",
+      "dailyLimit": "Daily review count",
+      "positiveInteger": "Daily review count must be a positive integer",
+      "saveFailed": "Save failed",
+      "saved": "Settings saved"
     },
     "ai": {
       "title": "AI API 配置",
@@ -810,9 +810,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "text": "プレースホルダー"
   },
   "app": {
-    "brand": "语境单词本",
-    "brandSubtitle": "在语境中学习单词",
-    "navigation": "导航"
+    "brand": "文脈単語帳",
+    "brandSubtitle": "Context Review Desk",
+    "navigation": "メインナビゲーション"
   },
   "common": {
     "loading": "加载中...",
@@ -882,9 +882,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "查看统计"
     },
     "settings": {
-      "label": "设置",
-      "title": "系统设置",
-      "description": "修改设置"
+      "label": "設定",
+      "title": "設定",
+      "description": "言語、目標、インポートとエクスポート"
     },
     "notFound": {
       "title": "未找到",
@@ -1210,9 +1210,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "text": "자리 표시자"
   },
   "app": {
-    "brand": "语境单词本",
-    "brandSubtitle": "在语境中学习单词",
-    "navigation": "导航"
+    "brand": "맥락 단어장",
+    "brandSubtitle": "Context Review Desk",
+    "navigation": "기본 탐색"
   },
   "common": {
     "loading": "加载中...",
@@ -1282,9 +1282,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "查看统计"
     },
     "settings": {
-      "label": "设置",
-      "title": "系统设置",
-      "description": "修改设置"
+      "label": "설정",
+      "title": "설정",
+      "description": "언어, 목표, 가져오기 및 내보내기"
     },
     "notFound": {
       "title": "未找到",
@@ -1610,9 +1610,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "text": "Espace réservé"
   },
   "app": {
-    "brand": "语境单词本",
-    "brandSubtitle": "在语境中学习单词",
-    "navigation": "导航"
+    "brand": "Carnet de vocabulaire contextuel",
+    "brandSubtitle": "Context Review Desk",
+    "navigation": "Navigation principale"
   },
   "common": {
     "loading": "加载中...",
@@ -1682,9 +1682,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "查看统计"
     },
     "settings": {
-      "label": "设置",
-      "title": "系统设置",
-      "description": "修改设置"
+      "label": "Paramètres",
+      "title": "Paramètres",
+      "description": "Langues, objectifs, importation et exportation"
     },
     "notFound": {
       "title": "未找到",
@@ -2010,9 +2010,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "text": "Platzhalter"
   },
   "app": {
-    "brand": "语境单词本",
-    "brandSubtitle": "在语境中学习单词",
-    "navigation": "导航"
+    "brand": "Kontext-Vokabelheft",
+    "brandSubtitle": "Context Review Desk",
+    "navigation": "Hauptnavigation"
   },
   "common": {
     "loading": "加载中...",
@@ -2082,9 +2082,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "查看统计"
     },
     "settings": {
-      "label": "设置",
-      "title": "系统设置",
-      "description": "修改设置"
+      "label": "Einstellungen",
+      "title": "Einstellungen",
+      "description": "Sprachen, Ziele, Import und Export"
     },
     "notFound": {
       "title": "未找到",
@@ -2410,9 +2410,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "text": "Marcador"
   },
   "app": {
-    "brand": "语境单词本",
-    "brandSubtitle": "在语境中学习单词",
-    "navigation": "导航"
+    "brand": "Cuaderno de vocabulario contextual",
+    "brandSubtitle": "Context Review Desk",
+    "navigation": "Navegación principal"
   },
   "common": {
     "loading": "加载中...",
@@ -2482,9 +2482,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "查看统计"
     },
     "settings": {
-      "label": "设置",
-      "title": "系统设置",
-      "description": "修改设置"
+      "label": "Configuración",
+      "title": "Configuración",
+      "description": "Idiomas, objetivos, importación y exportación"
     },
     "notFound": {
       "title": "未找到",
@@ -2810,9 +2810,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "text": "Заполнитель"
   },
   "app": {
-    "brand": "语境单词本",
-    "brandSubtitle": "在语境中学习单词",
-    "navigation": "导航"
+    "brand": "Контекстный словарь",
+    "brandSubtitle": "Context Review Desk",
+    "navigation": "Основная навигация"
   },
   "common": {
     "loading": "加载中...",
@@ -2882,9 +2882,9 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "查看统计"
     },
     "settings": {
-      "label": "设置",
-      "title": "系统设置",
-      "description": "修改设置"
+      "label": "Настройки",
+      "title": "Настройки",
+      "description": "Языки, цели, импорт и экспорт"
     },
     "notFound": {
       "title": "未找到",

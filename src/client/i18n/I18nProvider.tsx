@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { DEFAULT_INTERFACE_LANGUAGE, normalizeSupportedLanguage } from '../../shared/constants';
 import { getSettings } from '../api/settings';
 import { translations } from './translations';
@@ -36,24 +36,24 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const setLanguage = (langStr: string) => {
+  const setLanguage = useCallback((langStr: string) => {
     const normalized = normalizeSupportedLanguage(langStr);
     if (normalized) {
       setLanguageState(normalized);
     }
-  };
+  }, []);
 
-  const t = (key: TranslationKey, params?: TranslationParams): string => {
+  const t = useCallback((key: TranslationKey, params?: TranslationParams): string => {
     const dict = translations[language] || translations['中文'];
     const parts = key.split('.');
-    
+
     // Resolve from active language dictionary
     let value: any = dict;
     for (const part of parts) {
       if (value === undefined || value === null) break;
       value = value[part];
     }
-    
+
     // Fallback to Chinese dictionary
     if (typeof value !== 'string') {
       let zhValue: any = translations['中文'];
@@ -70,14 +70,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
 
     if (!params) return value;
-    
+
     return value.replace(/\{([^}]+)\}/g, (match: string, paramKey: string) => {
       return params[paramKey] !== undefined ? String(params[paramKey]) : match;
     });
-  };
+  }, [language]);
+
+  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
 
   return (
-    <I18nContext.Provider value={{ language, setLanguage, t }}>
+    <I18nContext.Provider value={value}>
       {children}
     </I18nContext.Provider>
   );
