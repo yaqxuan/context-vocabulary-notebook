@@ -28,6 +28,7 @@ import {
 } from '../api/aiConfigs';
 import { exportCards, executeImport, scanImport } from '../api/importExport';
 import { getSettings, patchSettings } from '../api/settings';
+import { useI18n } from '../i18n/I18nProvider';
 import { Button } from '../components/Button';
 import { ErrorState, LoadingState } from '../components/UiStates';
 
@@ -64,6 +65,7 @@ function LanguageSelect({ id, value, onChange }: LanguageSelectProps) {
 }
 
 function SettingsForm({ initial, onSaved }: SettingsFormProps) {
+  const { t, setLanguage } = useI18n();
   const [interfaceLang, setInterfaceLang] = useState(normalizeSupportedLanguage(initial.interface_language) ?? DEFAULT_INTERFACE_LANGUAGE);
   const [targetLang, setTargetLang] = useState(normalizeSupportedLanguage(initial.default_target_language) ?? DEFAULT_TARGET_LANGUAGE);
   const [defLang, setDefLang] = useState(normalizeSupportedLanguage(initial.default_definition_language) ?? DEFAULT_DEFINITION_LANGUAGE);
@@ -77,7 +79,7 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
     let ok = true;
     const n = Number(dailyLimit);
     if (!dailyLimit.trim() || !Number.isInteger(n) || n <= 0) {
-      setValidationError('每日复习数量必须是正整数');
+      setValidationError(t('settings.learning.positiveInteger'));
       ok = false;
     } else {
       setValidationError(null);
@@ -98,9 +100,10 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
         daily_review_limit: Number(dailyLimit),
       });
       onSaved(updated);
+      setLanguage(updated.interface_language);
       setSaved(true);
     } catch (err: unknown) {
-      setSaveError(err instanceof Error ? err.message : '保存失败');
+      setSaveError(err instanceof Error ? err.message : t('settings.learning.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -108,12 +111,12 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
 
   return (
     <section className="phase7-settings-section">
-      <h2 className="phase7-settings-section-title">学习与界面设置</h2>
+      <h2 className="phase7-settings-section-title">{t('settings.learning.title')}</h2>
 
       <div className="phase7-settings-form">
         <div className="phase7-settings-field">
           <label htmlFor="setting-interface-lang" className="phase7-settings-label">
-            界面语言
+            {t('settings.learning.interfaceLanguage')}
           </label>
           <LanguageSelect
             id="setting-interface-lang"
@@ -124,7 +127,7 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
 
         <div className="phase7-settings-field">
           <label htmlFor="setting-target-lang" className="phase7-settings-label">
-            默认学习语言
+            {t('settings.learning.targetLanguage')}
           </label>
           <LanguageSelect
             id="setting-target-lang"
@@ -135,7 +138,7 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
 
         <div className="phase7-settings-field">
           <label htmlFor="setting-def-lang" className="phase7-settings-label">
-            默认释义语言
+            {t('settings.learning.defLanguage')}
           </label>
           <LanguageSelect
             id="setting-def-lang"
@@ -146,7 +149,7 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
 
         <div className="phase7-settings-field">
           <label htmlFor="setting-daily-limit" className="phase7-settings-label">
-            每日复习数量
+            {t('settings.learning.dailyLimit')}
           </label>
           <input
             id="setting-daily-limit"
@@ -163,9 +166,9 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
 
       <div className="phase7-settings-actions">
         <Button onClick={handleSave} disabled={saving}>
-          保存设置
+          {t('common.save')}
         </Button>
-        {saved && <span className="phase7-settings-saved-msg">设置已保存</span>}
+        {saved && <span className="phase7-settings-saved-msg">{t('settings.learning.saved')}</span>}
         {saveError && <span className="phase7-settings-save-error">{saveError}</span>}
       </div>
     </section>
@@ -176,6 +179,7 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
 // ─── AI config section ─────────────────────────────────────────────────────────
 
 function AiConfigSection() {
+  const { t } = useI18n();
   const [configs, setConfigs] = useState<AiConfigDto[]>([]);
   const [name, setName] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
@@ -197,7 +201,7 @@ function AiConfigSection() {
     try {
       setConfigs(await listAiConfigs());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'AI 配置加载失败');
+      setError(err instanceof Error ? err.message : t('settings.ai.loading').replace('加载中…', '加载失败'));
     } finally {
       setLoading(false);
     }
@@ -316,13 +320,13 @@ function AiConfigSection() {
 
   return (
     <section className="phase7-settings-section ai-settings-section">
-      <h2 className="phase7-settings-section-title">AI API 配置</h2>
+      <h2 className="phase7-settings-section-title">{t('settings.ai.title')}</h2>
       <p className="phase7-settings-export-desc">
-        使用 OpenAI-compatible 接口生成制卡建议。API Key 只保存在本地，导出数据不包含 Key。
+        {t('settings.ai.desc')}
       </p>
 
-      {loading ? <p className="phase7-settings-export-desc">AI 配置加载中…</p> : null}
-      {!loading && configs.length === 0 ? <p className="phase7-settings-export-desc">暂无 AI 配置</p> : null}
+      {loading ? <p className="phase7-settings-export-desc">{t('settings.ai.loading')}</p> : null}
+      {!loading && configs.length === 0 ? <p className="phase7-settings-export-desc">{t('settings.ai.empty')}</p> : null}
 
       <div className="ai-config-list">
         {configs.map((config) => (
@@ -332,20 +336,20 @@ function AiConfigSection() {
               <div className="ai-config-meta" aria-label={`${config.name} 配置详情`}>
                 <span>{config.model}</span>
                 <small>{config.base_url}</small>
-                <small>{config.has_api_key ? 'API Key 已保存' : 'API Key 未保存'}</small>
+                <small>{config.has_api_key ? t('settings.ai.keySaved') : t('settings.ai.keyNotSaved')}</small>
               </div>
             </div>
             <div className="ai-config-actions">
               {config.is_active ? (
-                <span className="ai-config-active">当前启用</span>
+                <span className="ai-config-active">{t('settings.ai.active')}</span>
               ) : (
-                <Button aria-label={`启用 ${config.name}`} onClick={() => handleActivate(config.id)}>启用</Button>
+                <Button aria-label={`${t('settings.ai.activate')} ${config.name}`} onClick={() => handleActivate(config.id)}>{t('settings.ai.activate')}</Button>
               )}
-              <Button aria-label={`编辑 ${config.name}`} variant="secondary" onClick={() => handleEdit(config)}>
-                编辑
+              <Button aria-label={`${t('settings.ai.edit')} ${config.name}`} variant="secondary" onClick={() => handleEdit(config)}>
+                {t('settings.ai.edit')}
               </Button>
-              <Button aria-label={`删除 ${config.name}`} variant="secondary" onClick={() => handleDelete(config.id)}>
-                删除
+              <Button aria-label={`${t('settings.ai.delete')} ${config.name}`} variant="secondary" onClick={() => handleDelete(config.id)}>
+                {t('settings.ai.delete')}
               </Button>
             </div>
           </div>
@@ -355,7 +359,7 @@ function AiConfigSection() {
       <div className="phase7-settings-form ai-config-form">
         <div className="phase7-settings-field">
           <label htmlFor="ai-config-name" className="phase7-settings-label">
-            配置名称
+            {t('settings.ai.name')}
           </label>
           <input
             id="ai-config-name"
@@ -366,7 +370,7 @@ function AiConfigSection() {
         </div>
         <div className="phase7-settings-field">
           <label htmlFor="ai-config-base-url" className="phase7-settings-label">
-            Base URL
+            {t('settings.ai.baseUrl')}
           </label>
           <input
             id="ai-config-base-url"
@@ -378,7 +382,7 @@ function AiConfigSection() {
         </div>
         <div className="phase7-settings-field">
           <label htmlFor="ai-config-api-key" className="phase7-settings-label">
-            API Key
+            {t('settings.ai.apiKey')}
           </label>
           <input
             id="ai-config-api-key"
@@ -394,12 +398,12 @@ function AiConfigSection() {
             onClick={handleFetchModels}
             disabled={fetchingModels || !canFetchModels}
           >
-            {fetchingModels ? '获取中…' : '获取模型列表'}
+            {fetchingModels ? t('settings.ai.fetching') : t('settings.ai.fetchModels')}
           </Button>
         </div>
         <div className="phase7-settings-field">
           <label htmlFor="ai-config-model" className="phase7-settings-label">
-            模型
+            {t('settings.ai.model')}
           </label>
           <input
             id="ai-config-model"
@@ -424,20 +428,20 @@ function AiConfigSection() {
             checked={makeActive}
             onChange={(e) => setMakeActive(e.target.checked)}
           />
-          保存后立即启用
+          {t('settings.ai.makeActive')}
         </label>
       </div>
 
       <div className="phase7-settings-actions">
         <Button onClick={handleSaveAiConfig} disabled={saving}>
-          保存 AI 配置
+          {t('settings.ai.save')}
         </Button>
         {editingConfigId && (
           <Button variant="ghost" onClick={handleCancelEdit} disabled={saving}>
-            取消编辑
+            {t('settings.ai.cancelEdit')}
           </Button>
         )}
-        {saved && <span className="phase7-settings-saved-msg">AI 配置已保存</span>}
+        {saved && <span className="phase7-settings-saved-msg">{t('settings.ai.saved')}</span>}
         {error && <span className="phase7-settings-save-error">{error}</span>}
       </div>
     </section>
@@ -447,6 +451,7 @@ function AiConfigSection() {
 // ─── Export section ───────────────────────────────────────────────────────────
 
 function ExportSection() {
+  const { t } = useI18n();
   const [markedLoading, setMarkedLoading] = useState(false);
   const [pureLoading, setPureLoading] = useState(false);
 
@@ -476,22 +481,22 @@ function ExportSection() {
 
   return (
     <section className="phase7-settings-section">
-      <h2 className="phase7-settings-section-title">导出数据</h2>
+      <h2 className="phase7-settings-section-title">{t('settings.export.title')}</h2>
       <div className="phase7-settings-export-grid">
         <div className="phase7-settings-export-card">
           <p className="phase7-settings-export-desc">
-            完整备份：包含卡片、语境、媒体、标签、复习记录、FSRS 状态和设置。
+            {t('settings.export.markedDesc')}
           </p>
           <Button onClick={() => triggerDownload('marked')} disabled={markedLoading}>
-            导出含有标记的卡片
+            {t('settings.export.markedBtn')}
           </Button>
         </div>
         <div className="phase7-settings-export-card">
           <p className="phase7-settings-export-desc">
-            纯内容分享：仅包含卡片和语境，不含个人状态、收藏或复习记录。
+            {t('settings.export.pureDesc')}
           </p>
           <Button onClick={() => triggerDownload('pure')} disabled={pureLoading}>
-            导出纯卡片
+            {t('settings.export.pureBtn')}
           </Button>
         </div>
       </div>
@@ -524,6 +529,7 @@ function buildDecisionDto(
 }
 
 function ImportSection() {
+  const { t } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
 
@@ -587,13 +593,13 @@ function ImportSection() {
 
   return (
     <section className="phase7-settings-section">
-      <h2 className="phase7-settings-section-title">导入数据</h2>
+      <h2 className="phase7-settings-section-title">{t('settings.import.title')}</h2>
 
       <div className="phase7-settings-import-controls">
         {/* File input */}
         <div className="phase7-settings-field">
           <label htmlFor="import-file-input" className="phase7-settings-label">
-            选择导入 zip
+            {t('settings.import.fileSelect')}
           </label>
           <input
             id="import-file-input"
@@ -602,16 +608,16 @@ function ImportSection() {
             accept=".zip"
             className="phase7-settings-file-input"
             onChange={handleFileChange}
-            aria-label="选择导入 zip"
+            aria-label={t('settings.import.fileSelect')}
           />
         </div>
 
         <div className="phase7-settings-import-btns">
           <Button onClick={handleScan} disabled={!file || scanning}>
-            扫描导入文件
+            {t('settings.import.scan')}
           </Button>
           <Button onClick={handleExecute} disabled={!scanResult || executing}>
-            执行导入
+            {t('settings.import.execute')}
           </Button>
         </div>
 
@@ -628,19 +634,19 @@ function ImportSection() {
           {/* Counts */}
           <div className="phase7-settings-scan-counts">
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">卡片</span>
+              <span className="phase7-settings-count-label">{t('settings.import.cards')}</span>
               <strong className="phase7-settings-count-value">{scanResult.counts.cards}</strong>
             </div>
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">语境</span>
+              <span className="phase7-settings-count-label">{t('settings.import.contexts')}</span>
               <strong className="phase7-settings-count-value">{scanResult.counts.contexts}</strong>
             </div>
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">媒体文件</span>
+              <span className="phase7-settings-count-label">{t('settings.import.media')}</span>
               <strong className="phase7-settings-count-value">{scanResult.counts.media_files}</strong>
             </div>
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">标签</span>
+              <span className="phase7-settings-count-label">{t('settings.import.tags')}</span>
               <strong className="phase7-settings-count-value">{scanResult.counts.tags}</strong>
             </div>
           </div>
@@ -649,7 +655,7 @@ function ImportSection() {
           {scanResult.conflicts.length > 0 && (
             <div className="phase7-settings-conflicts">
               <h3 className="phase7-settings-subsection-title">
-                冲突 ({scanResult.conflicts.length})
+                {t('settings.import.conflicts')} ({scanResult.conflicts.length})
               </h3>
               <ul className="phase7-settings-conflict-list">
                 {scanResult.conflicts.map((c) => (
@@ -660,7 +666,7 @@ function ImportSection() {
                     {mode === 'per_item' && (
                       <select
                         className="phase7-settings-conflict-select"
-                        aria-label={`冲突处理：${c.target_word}`}
+                        aria-label={`${t('settings.import.conflictWord')}${c.target_word}`}
                         value={perItem[c.import_card_id] ?? 'skip'}
                         onChange={(e) =>
                           setPerItem((prev) => ({
@@ -669,9 +675,9 @@ function ImportSection() {
                           }))
                         }
                       >
-                        <option value="skip">跳过</option>
-                        <option value="merge">合并</option>
-                        <option value="import_as_new">作为新条目</option>
+                        <option value="skip">{t('settings.import.skip')}</option>
+                        <option value="merge">{t('settings.import.merge')}</option>
+                        <option value="import_as_new">{t('settings.import.importAsNew')}</option>
                       </select>
                     )}
                   </li>
@@ -684,7 +690,7 @@ function ImportSection() {
           {scanResult.missing_media.length > 0 && (
             <div className="phase7-settings-missing-media">
               <h3 className="phase7-settings-subsection-title">
-                缺少媒体文件 ({scanResult.missing_media.length})
+                {t('settings.import.missingMedia')} ({scanResult.missing_media.length})
               </h3>
               <ul className="phase7-settings-missing-list">
                 {scanResult.missing_media.map((m) => (
@@ -698,14 +704,14 @@ function ImportSection() {
 
           {/* Decision mode selector */}
           <div className="phase7-settings-decision-modes">
-            <h3 className="phase7-settings-subsection-title">冲突处理方式</h3>
+            <h3 className="phase7-settings-subsection-title">{t('settings.import.modeTitle')}</h3>
             <div className="phase7-settings-radio-group">
               {(
                 [
-                  { value: 'skip_all', label: '全部跳过' },
-                  { value: 'merge_all', label: '全部合并为已有词义条目的新语境' },
-                  { value: 'import_all_as_new', label: '全部作为新词义条目导入' },
-                  { value: 'per_item', label: '逐项处理' },
+                  { value: 'skip_all', label: t('settings.import.modeSkip') },
+                  { value: 'merge_all', label: t('settings.import.modeMerge') },
+                  { value: 'import_all_as_new', label: t('settings.import.modeNew') },
+                  { value: 'per_item', label: t('settings.import.modePerItem') },
                 ] as const
               ).map(({ value, label }) => (
                 <label key={value} className="phase7-settings-radio-label">
@@ -735,30 +741,30 @@ function ImportSection() {
       {/* Execute result */}
       {executeResult && (
         <div className="phase7-settings-execute-result">
-          <p className="phase7-settings-execute-done">导入完成</p>
+          <p className="phase7-settings-execute-done">{t('settings.import.done')}</p>
           <div className="phase7-settings-result-counts">
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">已导入卡片</span>
+              <span className="phase7-settings-count-label">{t('settings.import.importedCards')}</span>
               <strong className="phase7-settings-count-value">{executeResult.imported_cards}</strong>
             </div>
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">已导入语境</span>
+              <span className="phase7-settings-count-label">{t('settings.import.importedContexts')}</span>
               <strong className="phase7-settings-count-value">{executeResult.imported_contexts}</strong>
             </div>
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">已导入媒体</span>
+              <span className="phase7-settings-count-label">{t('settings.import.importedMedia')}</span>
               <strong className="phase7-settings-count-value">{executeResult.imported_media_files}</strong>
             </div>
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">已跳过</span>
+              <span className="phase7-settings-count-label">{t('settings.import.skipped')}</span>
               <strong className="phase7-settings-count-value">{executeResult.skipped_cards}</strong>
             </div>
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">已合并</span>
+              <span className="phase7-settings-count-label">{t('settings.import.merged')}</span>
               <strong className="phase7-settings-count-value">{executeResult.merged_cards}</strong>
             </div>
             <div className="phase7-settings-count-item">
-              <span className="phase7-settings-count-label">缺少媒体</span>
+              <span className="phase7-settings-count-label">{t('settings.import.missingMedia')}</span>
               <strong className="phase7-settings-count-value">{executeResult.missing_media_files}</strong>
             </div>
           </div>
@@ -791,6 +797,7 @@ type PageState =
   | { kind: 'ready'; data: SettingsDto };
 
 export function SettingsPage() {
+  const { t } = useI18n();
   const [state, setState] = useState<PageState>({ kind: 'loading' });
 
   const load = useCallback(() => {
@@ -808,7 +815,7 @@ export function SettingsPage() {
     load();
   }, [load]);
 
-  if (state.kind === 'loading') return <LoadingState message="加载中…" />;
+  if (state.kind === 'loading') return <LoadingState message={t('common.loading')} />;
   if (state.kind === 'error') return <ErrorState message={state.message} onRetry={load} />;
   return <SettingsReady initial={state.data} />;
 }

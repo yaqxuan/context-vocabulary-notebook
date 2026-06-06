@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { I18nProvider } from '../../src/client/i18n/I18nProvider';
 import { SettingsPage } from '../../src/client/pages/SettingsPage';
 import type {
   ImportConflictDto,
@@ -8,6 +9,8 @@ import type {
   ImportScanResponseDto,
   SettingsDto,
 } from '../../src/shared/types';
+
+const render = (ui: React.ReactElement) => rtlRender(<I18nProvider>{ui}</I18nProvider>);
 
 // --- Helpers ---
 
@@ -107,7 +110,7 @@ describe('SettingsPage', () => {
 
     it('shows loading state initially', () => {
       render(<SettingsPage />);
-      expect(screen.getByText('加载中…')).toBeInTheDocument();
+      expect(screen.getByText('加载中...')).toBeInTheDocument();
     });
 
     it('does not render the top settings hero header', async () => {
@@ -207,7 +210,7 @@ describe('SettingsPage', () => {
       fireEvent.change(screen.getByLabelText('默认学习语言'), { target: { value: '日语' } });
       fireEvent.change(screen.getByLabelText('默认释义语言'), { target: { value: '韩语' } });
 
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
       expect(await screen.findByText('设置已保存')).toBeInTheDocument();
       expect(patchBody).toMatchObject({
@@ -237,11 +240,34 @@ describe('SettingsPage', () => {
       await screen.findByLabelText('界面语言');
 
       fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '日语' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
       await screen.findByText('设置已保存');
       const select = screen.getByLabelText('界面语言') as HTMLSelectElement;
       expect(select.value).toBe('日语');
+    });
+
+    it('switches runtime language and shows translated messages immediately upon save', async () => {
+      const updatedSettings: SettingsDto = {
+        ...settings,
+        interface_language: '法语',
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
+        if (init?.method === 'PATCH') return Promise.resolve(jsonResponse(updatedSettings));
+        return Promise.resolve(jsonResponse(settings));
+      });
+
+      render(<SettingsPage />);
+      await screen.findByLabelText('界面语言'); // Initial load with Chinese
+
+      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '法语' } });
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+      expect(await screen.findByText('Paramètres enregistrés')).toBeInTheDocument();
+      expect(screen.getByLabelText('Langue de l’interface')).toBeInTheDocument();
     });
   });
 
@@ -257,7 +283,7 @@ describe('SettingsPage', () => {
       await screen.findByLabelText('每日复习数量');
 
       fireEvent.change(screen.getByLabelText('每日复习数量'), { target: { value: '0' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
       expect(await screen.findByText('每日复习数量必须是正整数')).toBeInTheDocument();
     });
@@ -267,7 +293,7 @@ describe('SettingsPage', () => {
       await screen.findByLabelText('每日复习数量');
 
       fireEvent.change(screen.getByLabelText('每日复习数量'), { target: { value: '-5' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
       expect(await screen.findByText('每日复习数量必须是正整数')).toBeInTheDocument();
     });
@@ -277,7 +303,7 @@ describe('SettingsPage', () => {
       await screen.findByLabelText('每日复习数量');
 
       fireEvent.change(screen.getByLabelText('每日复习数量'), { target: { value: '2.5' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
       expect(await screen.findByText('每日复习数量必须是正整数')).toBeInTheDocument();
     });
@@ -287,7 +313,7 @@ describe('SettingsPage', () => {
       await screen.findByLabelText('每日复习数量');
 
       fireEvent.change(screen.getByLabelText('每日复习数量'), { target: { value: '' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
       expect(await screen.findByText('每日复习数量必须是正整数')).toBeInTheDocument();
     });
@@ -306,7 +332,7 @@ describe('SettingsPage', () => {
       await screen.findByLabelText('每日复习数量');
 
       fireEvent.change(screen.getByLabelText('每日复习数量'), { target: { value: '5' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存设置' }));
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
       await screen.findByText('设置已保存');
       expect(screen.queryByText('每日复习数量必须是正整数')).not.toBeInTheDocument();
