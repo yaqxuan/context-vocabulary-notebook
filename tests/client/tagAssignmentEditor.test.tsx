@@ -8,6 +8,14 @@ function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
+function renderEditor() {
+  render(
+    <I18nProvider>
+      <TagAssignmentEditor selectedTagIds={[]} onSelectedTagIdsChange={vi.fn()} />
+    </I18nProvider>
+  );
+}
+
 describe('TagAssignmentEditor', () => {
   afterEach(() => {
     cleanup();
@@ -17,27 +25,16 @@ describe('TagAssignmentEditor', () => {
 
   it('stops showing loading forever when the tag request never settles (English test)', async () => {
     vi.useFakeTimers();
-    
-    let resolveSettings: (val: Response) => void = () => {};
+
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
       const url = String(input);
-      if (url === '/api/settings') {
-        return new Promise<Response>((resolve) => {
-          resolveSettings = resolve;
-        });
-      }
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ id: 1, interface_language: '英语' }));
       return new Promise<Response>(() => undefined);
     });
 
-    render(
-      <I18nProvider>
-        <TagAssignmentEditor selectedTagIds={[]} onSelectedTagIdsChange={vi.fn()} />
-      </I18nProvider>
-    );
+    renderEditor();
 
     await act(async () => {
-      resolveSettings(jsonResponse({ id: 1, interface_language: '英语' }));
-      await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -55,17 +52,11 @@ describe('TagAssignmentEditor', () => {
 
   it('keeps the retry timeout active when an earlier timed-out request settles later', async () => {
     vi.useFakeTimers();
-    
     let resolveFirstRequest: ((response: Response) => void) | undefined;
-    let resolveSettings: (val: Response) => void = () => {};
 
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
       const url = String(input);
-      if (url === '/api/settings') {
-        return new Promise<Response>((resolve) => {
-          resolveSettings = resolve;
-        });
-      }
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ id: 1, interface_language: '中文' }));
       if (!resolveFirstRequest) {
         return new Promise<Response>((resolve) => {
           resolveFirstRequest = resolve;
@@ -74,15 +65,9 @@ describe('TagAssignmentEditor', () => {
       return new Promise<Response>(() => undefined);
     });
 
-    render(
-      <I18nProvider>
-        <TagAssignmentEditor selectedTagIds={[]} onSelectedTagIdsChange={vi.fn()} />
-      </I18nProvider>
-    );
+    renderEditor();
 
     await act(async () => {
-      resolveSettings(jsonResponse({ id: 1, interface_language: '中文' }));
-      await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -92,7 +77,7 @@ describe('TagAssignmentEditor', () => {
     await act(async () => {
       vi.advanceTimersByTime(TAG_LOAD_TIMEOUT_MS);
     });
-    
+
     expect(screen.getByText('标签列表加载超时，请重试')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '重新加载标签' }));
     expect(screen.getByText('加载标签中…')).toBeInTheDocument();

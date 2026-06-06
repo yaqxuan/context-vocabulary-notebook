@@ -63,7 +63,7 @@ export function TagAssignmentEditor({
         if (loadSeqRef.current === seq) clearLoadTimeout();
         if (mountedRef.current && loadSeqRef.current === seq) setTagsLoading(false);
       });
-  }, [clearLoadTimeout, t('tags.loadTimeout'), t('tags.loadFailed')]);
+  }, [clearLoadTimeout, t]);
 
   useEffect(() => {
     mountedRef.current = true;
