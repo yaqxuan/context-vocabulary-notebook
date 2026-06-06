@@ -559,7 +559,7 @@ export function CardCreatePage() {
               value={note}
               onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleNoteChange(e.target.value)}
               placeholder={aiSuggestionState === 'loading' ? t('create.aiGenerating') : 'none'}
-              rows={3}
+              rows={7}
             />
             <small>{aiUsageSuggestion ? t('create.aiNoteHelp') : 'none'}</small>
           </label>
