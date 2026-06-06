@@ -864,6 +864,82 @@ body {
   font-weight: 700;
 }
 
+.card-create-spelling-tools {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.card-create-spelling-button {
+  justify-self: start;
+  border: 1px solid rgba(15, 118, 110, 0.28);
+  border-radius: 999px;
+  background: rgba(204, 251, 241, 0.72);
+  color: #0f766e;
+  cursor: pointer;
+  font: 800 0.85rem ui-sans-serif, system-ui, sans-serif;
+  padding: 0.55rem 0.85rem;
+}
+
+.card-create-spelling-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.card-create-spelling-status {
+  margin: 0;
+  color: rgba(23, 32, 51, 0.62);
+  font: 700 0.85rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.card-create-spelling-result {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  border-radius: 1rem;
+  background: rgba(255, 247, 232, 0.62);
+  padding: 0.75rem;
+}
+
+.card-create-spelling-preview {
+  margin: 0;
+  color: #172033;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.card-create-spelling-highlight {
+  border-radius: 0.35rem;
+  background: rgba(251, 191, 36, 0.45);
+  color: #7c2d12;
+  padding: 0 0.18rem;
+}
+
+.card-create-spelling-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.card-create-spelling-issue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #172033;
+  font: 750 0.85rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.card-create-spelling-issue button {
+  border: 0;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff7e8;
+  cursor: pointer;
+  font: 800 0.78rem ui-sans-serif, system-ui, sans-serif;
+  padding: 0.38rem 0.7rem;
+}
+
 .card-create-language-row {
   display: grid;
   gap: 1rem;

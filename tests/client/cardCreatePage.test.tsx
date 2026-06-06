@@ -931,4 +931,108 @@ describe('CardCreatePage', () => {
     expect(requests.find((req) => req.url === '/api/cards/card-1' && req.method === 'PATCH')).toBeUndefined();
   });
 
+  it('calls spelling check only when the user clicks the spelling button', async () => {
+    let spellingBody: Record<string, unknown> | null = null;
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/spelling-check') {
+        spellingBody = JSON.parse(String(init?.body ?? '{}'));
+        return Promise.resolve(jsonResponse({ status: 'success', issues: [{ original: 'Hte', suggestion: 'The' }] }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('学习语言'), { target: { value: '英语' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Hte hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
+
+    expect(spellingBody).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'AI 检查拼写' }));
+
+    await waitFor(() => expect(spellingBody).toEqual({
+      target_word: 'hotel',
+      sentence: 'Hte hotel charges $100 per night.',
+      target_language: '英语',
+    }));
+    await screen.findByText('The');
+    expect(screen.getAllByText('Hte').some((element) => element.classList.contains('card-create-spelling-highlight'))).toBe(true);
+    expect(screen.getByText('The')).toBeInTheDocument();
+  });
+
+  it('accepts one spelling suggestion and replaces only that word', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/spelling-check') {
+        return Promise.resolve(jsonResponse({ status: 'success', issues: [{ original: 'Hte', suggestion: 'The' }] }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Hte hotel charges hte fee.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
+    fireEvent.click(screen.getByRole('button', { name: 'AI 检查拼写' }));
+
+    await screen.findByText('The');
+    fireEvent.click(screen.getByRole('button', { name: '接受 Hte → The' }));
+
+    expect(screen.getByLabelText('原句')).toHaveValue('The hotel charges hte fee.');
+    expect(screen.queryByText('The')).not.toBeInTheDocument();
+  });
+
+  it('does not display spelling suggestions for the target word', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/spelling-check') {
+        return Promise.resolve(jsonResponse({ status: 'success', issues: [{ original: 'hotel', suggestion: 'hostel' }] }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
+    fireEvent.click(screen.getByRole('button', { name: 'AI 检查拼写' }));
+
+    expect(await screen.findByText('未发现拼写错误')).toBeInTheDocument();
+    expect(screen.queryByText('hostel')).not.toBeInTheDocument();
+  });
+
+  it('shows retryable spelling check error', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/spelling-check') return Promise.reject(new Error('network down'));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Hte hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
+    fireEvent.click(screen.getByRole('button', { name: 'AI 检查拼写' }));
+
+    expect(await screen.findByText('拼写检查失败，请重试')).toBeInTheDocument();
+  });
+
 });

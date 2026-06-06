@@ -3,12 +3,12 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent,
 import { createCard, getCard, patchCard } from '../api/cards';
 import { getCardSuggestions } from '../api/cards';
 import { uploadMedia } from '../api/media';
-import { getAiSuggestion } from '../api/aiSuggestions';
+import { checkAiSpelling, getAiSuggestion } from '../api/aiSuggestions';
 import { TagAssignmentEditor } from '../components/TagAssignmentEditor';
 import { getSettings } from '../api/settings';
 import { useI18n } from '../i18n/I18nProvider';
 import type { Translator } from '../i18n/types';
-import type { CardDetailDto, SuggestionDto } from '../../shared/types';
+import type { AiSpellingIssueDto, CardDetailDto, SuggestionDto } from '../../shared/types';
 import {
   DEFAULT_DEFINITION_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
@@ -72,6 +72,22 @@ function findExactMatch(suggestions: SuggestionDto[], targetWord: string, meanin
   ) ?? null;
 }
 
+function wordsEqual(a: string, b: string): boolean {
+  return a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
+}
+
+function filterProtectedSpellingIssues(issues: AiSpellingIssueDto[], targetWord: string): AiSpellingIssueDto[] {
+  return issues.filter((issue) => !wordsEqual(issue.original, targetWord));
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function replaceFirstWord(sentence: string, original: string, suggestion: string): string {
+  return sentence.replace(new RegExp(`\\b${escapeRegExp(original)}\\b`, 'i'), suggestion);
+}
+
 function sameTagSet(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   const bSet = new Set(b);
@@ -93,6 +109,8 @@ export function CardCreatePage() {
   const [aiMeaningSuggestion, setAiMeaningSuggestion] = useState('');
   const [aiUsageSuggestion, setAiUsageSuggestion] = useState('');
   const [aiSuggestionState, setAiSuggestionState] = useState<'idle' | 'loading' | 'none' | 'success' | 'error'>('idle');
+  const [spellingCheckState, setSpellingCheckState] = useState<'idle' | 'loading' | 'empty' | 'success' | 'error'>('idle');
+  const [spellingIssues, setSpellingIssues] = useState<AiSpellingIssueDto[]>([]);
   const [meaningTouched, setMeaningTouched] = useState(false);
   const [video, setVideo] = useState<File | null>(null);
   const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -350,6 +368,12 @@ export function CardCreatePage() {
     if (kind === 'audio') setAudio(next);
   }
 
+  function handleSentenceChange(value: string) {
+    setSentence(value);
+    setSpellingIssues([]);
+    setSpellingCheckState('idle');
+  }
+
   function handleMeaningChange(value: string) {
     setMeaningTouched(true);
     setMeaning(value);
@@ -379,6 +403,42 @@ export function CardCreatePage() {
     noteTouchedRef.current = true;
     aiAutoFilledNoteRef.current = false;
     setNote(value);
+  }
+
+  async function handleSpellingCheck() {
+    const trimmedSentence = sentence.trim();
+    const trimmedWord = targetWord.trim();
+    if (!trimmedSentence || !trimmedWord) return;
+
+    setSpellingCheckState('loading');
+    setSpellingIssues([]);
+    try {
+      const result = await checkAiSpelling({
+        target_word: trimmedWord,
+        sentence: trimmedSentence,
+        target_language: targetLanguage,
+      });
+      const issues = result.status === 'success'
+        ? filterProtectedSpellingIssues(result.issues, trimmedWord)
+        : [];
+      setSpellingIssues(issues);
+      setSpellingCheckState(issues.length > 0 ? 'success' : 'empty');
+    } catch {
+      setSpellingIssues([]);
+      setSpellingCheckState('error');
+    }
+  }
+
+  function acceptSpellingSuggestion(issue: AiSpellingIssueDto) {
+    setSentence((current) => replaceFirstWord(current, issue.original, issue.suggestion));
+    setSpellingIssues((current) => {
+      const index = current.findIndex(
+        (item) => item.original === issue.original && item.suggestion === issue.suggestion,
+      );
+      const next = index === -1 ? current : [...current.slice(0, index), ...current.slice(index + 1)];
+      setSpellingCheckState(next.length > 0 ? 'success' : 'idle');
+      return next;
+    });
   }
 
   function validate(t: Translator): FieldErrors {
@@ -465,12 +525,29 @@ export function CardCreatePage() {
               id="cc-sentence"
               aria-label={t('create.sentence')}
               value={sentence}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setSentence(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleSentenceChange(e.target.value)}
               placeholder="The hotel charges $100 per night."
               rows={4}
             />
             <small>{t('create.sentenceHelp')}</small>
             {errors.sentence ? <em>{errors.sentence}</em> : null}
+            <div className="card-create-spelling-tools">
+              <button
+                type="button"
+                className="card-create-spelling-button"
+                onClick={handleSpellingCheck}
+                disabled={spellingCheckState === 'loading' || !sentence.trim() || !targetWord.trim()}
+              >
+                {spellingCheckState === 'loading' ? t('create.spellingChecking') : t('create.spellingCheck')}
+              </button>
+              <SpellingCheckResult
+                state={spellingCheckState}
+                sentence={sentence}
+                issues={spellingIssues}
+                onAccept={acceptSpellingSuggestion}
+                t={t}
+              />
+            </div>
           </label>
 
           {/* Target word */}
@@ -628,6 +705,56 @@ export function CardCreatePage() {
       </div>
     </form>
   );
+}
+
+// ---- SpellingCheckResult sub-component ----
+
+interface SpellingCheckResultProps {
+  state: 'idle' | 'loading' | 'empty' | 'success' | 'error';
+  sentence: string;
+  issues: AiSpellingIssueDto[];
+  onAccept: (issue: AiSpellingIssueDto) => void;
+  t: Translator;
+}
+
+function SpellingCheckResult({ state, sentence, issues, onAccept, t }: SpellingCheckResultProps) {
+  if (state === 'idle' || state === 'loading') return null;
+  if (state === 'error') return <p className="card-create-spelling-status">{t('create.spellingFailed')}</p>;
+  if (state === 'empty' || issues.length === 0) return <p className="card-create-spelling-status">{t('create.spellingNoIssues')}</p>;
+
+  return (
+    <div className="card-create-spelling-result">
+      <p className="card-create-spelling-preview">
+        {renderSpellingPreview(sentence, issues)}
+      </p>
+      <div className="card-create-spelling-list">
+        {issues.map((issue) => (
+          <div key={`${issue.original}-${issue.suggestion}`} className="card-create-spelling-issue">
+            <span><strong>{issue.original}</strong> → <strong>{issue.suggestion}</strong></span>
+            <button
+              type="button"
+              onClick={() => onAccept(issue)}
+              aria-label={t('create.spellingAcceptLabel', { original: issue.original, suggestion: issue.suggestion })}
+            >
+              {t('create.spellingAccept')}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function renderSpellingPreview(sentence: string, issues: AiSpellingIssueDto[]) {
+  const originals = new Set(issues.map((issue) => issue.original.toLocaleLowerCase()));
+  const parts = sentence.split(/(\s+)/);
+  return parts.map((part, index) => {
+    const bare = part.replace(/^\W+|\W+$/g, '');
+    if (originals.has(bare.toLocaleLowerCase())) {
+      return <mark key={`${part}-${index}`} className="card-create-spelling-highlight">{part}</mark>;
+    }
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
 }
 
 // ---- MediaPicker sub-component ----
