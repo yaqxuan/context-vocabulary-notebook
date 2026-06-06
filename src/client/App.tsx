@@ -12,13 +12,14 @@ import { ReviewPage } from './pages/ReviewPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatisticsPage } from './pages/StatisticsPage';
 import { I18nProvider, useI18n } from './i18n/I18nProvider';
+import type { Translator } from './i18n/types';
 
 function currentHashPath(): string {
   const hash = window.location.hash.replace(/^#/, '');
   return hash || '/';
 }
 
-function getNavItems(t: (key: any) => string): NavItem[] {
+function getNavItems(t: Translator): NavItem[] {
   return [
     { href: '#/', label: t('nav.home.label'), description: t('nav.home.description'), match: (path) => path === '/' },
     { href: '#/create', label: t('nav.create.label'), description: t('nav.create.description'), match: (path) => path === '/create' },
@@ -37,7 +38,7 @@ interface RouteResult {
   element: ReactNode;
 }
 
-function routeFor(path: string, t: (key: any) => string): RouteResult {
+function routeFor(path: string, t: Translator): RouteResult {
   if (path === '/') {
     return { title: t('nav.home.title'), subtitle: t('nav.home.description'), element: <HomePage /> };
   }
