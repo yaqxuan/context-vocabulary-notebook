@@ -554,12 +554,12 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   '法语': {
   "app": {
     "brand": "Carnet de vocabulaire contextuel",
-    "brandSubtitle": "在语境中学习单词",
-    "navigation": "导航"
+    "brandSubtitle": "Apprendre des mots en contexte",
+    "navigation": "Navigation principale"
   },
   "common": {
-    "loading": "加载中...",
-    "loadFailed": "加载失败",
+    "loading": "Chargement...",
+    "loadFailed": "Échec du chargement",
     "retry": "重试",
     "confirm": "确认",
     "cancel": "取消",

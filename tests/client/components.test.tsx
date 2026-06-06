@@ -8,6 +8,7 @@ import { MediaPreview } from '../../src/client/components/MediaPreview';
 import { Pagination } from '../../src/client/components/Pagination';
 import { StatusBadge } from '../../src/client/components/StatusBadge';
 import { EmptyState, ErrorState, LoadingState } from '../../src/client/components/UiStates';
+import { I18nProvider } from '../../src/client/i18n/I18nProvider';
 
 describe('shared components', () => {
   it('renders button variants and disabled state', () => {
@@ -60,12 +61,22 @@ describe('shared components', () => {
     expect(onCancel).toHaveBeenCalledOnce();
   });
 
-  it('renders loading empty and error states', () => {
+  it('renders loading empty and error states', async () => {
     const retry = vi.fn();
-    render(<><LoadingState /><EmptyState message="暂无内容" /><ErrorState message="加载失败" onRetry={retry} /></>);
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+      if (url === '/api/settings') {
+        return Promise.resolve(new Response(JSON.stringify({ id: 1, interface_language: 'zh-CN', default_target_language: '英语', default_definition_language: '中文', daily_review_limit: 20, created_at: 'now', updated_at: 'now' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    });
 
-    expect(screen.getByText('加载中…')).toBeInTheDocument();
+    render(<I18nProvider><><LoadingState /><EmptyState message="暂无内容" /><ErrorState message="加载失败原因" onRetry={retry} /></></I18nProvider>);
+
+    expect(await screen.findByText('加载中...')).toBeInTheDocument();
     expect(screen.getByText('暂无内容')).toBeInTheDocument();
+    expect(screen.getByText('加载失败')).toBeInTheDocument();
+    expect(screen.getByText('加载失败原因')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     expect(retry).toHaveBeenCalledOnce();
   });
