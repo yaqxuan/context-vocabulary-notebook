@@ -11,7 +11,7 @@ import { PlaceholderPage } from './pages/PlaceholderPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatisticsPage } from './pages/StatisticsPage';
-import { useI18n } from './i18n/I18nProvider';
+import { I18nProvider, useI18n } from './i18n/I18nProvider';
 
 function currentHashPath(): string {
   const hash = window.location.hash.replace(/^#/, '');
@@ -68,7 +68,7 @@ function routeFor(path: string, t: (key: any) => string): RouteResult {
   return { title: t('nav.notFound.title'), subtitle: t('nav.notFound.message'), element: <PlaceholderPage message={t('nav.notFound.message')} phase="Phase 6" /> };
 }
 
-export function App() {
+function AppShell() {
   const [path, setPath] = useState(currentHashPath);
   const { t } = useI18n();
 
@@ -86,5 +86,13 @@ export function App() {
     <Layout navItems={items} currentPath={routePath} title={route.title} subtitle={route.subtitle}>
       {route.element}
     </Layout>
+  );
+}
+
+export function App() {
+  return (
+    <I18nProvider>
+      <AppShell />
+    </I18nProvider>
   );
 }
