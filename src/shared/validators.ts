@@ -1,5 +1,5 @@
-import { ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, ALLOWED_PAGE_SIZES, CARD_STATUSES } from './constants.js';
-import type { MediaType, PageSize, CardStatus } from './constants.js';
+import { ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, ALLOWED_PAGE_SIZES, CARD_STATUSES, SUPPORTED_LANGUAGES } from './constants.js';
+import type { MediaType, PageSize, CardStatus, SupportedLanguage } from './constants.js';
 import path from 'node:path';
 
 // --- Page size validation ---
@@ -24,6 +24,12 @@ export function parsePageNumber(raw: unknown, fallback = 1): number {
 
 export function isValidCardStatus(value: unknown): value is CardStatus {
   return CARD_STATUSES.includes(value as CardStatus);
+}
+
+// --- Language validation ---
+
+export function isSupportedLanguage(value: unknown): value is SupportedLanguage {
+  return SUPPORTED_LANGUAGES.includes(value as SupportedLanguage);
 }
 
 // --- Media validation ---

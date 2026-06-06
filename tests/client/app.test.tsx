@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../src/client/App';
+import { I18nProvider } from '../../src/client/i18n/I18nProvider';
 
 describe('App', () => {
   beforeEach(() => {
@@ -63,80 +64,80 @@ describe('App', () => {
     window.location.hash = '';
   });
 
-  it('renders the Phase 6/7 sidebar shell with navigation', () => {
+  it('renders the Phase 6/7 sidebar shell with navigation', async () => {
     render(<App />);
 
-    expect(screen.getByText('语境单词本')).toBeInTheDocument();
-    expect(screen.getByText('Context Review Desk')).toBeInTheDocument();
+    expect(await screen.findByText('语境单词本')).toBeInTheDocument();
+    expect(screen.getByText('在语境中学习单词')).toBeInTheDocument();
     expect(screen.queryByText('本地优先')).not.toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: '主导航' })).toHaveTextContent('首页');
-    expect(screen.getByRole('navigation', { name: '主导航' })).toHaveTextContent('制卡');
-    expect(screen.getByRole('navigation', { name: '主导航' })).toHaveTextContent('设置');
+    expect(screen.getByRole('navigation', { name: '导航' })).toHaveTextContent('主页');
+    expect(screen.getByRole('navigation', { name: '导航' })).toHaveTextContent('新建');
+    expect(screen.getByRole('navigation', { name: '导航' })).toHaveTextContent('设置');
   });
 
-  it('navigates with hash links and highlights current page', () => {
+  it('navigates with hash links and highlights current page', async () => {
     render(<App />);
 
-    fireEvent.click(screen.getByRole('link', { name: /^复习/ }));
+    expect(await screen.findByRole('link', { name: /^复习/ })).toBeInTheDocument();
     window.location.hash = '#/review';
     fireEvent(window, new HashChangeEvent('hashchange'));
 
     expect(window.location.hash).toBe('#/review');
-    expect(screen.getByRole('heading', { name: '复习' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '开始复习' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^复习/ })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('renders the home route with active navigation', () => {
+  it('renders the home route with active navigation', async () => {
     window.location.hash = '#/';
     render(<App />);
 
-    expect(screen.getByRole('link', { name: /^首页/ })).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('link', { name: /^主页/ })).toHaveAttribute('aria-current', 'page');
   });
 
   it.each([
-    ['#/create', /^制卡/],
-    ['#/cards', /^词义条目/],
+    ['#/create', /^新建/],
+    ['#/cards', /^卡片/],
     ['#/review', /^复习/],
     ['#/tags', /^标签/],
     ['#/favorites', /^收藏/],
     ['#/statistics', /^统计/],
     ['#/settings', /^设置/],
-  ])('renders route %s', (hash, navName) => {
+  ])('renders route %s', async (hash, navName) => {
     window.location.hash = hash;
     render(<App />);
 
-    expect(screen.getByRole('link', { name: navName })).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('link', { name: navName })).toHaveAttribute('aria-current', 'page');
   });
 
   it('renders the real card create page on create route', async () => {
     window.location.hash = '#/create';
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: '制卡' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '新建卡片' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '捕捉一个真实语境' })).not.toBeInTheDocument();
     expect(screen.getByText('本地视频 mp4')).toBeInTheDocument();
   });
 
-  it('renders real Phase 6 list-like routes', () => {
+  it('renders real Phase 6 list-like routes', async () => {
     window.location.hash = '#/cards';
     render(<App />);
-    expect(screen.getByRole('link', { name: /^词义条目/ })).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('link', { name: /^卡片/ })).toHaveAttribute('aria-current', 'page');
 
     cleanup();
     window.location.hash = '#/favorites';
     render(<App />);
-    expect(screen.getByRole('link', { name: /^收藏/ })).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('link', { name: /^收藏/ })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('renders real Phase 6 detail and tags routes', () => {
+  it('renders real Phase 6 detail and tags routes', async () => {
     window.location.hash = '#/cards/card-1';
     render(<App />);
-    expect(screen.getByRole('link', { name: /^词义条目/ })).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('link', { name: /^卡片/ })).toHaveAttribute('aria-current', 'page');
 
     cleanup();
     window.location.hash = '#/tags';
     render(<App />);
-    expect(screen.getByRole('link', { name: /^标签/ })).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('link', { name: /^标签/ })).toHaveAttribute('aria-current', 'page');
   });
 
   it('routes review to the real review page', async () => {
@@ -167,5 +168,28 @@ describe('App', () => {
 
     expect(await screen.findByText('学习与界面设置')).toBeInTheDocument();
     expect(screen.queryByText('Phase 7')).not.toBeInTheDocument();
+  });
+
+  it('renders shell copy in the persisted interface language', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (url === '/api/settings') {
+        return Promise.resolve(json({ id: 1, interface_language: '法语', default_target_language: '英语', default_definition_language: '中文', daily_review_limit: 20, created_at: 'now', updated_at: 'now' }));
+      }
+      if (url.startsWith('/api/statistics/home')) {
+        return Promise.resolve(json({ due_count: 0, reviewed_today_count: 0, again_today_count: 0, good_today_count: 0, daily_review_limit: 20, is_daily_target_reached: false }));
+      }
+      return Promise.resolve(json({ items: [], total: 0, page: 1, page_size: 20 }));
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('Carnet de vocabulaire contextuel')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Navigation principale' })).toHaveTextContent('Paramètres');
   });
 });

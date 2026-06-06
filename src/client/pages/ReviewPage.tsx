@@ -5,6 +5,7 @@ import { patchCard } from '../api/cards';
 import { getDueReview, submitReview } from '../api/review';
 import { Button } from '../components/Button';
 import { EmptyState, ErrorState, LoadingState } from '../components/UiStates';
+import { useI18n } from '../i18n/I18nProvider';
 
 // --- Sentence highlighter ---
 
@@ -25,12 +26,13 @@ function mediaUrl(item: MediaDto): string {
 }
 
 function MediaItem({ item }: { item: MediaDto }) {
+  const { t } = useI18n();
   const unavailable = item.is_available === 0;
   if (unavailable) {
     return (
       <div className="phase7-review-media-item phase7-review-media-item--unavailable">
         <span className="phase7-review-media-name">{item.file_name}</span>
-        <span className="phase7-review-media-unavailable">文件不可用</span>
+        <span className="phase7-review-media-unavailable">{t('common.fileUnavailable')}</span>
       </div>
     );
   }
@@ -55,6 +57,7 @@ function MediaItem({ item }: { item: MediaDto }) {
 // --- Context panel ---
 
 function ContextPanel({ card }: { card: DueReviewCardDto }) {
+  const { t } = useI18n();
   const primaryCtx = card.contexts.find((c) => c.is_primary === 1) ?? card.contexts[0] ?? null;
   const otherContexts = [...card.contexts]
     .filter((c) => c.id !== primaryCtx?.id)
@@ -69,31 +72,31 @@ function ContextPanel({ card }: { card: DueReviewCardDto }) {
     <div className="phase7-review-context-panel">
       {videos.length > 0 && (
         <div className="phase7-review-media-section">
-          <p className="phase7-review-media-label">视频</p>
+          <p className="phase7-review-media-label">{t('review.media.video')}</p>
           {videos.map((m) => <MediaItem key={m.id} item={m} />)}
         </div>
       )}
       {images.length > 0 && (
         <div className="phase7-review-media-section">
-          <p className="phase7-review-media-label">截图</p>
+          <p className="phase7-review-media-label">{t('review.media.screenshot')}</p>
           {images.map((m) => <MediaItem key={m.id} item={m} />)}
         </div>
       )}
       {audios.length > 0 && (
         <div className="phase7-review-media-section">
-          <p className="phase7-review-media-label">音频</p>
+          <p className="phase7-review-media-label">{t('review.media.audio')}</p>
           {audios.map((m) => <MediaItem key={m.id} item={m} />)}
         </div>
       )}
       {primaryCtx?.note ? (
         <div className="phase7-review-context-note">
-          <p className="phase7-review-media-label">语境笔记</p>
+          <p className="phase7-review-media-label">{t('review.media.note')}</p>
           <p>{primaryCtx.note}</p>
         </div>
       ) : null}
       {otherContexts.length > 0 && (
         <div className="phase7-review-other-contexts">
-          <p className="phase7-review-media-label">其他语境</p>
+          <p className="phase7-review-media-label">{t('review.media.otherContexts')}</p>
           {otherContexts.map((c) => (
             <p key={c.id} className="phase7-review-other-sentence">{c.sentence}</p>
           ))}
@@ -106,9 +109,10 @@ function ContextPanel({ card }: { card: DueReviewCardDto }) {
 // --- Progress bar label ---
 
 function ProgressLabel({ progress }: { progress: ReviewProgressDto }) {
+  const { t } = useI18n();
   return (
     <p className="phase7-review-progress">
-      今日已复习 {progress.reviewed_count} / {progress.daily_review_limit}
+      {t('review.progress', { reviewed: progress.reviewed_count, limit: progress.daily_review_limit })}
     </p>
   );
 }
@@ -121,12 +125,13 @@ interface LimitReminderProps {
 }
 
 function LimitReminder({ onEnd, onContinue }: LimitReminderProps) {
+  const { t } = useI18n();
   return (
     <div className="phase7-review-limit-banner" role="status">
-      <p className="phase7-review-limit-msg">今日目标已完成，休息一下也没关系。</p>
+      <p className="phase7-review-limit-msg">{t('review.doneToday')}</p>
       <div className="phase7-review-limit-actions">
-        <Button variant="secondary" onClick={onEnd}>结束复习</Button>
-        <Button variant="ghost" onClick={onContinue}>继续复习</Button>
+        <Button variant="secondary" onClick={onEnd}>{t('review.endReview')}</Button>
+        <Button variant="ghost" onClick={onContinue}>{t('review.continueReview')}</Button>
       </div>
     </div>
   );
@@ -150,6 +155,7 @@ interface ReviewCardProps {
 }
 
 function ReviewCard({ card, progress, submitting, submitError, pendingRating, pendingRequiresConfirm, lastRating, onChooseRating, onConfirmRating, onToggleFavorite, onMarkMastered, onNext }: ReviewCardProps) {
+  const { t } = useI18n();
   const [contextOpen, setContextOpen] = useState(false);
   const contextOpenRef = useRef(false);
   const answerRevealed = Boolean(pendingRating || lastRating);
@@ -183,9 +189,9 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
         {answerRevealed ? (
           <div className="phase7-review-card-header-actions">
             <Button variant="secondary" disabled={submitting} onClick={onToggleFavorite}>
-              {card.is_favorite ? '取消收藏' : '收藏'}
+              {card.is_favorite ? t('review.removeFavorite') : t('review.favorite')}
             </Button>
-            <Button variant="secondary" disabled={submitting} onClick={onMarkMastered}>标记熟记</Button>
+            <Button variant="secondary" disabled={submitting} onClick={onMarkMastered}>{t('review.markMastered')}</Button>
           </div>
         ) : null}
       </div>
@@ -203,7 +209,7 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
           aria-expanded={contextOpen}
           onClick={toggleContextOpen}
         >
-          {contextOpen ? '收起语境' : '查看当时语境'}
+          {contextOpen ? t('review.collapseContext') : t('review.viewContext')}
         </button>
       </div>
 
@@ -217,29 +223,29 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
         {pendingRating && !lastRating ? (
           <p className="phase7-review-success">
             {pendingRating === 'good' && !pendingRequiresConfirm
-              ? 'Good 已选择，请查看语境；确认无误后进入下一张。'
-              : `已选择 ${pendingRating === 'good' ? 'Good' : 'Again'}，请查看语境后确认。`}
+              ? t('review.pendingGood')
+              : t('review.pendingRating', { rating: pendingRating === 'good' ? 'Good' : 'Again' })}
           </p>
         ) : null}
 
         {lastRating && !submitError ? (
-          <p className="phase7-review-success">{lastRating === 'good' ? 'Good' : 'Again'} 已记录</p>
+          <p className="phase7-review-success">{t('review.recorded', { rating: lastRating === 'good' ? 'Good' : 'Again' })}</p>
         ) : null}
 
         {lastRating ? (
           <div className="phase7-review-rating-row">
-            <Button variant="primary" disabled={submitting} onClick={onNext}>下一张</Button>
+            <Button variant="primary" disabled={submitting} onClick={onNext}>{t('review.next')}</Button>
           </div>
         ) : pendingRating === 'good' ? (
           <div className="phase7-review-rating-row">
-            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again', true)}>记错了，Again</Button>
+            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again', true)}>{t('review.wrongAgain')}</Button>
             <Button variant="primary" disabled={submitting} onClick={pendingRequiresConfirm ? () => onConfirmRating() : onNext}>
-              {pendingRequiresConfirm ? '确认 Good' : '下一张'}
+              {pendingRequiresConfirm ? t('review.confirmGood') : t('review.next')}
             </Button>
           </div>
         ) : pendingRating === 'again' ? (
           <div className="phase7-review-rating-row">
-            <Button variant="secondary" disabled={submitting} onClick={() => onConfirmRating(true)}>确认</Button>
+            <Button variant="secondary" disabled={submitting} onClick={() => onConfirmRating(true)}>{t('review.confirmAgain')}</Button>
           </div>
         ) : (
           <div className="phase7-review-rating-row">
@@ -263,6 +269,7 @@ type PageState =
   | { kind: 'due'; card: DueReviewCardDto; progress: ReviewProgressDto };
 
 export function ReviewPage() {
+  const { t } = useI18n();
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -290,9 +297,9 @@ export function ReviewPage() {
         }
       })
       .catch((err: unknown) => {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : '无法加载复习内容' });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : t('review.loadFailed') });
       });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -343,9 +350,9 @@ export function ReviewPage() {
       setLastRating(rating);
     } catch (err) {
       if (advanceAfterSubmit && ratingSubmitted) {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : '无法加载复习内容' });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : t('review.loadFailed') });
       } else {
-        setSubmitError(err instanceof Error ? err.message : '提交失败，请重试');
+        setSubmitError(err instanceof Error ? err.message : t('review.submitFailed'));
       }
     } finally {
       setSubmitting(false);
@@ -383,9 +390,9 @@ export function ReviewPage() {
       }
     } catch (err) {
       if (rating && !ratingSubmitted) {
-        setSubmitError(err instanceof Error ? err.message : '提交失败，请重试');
+        setSubmitError(err instanceof Error ? err.message : t('review.submitFailed'));
       } else {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : '无法加载复习内容' });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : t('review.loadFailed') });
       }
     } finally {
       setSubmitting(false);
@@ -401,7 +408,7 @@ export function ReviewPage() {
       const updated = await patchCard(state.card.id, { is_favorite: !state.card.is_favorite });
       setState({ kind: 'due', card: { ...state.card, is_favorite: updated.is_favorite, updated_at: updated.updated_at }, progress: state.progress });
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : '收藏状态更新失败，请重试');
+      setSubmitError(err instanceof Error ? err.message : t('review.favoriteFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -442,28 +449,28 @@ export function ReviewPage() {
       }
     } catch (err) {
       if (mastered) {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : '无法加载复习内容' });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : t('review.loadFailed') });
       } else if (rating && !ratingSubmitted) {
-        setSubmitError(err instanceof Error ? err.message : '提交失败，请重试');
+        setSubmitError(err instanceof Error ? err.message : t('review.submitFailed'));
       } else {
-        setSubmitError(err instanceof Error ? err.message : '标记熟记失败，请重试');
+        setSubmitError(err instanceof Error ? err.message : t('review.masteredFailed'));
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (state.kind === 'loading') return <LoadingState message="加载中…" />;
+  if (state.kind === 'loading') return <LoadingState />;
   if (state.kind === 'error') return <ErrorState message={state.message} onRetry={load} />;
   if (state.kind === 'empty') return (
     <div className="phase7-review-shell">
       {lastRating ? (
-        <p className="phase7-review-success">{lastRating === 'good' ? 'Good' : 'Again'} 已记录</p>
+        <p className="phase7-review-success">{t('review.recorded', { rating: lastRating === 'good' ? 'Good' : 'Again' })}</p>
       ) : null}
-      <EmptyState message="今天没有待复习内容" action={
+      <EmptyState message={t('review.empty')} action={
         <>
-          <a href="#/">返回首页</a>
-          <a href="#/cards">查看全部词义条目</a>
+          <a href="#/">{t('review.backHome')}</a>
+          <a href="#/cards">{t('review.viewAllCards')}</a>
         </>
       } />
       <ProgressLabel progress={state.progress} />

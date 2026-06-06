@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Button } from '../../src/client/components/Button';
 import { ConfirmDialog } from '../../src/client/components/ConfirmDialog';
@@ -8,8 +8,33 @@ import { MediaPreview } from '../../src/client/components/MediaPreview';
 import { Pagination } from '../../src/client/components/Pagination';
 import { StatusBadge } from '../../src/client/components/StatusBadge';
 import { EmptyState, ErrorState, LoadingState } from '../../src/client/components/UiStates';
+import { I18nProvider } from '../../src/client/i18n/I18nProvider';
+
+function mockEnglishSettings() {
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    const url = String(input);
+    if (url === '/api/settings') {
+      return Promise.resolve(new Response(JSON.stringify({ id: 1, interface_language: '英语', default_target_language: '英语', default_definition_language: '中文', daily_review_limit: 20, created_at: 'now', updated_at: 'now' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    }
+    return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+  });
+}
+
+function mockChineseSettings() {
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    const url = String(input);
+    if (url === '/api/settings') {
+      return Promise.resolve(new Response(JSON.stringify({ id: 1, interface_language: '中文', default_target_language: '英语', default_definition_language: '中文', daily_review_limit: 20, created_at: 'now', updated_at: 'now' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    }
+    return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+  });
+}
 
 describe('shared components', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('renders button variants and disabled state', () => {
     render(<Button variant="primary" disabled>保存</Button>);
     expect(screen.getByRole('button', { name: '保存' })).toBeDisabled();
@@ -25,48 +50,88 @@ describe('shared components', () => {
     expect(screen.getByText('必填')).toBeInTheDocument();
   });
 
-  it('calls pagination callbacks', () => {
+  it('calls pagination callbacks and renders in English', async () => {
+    mockEnglishSettings();
     const onPageChange = vi.fn();
     const onPageSizeChange = vi.fn();
-    render(<Pagination page={2} pageSize={20} total={75} onPageChange={onPageChange} onPageSizeChange={onPageSizeChange} />);
+    render(
+      <I18nProvider>
+        <Pagination page={2} pageSize={20} total={75} onPageChange={onPageChange} onPageSizeChange={onPageSizeChange} />
+      </I18nProvider>
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: '上一页' }));
-    fireEvent.change(screen.getByLabelText('每页数量'), { target: { value: '50' } });
+    expect(await screen.findByText('Page 2 of 4 (Total 75)')).toBeInTheDocument();
+    expect(screen.getByText('Page size')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    fireEvent.change(screen.getByLabelText('Page size'), { target: { value: '50' } });
 
     expect(onPageChange).toHaveBeenCalledWith(1);
     expect(onPageSizeChange).toHaveBeenCalledWith(50);
   });
 
-  it('renders status and favorite badges', () => {
-    render(<><StatusBadge status="reviewing" /><StatusBadge favorite /></>);
-    expect(screen.getByText('复习中')).toBeInTheDocument();
-    expect(screen.getByText('已收藏')).toBeInTheDocument();
+  it('renders status and favorite badges in English', async () => {
+    mockEnglishSettings();
+    render(
+      <I18nProvider>
+        <StatusBadge status="reviewing" />
+        <StatusBadge favorite />
+      </I18nProvider>
+    );
+    expect(await screen.findByText('Reviewing')).toBeInTheDocument();
+    expect(screen.getByText('Favorited')).toBeInTheDocument();
   });
 
-  it('renders unavailable media state', () => {
-    render(<MediaPreview mediaType="image" src="/uploads/missing.png" fileName="missing.png" isAvailable={false} />);
-    expect(screen.getByText('文件不可用')).toBeInTheDocument();
+  it('renders unavailable media state in English', async () => {
+    mockEnglishSettings();
+    render(
+      <I18nProvider>
+        <MediaPreview mediaType="image" src="/uploads/missing.png" fileName="missing.png" isAvailable={false} />
+      </I18nProvider>
+    );
+    expect(await screen.findByText('File unavailable')).toBeInTheDocument();
   });
 
-  it('runs confirm and cancel callbacks', () => {
+  it('runs confirm and cancel callbacks and renders default English labels', async () => {
+    mockEnglishSettings();
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
-    render(<ConfirmDialog title="删除词义条目" message="确认删除？" onConfirm={onConfirm} onCancel={onCancel} />);
+    render(
+      <I18nProvider>
+        <ConfirmDialog title="Delete Card" message="Are you sure?" onConfirm={onConfirm} onCancel={onCancel} />
+      </I18nProvider>
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: '确认' }));
-    fireEvent.click(screen.getByRole('button', { name: '取消' }));
+    expect(await screen.findByRole('button', { name: 'Confirm' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(onConfirm).toHaveBeenCalledOnce();
     expect(onCancel).toHaveBeenCalledOnce();
   });
 
-  it('renders loading empty and error states', () => {
+  it('renders loading empty and error states in English', async () => {
+    mockEnglishSettings();
     const retry = vi.fn();
-    render(<><LoadingState /><EmptyState message="暂无内容" /><ErrorState message="加载失败" onRetry={retry} /></>);
 
-    expect(screen.getByText('加载中…')).toBeInTheDocument();
-    expect(screen.getByText('暂无内容')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '重试' }));
+    render(
+      <I18nProvider>
+        <LoadingState />
+        <EmptyState message="No content" />
+        <ErrorState message="Reason" onRetry={retry} />
+      </I18nProvider>
+    );
+
+    expect(await screen.findByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByText('No content')).toBeInTheDocument();
+    expect(screen.getByText('Load failed')).toBeInTheDocument();
+    expect(screen.getByText('Reason')).toBeInTheDocument();
+
+    const retryBtn = screen.getByRole('button', { name: 'Retry' });
+    expect(retryBtn).toBeInTheDocument();
+    fireEvent.click(retryBtn);
     expect(retry).toHaveBeenCalledOnce();
   });
 });

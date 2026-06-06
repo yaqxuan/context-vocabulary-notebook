@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import type { Database } from 'better-sqlite3';
-import { REVIEW_RATINGS, type ReviewRating } from '../../shared/constants.js';
+import { REVIEW_RATINGS, SUPPORTED_LANGUAGES, type ReviewRating } from '../../shared/constants.js';
+import { isNonEmptyString, isSupportedLanguage } from '../../shared/validators.js';
 import { getContextsForCard } from '../domain/contexts.js';
 import { getMediaForCard } from '../domain/media.js';
 import { getDailyReviewProgress, getNextDueCard, submitReview } from '../domain/review.js';
+import { getSettings } from '../domain/settings.js';
 import { asyncRoute } from '../http/asyncRoute.js';
 import { BadRequestError, NotFoundError } from '../http/errors.js';
 
@@ -15,12 +17,29 @@ function isReviewRating(value: unknown): value is ReviewRating {
   return typeof value === 'string' && (REVIEW_RATINGS as readonly string[]).includes(value);
 }
 
+function optionalSupportedLanguage(field: string, value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!isNonEmptyString(raw)) throw new BadRequestError(`${field} must be a non-empty string`);
+  const trimmed = raw.trim();
+  if (!isSupportedLanguage(trimmed)) {
+    throw new BadRequestError(`${field} must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`);
+  }
+  return trimmed;
+}
+
+function reviewTargetLanguage(db: Database, queryValue: unknown): string {
+  return optionalSupportedLanguage('target_language', queryValue) ?? getSettings(db).default_target_language;
+}
+
 export function reviewRouter(db: Database): Router {
   const router = Router();
 
-  router.get('/due', asyncRoute(async (_req, res) => {
-    const card = getNextDueCard(db);
-    const progress = getDailyReviewProgress(db);
+  router.get('/due', asyncRoute(async (req, res) => {
+    const targetLanguage = reviewTargetLanguage(db, req.query.target_language);
+    const scope = { target_language: targetLanguage };
+    const card = getNextDueCard(db, scope);
+    const progress = getDailyReviewProgress(db, new Date(), scope);
 
     if (!card) {
       res.json({ status: 'empty', message: '今天没有待复习内容', card: null, progress });
@@ -38,8 +57,9 @@ export function reviewRouter(db: Database): Router {
     });
   }));
 
-  router.get('/progress', asyncRoute(async (_req, res) => {
-    res.json(getDailyReviewProgress(db));
+  router.get('/progress', asyncRoute(async (req, res) => {
+    const targetLanguage = reviewTargetLanguage(db, req.query.target_language);
+    res.json(getDailyReviewProgress(db, new Date(), { target_language: targetLanguage }));
   }));
 
   router.post('/:cardId', asyncRoute(async (req, res) => {
@@ -50,7 +70,8 @@ export function reviewRouter(db: Database): Router {
       throw new BadRequestError('rating must be again or good');
     }
 
-    const result = submitReview(db, cardId, body.rating);
+    const targetLanguage = optionalSupportedLanguage('target_language', body.target_language);
+    const result = submitReview(db, cardId, body.rating, new Date(), { target_language: targetLanguage });
     if (!result) throw new NotFoundError(`Card not found: ${cardId}`);
 
     res.json(result);

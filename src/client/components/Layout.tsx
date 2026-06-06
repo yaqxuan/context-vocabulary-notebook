@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useI18n } from '../i18n/I18nProvider';
 
 export interface NavItem {
   href: string;
@@ -16,6 +17,8 @@ interface LayoutProps {
 }
 
 export function Layout({ navItems, currentPath, title, subtitle, children }: LayoutProps) {
+  const { t } = useI18n();
+
   return (
     <div className="app-shell">
       <div className="app-grain" aria-hidden="true" />
@@ -24,12 +27,12 @@ export function Layout({ navItems, currentPath, title, subtitle, children }: Lay
           <div className="app-brand">
             <div className="app-brand-mark" aria-hidden="true" />
             <div>
-              <p>语境单词本</p>
-              <span>Context Review Desk</span>
+              <p>{t('app.brand')}</p>
+              <span>{t('app.brandSubtitle')}</span>
             </div>
           </div>
 
-          <nav className="app-nav" aria-label="主导航">
+          <nav className="app-nav" aria-label={t('app.navigation')}>
             {navItems.map((item) => {
               const active = item.match(currentPath);
               return (

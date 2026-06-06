@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { TagDto } from '../../shared/types';
 import { createTag, listTags } from '../api/tags';
+import { useI18n } from '../i18n/I18nProvider';
 
 export const TAG_LOAD_TIMEOUT_MS = 8000;
 
@@ -13,6 +14,7 @@ export function TagAssignmentEditor({
   selectedTagIds,
   onSelectedTagIdsChange,
 }: TagAssignmentEditorProps) {
+  const { t } = useI18n();
   const [allTags, setAllTags] = useState<TagDto[]>([]);
   const [tagsLoading, setTagsLoading] = useState(false);
   const [tagsError, setTagsError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function TagAssignmentEditor({
       loadSeqRef.current += 1;
       loadTimeoutRef.current = null;
       setTagsLoading(false);
-      setTagsError('标签列表加载超时，请重试');
+      setTagsError(t('tags.loadTimeout'));
       setCanRetryTags(true);
     }, TAG_LOAD_TIMEOUT_MS);
 
@@ -53,7 +55,7 @@ export function TagAssignmentEditor({
       })
       .catch((err: unknown) => {
         if (mountedRef.current && loadSeqRef.current === seq) {
-          setTagsError(err instanceof Error ? err.message : '标签列表加载失败');
+          setTagsError(err instanceof Error ? err.message : t('tags.loadFailed'));
           setCanRetryTags(true);
         }
       })
@@ -61,7 +63,7 @@ export function TagAssignmentEditor({
         if (loadSeqRef.current === seq) clearLoadTimeout();
         if (mountedRef.current && loadSeqRef.current === seq) setTagsLoading(false);
       });
-  }, [clearLoadTimeout]);
+  }, [clearLoadTimeout, t]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -82,7 +84,7 @@ export function TagAssignmentEditor({
   const createAndSelectTag = async () => {
     const name = newTagName.trim();
     if (!name) {
-      setTagsError('标签名称必填');
+      setTagsError(t('tags.nameRequired'));
       setCanRetryTags(false);
       return;
     }
@@ -95,7 +97,7 @@ export function TagAssignmentEditor({
       onSelectedTagIdsChange((cur) => (cur.includes(tag.id) ? cur : [...cur, tag.id]));
       setNewTagName('');
     } catch (err) {
-      setTagsError(err instanceof Error ? err.message : '新增标签失败');
+      setTagsError(err instanceof Error ? err.message : t('tags.createFailed'));
       setCanRetryTags(false);
     } finally {
       setCreatingTag(false);
@@ -107,12 +109,12 @@ export function TagAssignmentEditor({
       {tagsError ? (
         <div>
           <em>{tagsError}</em>
-          {canRetryTags ? <button type="button" onClick={loadTagOptions}>重新加载标签</button> : null}
+          {canRetryTags ? <button type="button" onClick={loadTagOptions}>{t('tags.reload')}</button> : null}
         </div>
       ) : null}
       <div>
         {tagsLoading ? (
-          <p>加载标签中…</p>
+          <p>{t('tags.loading')}</p>
         ) : allTags.length ? (
           allTags.map((tag) => (
             <button
@@ -125,24 +127,25 @@ export function TagAssignmentEditor({
             </button>
           ))
         ) : (
-          <p>暂无可选标签</p>
+          <p>{t('tags.empty')}</p>
         )}
       </div>
       <div className="phase6-tag-create-row">
-        <label htmlFor={newTagInputId}>新增标签名称</label>
+        <label htmlFor={newTagInputId}>{t('tags.newLabel')}</label>
         <input
           id={newTagInputId}
-          aria-label="新增标签名称"
+          aria-label={t('tags.newLabel')}
           value={newTagName}
           onChange={(event) => {
             setNewTagName(event.target.value);
             setTagsError(null);
+            setCanRetryTags(false);
           }}
-          placeholder="例如：电影"
+          placeholder={t('tags.newPlaceholder')}
           disabled={tagsLoading || creatingTag}
         />
         <button type="button" disabled={creatingTag || tagsLoading} onClick={createAndSelectTag}>
-          新增并选中标签
+          {t('tags.createAction')}
         </button>
       </div>
     </div>

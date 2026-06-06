@@ -1,4 +1,5 @@
 import { EmptyState } from '../components/UiStates';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface PlaceholderPageProps {
   message: string;
@@ -6,10 +7,11 @@ interface PlaceholderPageProps {
 }
 
 export function PlaceholderPage({ message, phase }: PlaceholderPageProps) {
+  const { t } = useI18n();
   return (
     <EmptyState
-      message={`${message}。此功能将在 ${phase} 实现。`}
-      action={<a className="text-sm font-medium text-blue-700 hover:text-blue-800" href="#/">返回首页</a>}
+      message={t('placeholder.message', { message, phase })}
+      action={<a className="text-sm font-medium text-blue-700 hover:text-blue-800" href="#/">{t('placeholder.backHome')}</a>}
     />
   );
 }

@@ -13,17 +13,40 @@ import {
 import { createContext, getContextsForCard } from '../domain/contexts.js';
 import { addTagToCard, getCardTags, getTag } from '../domain/tags.js';
 import { getMediaForCard } from '../domain/media.js';
+import { getSettings } from '../domain/settings.js';
 import {
   isNonEmptyString,
+  isSupportedLanguage,
   isValidCardStatus,
   isValidPageSize,
   parsePageNumber,
   parsePageSize,
 } from '../../shared/validators.js';
-import { DEFAULT_PAGE_SIZE } from '../../shared/constants.js';
+import { DEFAULT_DEFINITION_LANGUAGE, DEFAULT_PAGE_SIZE, DEFAULT_TARGET_LANGUAGE, SUPPORTED_LANGUAGES } from '../../shared/constants.js';
 
 function paramStr(p: string | string[]): string {
   return Array.isArray(p) ? p[0]! : p;
+}
+
+function optionalSupportedLanguage(field: string, value: unknown, fallback: string): string {
+  if (value === undefined) return fallback;
+  if (!isNonEmptyString(value)) throw new BadRequestError(`${field} must be a non-empty string`);
+  const trimmed = value.trim();
+  if (!isSupportedLanguage(trimmed)) {
+    throw new BadRequestError(`${field} must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`);
+  }
+  return trimmed;
+}
+
+function optionalQuerySupportedLanguage(field: string, value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!isNonEmptyString(raw)) throw new BadRequestError(`${field} must be a non-empty string`);
+  const trimmed = raw.trim();
+  if (!isSupportedLanguage(trimmed)) {
+    throw new BadRequestError(`${field} must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`);
+  }
+  return trimmed;
 }
 
 export function cardsRouter(db: Database): Router {
@@ -37,7 +60,9 @@ export function cardsRouter(db: Database): Router {
     if (!isNonEmptyString(target_word)) {
       throw new BadRequestError('target_word query parameter is required');
     }
-    const suggestions = getCardSuggestions(db, target_word);
+    const targetLanguage = optionalQuerySupportedLanguage('target_language', req.query.target_language)
+      ?? getSettings(db).default_target_language;
+    const suggestions = getCardSuggestions(db, target_word, targetLanguage);
     res.json(suggestions.map(c => ({
       id: c.id,
       target_word: c.target_word,
@@ -62,12 +87,15 @@ export function cardsRouter(db: Database): Router {
     const favorite = typeof rawFavorite === 'string' ? rawFavorite : undefined;
     const rawTagId = req.query.tag_id;
     const tagId = typeof rawTagId === 'string' ? rawTagId : undefined;
+    const targetLanguage = optionalQuerySupportedLanguage('target_language', req.query.target_language)
+      ?? getSettings(db).default_target_language;
 
     const result = listCards(db, {
       search,
       status: isValidCardStatus(status) ? status : undefined,
       is_favorite: favorite === 'true' ? true : favorite === 'false' ? false : undefined,
       tag_id: tagId,
+      target_language: targetLanguage,
       page,
       pageSize,
     });
@@ -112,16 +140,16 @@ export function cardsRouter(db: Database): Router {
     }
 
     const card = createCard(db, {
-      target_word: body.target_word,
-      context_meaning: body.context_meaning,
-      target_language: isNonEmptyString(body.target_language) ? body.target_language : '英语',
-      definition_language: isNonEmptyString(body.definition_language) ? body.definition_language : '中文',
+      target_word: body.target_word.trim(),
+      context_meaning: body.context_meaning.trim(),
+      target_language: optionalSupportedLanguage('target_language', body.target_language, DEFAULT_TARGET_LANGUAGE),
+      definition_language: optionalSupportedLanguage('definition_language', body.definition_language, DEFAULT_DEFINITION_LANGUAGE),
     });
 
     const ctx = createContext(db, {
       card_id: card.id,
-      sentence: body.sentence,
-      note: isNonEmptyString(body.note) ? body.note : undefined,
+      sentence: body.sentence.trim(),
+      note: isNonEmptyString(body.note) ? body.note.trim() : undefined,
     });
 
     // Optionally attach tags

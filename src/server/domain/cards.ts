@@ -35,6 +35,7 @@ export interface ListCardsOptions {
   status?: 'reviewing' | 'mastered';
   is_favorite?: boolean;
   tag_id?: string;
+  target_language?: string;
   page?: number;
   pageSize?: number;
 }
@@ -88,6 +89,11 @@ export function listCards(db: Database, options: ListCardsOptions): ListCardsRes
   if (options.is_favorite !== undefined) {
     conditions.push('wsc.is_favorite = ?');
     params.push(options.is_favorite ? 1 : 0);
+  }
+
+  if (options.target_language) {
+    conditions.push('wsc.target_language = ?');
+    params.push(options.target_language);
   }
 
   if (options.search) {
@@ -223,12 +229,20 @@ export function updateCard(db: Database, cardId: string, input: UpdateCardInput)
   return getCard(db, cardId);
 }
 
-export function getCardSuggestions(db: Database, targetWord: string): CardRow[] {
+export function getCardSuggestions(db: Database, targetWord: string, targetLanguage?: string): CardRow[] {
+  const conditions = ['target_word = ?', 'deleted_at IS NULL'];
+  const params: unknown[] = [targetWord];
+
+  if (targetLanguage) {
+    conditions.push('target_language = ?');
+    params.push(targetLanguage);
+  }
+
   return db.prepare(`
     SELECT * FROM word_sense_cards
-    WHERE target_word = ? AND deleted_at IS NULL
+    WHERE ${conditions.join(' AND ')}
     ORDER BY created_at ASC
-  `).all(targetWord) as CardRow[];
+  `).all(...params) as CardRow[];
 }
 
 export function deleteCard(db: Database, cardId: string): void {

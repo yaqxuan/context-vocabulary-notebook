@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import type { StatisticsPageDto } from '../../shared/types';
 import { getStatisticsPage } from '../api/statistics';
 import { EmptyState, ErrorState, LoadingState } from '../components/UiStates';
+import { useI18n } from '../i18n/I18nProvider';
+import type { Translator } from '../i18n';
 
 // --- Helpers ---
 
@@ -40,11 +42,11 @@ interface DailyQuantityEntry {
   goodCount: number;
 }
 
-function DailyQuantityChart({ entries, summaryId }: { entries: DailyQuantityEntry[]; summaryId?: string }) {
+function DailyQuantityChart({ entries, summaryId, t }: { entries: DailyQuantityEntry[]; summaryId?: string; t: Translator }) {
   if (entries.length === 0) return null;
   const max = Math.max(...entries.flatMap((e) => [e.reviewCount, e.goodCount]), 1);
   const barHeight = (count: number) => count === 0 ? 0 : Math.max(4, Math.round((count / max) * 100));
-  const summaryText = entries.map((e) => `${e.label}: 净复习量 ${e.reviewCount}, Good ${e.goodCount}`).join(', ');
+  const summaryText = entries.map((e) => t('statistics.dailySummary', { label: e.label, reviewCount: e.reviewCount, goodCount: e.goodCount })).join(', ');
   return (
     <>
       <p id={summaryId} className="phase7-statistics-sr-only">
@@ -60,7 +62,7 @@ function DailyQuantityChart({ entries, summaryId }: { entries: DailyQuantityEntr
                   className="phase7-statistics-daily-bar phase7-statistics-daily-bar--review"
                   data-testid={`daily-review-bar-${e.date}`}
                   style={{ height: `${barHeight(e.reviewCount)}%` }}
-                  title={`${e.date} 净复习量: ${e.reviewCount}`}
+                  title={t('statistics.dailyTitle', { date: e.date, count: e.reviewCount })}
                 />
               </span>
               <span className="phase7-statistics-daily-stack">
@@ -83,7 +85,7 @@ function DailyQuantityChart({ entries, summaryId }: { entries: DailyQuantityEntr
 
 // --- Accuracy line chart ---
 
-function AccuracyLineChart({ entries }: { entries: StatisticsPageDto['daily_accuracy'] }) {
+function AccuracyLineChart({ entries, t }: { entries: StatisticsPageDto['daily_accuracy']; t: Translator }) {
   if (entries.length === 0) return null;
 
   const width = 1000;
@@ -103,7 +105,7 @@ function AccuracyLineChart({ entries }: { entries: StatisticsPageDto['daily_accu
   return (
     <div className="phase7-statistics-line-chart">
       <p className="phase7-statistics-sr-only">{summaryText}</p>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`每日正确率：${summaryText}`}>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={t('statistics.accuracyAria', { summary: summaryText })}>
         <line className="phase7-statistics-line-axis" x1={padX} y1={padTop} x2={padX} y2={height - padBottom} />
         <line className="phase7-statistics-line-axis" x1={padX} y1={height - padBottom} x2={width - padX} y2={height - padBottom} />
         <polyline className="phase7-statistics-line-path" points={points} />
@@ -165,7 +167,7 @@ function TagDistribution({ entries }: { entries: StatisticsPageDto['tag_distribu
 
 // --- Again / Good trend ---
 
-function RatingTrend({ entries }: { entries: StatisticsPageDto['rating_trend'] }) {
+function RatingTrend({ entries, t }: { entries: StatisticsPageDto['rating_trend']; t: Translator }) {
   if (entries.length === 0) return null;
   const max = Math.max(...entries.flatMap((e) => [e.again_count, e.good_count]), 1);
   const barHeight = (count: number) => count === 0 ? 0 : Math.max(8, Math.round((count / max) * 88));
@@ -176,8 +178,8 @@ function RatingTrend({ entries }: { entries: StatisticsPageDto['rating_trend'] }
       <p className="phase7-statistics-sr-only" data-testid="again-trend-summary">{againSummary}</p>
       <p className="phase7-statistics-sr-only" data-testid="good-trend-summary">{goodSummary}</p>
       <div className="phase7-statistics-rating-legend" aria-hidden="true">
-        <span><i className="phase7-statistics-rating-dot phase7-statistics-rating-dot--again" />Again：没想起 / 记错</span>
-        <span><i className="phase7-statistics-rating-dot phase7-statistics-rating-dot--good" />Good：顺利想起</span>
+        <span><i className="phase7-statistics-rating-dot phase7-statistics-rating-dot--again" />{t('statistics.againLegend')}</span>
+        <span><i className="phase7-statistics-rating-dot phase7-statistics-rating-dot--good" />{t('statistics.goodLegend')}</span>
       </div>
       <div className="phase7-statistics-rating-groups" aria-hidden="true">
         {entries.map((entry) => (
@@ -213,6 +215,7 @@ function RatingTrend({ entries }: { entries: StatisticsPageDto['rating_trend'] }
 // --- Ready page ---
 
 function StatisticsReady({ data }: { data: StatisticsPageDto }) {
+  const { t } = useI18n();
   const isEmpty =
     data.daily_review_counts.length === 0 &&
     data.daily_accuracy.length === 0 &&
@@ -231,65 +234,59 @@ function StatisticsReady({ data }: { data: StatisticsPageDto }) {
 
   return (
     <div className="phase7-statistics-shell">
-      {/* Metrics */}
       <div className="phase7-statistics-metrics">
-        <MetricCard label="总词义条目数量" value={data.totals.total_cards} />
-        <MetricCard label="复习中数量" value={data.totals.reviewing_cards} />
-        <MetricCard label="已熟记数量" value={data.totals.mastered_cards} />
-        <MetricCard label="收藏数量" value={data.totals.favorite_cards} />
+        <MetricCard label={t('statistics.totalCards')} value={data.totals.total_cards} />
+        <MetricCard label={t('statistics.reviewingCards')} value={data.totals.reviewing_cards} />
+        <MetricCard label={t('statistics.masteredCards')} value={data.totals.mastered_cards} />
+        <MetricCard label={t('statistics.favoriteCards')} value={data.totals.favorite_cards} />
       </div>
 
       {isEmpty ? (
-        <EmptyState message="还没有统计数据" />
+        <EmptyState message={t('statistics.empty')} />
       ) : (
         <>
-          {/* Recent 14-day chart */}
           <section className="phase7-statistics-chart-card" data-testid="recent-14-chart">
             <div className="phase7-statistics-card-head">
-              <h2 className="phase7-statistics-card-title">最近 14 天数量图</h2>
-              <p className="phase7-statistics-card-sub">每日净复习量 / Good 数量（最新 14 天）</p>
+              <h2 className="phase7-statistics-card-title">{t('statistics.recentTitle')}</h2>
+              <p className="phase7-statistics-card-sub">{t('statistics.recentSub')}</p>
             </div>
             {recent14.length > 0 ? (
-              <DailyQuantityChart entries={recent14} summaryId="recent-14-summary" />
+              <DailyQuantityChart entries={recent14} summaryId="recent-14-summary" t={t} />
             ) : (
-              <p className="phase7-statistics-chart-empty">暂无数据</p>
+              <p className="phase7-statistics-chart-empty">{t('statistics.noData')}</p>
             )}
           </section>
 
-          {/* Monthly chart */}
           <section className="phase7-statistics-chart-card">
             <div className="phase7-statistics-card-head">
-              <h2 className="phase7-statistics-card-title">历史月份数量图</h2>
-              <p className="phase7-statistics-card-sub">按月汇总的复习总量</p>
+              <h2 className="phase7-statistics-card-title">{t('statistics.monthlyTitle')}</h2>
+              <p className="phase7-statistics-card-sub">{t('statistics.monthlySub')}</p>
             </div>
             <MonthlyList entries={data.monthly_review_counts} />
           </section>
 
-          {/* Accuracy chart */}
           <section className="phase7-statistics-chart-card">
             <div className="phase7-statistics-card-head">
-              <h2 className="phase7-statistics-card-title">每日正确率折线图</h2>
-              <p className="phase7-statistics-card-sub">每天 Good 占总复习比</p>
+              <h2 className="phase7-statistics-card-title">{t('statistics.accuracyTitle')}</h2>
+              <p className="phase7-statistics-card-sub">{t('statistics.accuracySub')}</p>
             </div>
-            <AccuracyLineChart entries={data.daily_accuracy} />
+            <AccuracyLineChart entries={data.daily_accuracy} t={t} />
           </section>
 
-          {/* Tag distribution */}
           <section className="phase7-statistics-chart-card">
             <div className="phase7-statistics-card-head">
-              <h2 className="phase7-statistics-card-title">标签分布</h2>
-              <p className="phase7-statistics-card-sub">各标签下的词义条目数</p>
+              <h2 className="phase7-statistics-card-title">{t('statistics.tagTitle')}</h2>
+              <p className="phase7-statistics-card-sub">{t('statistics.tagSub')}</p>
             </div>
             <TagDistribution entries={data.tag_distribution} />
           </section>
 
-          {/* Again / Good trend */}
           <section className="phase7-statistics-chart-card">
             <div className="phase7-statistics-card-head">
-              <h2 className="phase7-statistics-card-title">Again / Good 趋势</h2>
-              <p className="phase7-statistics-card-sub">每一天的 Again / Good 次数对比</p>
+              <h2 className="phase7-statistics-card-title">{t('statistics.ratingTrendTitle')}</h2>
+              <p className="phase7-statistics-card-sub">{t('statistics.ratingTrendSub')}</p>
             </div>
-            <RatingTrend entries={data.rating_trend} />
+            <RatingTrend entries={data.rating_trend} t={t} />
           </section>
         </>
       )}
@@ -306,6 +303,7 @@ type PageState =
 
 export function StatisticsPage() {
   const [state, setState] = useState<PageState>({ kind: 'loading' });
+  const { t } = useI18n();
 
   const load = useCallback(() => {
     setState({ kind: 'loading' });
@@ -314,15 +312,15 @@ export function StatisticsPage() {
         setState({ kind: 'ready', data });
       })
       .catch((err: unknown) => {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : '无法加载统计数据' });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : t('statistics.loadFailed') });
       });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  if (state.kind === 'loading') return <LoadingState message="加载中…" />;
+  if (state.kind === 'loading') return <LoadingState />;
   if (state.kind === 'error') return <ErrorState message={state.message} onRetry={load} />;
   return <StatisticsReady data={state.data} />;
 }

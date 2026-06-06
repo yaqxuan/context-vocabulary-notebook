@@ -46,3 +46,70 @@ export type CardStatus = (typeof CARD_STATUSES)[number];
 // Review rating values
 export const REVIEW_RATINGS = ['again', 'good'] as const;
 export type ReviewRating = (typeof REVIEW_RATINGS)[number];
+
+// Language selector values
+export const SUPPORTED_LANGUAGES = ['中文', '英语', '日语', '韩语', '法语', '德语', '西班牙语', '俄语'] as const;
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+export const NATIVE_LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
+  中文: '中文',
+  英语: 'English',
+  日语: '日本語',
+  韩语: '한국어',
+  法语: 'Français',
+  德语: 'Deutsch',
+  西班牙语: 'Español',
+  俄语: 'Русский',
+};
+
+export function getNativeLanguageLabel(language: SupportedLanguage): string {
+  return NATIVE_LANGUAGE_LABELS[language];
+}
+
+export const DEFAULT_INTERFACE_LANGUAGE: SupportedLanguage = '中文';
+export const DEFAULT_TARGET_LANGUAGE: SupportedLanguage = '英语';
+export const DEFAULT_DEFINITION_LANGUAGE: SupportedLanguage = '中文';
+
+const LANGUAGE_ALIASES: Record<string, SupportedLanguage> = {
+  'zh-cn': '中文',
+  zh: '中文',
+  chinese: '中文',
+  '中文': '中文',
+  'en-us': '英语',
+  en: '英语',
+  english: '英语',
+  '英文': '英语',
+  '英语': '英语',
+  'ja-jp': '日语',
+  ja: '日语',
+  japanese: '日语',
+  '日本語': '日语',
+  '日语': '日语',
+  'ko-kr': '韩语',
+  ko: '韩语',
+  '한국어': '韩语',
+  '韩语': '韩语',
+  'fr-fr': '法语',
+  fr: '法语',
+  'français': '法语',
+  '法语': '法语',
+  'de-de': '德语',
+  de: '德语',
+  deutsch: '德语',
+  '德语': '德语',
+  'es-es': '西班牙语',
+  es: '西班牙语',
+  'español': '西班牙语',
+  '西班牙语': '西班牙语',
+  'ru-ru': '俄语',
+  ru: '俄语',
+  'русский': '俄语',
+  '俄语': '俄语',
+};
+
+export function normalizeSupportedLanguage(value: unknown): SupportedLanguage | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+  return LANGUAGE_ALIASES[normalized.toLowerCase()] ?? null;
+}

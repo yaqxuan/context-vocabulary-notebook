@@ -6,6 +6,7 @@ export interface ListCardsParams extends Record<string, QueryValue> {
   status?: string;
   favorite?: boolean;
   tag_id?: string;
+  target_language?: string;
   page?: number;
   page_size?: number;
 }
@@ -19,8 +20,8 @@ export function getCard(id: string): Promise<CardDetailDto> {
   return apiRequest<CardDetailDto>(`/cards/${encodeURIComponent(id)}`);
 }
 
-export function getCardSuggestions(targetWord: string): Promise<SuggestionDto[]> {
-  const query = buildQuery({ target_word: targetWord });
+export function getCardSuggestions(targetWord: string, targetLanguage?: string): Promise<SuggestionDto[]> {
+  const query = buildQuery({ target_word: targetWord, target_language: targetLanguage });
   return apiRequest<SuggestionDto[]>(`/cards/suggestions?${query}`);
 }
 

@@ -69,6 +69,15 @@ describe('getDueQueue', () => {
     expect(ids).not.toContain(card.id);
   });
 
+  it('filters due cards by target_language', () => {
+    const english = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    const queue = getDueQueue(db, { target_language: '英语' });
+
+    expect(queue.map((card) => card.id)).toEqual([english.id]);
+  });
+
   it('sorts by due_date ASC, then created_at ASC, then id ASC', () => {
     const past1 = new Date(Date.now() - 3600000).toISOString();
     const past2 = new Date(Date.now() - 1800000).toISOString();
@@ -204,6 +213,59 @@ describe('review API', () => {
     expect(res.body.card.primary_sentence).toBe('The hotel charges $100 per night.');
     expect(res.body.card.primary_sentence).toContain(res.body.card.target_word);
     expect(res.body.card.contexts.map((ctx: { id: string }) => ctx.id)).toContain(primary.id);
+  });
+
+  it('defaults due cards to the configured default target language', async () => {
+    db.prepare("UPDATE user_settings SET default_target_language = '日语' WHERE id = 1").run();
+    createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    const japanese = createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    const res = await request(app).get('/api/review/due');
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('due');
+    expect(res.body.card.id).toBe(japanese.id);
+  });
+
+  it('allows due target_language to override the settings default', async () => {
+    db.prepare("UPDATE user_settings SET default_target_language = '日语' WHERE id = 1").run();
+    const english = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    const res = await request(app).get('/api/review/due').query({ target_language: '英语' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('due');
+    expect(res.body.card.id).toBe(english.id);
+  });
+
+  it('rejects unsupported due target_language values', async () => {
+    const res = await request(app).get('/api/review/due').query({ target_language: 'Klingon' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('target_language must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语');
+  });
+
+  it('scopes review progress to the configured default target language', async () => {
+    db.prepare("UPDATE user_settings SET default_target_language = '日语', daily_review_limit = 2 WHERE id = 1").run();
+    const english = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    const japanese = createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    await request(app).post(`/api/review/${english.id}`).send({ rating: 'good' });
+    await request(app).post(`/api/review/${japanese.id}`).send({ rating: 'good' });
+    const res = await request(app).get('/api/review/progress');
+
+    expect(res.status).toBe(200);
+    expect(res.body.reviewed_count).toBe(1);
+    expect(res.body.good_count).toBe(1);
+    expect(res.body.is_limit_reached).toBe(false);
+  });
+
+  it('rejects unsupported progress target_language values', async () => {
+    const res = await request(app).get('/api/review/progress').query({ target_language: 'Klingon' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('target_language must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语');
   });
 
   it('includes card media in the due response', async () => {

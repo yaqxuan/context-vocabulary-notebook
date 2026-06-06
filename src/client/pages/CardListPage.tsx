@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CardSummaryDto, TagDto } from '../../shared/types';
 import { listCards, patchCard } from '../api/cards';
 import { listTags } from '../api/tags';
+import { useI18n } from '../i18n/I18nProvider';
 import { CardCatalogue, toListParams, type CardCatalogueFilters } from '../components/CardCatalogue';
 
 const DEFAULT_FILTERS: CardCatalogueFilters = { search: '', tagId: '', status: '', favorite: '', page: 1, pageSize: 20 };
@@ -21,6 +22,7 @@ function filtersFromHash(): CardCatalogueFilters {
 }
 
 export function CardListPage() {
+  const { t } = useI18n();
   const [filters, setFilters] = useState<CardCatalogueFilters>(filtersFromHash);
   const [cards, setCards] = useState<CardSummaryDto[]>([]);
   const [tags, setTags] = useState<TagDto[]>([]);
@@ -40,7 +42,7 @@ export function CardListPage() {
       .catch((err: unknown) => {
         setCards([]);
         setTotal(0);
-        setError(err instanceof Error ? err.message : '无法加载词义条目');
+        setError(err instanceof Error ? err.message : t('cards.list.loadFailed'));
       })
       .finally(() => setLoading(false));
   }, [filters]);
@@ -54,7 +56,7 @@ export function CardListPage() {
       await patchCard(card.id, { status: card.status === 'reviewing' ? 'mastered' : 'reviewing' });
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '更新复习状态失败');
+      setError(err instanceof Error ? err.message : t('cards.list.statusFailed'));
     }
   };
 
@@ -63,9 +65,9 @@ export function CardListPage() {
       await patchCard(card.id, { is_favorite: !card.is_favorite });
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '更新收藏状态失败');
+      setError(err instanceof Error ? err.message : t('cards.list.favoriteFailed'));
     }
   };
 
-  return <CardCatalogue title="词义条目" subtitle="搜索、筛选和管理所有词义卡。" cards={cards} total={total} loading={loading} error={error} tags={tags} filters={filters} emptyMessage="还没有词义条目" filteredEmptyMessage="没有匹配的词义条目" onFiltersChange={setFilters} onRetry={load} onToggleStatus={toggleStatus} onToggleFavorite={toggleFavorite} />;
+  return <CardCatalogue title={t('cards.list.title')} subtitle={t('cards.list.subtitle')} cards={cards} total={total} loading={loading} error={error} tags={tags} filters={filters} emptyMessage={t('cards.list.empty')} filteredEmptyMessage={t('cards.list.filteredEmpty')} onFiltersChange={setFilters} onRetry={load} onToggleStatus={toggleStatus} onToggleFavorite={toggleFavorite} />;
 }

@@ -11,22 +11,26 @@ import { PlaceholderPage } from './pages/PlaceholderPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatisticsPage } from './pages/StatisticsPage';
+import { I18nProvider, useI18n } from './i18n/I18nProvider';
+import type { Translator } from './i18n/types';
 
 function currentHashPath(): string {
   const hash = window.location.hash.replace(/^#/, '');
   return hash || '/';
 }
 
-const navItems: NavItem[] = [
-  { href: '#/', label: '首页', description: '今日复习与快速入口', match: (path) => path === '/' },
-  { href: '#/create', label: '制卡', description: '创建词义和语境', match: (path) => path === '/create' },
-  { href: '#/cards', label: '词义条目', description: '搜索、筛选、管理', match: (path) => path === '/cards' || path.startsWith('/cards/') },
-  { href: '#/review', label: '复习', description: 'Again / Good 复习', match: (path) => path === '/review' },
-  { href: '#/tags', label: '标签', description: '分类和来源标记', match: (path) => path === '/tags' },
-  { href: '#/favorites', label: '收藏', description: '查看收藏词义', match: (path) => path === '/favorites' },
-  { href: '#/statistics', label: '统计', description: '复习和标签分析', match: (path) => path === '/statistics' },
-  { href: '#/settings', label: '设置', description: '语言、目标和导入导出', match: (path) => path === '/settings' },
-];
+function getNavItems(t: Translator): NavItem[] {
+  return [
+    { href: '#/', label: t('nav.home.label'), description: t('nav.home.description'), match: (path) => path === '/' },
+    { href: '#/create', label: t('nav.create.label'), description: t('nav.create.description'), match: (path) => path === '/create' },
+    { href: '#/cards', label: t('nav.cards.label'), description: t('nav.cards.description'), match: (path) => path === '/cards' || path.startsWith('/cards/') },
+    { href: '#/review', label: t('nav.review.label'), description: t('nav.review.description'), match: (path) => path === '/review' },
+    { href: '#/tags', label: t('nav.tags.label'), description: t('nav.tags.description'), match: (path) => path === '/tags' },
+    { href: '#/favorites', label: t('nav.favorites.label'), description: t('nav.favorites.description'), match: (path) => path === '/favorites' },
+    { href: '#/statistics', label: t('nav.statistics.label'), description: t('nav.statistics.description'), match: (path) => path === '/statistics' },
+    { href: '#/settings', label: t('nav.settings.label'), description: t('nav.settings.description'), match: (path) => path === '/settings' },
+  ];
+}
 
 interface RouteResult {
   title: string;
@@ -34,39 +38,40 @@ interface RouteResult {
   element: ReactNode;
 }
 
-function routeFor(path: string): RouteResult {
+function routeFor(path: string, t: Translator): RouteResult {
   if (path === '/') {
-    return { title: '首页', subtitle: '今日概览', element: <HomePage /> };
+    return { title: t('nav.home.title'), subtitle: t('nav.home.description'), element: <HomePage /> };
   }
   if (path === '/create') {
-    return { title: '制卡', subtitle: '添加真实视频语境', element: <CardCreatePage /> };
+    return { title: t('nav.create.title'), subtitle: t('nav.create.description'), element: <CardCreatePage /> };
   }
   if (path === '/cards') {
-    return { title: '词义条目', subtitle: '管理所有词义', element: <CardListPage /> };
+    return { title: t('nav.cards.title'), subtitle: t('nav.cards.description'), element: <CardListPage /> };
   }
   if (path.startsWith('/cards/')) {
-    return { title: '词义详情', subtitle: '查看和维护语境', element: <CardDetailPage key={path} /> };
+    return { title: t('nav.cards.title'), subtitle: t('nav.cards.description'), element: <CardDetailPage key={path} /> };
   }
   if (path === '/review') {
-    return { title: '复习', subtitle: 'FSRS 调度', element: <ReviewPage /> };
+    return { title: t('nav.review.title'), subtitle: t('nav.review.description'), element: <ReviewPage /> };
   }
   if (path === '/tags') {
-    return { title: '标签管理', subtitle: '自由分类和来源标记', element: <TagsPage /> };
+    return { title: t('nav.tags.title'), subtitle: t('nav.tags.description'), element: <TagsPage /> };
   }
   if (path === '/favorites') {
-    return { title: '收藏', subtitle: '重点词义', element: <FavoritesPage /> };
+    return { title: t('nav.favorites.title'), subtitle: t('nav.favorites.description'), element: <FavoritesPage /> };
   }
   if (path === '/statistics') {
-    return { title: '统计', subtitle: '复习分析', element: <StatisticsPage /> };
+    return { title: t('nav.statistics.title'), subtitle: t('nav.statistics.description'), element: <StatisticsPage /> };
   }
   if (path === '/settings') {
-    return { title: '设置', subtitle: '本地 V1 设置', element: <SettingsPage /> };
+    return { title: t('nav.settings.title'), subtitle: t('nav.settings.description'), element: <SettingsPage /> };
   }
-  return { title: '页面不存在', subtitle: '未知路由', element: <PlaceholderPage message="未找到对应页面" phase="Phase 6" /> };
+  return { title: t('nav.notFound.title'), subtitle: t('nav.notFound.message'), element: <PlaceholderPage message={t('nav.notFound.message')} phase="Phase 6" /> };
 }
 
-export function App() {
+function AppShell() {
   const [path, setPath] = useState(currentHashPath);
+  const { t } = useI18n();
 
   useEffect(() => {
     const onHashChange = () => setPath(currentHashPath());
@@ -75,11 +80,20 @@ export function App() {
   }, []);
 
   const routePath = path.split('?')[0] || '/';
-  const route = useMemo(() => routeFor(routePath), [routePath]);
+  const route = useMemo(() => routeFor(routePath, t), [routePath, t]);
+  const items = useMemo(() => getNavItems(t), [t]);
 
   return (
-    <Layout navItems={navItems} currentPath={routePath} title={route.title} subtitle={route.subtitle}>
+    <Layout navItems={items} currentPath={routePath} title={route.title} subtitle={route.subtitle}>
       {route.element}
     </Layout>
+  );
+}
+
+export function App() {
+  return (
+    <I18nProvider>
+      <AppShell />
+    </I18nProvider>
   );
 }
