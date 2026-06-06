@@ -67,12 +67,12 @@ export const zh = {
   },
   "status": {
     "reviewing": "复习中",
-    "mastered": "已掌握",
+    "mastered": "已熟记",
     "favorite": "已收藏"
   },
   "pagination": {
     "summary": "第 {page} 页，共 {totalPages} 页（总计 {total} 项）",
-    "pageSize": "每页 {size} 项",
+    "pageSize": "每页数量",
     "previous": "上一页",
     "next": "下一页"
   },
@@ -82,9 +82,38 @@ export const zh = {
     "empty": "没有符合条件的卡片",
     "loading": "加载卡片中...",
     "total": "共 {total} 张卡片",
-    "noContext": "无语境",
+    "noContext": "暂无语境",
     "markMastered": "标记为已掌握",
-    "restoreReview": "恢复复习"
+    "restoreReview": "恢复复习",
+    "clearFilters": "清除筛选",
+    "createLink": "去制卡",
+    "notFavorite": "未收藏",
+    "removeFavorite": "取消收藏",
+    "addFavorite": "收藏",
+    "search": "搜索",
+    "searchPlaceholder": "搜索单词、释义、原句、标签或备注",
+    "tagLabel": "标签",
+    "allTags": "全部标签",
+    "statusLabel": "状态",
+    "allStatus": "全部状态",
+    "favoriteLabel": "收藏",
+    "allFavorite": "全部",
+    "onlyFavorite": "仅收藏",
+    "itemUnit": " 个词义条目",
+    "viewDetail": "查看详情"
+  },
+  "tags": {
+    "title": "标签",
+    "loadTimeout": "标签列表加载超时，请重试",
+    "loadFailed": "标签列表加载失败",
+    "nameRequired": "标签名称必填",
+    "createFailed": "新增标签失败",
+    "reload": "重新加载标签",
+    "loading": "加载标签中…",
+    "empty": "暂无可选标签",
+    "newLabel": "新增标签名称",
+    "newPlaceholder": "例如：电影",
+    "createAction": "新增并选中标签"
   },
   "settings": {
     "learning": {
@@ -127,9 +156,6 @@ export const zh = {
   "review": {
     "title": "复习"
   },
-  "tags": {
-    "title": "标签"
-  },
   "statistics": {
     "title": "统计"
   },
@@ -147,17 +173,17 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "navigation": "导航"
   },
   "common": {
-    "loading": "加载中...",
-    "loadFailed": "加载失败",
-    "retry": "重试",
-    "confirm": "确认",
-    "cancel": "取消",
-    "save": "保存",
-    "saving": "保存中...",
-    "delete": "删除",
-    "edit": "编辑",
-    "none": "无",
-    "fileUnavailable": "文件不可用"
+    "loading": "Loading...",
+    "loadFailed": "Load failed",
+    "retry": "Retry",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "edit": "Edit",
+    "none": "None",
+    "fileUnavailable": "File unavailable"
   },
   "nav": {
     "home": {
@@ -206,25 +232,54 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     }
   },
   "status": {
-    "reviewing": "复习中",
-    "mastered": "已掌握",
-    "favorite": "已收藏"
+    "reviewing": "Reviewing",
+    "mastered": "Mastered",
+    "favorite": "Favorited"
   },
   "pagination": {
-    "summary": "第 {page} 页，共 {totalPages} 页（总计 {total} 项）",
-    "pageSize": "每页 {size} 项",
-    "previous": "上一页",
-    "next": "下一页"
+    "summary": "Page {page} of {totalPages} (Total {total})",
+    "pageSize": "Page size",
+    "previous": "Previous",
+    "next": "Next"
   },
   "catalogue": {
-    "filters": "筛选",
-    "actions": "操作",
-    "empty": "没有符合条件的卡片",
-    "loading": "加载卡片中...",
-    "total": "共 {total} 张卡片",
-    "noContext": "无语境",
-    "markMastered": "标记为已掌握",
-    "restoreReview": "恢复复习"
+    "filters": "Filters",
+    "actions": "Actions",
+    "empty": "No matching cards",
+    "loading": "Loading cards...",
+    "total": "Total {total} cards",
+    "noContext": "No context",
+    "markMastered": "Mark as mastered",
+    "restoreReview": "Restore review",
+    "clearFilters": "Clear filters",
+    "createLink": "Go to create",
+    "notFavorite": "Not favorite",
+    "removeFavorite": "Remove favorite",
+    "addFavorite": "Favorite",
+    "search": "Search",
+    "searchPlaceholder": "Search words, definitions, sentences, tags or notes",
+    "tagLabel": "Tags",
+    "allTags": "All tags",
+    "statusLabel": "Status",
+    "allStatus": "All status",
+    "favoriteLabel": "Favorites",
+    "allFavorite": "All",
+    "onlyFavorite": "Only favorites",
+    "itemUnit": " items",
+    "viewDetail": "View detail"
+  },
+  "tags": {
+    "title": "Tags",
+    "loadTimeout": "Loading tags timed out, please try again",
+    "loadFailed": "Loading tags failed",
+    "nameRequired": "Tag name is required",
+    "createFailed": "Failed to create tag",
+    "reload": "Reload tags",
+    "loading": "Loading tags...",
+    "empty": "No available tags",
+    "newLabel": "New tag name",
+    "newPlaceholder": "e.g. Movie",
+    "createAction": "Create and select tag"
   },
   "settings": {
     "learning": {
@@ -266,9 +321,6 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "review": {
     "title": "复习"
-  },
-  "tags": {
-    "title": "标签"
   },
   "statistics": {
     "title": "统计"
@@ -333,7 +385,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "查看统计"
     },
     "settings": {
-      "label": "設定",
+      "label": "设置",
       "title": "系统设置",
       "description": "修改设置"
     },
@@ -344,12 +396,12 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "status": {
     "reviewing": "复习中",
-    "mastered": "已掌握",
+    "mastered": "已熟记",
     "favorite": "已收藏"
   },
   "pagination": {
     "summary": "第 {page} 页，共 {totalPages} 页（总计 {total} 项）",
-    "pageSize": "每页 {size} 项",
+    "pageSize": "每页数量",
     "previous": "上一页",
     "next": "下一页"
   },
@@ -359,9 +411,38 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "empty": "没有符合条件的卡片",
     "loading": "加载卡片中...",
     "total": "共 {total} 张卡片",
-    "noContext": "无语境",
+    "noContext": "暂无语境",
     "markMastered": "标记为已掌握",
-    "restoreReview": "恢复复习"
+    "restoreReview": "恢复复习",
+    "clearFilters": "清除筛选",
+    "createLink": "去制卡",
+    "notFavorite": "未收藏",
+    "removeFavorite": "取消收藏",
+    "addFavorite": "收藏",
+    "search": "搜索",
+    "searchPlaceholder": "搜索单词、释义、原句、标签或备注",
+    "tagLabel": "标签",
+    "allTags": "全部标签",
+    "statusLabel": "状态",
+    "allStatus": "全部状态",
+    "favoriteLabel": "收藏",
+    "allFavorite": "全部",
+    "onlyFavorite": "仅收藏",
+    "itemUnit": " 个词义条目",
+    "viewDetail": "查看详情"
+  },
+  "tags": {
+    "title": "标签",
+    "loadTimeout": "标签列表加载超时，请重试",
+    "loadFailed": "标签列表加载失败",
+    "nameRequired": "标签名称必填",
+    "createFailed": "新增标签失败",
+    "reload": "重新加载标签",
+    "loading": "加载标签中…",
+    "empty": "暂无可选标签",
+    "newLabel": "新增标签名称",
+    "newPlaceholder": "例如：电影",
+    "createAction": "新增并选中标签"
   },
   "settings": {
     "learning": {
@@ -403,9 +484,6 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "review": {
     "title": "复习"
-  },
-  "tags": {
-    "title": "标签"
   },
   "statistics": {
     "title": "统计"
@@ -481,12 +559,12 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "status": {
     "reviewing": "复习中",
-    "mastered": "已掌握",
+    "mastered": "已熟记",
     "favorite": "已收藏"
   },
   "pagination": {
     "summary": "第 {page} 页，共 {totalPages} 页（总计 {total} 项）",
-    "pageSize": "每页 {size} 项",
+    "pageSize": "每页数量",
     "previous": "上一页",
     "next": "下一页"
   },
@@ -496,9 +574,38 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "empty": "没有符合条件的卡片",
     "loading": "加载卡片中...",
     "total": "共 {total} 张卡片",
-    "noContext": "无语境",
+    "noContext": "暂无语境",
     "markMastered": "标记为已掌握",
-    "restoreReview": "恢复复习"
+    "restoreReview": "恢复复习",
+    "clearFilters": "清除筛选",
+    "createLink": "去制卡",
+    "notFavorite": "未收藏",
+    "removeFavorite": "取消收藏",
+    "addFavorite": "收藏",
+    "search": "搜索",
+    "searchPlaceholder": "搜索单词、释义、原句、标签或备注",
+    "tagLabel": "标签",
+    "allTags": "全部标签",
+    "statusLabel": "状态",
+    "allStatus": "全部状态",
+    "favoriteLabel": "收藏",
+    "allFavorite": "全部",
+    "onlyFavorite": "仅收藏",
+    "itemUnit": " 个词义条目",
+    "viewDetail": "查看详情"
+  },
+  "tags": {
+    "title": "标签",
+    "loadTimeout": "标签列表加载超时，请重试",
+    "loadFailed": "标签列表加载失败",
+    "nameRequired": "标签名称必填",
+    "createFailed": "新增标签失败",
+    "reload": "重新加载标签",
+    "loading": "加载标签中…",
+    "empty": "暂无可选标签",
+    "newLabel": "新增标签名称",
+    "newPlaceholder": "例如：电影",
+    "createAction": "新增并选中标签"
   },
   "settings": {
     "learning": {
@@ -541,9 +648,6 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   "review": {
     "title": "复习"
   },
-  "tags": {
-    "title": "标签"
-  },
   "statistics": {
     "title": "统计"
   },
@@ -553,13 +657,13 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
 },
   '法语': {
   "app": {
-    "brand": "Carnet de vocabulaire contextuel",
-    "brandSubtitle": "Apprendre des mots en contexte",
-    "navigation": "Navigation principale"
+    "brand": "语境单词本",
+    "brandSubtitle": "在语境中学习单词",
+    "navigation": "导航"
   },
   "common": {
-    "loading": "Chargement...",
-    "loadFailed": "Échec du chargement",
+    "loading": "加载中...",
+    "loadFailed": "加载失败",
     "retry": "重试",
     "confirm": "确认",
     "cancel": "取消",
@@ -607,7 +711,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "description": "查看统计"
     },
     "settings": {
-      "label": "Paramètres",
+      "label": "设置",
       "title": "系统设置",
       "description": "修改设置"
     },
@@ -618,12 +722,12 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "status": {
     "reviewing": "复习中",
-    "mastered": "已掌握",
+    "mastered": "已熟记",
     "favorite": "已收藏"
   },
   "pagination": {
     "summary": "第 {page} 页，共 {totalPages} 页（总计 {total} 项）",
-    "pageSize": "每页 {size} 项",
+    "pageSize": "每页数量",
     "previous": "上一页",
     "next": "下一页"
   },
@@ -633,9 +737,38 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "empty": "没有符合条件的卡片",
     "loading": "加载卡片中...",
     "total": "共 {total} 张卡片",
-    "noContext": "无语境",
+    "noContext": "暂无语境",
     "markMastered": "标记为已掌握",
-    "restoreReview": "恢复复习"
+    "restoreReview": "恢复复习",
+    "clearFilters": "清除筛选",
+    "createLink": "去制卡",
+    "notFavorite": "未收藏",
+    "removeFavorite": "取消收藏",
+    "addFavorite": "收藏",
+    "search": "搜索",
+    "searchPlaceholder": "搜索单词、释义、原句、标签或备注",
+    "tagLabel": "标签",
+    "allTags": "全部标签",
+    "statusLabel": "状态",
+    "allStatus": "全部状态",
+    "favoriteLabel": "收藏",
+    "allFavorite": "全部",
+    "onlyFavorite": "仅收藏",
+    "itemUnit": " 个词义条目",
+    "viewDetail": "查看详情"
+  },
+  "tags": {
+    "title": "标签",
+    "loadTimeout": "标签列表加载超时，请重试",
+    "loadFailed": "标签列表加载失败",
+    "nameRequired": "标签名称必填",
+    "createFailed": "新增标签失败",
+    "reload": "重新加载标签",
+    "loading": "加载标签中…",
+    "empty": "暂无可选标签",
+    "newLabel": "新增标签名称",
+    "newPlaceholder": "例如：电影",
+    "createAction": "新增并选中标签"
   },
   "settings": {
     "learning": {
@@ -677,9 +810,6 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "review": {
     "title": "复习"
-  },
-  "tags": {
-    "title": "标签"
   },
   "statistics": {
     "title": "统计"
@@ -755,12 +885,12 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "status": {
     "reviewing": "复习中",
-    "mastered": "已掌握",
+    "mastered": "已熟记",
     "favorite": "已收藏"
   },
   "pagination": {
     "summary": "第 {page} 页，共 {totalPages} 页（总计 {total} 项）",
-    "pageSize": "每页 {size} 项",
+    "pageSize": "每页数量",
     "previous": "上一页",
     "next": "下一页"
   },
@@ -770,9 +900,38 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "empty": "没有符合条件的卡片",
     "loading": "加载卡片中...",
     "total": "共 {total} 张卡片",
-    "noContext": "无语境",
+    "noContext": "暂无语境",
     "markMastered": "标记为已掌握",
-    "restoreReview": "恢复复习"
+    "restoreReview": "恢复复习",
+    "clearFilters": "清除筛选",
+    "createLink": "去制卡",
+    "notFavorite": "未收藏",
+    "removeFavorite": "取消收藏",
+    "addFavorite": "收藏",
+    "search": "搜索",
+    "searchPlaceholder": "搜索单词、释义、原句、标签或备注",
+    "tagLabel": "标签",
+    "allTags": "全部标签",
+    "statusLabel": "状态",
+    "allStatus": "全部状态",
+    "favoriteLabel": "收藏",
+    "allFavorite": "全部",
+    "onlyFavorite": "仅收藏",
+    "itemUnit": " 个词义条目",
+    "viewDetail": "查看详情"
+  },
+  "tags": {
+    "title": "标签",
+    "loadTimeout": "标签列表加载超时，请重试",
+    "loadFailed": "标签列表加载失败",
+    "nameRequired": "标签名称必填",
+    "createFailed": "新增标签失败",
+    "reload": "重新加载标签",
+    "loading": "加载标签中…",
+    "empty": "暂无可选标签",
+    "newLabel": "新增标签名称",
+    "newPlaceholder": "例如：电影",
+    "createAction": "新增并选中标签"
   },
   "settings": {
     "learning": {
@@ -814,9 +973,6 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "review": {
     "title": "复习"
-  },
-  "tags": {
-    "title": "标签"
   },
   "statistics": {
     "title": "统计"
@@ -892,12 +1048,12 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "status": {
     "reviewing": "复习中",
-    "mastered": "已掌握",
+    "mastered": "已熟记",
     "favorite": "已收藏"
   },
   "pagination": {
     "summary": "第 {page} 页，共 {totalPages} 页（总计 {total} 项）",
-    "pageSize": "每页 {size} 项",
+    "pageSize": "每页数量",
     "previous": "上一页",
     "next": "下一页"
   },
@@ -907,9 +1063,38 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "empty": "没有符合条件的卡片",
     "loading": "加载卡片中...",
     "total": "共 {total} 张卡片",
-    "noContext": "无语境",
+    "noContext": "暂无语境",
     "markMastered": "标记为已掌握",
-    "restoreReview": "恢复复习"
+    "restoreReview": "恢复复习",
+    "clearFilters": "清除筛选",
+    "createLink": "去制卡",
+    "notFavorite": "未收藏",
+    "removeFavorite": "取消收藏",
+    "addFavorite": "收藏",
+    "search": "搜索",
+    "searchPlaceholder": "搜索单词、释义、原句、标签或备注",
+    "tagLabel": "标签",
+    "allTags": "全部标签",
+    "statusLabel": "状态",
+    "allStatus": "全部状态",
+    "favoriteLabel": "收藏",
+    "allFavorite": "全部",
+    "onlyFavorite": "仅收藏",
+    "itemUnit": " 个词义条目",
+    "viewDetail": "查看详情"
+  },
+  "tags": {
+    "title": "标签",
+    "loadTimeout": "标签列表加载超时，请重试",
+    "loadFailed": "标签列表加载失败",
+    "nameRequired": "标签名称必填",
+    "createFailed": "新增标签失败",
+    "reload": "重新加载标签",
+    "loading": "加载标签中…",
+    "empty": "暂无可选标签",
+    "newLabel": "新增标签名称",
+    "newPlaceholder": "例如：电影",
+    "createAction": "新增并选中标签"
   },
   "settings": {
     "learning": {
@@ -951,9 +1136,6 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "review": {
     "title": "复习"
-  },
-  "tags": {
-    "title": "标签"
   },
   "statistics": {
     "title": "统计"
@@ -1029,12 +1211,12 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "status": {
     "reviewing": "复习中",
-    "mastered": "已掌握",
+    "mastered": "已熟记",
     "favorite": "已收藏"
   },
   "pagination": {
     "summary": "第 {page} 页，共 {totalPages} 页（总计 {total} 项）",
-    "pageSize": "每页 {size} 项",
+    "pageSize": "每页数量",
     "previous": "上一页",
     "next": "下一页"
   },
@@ -1044,9 +1226,38 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "empty": "没有符合条件的卡片",
     "loading": "加载卡片中...",
     "total": "共 {total} 张卡片",
-    "noContext": "无语境",
+    "noContext": "暂无语境",
     "markMastered": "标记为已掌握",
-    "restoreReview": "恢复复习"
+    "restoreReview": "恢复复习",
+    "clearFilters": "清除筛选",
+    "createLink": "去制卡",
+    "notFavorite": "未收藏",
+    "removeFavorite": "取消收藏",
+    "addFavorite": "收藏",
+    "search": "搜索",
+    "searchPlaceholder": "搜索单词、释义、原句、标签或备注",
+    "tagLabel": "标签",
+    "allTags": "全部标签",
+    "statusLabel": "状态",
+    "allStatus": "全部状态",
+    "favoriteLabel": "收藏",
+    "allFavorite": "全部",
+    "onlyFavorite": "仅收藏",
+    "itemUnit": " 个词义条目",
+    "viewDetail": "查看详情"
+  },
+  "tags": {
+    "title": "标签",
+    "loadTimeout": "标签列表加载超时，请重试",
+    "loadFailed": "标签列表加载失败",
+    "nameRequired": "标签名称必填",
+    "createFailed": "新增标签失败",
+    "reload": "重新加载标签",
+    "loading": "加载标签中…",
+    "empty": "暂无可选标签",
+    "newLabel": "新增标签名称",
+    "newPlaceholder": "例如：电影",
+    "createAction": "新增并选中标签"
   },
   "settings": {
     "learning": {
@@ -1089,16 +1300,13 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   "review": {
     "title": "复习"
   },
-  "tags": {
-    "title": "标签"
-  },
   "statistics": {
     "title": "统计"
   },
   "placeholder": {
     "text": "占位符"
   }
-},
+}
 };
 
 export function getTranslationKeys(tree: any, prefix = ''): string[] {

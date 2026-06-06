@@ -1,6 +1,7 @@
 import type { CardStatus, PageSize } from '../../shared/constants';
 import type { CardSummaryDto, TagDto } from '../../shared/types';
 import { Pagination } from './Pagination';
+import { useI18n } from '../i18n/I18nProvider';
 
 export interface CardCatalogueFilters {
   search: string;
@@ -50,14 +51,6 @@ export function toListParams(filters: CardCatalogueFilters) {
   };
 }
 
-function sentenceFor(card: CardSummaryDto): string {
-  return card.primary_sentence || '暂无语境';
-}
-
-function nextStatusLabel(card: CardSummaryDto): string {
-  return card.status === 'reviewing' ? '标记熟记' : '恢复复习';
-}
-
 export function CardCatalogue(props: CardCatalogueProps) {
   const {
     title,
@@ -76,71 +69,80 @@ export function CardCatalogue(props: CardCatalogueProps) {
     onToggleFavorite,
   } = props;
   const activeFilters = hasUserFilters ?? hasActiveFilters(filters);
+  const { t } = useI18n();
 
   const updateFilters = (patch: Partial<CardCatalogueFilters>) => {
     onFiltersChange({ ...filters, ...patch, page: patch.page ?? 1 });
+  };
+
+  const sentenceFor = (card: CardSummaryDto): string => {
+    return card.primary_sentence || t('catalogue.noContext');
+  };
+
+  const nextStatusLabel = (card: CardSummaryDto): string => {
+    return card.status === 'reviewing' ? t('catalogue.markMastered') : t('catalogue.restoreReview');
   };
 
   return (
     <section className="phase6-catalogue" aria-label={title}>
       <div className="phase6-filter-desk">
         <label>
-          <span>搜索</span>
+          <span>{t('catalogue.search')}</span>
           <input
-            aria-label="搜索词义条目"
+            aria-label={t('catalogue.searchPlaceholder')}
             value={filters.search}
-            placeholder="搜索单词、释义、原句、标签或备注"
+            placeholder={t('catalogue.searchPlaceholder')}
             onChange={(event) => updateFilters({ search: event.target.value })}
           />
         </label>
         <label>
-          <span>标签</span>
-          <select aria-label="标签筛选" value={filters.tagId} onChange={(event) => updateFilters({ tagId: event.target.value })}>
-            <option value="">全部标签</option>
+          <span>{t('catalogue.tagLabel')}</span>
+          <select aria-label={t('catalogue.tagLabel')} value={filters.tagId} onChange={(event) => updateFilters({ tagId: event.target.value })}>
+            <option value="">{t('catalogue.allTags')}</option>
             {tags.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}
           </select>
         </label>
         <label>
-          <span>状态</span>
-          <select aria-label="状态筛选" value={filters.status} onChange={(event) => updateFilters({ status: event.target.value as CardCatalogueFilters['status'] })}>
-            <option value="">全部状态</option>
-            <option value="reviewing">复习中</option>
-            <option value="mastered">已熟记</option>
+          <span>{t('catalogue.statusLabel')}</span>
+          <select aria-label={t('catalogue.statusLabel')} value={filters.status} onChange={(event) => updateFilters({ status: event.target.value as CardCatalogueFilters['status'] })}>
+            <option value="">{t('catalogue.allStatus')}</option>
+            <option value="reviewing">{t('status.reviewing')}</option>
+            <option value="mastered">{t('status.mastered')}</option>
           </select>
         </label>
         <label>
-          <span>收藏</span>
-          <select aria-label="收藏筛选" value={filters.favorite} onChange={(event) => updateFilters({ favorite: event.target.value as CardCatalogueFilters['favorite'] })}>
-            <option value="">全部</option>
-            <option value="true">仅收藏</option>
-            <option value="false">未收藏</option>
+          <span>{t('catalogue.favoriteLabel')}</span>
+          <select aria-label={t('catalogue.favoriteLabel')} value={filters.favorite} onChange={(event) => updateFilters({ favorite: event.target.value as CardCatalogueFilters['favorite'] })}>
+            <option value="">{t('catalogue.allFavorite')}</option>
+            <option value="true">{t('catalogue.onlyFavorite')}</option>
+            <option value="false">{t('catalogue.notFavorite')}</option>
           </select>
         </label>
-        <button type="button" onClick={() => onFiltersChange({ search: '', tagId: '', status: '', favorite: '', page: 1, pageSize: filters.pageSize })}>清除筛选</button>
+        <button type="button" onClick={() => onFiltersChange({ search: '', tagId: '', status: '', favorite: '', page: 1, pageSize: filters.pageSize })}>{t('catalogue.clearFilters')}</button>
       </div>
 
       {error ? (
         <div className="phase6-alert" role="alert">
-          <strong>加载失败</strong>
+          <strong>{t('common.loadFailed')}</strong>
           <p>{error}</p>
-          <button type="button" onClick={onRetry}>重试</button>
+          <button type="button" onClick={onRetry}>{t('common.retry')}</button>
         </div>
       ) : null}
-      {loading ? <div className="phase6-skeleton" role="status">正在加载词义条目……</div> : null}
+      {loading ? <div className="phase6-skeleton" role="status">{t('catalogue.loading')}</div> : null}
 
       {!loading && !error && cards.length === 0 ? (
         <div className="phase6-empty">
           <p>{activeFilters ? filteredEmptyMessage : emptyMessage}</p>
           <div>
-            <button type="button" onClick={() => onFiltersChange({ search: '', tagId: '', status: '', favorite: '', page: 1, pageSize: filters.pageSize })}>清除筛选</button>
-            <a href="#/create">去制卡</a>
+            <button type="button" onClick={() => onFiltersChange({ search: '', tagId: '', status: '', favorite: '', page: 1, pageSize: filters.pageSize })}>{t('catalogue.clearFilters')}</button>
+            <a href="#/create">{t('catalogue.createLink')}</a>
           </div>
         </div>
       ) : null}
 
       {!loading && !error && cards.length > 0 ? (
         <div className="phase6-list-shell">
-          <div className="phase6-list-head"><strong>{total}</strong><span> 个词义条目</span></div>
+          <div className="phase6-list-head"><strong>{total}</strong><span>{t('catalogue.itemUnit')}</span></div>
           <div className="phase6-card-list">
             {cards.map((card) => (
               <article className="phase6-word-card" key={card.id}>
@@ -151,12 +153,12 @@ export function CardCatalogue(props: CardCatalogueProps) {
                   <div>{card.tags.map((tag) => <span key={tag.id}>{tag.name}</span>)}</div>
                 </div>
                 <div className="phase6-card-actions">
-                  <span>{card.status === 'reviewing' ? '复习中' : '已熟记'}</span>
-                  {card.is_favorite ? <span>★ 收藏</span> : <span>未收藏</span>}
+                  <span>{card.status === 'reviewing' ? t('status.reviewing') : t('status.mastered')}</span>
+                  {card.is_favorite ? <span>★ {t('catalogue.addFavorite')}</span> : <span>{t('catalogue.notFavorite')}</span>}
                   <span>{card.context_count} 条语境</span>
                   <button type="button" onClick={() => onToggleStatus(card)}>{nextStatusLabel(card)}</button>
-                  <button type="button" onClick={() => onToggleFavorite(card)}>{card.is_favorite ? '取消收藏' : '收藏'}</button>
-                  <a href={`#/cards/${card.id}`}>查看详情</a>
+                  <button type="button" onClick={() => onToggleFavorite(card)}>{card.is_favorite ? t('catalogue.removeFavorite') : t('catalogue.addFavorite')}</button>
+                  <a href={`#/cards/${card.id}`}>{t('catalogue.viewDetail')}</a>
                 </div>
               </article>
             ))}
