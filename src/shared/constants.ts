@@ -14,6 +14,16 @@ export const MEDIA_SIZE_LIMIT_MESSAGES: Record<MediaType, string> = {
   video: '视频不能超过 300MB',
 };
 
+export const TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES = 100 * 1024 * 1024;
+
+export const TRANSCRIPTION_MESSAGES = {
+  sizeLimit: '转写文件不能超过 100MB',
+  noConfig: 'No active AI config',
+  unavailable: 'Transcription unavailable',
+  ffmpegFailure: 'Audio extraction failed',
+  empty: 'Transcript empty',
+} as const;
+
 export const ALLOWED_MIME_TYPES: Record<string, MediaType> = {
   'video/mp4': 'video',
   'audio/mpeg': 'audio',
@@ -64,6 +74,21 @@ export const NATIVE_LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
 
 export function getNativeLanguageLabel(language: SupportedLanguage): string {
   return NATIVE_LANGUAGE_LABELS[language];
+}
+
+export const LANGUAGE_ISO_639_1_CODES: Record<SupportedLanguage, string> = {
+  中文: 'zh',
+  英语: 'en',
+  日语: 'ja',
+  韩语: 'ko',
+  法语: 'fr',
+  德语: 'de',
+  西班牙语: 'es',
+  俄语: 'ru',
+};
+
+export function getLanguageIso6391Code(language: SupportedLanguage): string {
+  return LANGUAGE_ISO_639_1_CODES[language];
 }
 
 export const DEFAULT_INTERFACE_LANGUAGE: SupportedLanguage = '中文';

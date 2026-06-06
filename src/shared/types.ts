@@ -243,6 +243,48 @@ export type AiSuggestionResponseDto =
       message: string;
     };
 
+export interface AiSpellingCheckRequestDto {
+  target_word: string;
+  sentence: string;
+  target_language?: string;
+}
+
+export interface TranscriptSegmentDto {
+  start: number;
+  end: number;
+  text: string;
+}
+
+export type TranscribeMediaResponseDto =
+  | {
+      status: 'success';
+      text: string;
+      segments: TranscriptSegmentDto[];
+      language?: string;
+    }
+  | {
+      status: 'none';
+      text: '';
+      segments: [];
+      message: string;
+    };
+
+export interface AiSpellingIssueDto {
+  original: string;
+  suggestion: string;
+}
+
+export type AiSpellingCheckResponseDto =
+  | {
+      status: 'success';
+      issues: AiSpellingIssueDto[];
+    }
+  | {
+      status: 'none';
+      issues: [];
+      message: string;
+    };
+
 export interface HomeStatisticsDto {
   due_count: number;
   reviewed_today_count: number;

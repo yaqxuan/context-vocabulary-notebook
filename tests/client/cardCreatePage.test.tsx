@@ -931,4 +931,279 @@ describe('CardCreatePage', () => {
     expect(requests.find((req) => req.url === '/api/cards/card-1' && req.method === 'PATCH')).toBeUndefined();
   });
 
+
+  it('keeps transcribe disabled when no video is selected', async () => {
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+
+    expect(screen.getByRole('button', { name: '转文字' })).toBeDisabled();
+  });
+
+  it('shows transcript panel after successful video transcription', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/transcriptions') return Promise.resolve(jsonResponse({ status: 'success', text: 'They charge extra for breakfast.', segments: [], language: 'en' }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+
+    fireEvent.change(screen.getByLabelText('上传本地视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '转文字' }));
+
+    expect(await screen.findByLabelText('转写文本')).toHaveValue('They charge extra for breakfast.');
+    expect(screen.getByText('音频可能会发送到已配置的转写服务商处理，并可能产生费用。')).toBeInTheDocument();
+  });
+
+  it('sends ISO language code in transcription FormData', async () => {
+    const transcriptionBodies: FormData[] = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/transcriptions') {
+        transcriptionBodies.push(init?.body as FormData);
+        return Promise.resolve(jsonResponse({ status: 'success', text: '彼は駅まで走った。', segments: [], language: 'ja' }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('学习语言'), { target: { value: '日语' } });
+    fireEvent.change(screen.getByLabelText('上传本地视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '转文字' }));
+
+    await waitFor(() => expect(transcriptionBodies).toHaveLength(1));
+    expect(transcriptionBodies[0].get('target_language')).toBe('ja');
+    expect(transcriptionBodies[0].get('file')).toBeInstanceOf(File);
+  });
+
+  it('ignores stale transcription result after clearing selected video', async () => {
+    let resolveTranscription: ((response: Response) => void) | null = null;
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/transcriptions') {
+        return new Promise<Response>((resolve) => {
+          resolveTranscription = resolve;
+        });
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+
+    const input = screen.getByLabelText('上传本地视频');
+    fireEvent.change(input, { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '转文字' }));
+    expect(await screen.findByRole('button', { name: '转写中…' })).toBeDisabled();
+
+    fireEvent.change(input, { target: { files: [] } });
+    expect(screen.queryByLabelText('转写文本')).not.toBeInTheDocument();
+
+    act(() => {
+      resolveTranscription?.(jsonResponse({ status: 'success', text: 'Stale transcript.', segments: [], language: 'en' }));
+    });
+    await flushPromises();
+
+    expect(screen.queryByLabelText('转写文本')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '转文字' })).toBeDisabled();
+  });
+
+  it('ignores stale transcription result after changing selected video', async () => {
+    const resolvers: Array<(response: Response) => void> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/transcriptions') {
+        return new Promise<Response>((resolve) => {
+          resolvers.push(resolve);
+        });
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+
+    const input = screen.getByLabelText('上传本地视频');
+    fireEvent.change(input, { target: { files: [file('old.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '转文字' }));
+    await waitFor(() => expect(resolvers).toHaveLength(1));
+
+    fireEvent.change(input, { target: { files: [file('new.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '转文字' }));
+    await waitFor(() => expect(resolvers).toHaveLength(2));
+
+    act(() => {
+      resolvers[0](jsonResponse({ status: 'success', text: 'Old transcript.', segments: [], language: 'en' }));
+    });
+    await flushPromises();
+    expect(screen.queryByLabelText('转写文本')).not.toBeInTheDocument();
+
+    act(() => {
+      resolvers[1](jsonResponse({ status: 'success', text: 'New transcript.', segments: [], language: 'en' }));
+    });
+
+    expect(await screen.findByLabelText('转写文本')).toHaveValue('New transcript.');
+  });
+
+  it('copies transcript into sentence through use-as-sentence action', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/transcriptions') return Promise.resolve(jsonResponse({ status: 'success', text: 'They charge extra for breakfast.', segments: [] }));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Old sentence.' } });
+    fireEvent.change(screen.getByLabelText('上传本地视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '转文字' }));
+    await screen.findByLabelText('转写文本');
+
+    fireEvent.click(screen.getByRole('button', { name: '使用为例句' }));
+
+    expect(screen.getByLabelText('原句')).toHaveValue('They charge extra for breakfast.');
+  });
+
+  it('shows transcription failure and preserves current form values', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/transcriptions') return Promise.reject(new Error('provider unavailable'));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Existing sentence.' } });
+    fireEvent.change(screen.getByLabelText('上传本地视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '转文字' }));
+
+    expect(await screen.findByText('provider unavailable')).toBeInTheDocument();
+    expect(screen.getByLabelText('目标单词')).toHaveValue('charge');
+    expect(screen.getByLabelText('当前语境释义')).toHaveValue('收费');
+    expect(screen.getByLabelText('原句')).toHaveValue('Existing sentence.');
+  });
+
+  it('calls spelling check only when the user clicks the spelling button', async () => {
+    let spellingBody: Record<string, unknown> | null = null;
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/spelling-check') {
+        spellingBody = JSON.parse(String(init?.body ?? '{}'));
+        return Promise.resolve(jsonResponse({ status: 'success', issues: [{ original: 'Hte', suggestion: 'The' }] }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('学习语言'), { target: { value: '英语' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Hte hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
+
+    expect(spellingBody).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'AI 检查拼写' }));
+
+    await waitFor(() => expect(spellingBody).toEqual({
+      target_word: 'hotel',
+      sentence: 'Hte hotel charges $100 per night.',
+      target_language: '英语',
+    }));
+    await screen.findByText('The');
+    expect(screen.getAllByText('Hte').some((element) => element.classList.contains('card-create-spelling-highlight'))).toBe(true);
+    expect(screen.getByText('The')).toBeInTheDocument();
+  });
+
+  it('accepts one spelling suggestion and replaces only that word', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/spelling-check') {
+        return Promise.resolve(jsonResponse({ status: 'success', issues: [{ original: 'Hte', suggestion: 'The' }] }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Hte hotel charges hte fee.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
+    fireEvent.click(screen.getByRole('button', { name: 'AI 检查拼写' }));
+
+    await screen.findByText('The');
+    fireEvent.click(screen.getByRole('button', { name: '接受 Hte → The' }));
+
+    expect(screen.getByLabelText('原句')).toHaveValue('The hotel charges hte fee.');
+    expect(screen.queryByText('The')).not.toBeInTheDocument();
+  });
+
+  it('does not display spelling suggestions for the target word', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/spelling-check') {
+        return Promise.resolve(jsonResponse({ status: 'success', issues: [{ original: 'hotel', suggestion: 'hostel' }] }));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
+    fireEvent.click(screen.getByRole('button', { name: 'AI 检查拼写' }));
+
+    expect(await screen.findByText('未发现拼写错误')).toBeInTheDocument();
+    expect(screen.queryByText('hostel')).not.toBeInTheDocument();
+  });
+
+  it('shows retryable spelling check error', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/spelling-check') return Promise.reject(new Error('network down'));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await flushPromises();
+
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Hte hotel charges $100 per night.' } });
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
+    fireEvent.click(screen.getByRole('button', { name: 'AI 检查拼写' }));
+
+    expect(await screen.findByText('拼写检查失败，请重试')).toBeInTheDocument();
+  });
+
 });

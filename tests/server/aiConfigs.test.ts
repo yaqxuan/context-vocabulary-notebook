@@ -20,6 +20,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  delete process.env.ALLOW_PRIVATE_AI_PROVIDER_URLS;
   vi.restoreAllMocks();
   db.close();
 });
@@ -142,6 +143,7 @@ describe('AI config API', () => {
   });
 
   it('fetches model list from entered Base URL and API Key', async () => {
+    process.env.ALLOW_PRIVATE_AI_PROVIDER_URLS = 'true';
     const app = createApp(db);
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ data: [{ id: 'qwen2.5' }, { id: 'deepseek-chat' }, { id: '' }] }), {
@@ -150,23 +152,28 @@ describe('AI config API', () => {
       }),
     );
 
-    const res = await request(app).post('/api/ai-configs/models').send({
-      base_url: 'http://127.0.0.1:11434/v1/',
-      api_key: 'ollama',
-    }).expect(200);
+    try {
+      const res = await request(app).post('/api/ai-configs/models').send({
+        base_url: 'http://127.0.0.1:11434/v1/',
+        api_key: 'ollama',
+      }).expect(200);
 
-    expect(res.body.models).toEqual(['deepseek-chat', 'qwen2.5']);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      'http://127.0.0.1:11434/v1/models',
-      expect.objectContaining({
-        method: 'GET',
-        headers: expect.objectContaining({ Authorization: 'Bearer ollama' }),
-        redirect: 'manual',
-      }),
-    );
+      expect(res.body.models).toEqual(['deepseek-chat', 'qwen2.5']);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://127.0.0.1:11434/v1/models',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({ Authorization: 'Bearer ollama' }),
+          redirect: 'manual',
+        }),
+      );
+    } finally {
+      delete process.env.ALLOW_PRIVATE_AI_PROVIDER_URLS;
+    }
   });
 
   it('fetches model list for a saved config without exposing its key', async () => {
+    process.env.ALLOW_PRIVATE_AI_PROVIDER_URLS = 'true';
     const app = createApp(db);
     const config = createAiConfig(db, {
       name: 'Local',
@@ -181,13 +188,17 @@ describe('AI config API', () => {
       }),
     );
 
-    const res = await request(app).get(`/api/ai-configs/${config.id}/models`).expect(200);
+    try {
+      const res = await request(app).get(`/api/ai-configs/${config.id}/models`).expect(200);
 
-    expect(res.body.models).toEqual(['qwen2.5']);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      'http://127.0.0.1:11434/v1/models',
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer stored-key' }) }),
-    );
+      expect(res.body.models).toEqual(['qwen2.5']);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://127.0.0.1:11434/v1/models',
+        expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer stored-key' }) }),
+      );
+    } finally {
+      delete process.env.ALLOW_PRIVATE_AI_PROVIDER_URLS;
+    }
   });
 
   it('rejects empty PATCH bodies', async () => {
