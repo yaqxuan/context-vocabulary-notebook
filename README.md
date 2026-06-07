@@ -65,7 +65,7 @@ uploads/
 
 ```bash
 mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。Linux / WSL 如果基础依赖已满足，会跳过 `apt-get`。
@@ -74,7 +74,7 @@ curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 如需先查看脚本内容，可访问：
@@ -84,7 +84,7 @@ https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install
 
 ```bash
 export CVN_HOME="$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ### Windows PowerShell

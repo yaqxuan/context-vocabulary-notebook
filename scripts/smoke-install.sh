@@ -73,7 +73,7 @@ run_installer() {
       ;;
     published)
       local install_url="${CVN_INSTALL_URL:-$RAW_INSTALL_URL}"
-      (cd "$app_dir" && curl -fsSL "$install_url" | bash)
+      (cd "$app_dir" && curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL "$install_url" | bash)
       ;;
     *)
       fail "Unsupported CVN_SMOKE_INSTALL_SOURCE=$mode; use local or published"

@@ -63,7 +63,7 @@ uploads/
 
 ```bash
 mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 سيتحقق البرنامج النصي تلقائيًا من التبعيات مثل Git، Node.js/npm؛ سيتم إعادة استخدام التبعيات المثبتة مباشرة. بالنسبة لنظامي Linux / WSL، إذا تم استيفاء التبعيات الأساسية، فسيتم تخطي `apt-get`.
@@ -75,7 +75,7 @@ https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install
 
 ```bash
 export CVN_HOME="$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ### Windows PowerShell
@@ -179,7 +179,7 @@ Opt in to installer-managed ffmpeg installation before running the installer:
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ```powershell
