@@ -171,6 +171,26 @@ http://localhost:3107
 
 ## Variables d'environnement
 
+## ffmpeg / Video transcription addendum
+
+For video transcription, install local `ffmpeg`. The installer checks ffmpeg and reports its status; missing ffmpeg does not block the core install, card creation, review, or normal media upload.
+
+Opt in to installer-managed ffmpeg installation before running the installer:
+
+```bash
+export CVN_INSTALL_FFMPEG=1
+curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+```
+
+```powershell
+$env:CVN_INSTALL_FFMPEG = "1"
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
+
+If video transcription shows `Audio extraction failed`, install ffmpeg and retry: Linux / WSL `sudo apt-get update && sudo apt-get install -y ffmpeg`; macOS `brew install ffmpeg`; Windows `winget install Gyan.FFmpeg`, then reopen the terminal.
+
+Video transcription prerequisites: local `ffmpeg` on PATH, a configured OpenAI-compatible `/audio/transcriptions` provider/model, and an uploaded file within the transcription size limit. `TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES` is currently 100MB; the media-library video attachment limit is 300MB.
+
 <!-- AUTO-GENERATED:ENV -->
 | Variable | Requis | Par défaut | Description |
 |------|------|--------|------|

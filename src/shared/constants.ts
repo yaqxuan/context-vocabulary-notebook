@@ -20,7 +20,7 @@ export const TRANSCRIPTION_MESSAGES = {
   sizeLimit: '转写文件不能超过 100MB',
   noConfig: 'No active AI config',
   unavailable: 'Transcription unavailable',
-  ffmpegFailure: 'Audio extraction failed',
+  ffmpegFailure: 'Audio extraction failed. Please install ffmpeg and retry.',
   empty: 'Transcript empty',
 } as const;
 

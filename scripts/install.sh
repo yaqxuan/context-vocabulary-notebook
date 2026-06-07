@@ -34,6 +34,18 @@ node_ok() {
   has_cmd node && has_cmd npm && [ "$(node_major)" -ge 20 ]
 }
 
+ffmpeg_ok() {
+  has_cmd ffmpeg
+}
+
+ffmpeg_status_message() {
+  if ffmpeg_ok; then
+    printf '视频转写依赖 ffmpeg：已检测到 (%s)\n' "$(ffmpeg -version 2>/dev/null | head -n 1)"
+  else
+    printf '视频转写依赖 ffmpeg：未检测到。应用已安装完成；如需视频转写，请安装 ffmpeg，或重新运行安装命令并设置 CVN_INSTALL_FFMPEG=1。\n'
+  fi
+}
+
 need_sudo() {
   if [ "$(id -u)" -ne 0 ]; then
     if has_cmd sudo; then
@@ -70,10 +82,33 @@ EOF
 }
 
 install_linux_deps() {
+  local apt_packages=(git curl ca-certificates gnupg build-essential python3 make g++)
+  if [ "${CVN_INSTALL_FFMPEG:-}" = "1" ] && ! ffmpeg_ok; then
+    apt_packages+=(ffmpeg)
+  fi
+
   if linux_core_ok; then
     log "Linux 基础依赖已满足，跳过 apt-get"
     if ! linux_native_tools_ok; then
       log "未检测到完整 native build tools；如果 npm ci 编译 better-sqlite3 失败，请再安装 python3、make、g++ 或 build-essential。"
+    fi
+    if [ "${CVN_INSTALL_FFMPEG:-}" = "1" ] && ! ffmpeg_ok; then
+      if ! has_cmd apt-get; then
+        echo "未发现 apt-get，无法自动安装 ffmpeg。应用仍会继续安装；如需视频转写，请手动安装 ffmpeg。"
+      else
+        log "CVN_INSTALL_FFMPEG=1，准备使用 apt-get 安装 ffmpeg"
+        echo "提示：apt-get 会检查系统里所有 apt 源；如果 Docker、Chromium 等无关源报错，请先修复或禁用对应源后重试。"
+        if ! need_sudo apt-get update; then
+          explain_apt_failure
+          exit 1
+        fi
+        if ! need_sudo apt-get install -y ffmpeg; then
+          explain_apt_failure
+          exit 1
+        fi
+      fi
+    elif ! ffmpeg_ok; then
+      log "未检测到 ffmpeg；应用仍会继续安装。如需视频转写，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
     fi
     return
   fi
@@ -91,7 +126,7 @@ install_linux_deps() {
     exit 1
   fi
 
-  if ! need_sudo apt-get install -y git curl ca-certificates gnupg build-essential python3 make g++; then
+  if ! need_sudo apt-get install -y "${apt_packages[@]}"; then
     explain_apt_failure
     exit 1
   fi
@@ -131,6 +166,12 @@ install_macos_deps() {
   log "使用 Homebrew 安装缺失环境"
   has_cmd git || brew install git
   node_ok || brew install node
+  if [ "${CVN_INSTALL_FFMPEG:-}" = "1" ] && ! ffmpeg_ok; then
+    log "CVN_INSTALL_FFMPEG=1，使用 Homebrew 安装 ffmpeg"
+    brew install ffmpeg
+  elif ! ffmpeg_ok; then
+    log "未检测到 ffmpeg；应用仍会继续安装。如需视频转写，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+  fi
   if ! xcode-select -p >/dev/null 2>&1; then
     log "未检测到 Xcode Command Line Tools，正在触发安装。如弹出系统窗口，请点击「安装」，完成后重新运行本脚本。"
     xcode-select --install 2>/dev/null || true
@@ -165,6 +206,7 @@ ensure_environment() {
   git --version
   node --version
   npm --version
+  ffmpeg_status_message
 }
 
 is_empty_dir() {
@@ -248,6 +290,8 @@ EOF
 数据位置：
   数据库：$INSTALL_DIR/data/context-vocabulary-notebook.sqlite
   媒体文件：$INSTALL_DIR/uploads
+
+$(ffmpeg_status_message)
 
 EOF
 }

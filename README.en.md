@@ -44,6 +44,7 @@ It is not recommended to run the app in these locations:
 | Git | Required for cloning the GitHub repository | The install script will check and try to fulfill this. |
 | Browser | Modern browsers like Chrome / Edge / Firefox / Safari | The application is used via local Web pages. |
 | C/C++ Build Tools | May be required | `better-sqlite3` is a native module; if there is no precompiled package available for the current system and Node version, `npm ci` will attempt local compilation. |
+| ffmpeg | Required for video transcription; not required for core install | Used to extract audio from videos. The installer checks ffmpeg; missing ffmpeg does not block the core app install. Set `CVN_INSTALL_FFMPEG=1` to let the installer try to install it. |
 
 The installation script will first check the existing environment on the local machine. On Linux / WSL, it will only attempt to fulfill dependencies via `apt-get` if Git or Node.js/npm are missing; if basic environments are met, it will skip `apt-get` to avoid triggering irrelevant third-party software source issues in the system. The macOS script will try to use Homebrew when dependencies are missing. The Windows native script will try to use `winget` when dependencies are missing. If these package managers are not available, or the current user does not have installation permissions, you need to manually install the missing environments and try again.
 
@@ -68,6 +69,13 @@ curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook
 
 The script will automatically check for dependencies like Git, Node.js/npm; installed dependencies will be directly reused. For Linux / WSL, if basic dependencies are met, it will skip `apt-get`.
 
+To let the script try to install optional ffmpeg for video transcription, set this first:
+
+```bash
+export CVN_INSTALL_FFMPEG=1
+curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+```
+
 To view the script content first, visit:
 https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
 
@@ -88,6 +96,13 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 
 The script will automatically check for dependencies like Git, Node.js/npm; installed dependencies will be directly reused.
 
+To let the script try to install optional ffmpeg for video transcription, set this first:
+
+```powershell
+$env:CVN_INSTALL_FFMPEG = "1"
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
+
 To view the script content first, visit:
 https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
 
@@ -104,6 +119,7 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 - For Linux / WSL, if `apt-get update` reports errors like Docker, Chromium, Snap, GPG keys, etc., it is usually due to existing apt sources or incomplete package configurations in the system, not because this project depends on these software. You can fix/disable the corresponding apt sources first, or manually install Git, Node.js 20+ and npm, then retry.
 - For macOS, if the Xcode Command Line Tools installation window pops up, click "Install", and after it completes, re-run the installation command.
 - For Windows, if it prompts that a compilation environment needs to be installed, please continue as prompted; this is an environment that may be needed during the compilation of some dependencies.
+- If video transcription shows `Audio extraction failed`, ffmpeg is usually missing or not on PATH. On Linux / WSL, try `sudo apt-get update && sudo apt-get install -y ffmpeg`; on macOS, try `brew install ffmpeg`; on Windows, try `winget install Gyan.FFmpeg`, then reopen the terminal and retry.
 
 ## Update to Latest Version
 
@@ -168,6 +184,16 @@ Default backend address:
 ```text
 http://localhost:3107
 ```
+
+## Video Transcription Prerequisites
+
+Video transcription requires all of the following:
+
+- Local `ffmpeg` is installed and visible on PATH to the terminal/server process.
+- An OpenAI-compatible `/audio/transcriptions` provider and model are configured and reachable.
+- The uploaded file is within the transcription size limit: `TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES` is currently 100MB; the media-library video attachment limit is 300MB.
+
+Missing ffmpeg only affects video audio extraction and video transcription. It does not affect core install, card creation, review, or normal media upload. The installer checks ffmpeg and, by default, does not block the core install when ffmpeg is missing. Set `CVN_INSTALL_FFMPEG=1` to opt in to installer-managed ffmpeg installation.
 
 ## Environment Variables
 

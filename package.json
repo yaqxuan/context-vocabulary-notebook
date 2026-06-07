@@ -13,7 +13,8 @@
     "test:e2e": "playwright test --pass-with-no-tests",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit",
     "lint": "npm run typecheck",
-    "readme:i18n:check": "node scripts/verify-readme-i18n.mjs"
+    "readme:i18n:check": "node scripts/verify-readme-i18n.mjs",
+    "smoke:install": "bash scripts/smoke-install.sh"
   },
   "dependencies": {
     "better-sqlite3": "12.10.0",
