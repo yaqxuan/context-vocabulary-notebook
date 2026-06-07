@@ -63,7 +63,7 @@ Copia et exsequere praeceptum sequens. Scriptum propositum in directorio praesen
 
 ```bash
 mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 Scriptum automatice dependentias sicut Git, Node.js/npm verificabit; dependentiae installatae directe iterum adhibebuntur. Pro Linux / WSL, si dependentiae fundamentales satisfactae sunt, `apt-get` transiliet.
@@ -75,7 +75,7 @@ Usus provectus: Specificare directorium installationis
 
 ```bash
 export CVN_HOME="$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ### Windows PowerShell
@@ -179,7 +179,7 @@ Opt in to installer-managed ffmpeg installation before running the installer:
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ```powershell

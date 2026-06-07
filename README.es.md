@@ -63,7 +63,7 @@ Copie y ejecute el siguiente comando. El script instalará el proyecto en el dir
 
 ```bash
 mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 El script comprobará automáticamente las dependencias como Git, Node.js/npm; las dependencias instaladas se reutilizarán directamente. Para Linux / WSL, si se cumplen las dependencias básicas, omitirá `apt-get`.
@@ -75,7 +75,7 @@ Uso avanzado: Especificar el directorio de instalación
 
 ```bash
 export CVN_HOME="$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ### Windows PowerShell
@@ -179,7 +179,7 @@ Opt in to installer-managed ffmpeg installation before running the installer:
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ```powershell

@@ -63,7 +63,7 @@ Kopieren Sie den folgenden Befehl und führen Sie ihn aus. Das Skript installier
 
 ```bash
 mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 Das Skript prüft automatisch auf Abhängigkeiten wie Git, Node.js/npm; installierte Abhängigkeiten werden direkt wiederverwendet. Bei Linux / WSL wird `apt-get` übersprungen, wenn die grundlegenden Abhängigkeiten erfüllt sind.
@@ -75,7 +75,7 @@ Erweiterte Nutzung: Installationsverzeichnis angeben
 
 ```bash
 export CVN_HOME="$HOME/context-vocabulary-notebook"
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ### Windows PowerShell
@@ -179,7 +179,7 @@ Opt in to installer-managed ffmpeg installation before running the installer:
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
-curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ```powershell

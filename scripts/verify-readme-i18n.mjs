@@ -24,6 +24,7 @@ const languageSwitch = languages
 const requiredLiterals = [
   'https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh',
   'https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1',
+  '--retry 5 --retry-delay 2 --retry-connrefused',
   'https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh',
   'https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1',
   '<!-- AUTO-GENERATED:ENV -->',
