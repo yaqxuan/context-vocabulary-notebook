@@ -28,6 +28,19 @@ function Has-Command($Name) {
   return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
 }
 
+function Test-Ffmpeg {
+  return Has-Command "ffmpeg"
+}
+
+function Write-FfmpegStatus {
+  if (Test-Ffmpeg) {
+    $VersionLine = try { (& ffmpeg -version 2>$null | Select-Object -First 1) } catch { "已检测到" }
+    Write-Host "视频转写依赖 ffmpeg：已检测到 ($VersionLine)"
+  } else {
+    Write-Host "视频转写依赖 ffmpeg：未检测到。应用已安装完成；如需视频转写，请安装 ffmpeg，或重新运行安装命令并设置 CVN_INSTALL_FFMPEG=1。"
+  }
+}
+
 function Refresh-Path {
   $CurrentPath = $env:Path
   $MachinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
@@ -67,6 +80,18 @@ function Ensure-Environment {
     Refresh-Path
   }
 
+  if (($env:CVN_INSTALL_FFMPEG -eq "1") -and (-not (Test-Ffmpeg))) {
+    Ensure-Winget
+    Write-Step "CVN_INSTALL_FFMPEG=1，安装 ffmpeg"
+    winget install --id Gyan.FFmpeg -e --source winget --accept-package-agreements --accept-source-agreements
+    Refresh-Path
+    if (-not (Test-Ffmpeg)) {
+      Write-Host "ffmpeg 安装后仍不可用。应用仍会继续安装；如需视频转写，请重新打开 PowerShell 后确认 ffmpeg 在 PATH 中。"
+    }
+  } elseif (-not (Test-Ffmpeg)) {
+    Write-Step "未检测到 ffmpeg；应用仍会继续安装。如需视频转写，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+  }
+
   if (-not (Has-Command "git")) { throw "Git 安装后仍不可用，请重新打开 PowerShell 后重试。" }
   if (-not (Has-Command "node")) { throw "Node.js 安装后仍不可用，请重新打开 PowerShell 后重试。" }
   if (-not (Has-Command "npm")) { throw "npm 安装后仍不可用，请重新打开 PowerShell 后重试。" }
@@ -76,6 +101,7 @@ function Ensure-Environment {
   git --version
   node --version
   npm --version
+  Write-FfmpegStatus
 }
 
 function Test-EmptyDir($Path) {
@@ -170,6 +196,8 @@ Windows 可尝试：
   Write-Host "数据位置："
   Write-Host "  数据库：$InstallDir\data\context-vocabulary-notebook.sqlite"
   Write-Host "  媒体文件：$InstallDir\uploads"
+  Write-Host ""
+  Write-FfmpegStatus
 }
 
 Ensure-Environment

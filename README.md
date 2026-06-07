@@ -45,6 +45,7 @@ uploads/
 | Git | 克隆 GitHub 仓库时需要 | 安装脚本会检查并尝试补齐。 |
 | 浏览器 | Chrome / Edge / Firefox / Safari 等现代浏览器 | 应用通过本地 Web 页面使用。 |
 | C/C++ 构建工具 | 可能需要 | `better-sqlite3` 是 native module；如果当前系统和 Node 版本没有可用预编译包，`npm ci` 会尝试本地编译。 |
+| ffmpeg | 视频转写需要；核心安装不强制 | 从视频提取音频时使用。安装脚本会检查 ffmpeg；缺少 ffmpeg 不会阻止核心应用安装。设置 `CVN_INSTALL_FFMPEG=1` 可让安装脚本尝试补齐。 |
 
 安装脚本会先检查本机已有环境。Linux / WSL 只有在缺少 Git 或 Node.js/npm 时，才会尝试通过 `apt-get` 补齐依赖；如果基础环境已满足，会跳过 `apt-get`，避免触发系统里无关的第三方软件源问题。macOS 脚本会在缺少依赖时尝试使用 Homebrew。Windows 原生脚本会在缺少依赖时尝试使用 `winget`。如果这些包管理器不可用，或当前用户没有安装权限，需要手动安装缺失环境后重试。
 
@@ -69,6 +70,13 @@ curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook
 
 脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。Linux / WSL 如果基础依赖已满足，会跳过 `apt-get`。
 
+如需让脚本尝试安装可选的 ffmpeg（用于视频转写），先设置：
+
+```bash
+export CVN_INSTALL_FFMPEG=1
+curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+```
+
 如需先查看脚本内容，可访问：
 https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
 
@@ -89,6 +97,13 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 
 脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。
 
+如需让脚本尝试安装可选的 ffmpeg（用于视频转写），先设置：
+
+```powershell
+$env:CVN_INSTALL_FFMPEG = "1"
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
+
 如需先查看脚本内容，可访问：
 https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
 
@@ -105,6 +120,7 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 - Linux / WSL 如果 `apt-get update` 报 Docker、Chromium、Snap、GPG key 等错误，通常是系统已有 apt 源或未完成包配置异常，不是本项目依赖这些软件。可以先修复/禁用对应 apt 源，或手动安装 Git、Node.js 20+ 和 npm 后重试。
 - macOS 如果弹出 Xcode Command Line Tools 安装窗口，请点击“安装”，完成后重新运行安装命令。
 - Windows 如果提示需要安装编译环境，请按脚本提示继续；这是部分依赖编译时可能需要的环境。
+- 如果视频转写提示 `Audio extraction failed`，通常表示本机缺少 ffmpeg 或 ffmpeg 不在 PATH 中。Linux / WSL 可尝试 `sudo apt-get update && sudo apt-get install -y ffmpeg`；macOS 可尝试 `brew install ffmpeg`；Windows 可尝试 `winget install Gyan.FFmpeg`，然后重新打开终端再重试。
 
 ## 更新到最新版
 
@@ -169,6 +185,16 @@ http://localhost:5173
 ```text
 http://localhost:3107
 ```
+
+## 视频转写前置条件
+
+视频转写需要同时满足：
+
+- 本机已安装 `ffmpeg`，并且终端/服务进程可以在 PATH 中找到它。
+- 已配置可用的 OpenAI-compatible `/audio/transcriptions` 提供方和模型。
+- 上传文件未超过转写大小限制：`TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES` 当前为 100MB；媒体库视频附件大小限制为 300MB。
+
+缺少 ffmpeg 只会影响视频音频提取和视频转写，不会影响核心安装、制卡、复习或普通媒体上传。安装脚本会检查 ffmpeg；默认不会因为缺少 ffmpeg 而阻断核心安装。可设置 `CVN_INSTALL_FFMPEG=1` 选择让脚本尝试安装。
 
 ## 环境变量
 
