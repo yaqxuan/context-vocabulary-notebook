@@ -2,19 +2,27 @@
 
 # Context Vocabulary Notebook
 
-Ein Local-First, leichtgewichtiges Tool zur Überprüfung von Kontextvokabeln. Es eignet sich zum Aufzeichnen neuer Wörter, Originaltexte, lokaler Videoclips, Screenshots, Audio und Tags beim Ansehen fremdsprachiger Videos und plant dann Überprüfungen mit dem FSRS-Algorithmus.
+Ein lokales Vocabulary Notebook, mit dem du Wörter aus echten Videos, Audios, Untertiteln und Kursen lernst.
+
+Statt isolierte Wörter zu speichern, hält es den Satz, die kontextbezogene Bedeutung, den Screenshot, den Video-/Audioausschnitt, Notizen und Tags aus dem Moment fest, in dem du das Wort gefunden hast. Beim Wiederholen siehst du wieder den echten Kontext, nicht nur ein Wort und eine Definition.
+
+Geeignet für:
+
+- Neue Wörter beim Ansehen fremdsprachiger Videos, Kurse, Filme oder Hörmaterialien festhalten.
+- Lernende, die Anki-ähnliche Spaced Repetition möchten, aber mit mehr Kontext auf jeder Karte.
+- Menschen, die lokale Daten bevorzugen und kein Cloud-Konto für ein Vokabelheft möchten.
 
 > Das aktuelle Projekt ist eine lokale Webanwendung. Daten werden standardmäßig in einer SQLite-Datenbank und im Ordner `uploads/` auf Ihrem Computer gespeichert. Es ist kein Cloud-Konto erforderlich.
 
 ## Hauptfunktionen
 
-- Erstellen Sie Karten rund um reale Kontexte: Zielwort, kontextbezogene Definition, Originaltext, Notizen, Tags.
-- Ein einzelner Bedeutungseintrag kann mit mehreren Kontextinstanzen verknüpft werden, ideal zum Aufzeichnen von Verwendungen derselben Bedeutung in verschiedenen Videos.
-- Lokale Medienanhänge: Video `mp4`, Audio `mp3`, Bild `jpg / png / webp`.
-- FSRS Spaced Repetition: Nur die Bewertungsknöpfe `Again` / `Good` bleiben erhalten.
+- Karten rund um echte Kontexte erstellen: Zielwort, kontextbezogene Definition, Originalsatz, Notizen, Tags.
+- Lokale Medienanhänge speichern: Video `mp4`, Audio `mp3`, Bild `jpg / png / webp`.
+- Einen Bedeutungseintrag mit mehreren Kontextinstanzen verknüpfen, nützlich für dieselbe Bedeutung in unterschiedlichen Materialien.
+- Mit FSRS Spaced Repetition wiederholen und jedes Wort in seinen ursprünglichen Kontext zurückholen.
 - Liste der Bedeutungseinträge, Suche, Tag-Filterung, Favoriten, Statistiken.
-- ZIP-Import und -Export: Unterstützt ein vollständiges persönliches Backup und reines Teilen von Karten.
-- V2 KI-Vorschläge auf der Kartenerstellungsseite: Eine OpenAI-kompatible API kann konfiguriert werden, um kontextbezogene Definitionen und Verwendungsnotizen vorzuschlagen; der API-Schlüssel wird nur lokal gespeichert.
+- ZIP-Import und -Export für vollständige persönliche Backups und das Teilen nur der Karten.
+- V2 KI-Vorschläge auf der Kartenerstellungsseite: Eine OpenAI-kompatible API kann kontextbezogene Definitionen und Verwendungsnotizen vorschlagen; der API-Schlüssel wird nur lokal gespeichert.
 
 ## Datenstandort und Speicherplatzwarnung
 

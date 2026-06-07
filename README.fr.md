@@ -2,19 +2,27 @@
 
 # Context Vocabulary Notebook
 
-Un outil de révision de vocabulaire contextuel léger et centré sur le local. Il convient pour enregistrer de nouveaux mots, des phrases originales, des clips vidéo locaux, des captures d'écran, de l'audio et des étiquettes lors du visionnage de vidéos en langues étrangères, puis pour planifier des révisions à l'aide de l'algorithme FSRS.
+Un carnet de vocabulaire local-first pour apprendre des mots à partir de vraies vidéos, de l'audio, de sous-titres et de cours.
+
+Au lieu d'enregistrer des mots isolés, il conserve la phrase, le sens en contexte, la capture d'écran, l'extrait vidéo/audio, les notes et les étiquettes du moment où vous avez rencontré le mot. Lors de la révision, vous retrouvez le contexte réel, pas seulement un mot et une définition.
+
+Utile pour :
+
+- Noter de nouveaux mots en regardant des vidéos, cours, films ou supports d'écoute en langue étrangère.
+- Les apprenants qui veulent une répétition espacée de type Anki, avec plus de contexte sur chaque carte.
+- Les personnes qui préfèrent garder leurs données en local sans créer de compte cloud pour un carnet de vocabulaire.
 
 > Le projet actuel est une application Web locale. Les données sont enregistrées par défaut dans une base de données SQLite et dans le dossier `uploads/` de votre ordinateur. Aucun compte cloud n'est requis.
 
 ## Caractéristiques principales
 
-- Créez des cartes autour de contextes réels : mot cible, définition contextuelle, phrase originale, notes, étiquettes.
-- Une seule entrée de sens peut être associée à plusieurs instances de contexte, idéal pour enregistrer les usages du même sens dans différentes vidéos.
-- Pièces jointes multimédias locales : vidéo `mp4`, audio `mp3`, image `jpg / png / webp`.
-- Répétition espacée FSRS : seuls les boutons d'évaluation `Again` / `Good` sont conservés.
+- Créer des cartes autour de contextes réels : mot cible, définition contextuelle, phrase originale, notes, étiquettes.
+- Enregistrer des pièces jointes multimédias locales : vidéo `mp4`, audio `mp3`, image `jpg / png / webp`.
+- Associer une entrée de sens à plusieurs instances de contexte, utile pour suivre le même sens dans différents supports.
+- Réviser avec la répétition espacée FSRS en ramenant chaque mot dans le contexte où vous l'avez rencontré.
 - Liste des entrées de sens, recherche, filtrage par étiquette, favoris, statistiques.
-- Importation et exportation ZIP : prend en charge la sauvegarde personnelle complète et le partage de cartes pur.
-- Suggestions de l'IA sur la page de création de cartes V2 : une API compatible OpenAI peut être configurée pour suggérer des définitions contextuelles et des notes d'utilisation ; la clé API n'est enregistrée que localement.
+- Importation et exportation ZIP pour sauvegarde personnelle complète et partage de cartes uniquement.
+- Suggestions de l'IA sur la page de création de cartes V2 : configurez une API compatible OpenAI pour des définitions contextuelles et des notes d'utilisation ; la clé API n'est enregistrée que localement.
 
 ## Emplacement des données et avertissement d'espace disque
 
