@@ -2,19 +2,27 @@
 
 # Context Vocabulary Notebook
 
-Una herramienta de revisión de vocabulario contextual ligera y centrada en lo local. Es adecuada para registrar palabras nuevas, oraciones originales, clips de video locales, capturas de pantalla, audio y etiquetas mientras se ven videos en idiomas extranjeros, y luego programar revisiones utilizando el algoritmo FSRS.
+Un cuaderno de vocabulario local-first para aprender palabras desde videos, audio, subtítulos y cursos reales.
+
+En lugar de guardar palabras aisladas, conserva la oración, el significado contextual, la captura de pantalla, el clip de video/audio, las notas y las etiquetas del momento en que encontraste la palabra. Al repasar, vuelves a ver el contexto real, no solo una palabra y una definición.
+
+Ideal para:
+
+- Registrar palabras nuevas mientras ves videos, cursos, películas o materiales de escucha en otro idioma.
+- Estudiantes que quieren repetición espaciada tipo Anki, pero con más contexto en cada tarjeta.
+- Personas que prefieren datos locales y no quieren una cuenta en la nube para su cuaderno de vocabulario.
 
 > El proyecto actual es una aplicación Web local. Los datos se guardan de forma predeterminada en una base de datos SQLite y en la carpeta `uploads/` de su computadora. No se requiere una cuenta en la nube.
 
 ## Características Principales
 
 - Crea tarjetas en torno a contextos reales: palabra objetivo, definición contextual, oración original, notas, etiquetas.
-- Una sola entrada de significado puede asociarse con múltiples instancias de contexto, ideal para registrar usos del mismo significado en diferentes videos.
-- Archivos adjuntos multimedia locales: video `mp4`, audio `mp3`, imagen `jpg / png / webp`.
-- Repetición espaciada FSRS: solo se mantienen los botones de calificación `Again` / `Good`.
+- Guarda archivos adjuntos multimedia locales: video `mp4`, audio `mp3`, imagen `jpg / png / webp`.
+- Asocia una entrada de significado con múltiples instancias de contexto, útil para registrar el mismo significado en diferentes materiales.
+- Repasa con repetición espaciada FSRS y devuelve cada palabra al contexto donde la encontraste.
 - Lista de entradas de significado, búsqueda, filtrado por etiquetas, favoritos, estadísticas.
-- Importación y exportación ZIP: admite copia de seguridad personal completa y uso compartido puro de tarjetas.
-- Sugerencias de IA en la página de creación de tarjetas V2: se puede configurar una API compatible con OpenAI para sugerir definiciones contextuales y notas de uso; la API Key solo se guarda localmente.
+- Importación y exportación ZIP para copia de seguridad personal completa y uso compartido solo de tarjetas.
+- Sugerencias de IA en la página de creación de tarjetas V2: configura una API compatible con OpenAI para definiciones contextuales y notas de uso; la API Key se guarda solo localmente.
 
 ## Advertencia de Ubicación de Datos y Espacio en Disco
 

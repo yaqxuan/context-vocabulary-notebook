@@ -2,18 +2,26 @@
 
 # Context Vocabulary Notebook
 
-Instrumentum leve, primum locale, ad vocabula contextualia recognoscenda. Idoneum est ad nova verba, sententias originales, partes pellicularum locales, capturas ekranorum, sonos, et pittacia annotanda dum pelliculas in linguis peregrinis spectas, deinde recognitiones per algorithmum FSRS disponendas.
+Commentarius vocabularii localis ad verba discenda ex veris pelliculis, sonis, subtitulis, et cursibus.
+
+Non verba solitaria tantum servat. Servat sententiam, significationem in contextu, capturam ekrani, partem pelliculae vel soni, notas, et pittacia ex tempore quo verbum invenisti. Cum postea recognoscis, verum contextum iterum vides, non solum verbum et definitionem.
+
+Aptus est ad:
+
+- Nova verba annotanda dum pelliculas, cursus, cinematographica, vel materias audiendi in lingua peregrina spectas.
+- Discentes qui repetitionem spatiatam similem Anki volunt, sed cum contextu pleniore in unaquaque chartula.
+- Eos qui data localia praeferunt nec rationem nubis pro commentario vocabularii desiderant.
 
 > Praesens propositum est applicatio telae localis. Data per defaltam in base datorum SQLite et in palliolo `uploads/` in computatro tuo salvantur. Ratio nubis non requiritur.
 
 ## Lineamenta Praecipua
 
 - Creare chartulas circa contextus reales: verbum scopi, definitio contextualis, sententia originalis, notae, pittacia.
-- Unus introitus significationis pluribus exemplis contextus sociari potest, perfectum ad usus eiusdem significationis in diversis pelliculis annotandos.
-- Appendices mediorum localium: pellicula `mp4`, sonus `mp3`, imago `jpg / png / webp`.
-- Repetitio spatiata FSRS: tantum bullae aestimationis `Again` / `Good` retinentur.
+- Servare appendices mediorum localium: pellicula `mp4`, sonus `mp3`, imago `jpg / png / webp`.
+- Unum introitum significationis cum pluribus exemplis contextus coniungere, utile ad eandem significationem in diversis materiis annotandam.
+- Recognoscere per repetitionem spatiatam FSRS, ut unumquodque verbum ad contextum ubi inventum est redeat.
 - Index introituum significationis, quaesitio, percolatio per pittacia, dilecta, statistica.
-- Importatio et exportatio ZIP: sustinet tergum personale integrum et puram communicationem chartularum.
+- Importatio et exportatio ZIP ad tergum personale integrum et communicationem chartularum tantum.
 - Suggestiones IA in pagina creationis chartularum V2: API compatibilis OpenAI configurari potest ad definitiones contextuales et notas usus suggerendas; Clavis API tantum localiter salvatur.
 
 ## Monitio de Loco Datorum et Spatio Disci

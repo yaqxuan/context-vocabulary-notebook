@@ -2,19 +2,27 @@
 
 # Context Vocabulary Notebook
 
-A local-first, lightweight context vocabulary review tool. It is suitable for recording new words, original sentences, local video clips, screenshots, audio, and tags while watching foreign language videos, and then scheduling reviews using the FSRS algorithm.
+A local-first vocabulary notebook for learning words from real videos, audio, subtitles, and courses.
+
+Instead of saving isolated words, it keeps the sentence, contextual meaning, screenshot, video/audio clip, notes, and tags from the moment you found the word. When you review later, you see the real context again, not only a word and a definition.
+
+Good for:
+
+- Recording new words while watching foreign-language videos, courses, films, or listening materials.
+- Learners who want Anki-like spaced repetition with richer context on each card.
+- People who prefer local data and do not want a cloud account for a vocabulary notebook.
 
 > The current project is a local Web application. Data is saved by default in a SQLite database and the `uploads/` folder on your computer. No cloud account is required.
 
 ## Key Features
 
 - Create cards around real contexts: target word, contextual definition, original sentence, notes, tags.
-- A single meaning entry can be associated with multiple context instances, perfect for recording usages of the same meaning in different videos.
-- Local media attachments: video `mp4`, audio `mp3`, image `jpg / png / webp`.
-- FSRS spaced repetition: only `Again` / `Good` rating buttons are kept.
+- Save local media attachments: video `mp4`, audio `mp3`, image `jpg / png / webp`.
+- Link one meaning entry to multiple context instances, useful for recording the same meaning across different materials.
+- Review with FSRS spaced repetition, bringing each word back to the context where you met it.
 - Meaning entry list, search, tag filtering, favorites, statistics.
-- ZIP import and export: supports full personal backup and pure card sharing.
-- V2 card creation page AI suggestions: an OpenAI-compatible API can be configured for suggesting contextual definitions and usage notes; the API Key is only saved locally.
+- ZIP import and export for full personal backup and card-only sharing.
+- V2 card creation page AI suggestions: configure an OpenAI-compatible API for contextual definitions and usage notes; the API Key is saved locally only.
 
 ## Data Location and Disk Space Warning
 

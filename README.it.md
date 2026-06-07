@@ -2,19 +2,27 @@
 
 # Context Vocabulary Notebook
 
-Uno strumento di revisione del vocabolario contestuale leggero e orientato al locale. È adatto per registrare nuove parole, frasi originali, clip video locali, screenshot, audio e tag mentre si guardano video in lingua straniera, e quindi pianificare le revisioni utilizzando l'algoritmo FSRS.
+Un quaderno di vocaboli local-first per imparare parole da video, audio, sottotitoli e corsi reali.
+
+Invece di salvare parole isolate, conserva la frase, il significato nel contesto, lo screenshot, il clip video/audio, le note e i tag del momento in cui hai incontrato la parola. Quando ripassi, rivedi il contesto reale, non solo una parola e una definizione.
+
+Ideale per:
+
+- Registrare nuove parole mentre guardi video, corsi, film o materiali di ascolto in lingua straniera.
+- Studenti che vogliono una ripetizione spaziata simile ad Anki, ma con più contesto in ogni scheda.
+- Persone che preferiscono dati locali e non vogliono un account cloud per un quaderno di vocaboli.
 
 > Il progetto attuale è un'applicazione Web locale. I dati vengono salvati per impostazione predefinita in un database SQLite e nella cartella `uploads/` sul tuo computer. Non è richiesto alcun account cloud.
 
 ## Caratteristiche principali
 
 - Crea schede attorno a contesti reali: parola di destinazione, definizione contestuale, frase originale, note, tag.
-- Una singola voce di significato può essere associata a più istanze di contesto, ideale per registrare gli usi dello stesso significato in video diversi.
-- Allegati multimediali locali: video `mp4`, audio `mp3`, immagine `jpg / png / webp`.
-- Ripetizione spaziata FSRS: vengono mantenuti solo i pulsanti di valutazione `Again` / `Good`.
+- Salva allegati multimediali locali: video `mp4`, audio `mp3`, immagine `jpg / png / webp`.
+- Associa una singola voce di significato a più istanze di contesto, utile per registrare lo stesso significato in materiali diversi.
+- Ripassa con la ripetizione spaziata FSRS, riportando ogni parola nel contesto in cui l'hai incontrata.
 - Elenco delle voci di significato, ricerca, filtro per tag, preferiti, statistiche.
-- Importazione ed esportazione ZIP: supporta il backup personale completo e la condivisione pura delle schede.
-- Suggerimenti IA nella pagina di creazione della scheda V2: può essere configurata un'API compatibile con OpenAI per suggerire definizioni contestuali e note di utilizzo; la chiave API viene salvata solo localmente.
+- Importazione ed esportazione ZIP per backup personale completo e condivisione solo delle schede.
+- Suggerimenti IA nella pagina di creazione della scheda V2: configura un'API compatibile con OpenAI per definizioni contestuali e note di utilizzo; la chiave API viene salvata solo localmente.
 
 ## Posizione dei dati e avviso sullo spazio su disco
 
