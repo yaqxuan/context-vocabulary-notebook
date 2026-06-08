@@ -14,6 +14,10 @@ Geeignet für:
 
 > Das aktuelle Projekt ist eine lokale Webanwendung. Daten werden standardmäßig in einer SQLite-Datenbank und im Ordner `uploads/` auf Ihrem Computer gespeichert. Es ist kein Cloud-Konto erforderlich.
 
+## Demo
+
+![Context Vocabulary Notebook Demo zur Kartenerstellung](./docs/demo/01-create-card.png)
+
 ## Hauptfunktionen
 
 - Karten rund um echte Kontexte erstellen: Zielwort, kontextbezogene Definition, Originalsatz, Notizen, Tags.

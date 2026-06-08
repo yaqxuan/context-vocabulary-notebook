@@ -14,6 +14,10 @@ Ideale per:
 
 > Il progetto attuale è un'applicazione Web locale. I dati vengono salvati per impostazione predefinita in un database SQLite e nella cartella `uploads/` sul tuo computer. Non è richiesto alcun account cloud.
 
+## Demo
+
+![Demo di creazione scheda in Context Vocabulary Notebook](./docs/demo/01-create-card.png)
+
 ## Caratteristiche principali
 
 - Crea schede attorno a contesti reali: parola di destinazione, definizione contestuale, frase originale, note, tag.

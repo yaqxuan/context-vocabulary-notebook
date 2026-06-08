@@ -14,6 +14,10 @@ Good for:
 
 > The current project is a local Web application. Data is saved by default in a SQLite database and the `uploads/` folder on your computer. No cloud account is required.
 
+## Demo
+
+![Context Vocabulary Notebook card creation demo](./docs/demo/01-create-card.png)
+
 ## Key Features
 
 - Create cards around real contexts: target word, contextual definition, original sentence, notes, tags.

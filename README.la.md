@@ -14,6 +14,10 @@ Aptus est ad:
 
 > Praesens propositum est applicatio telae localis. Data per defaltam in base datorum SQLite et in palliolo `uploads/` in computatro tuo salvantur. Ratio nubis non requiritur.
 
+## Demo
+
+![Demonstratio creationis chartulae in Context Vocabulary Notebook](./docs/demo/01-create-card.png)
+
 ## Lineamenta Praecipua
 
 - Creare chartulas circa contextus reales: verbum scopi, definitio contextualis, sententia originalis, notae, pittacia.
