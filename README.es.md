@@ -14,6 +14,10 @@ Ideal para:
 
 > El proyecto actual es una aplicación Web local. Los datos se guardan de forma predeterminada en una base de datos SQLite y en la carpeta `uploads/` de su computadora. No se requiere una cuenta en la nube.
 
+## Demo
+
+![Demo de creación de tarjetas de Context Vocabulary Notebook](./docs/demo/01-create-card.png)
+
 ## Características Principales
 
 - Crea tarjetas en torno a contextos reales: palabra objetivo, definición contextual, oración original, notas, etiquetas.

@@ -14,6 +14,10 @@
 
 > 当前项目是本地 Web 应用。数据默认保存在你电脑上的 SQLite 数据库和 `uploads/` 文件夹里，不需要云账号。
 
+## Demo
+
+![Context Vocabulary Notebook 制卡示例](./docs/demo/01-create-card.png)
+
 ## 主要功能
 
 - 围绕真实语境制卡：目标单词、当前语境释义、原句、备注、标签。

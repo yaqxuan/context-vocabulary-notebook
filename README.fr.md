@@ -14,6 +14,10 @@ Utile pour :
 
 > Le projet actuel est une application Web locale. Les données sont enregistrées par défaut dans une base de données SQLite et dans le dossier `uploads/` de votre ordinateur. Aucun compte cloud n'est requis.
 
+## Demo
+
+![Démo de création de carte dans Context Vocabulary Notebook](./docs/demo/01-create-card.png)
+
 ## Caractéristiques principales
 
 - Créer des cartes autour de contextes réels : mot cible, définition contextuelle, phrase originale, notes, étiquettes.
