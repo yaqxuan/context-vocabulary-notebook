@@ -14,7 +14,7 @@ import { isSupportedLanguage } from '../../src/shared/validators.js';
 describe('shared language helpers', () => {
   it('defines the exact supported language list and defaults', () => {
     expect(SUPPORTED_LANGUAGES).toEqual(['中文', '英语', '日语', '韩语', '法语', '德语', '西班牙语', '俄语']);
-    expect(DEFAULT_INTERFACE_LANGUAGE).toBe('中文');
+    expect(DEFAULT_INTERFACE_LANGUAGE).toBe('英语');
     expect(DEFAULT_TARGET_LANGUAGE).toBe('英语');
     expect(DEFAULT_DEFINITION_LANGUAGE).toBe('中文');
   });

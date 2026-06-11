@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { StatisticsPageDto } from '../../shared/types';
 import { getStatisticsPage } from '../api/statistics';
@@ -304,6 +304,11 @@ type PageState =
 export function StatisticsPage() {
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const { t } = useI18n();
+  const tRef = useRef(t);
+
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   const load = useCallback(() => {
     setState({ kind: 'loading' });
@@ -312,9 +317,9 @@ export function StatisticsPage() {
         setState({ kind: 'ready', data });
       })
       .catch((err: unknown) => {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : t('statistics.loadFailed') });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : tRef.current('statistics.loadFailed') });
       });
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     load();

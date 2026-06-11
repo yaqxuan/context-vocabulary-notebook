@@ -28,7 +28,7 @@ export function initDb(db: Database): void {
     const now = new Date().toISOString();
     db.prepare(`
       INSERT INTO user_settings (id, interface_language, default_target_language, default_definition_language, daily_review_limit, created_at, updated_at)
-      VALUES (1, 'zh-CN', '英语', '中文', 20, ?, ?)
+      VALUES (1, '英语', '英语', '中文', 20, ?, ?)
     `).run(now, now);
   }
 }

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { HomePage } from '../../src/client/pages/HomePage';
@@ -42,12 +42,12 @@ describe('HomePage', () => {
 
     render(<I18nProvider><HomePage /></I18nProvider>);
 
-    expect(screen.getByText('加载中...')).toBeInTheDocument();
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: '欢迎回来' })).toBeInTheDocument();
     expect(screen.getByText('学习语言')).toBeInTheDocument();
-    expect(screen.getByText('English')).toBeInTheDocument();
+    expect(screen.getAllByText('English').length).toBeGreaterThan(0);
     expect(screen.getByText('释义语言')).toBeInTheDocument();
-    expect(screen.getByText('中文')).toBeInTheDocument();
+    expect(screen.getAllByText('中文').length).toBeGreaterThan(0);
     expect(screen.getByText('阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。')).toBeInTheDocument();
     expect(screen.getByText('Sunlight is like a peeled orange, falling segment by segment onto your vocabulary notebook. Each segment hides a new word.')).toBeInTheDocument();
     expect(document.querySelector('.home-content-stack')).toContainElement(screen.getByLabelText('首页统计'));
@@ -83,8 +83,8 @@ describe('HomePage', () => {
 
     render(<I18nProvider><HomePage /></I18nProvider>);
 
-    expect(await screen.findByText('한국어')).toBeInTheDocument();
-    expect(screen.getByText('日本語')).toBeInTheDocument();
+    expect((await screen.findAllByText('한국어')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('日本語').length).toBeGreaterThan(0);
     expect(screen.getByText('아침에 단어장을 열면 새로운 말들이 하루를 밝게 합니다.')).toBeInTheDocument();
     expect(screen.getByText('朝の時間に単語帳を開けば、新しい言葉が一日を明るくします。')).toBeInTheDocument();
     expect(screen.queryByText('阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。')).not.toBeInTheDocument();
@@ -125,6 +125,37 @@ describe('HomePage', () => {
     expect(screen.queryByText('阳光像剥开的橘子，一瓣一瓣落在你的单词本上。每一瓣里都藏着一个新的词。')).not.toBeInTheDocument();
     expect(screen.queryByText('Sunlight is like a peeled orange, falling segment by segment onto your vocabulary notebook. Each segment hides a new word.')).not.toBeInTheDocument();
     expect(screen.queryByText('5/20')).not.toBeInTheDocument();
+  });
+
+  it('renders interface language switcher at the top right and saves selection', async () => {
+    let patchBody: unknown = null;
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings' && init?.method === 'PATCH') {
+        patchBody = JSON.parse(init.body as string);
+        return Promise.resolve(new Response(JSON.stringify({ interface_language: '英语', default_target_language: '英语', default_definition_language: '中文' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      }
+      if (url === '/api/settings') return Promise.resolve(new Response(JSON.stringify({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      return Promise.resolve(new Response(JSON.stringify({
+        due_count: 3,
+        reviewed_today_count: 5,
+        again_today_count: 1,
+        good_today_count: 4,
+        daily_review_limit: 20,
+        is_daily_target_reached: false,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    });
+
+    render(<I18nProvider><HomePage /></I18nProvider>);
+
+    const selector = await screen.findByLabelText('界面语言') as HTMLSelectElement;
+    expect(selector.closest('.home-interface-language')).toHaveClass('home-interface-language--top-right');
+    expect(selector.value).toBe('中文');
+
+    fireEvent.change(selector, { target: { value: '英语' } });
+
+    await waitFor(() => expect(patchBody).toMatchObject({ interface_language: '英语' }));
+    expect(await screen.findByRole('link', { name: 'Start review' })).toBeInTheDocument();
   });
 
   it('renders English UI chrome when interface language is English', async () => {

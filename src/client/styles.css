@@ -197,6 +197,41 @@ body {
   background: rgba(45, 212, 191, 0.10);
 }
 
+.home-interface-language {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.55rem 0.45rem 0.75rem;
+  border: 1px solid rgba(23, 32, 51, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.66);
+  color: rgba(23, 32, 51, 0.68);
+  font: 800 0.75rem ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.06em;
+}
+
+.home-interface-language--top-right {
+  position: absolute;
+  top: clamp(1rem, 2.4vw, 1.5rem);
+  right: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+.home-interface-language-select {
+  border: 0;
+  border-radius: 999px;
+  background: #172033;
+  color: #fff7e8;
+  font: inherit;
+  letter-spacing: 0.02em;
+  padding: 0.35rem 0.75rem;
+}
+
+.home-interface-language-error {
+  color: #b91c1c;
+}
+
 .home-hero {
   position: relative;
   z-index: 1;
@@ -2167,6 +2202,28 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.phase6-tag-edit-button {
+  border: 1px solid rgba(15, 118, 110, 0.34);
+  border-radius: 999px;
+  background: rgba(240, 253, 250, 0.88);
+  color: #0f766e;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.12);
+  cursor: pointer;
+  font: 850 .82rem ui-sans-serif, system-ui, sans-serif;
+  padding: .48rem .8rem;
+}
+
+.phase6-tag-edit-button:hover,
+.phase6-tag-edit-button:focus-visible {
+  border-color: rgba(15, 118, 110, 0.62);
+  background: #ccfbf1;
+}
+
+.phase6-tag-edit-button:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.28);
+  outline-offset: 2px;
 }
 
 .phase6-tag-create-row {

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ReviewPage } from '../../src/client/pages/ReviewPage';
@@ -9,6 +9,30 @@ import type { DueReviewCardDto, MediaDto, ReviewDueResponseDto, ReviewProgressDt
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+}
+
+const zhSettings = { interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' };
+
+function mockFetchWithSettings(body: unknown): void {
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    if (String(input) === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
+    return Promise.resolve(jsonResponse(body));
+  });
+}
+
+function mockCurrentFetchWithSettings(body: unknown): void {
+  vi.mocked(globalThis.fetch).mockImplementation((input) => {
+    if (String(input) === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
+    return Promise.resolve(jsonResponse(body));
+  });
+}
+
+async function renderReviewPage(): Promise<void> {
+  render(<I18nProvider><ReviewPage /></I18nProvider>);
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 }
 
 // --- Fixtures ---
@@ -159,14 +183,18 @@ describe('ReviewPage', () => {
 
   describe('due card state', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(dueResponse));
+      mockFetchWithSettings(dueResponse);
     });
 
     it('renders due card from mocked /api/review/due response', async () => {
       render(<I18nProvider><ReviewPage /></I18nProvider>);
 
-      // Initially shows loading
-      expect(screen.getByText('加载中...')).toBeInTheDocument();
+      // Initially shows loading before persisted Chinese settings load
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
 
       // Card content appears, but the answer stays hidden until the user rates recall.
       expect(await screen.findByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
@@ -187,7 +215,7 @@ describe('ReviewPage', () => {
     });
 
     it('highlights target word in sentence with <mark>', async () => {
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -198,16 +226,16 @@ describe('ReviewPage', () => {
     });
 
     it('highlights repeated target words without dropping identical matches', async () => {
-      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({
+      mockCurrentFetchWithSettings({
         ...dueResponse,
         card: {
           ...dueCard,
           target_word: 'go',
           primary_sentence: 'go now, go again',
         },
-      } satisfies ReviewDueResponseDto));
+      } satisfies ReviewDueResponseDto);
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'go' });
       const marks = [...document.querySelectorAll('mark')].map((mark) => mark.textContent);
@@ -215,7 +243,7 @@ describe('ReviewPage', () => {
     });
 
     it('toggles context panel showing media, unavailable media badge, note, other contexts', async () => {
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -243,7 +271,7 @@ describe('ReviewPage', () => {
     });
 
     it('hides context panel when toggled again', async () => {
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -270,6 +298,7 @@ describe('ReviewPage', () => {
       let dueCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           expect(init?.body).toBe(JSON.stringify({ rating: 'good' }));
           return Promise.resolve(jsonResponse(submitResponse));
@@ -282,7 +311,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -314,6 +343,7 @@ describe('ReviewPage', () => {
       let dueCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           expect(init?.body).toBe(JSON.stringify({ rating: 'good' }));
           return Promise.resolve(jsonResponse(submitResponse));
@@ -326,7 +356,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: /查看当时语境/ }));
@@ -353,6 +383,7 @@ describe('ReviewPage', () => {
       const calls: string[] = [];
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/cards/card-1') && init?.method === 'PATCH') {
           calls.push('favorite');
           expect(init.body).toBe(JSON.stringify({ is_favorite: true }));
@@ -369,7 +400,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       expect(screen.queryByRole('button', { name: '收藏' })).not.toBeInTheDocument();
@@ -398,6 +429,7 @@ describe('ReviewPage', () => {
       const events: string[] = [];
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           events.push('submit');
           expect(init.body).toBe(JSON.stringify({ rating: 'good' }));
@@ -415,7 +447,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -429,6 +461,7 @@ describe('ReviewPage', () => {
       const events: string[] = [];
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           events.push('submit');
           return Promise.resolve(jsonResponse({ error: 'review failed' }, 500));
@@ -444,7 +477,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -466,6 +499,7 @@ describe('ReviewPage', () => {
       let dueCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           expect(init?.body).toBe(JSON.stringify({ rating: 'again' }));
           return Promise.resolve(jsonResponse(againSubmitResponse));
@@ -478,7 +512,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -502,6 +536,7 @@ describe('ReviewPage', () => {
       let dueCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           return Promise.resolve(jsonResponse(againSubmitResponse));
         }
@@ -513,7 +548,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Again' }));
@@ -534,6 +569,7 @@ describe('ReviewPage', () => {
       let callIndex = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           return Promise.resolve(jsonResponse({ error: 'server error' }, 500));
         }
@@ -545,7 +581,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -568,6 +604,7 @@ describe('ReviewPage', () => {
       let submitCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           submitCallCount++;
           return Promise.resolve(jsonResponse(submitResponse));
@@ -580,7 +617,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
@@ -596,9 +633,9 @@ describe('ReviewPage', () => {
 
   describe('empty queue state', () => {
     it('shows empty queue message when no due cards', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(emptyResponse));
+      mockFetchWithSettings(emptyResponse);
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Again/ })).not.toBeInTheDocument();
@@ -620,9 +657,9 @@ describe('ReviewPage', () => {
         progress: limitReachedProgress,
       };
 
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(limitResponse));
+      mockFetchWithSettings(limitResponse);
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -645,9 +682,9 @@ describe('ReviewPage', () => {
         progress: limitReachedProgress,
       };
 
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(limitResponse));
+      mockFetchWithSettings(limitResponse);
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       expect(screen.getByText(/今日目标已完成/)).toBeInTheDocument();
@@ -665,9 +702,9 @@ describe('ReviewPage', () => {
         progress: limitReachedProgress,
       };
 
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(limitResponse));
+      mockFetchWithSettings(limitResponse);
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
 
@@ -705,6 +742,7 @@ describe('ReviewPage', () => {
       let callIndex = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
         if (url.startsWith('/api/review/card-1') && init?.method === 'POST') {
           return Promise.resolve(jsonResponse(limitSubmitResponse));
         }
@@ -716,7 +754,7 @@ describe('ReviewPage', () => {
         return Promise.resolve(jsonResponse({}));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       // Initial load shows banner
       await screen.findByRole('heading', { name: 'ephemeral' });
@@ -738,11 +776,12 @@ describe('ReviewPage', () => {
 
   describe('retryable API error', () => {
     it('shows error state with retry button on API failure', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        jsonResponse({ error: 'database unavailable' }, 500),
-      );
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        if (String(input) === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
+        return Promise.resolve(jsonResponse({ error: 'database unavailable' }, 500));
+      });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       // Error state appears
       const alert = await screen.findByRole('alert');
@@ -751,16 +790,17 @@ describe('ReviewPage', () => {
     });
 
     it('retries and shows card after clicking 重试', async () => {
-      let callCount = 0;
-      vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
+      let dueCallCount = 0;
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        if (String(input) === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
+        dueCallCount++;
+        if (dueCallCount === 1) {
           return Promise.resolve(jsonResponse({ error: 'transient error' }, 500));
         }
         return Promise.resolve(jsonResponse(dueResponse));
       });
 
-      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await renderReviewPage();
 
       await screen.findByRole('alert');
 

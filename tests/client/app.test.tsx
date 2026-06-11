@@ -154,7 +154,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
+    expect(await screen.findByText('No cards due today')).toBeInTheDocument();
     expect(screen.queryByText('Phase 7')).not.toBeInTheDocument();
   });
 
@@ -164,7 +164,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('还没有统计数据')).toBeInTheDocument();
+    expect(await screen.findByText('No statistics yet')).toBeInTheDocument();
     expect(screen.queryByText('Phase 7')).not.toBeInTheDocument();
   });
 
@@ -174,7 +174,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('学习与界面设置')).toBeInTheDocument();
+    expect(await screen.findByText('Learning and interface settings')).toBeInTheDocument();
     expect(screen.queryByText('Phase 7')).not.toBeInTheDocument();
   });
 

@@ -91,7 +91,7 @@ export function getLanguageIso6391Code(language: SupportedLanguage): string {
   return LANGUAGE_ISO_639_1_CODES[language];
 }
 
-export const DEFAULT_INTERFACE_LANGUAGE: SupportedLanguage = '中文';
+export const DEFAULT_INTERFACE_LANGUAGE: SupportedLanguage = '英语';
 export const DEFAULT_TARGET_LANGUAGE: SupportedLanguage = '英语';
 export const DEFAULT_DEFINITION_LANGUAGE: SupportedLanguage = '中文';
 

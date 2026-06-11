@@ -216,7 +216,7 @@ export function CardDetailPage() {
           ) : (
             <div className="phase6-tag-readonly">
               <div>{card.tags.length ? card.tags.map((tag) => <span key={tag.id}>{tag.name}</span>) : t('detail.noTagsHint')}</div>
-              <button type="button" onClick={startTagEdit}>{t('detail.editTags')}</button>
+              <button type="button" className="phase6-tag-edit-button" onClick={startTagEdit}>{t('detail.editTags')}</button>
             </div>
           )}
         </aside>

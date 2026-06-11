@@ -111,13 +111,13 @@ describe('SettingsPage', () => {
 
     it('shows loading state initially', () => {
       render(<SettingsPage />);
-      expect(screen.getByText('加载中...')).toBeInTheDocument();
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
     it('does not render the top settings hero header', async () => {
       render(<SettingsPage />);
 
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
       expect(screen.queryByText('SETTINGS')).not.toBeInTheDocument();
       expect(screen.queryByText('设置与数据管理')).not.toBeInTheDocument();
       expect(screen.queryByText(/调整界面语言/)).not.toBeInTheDocument();
@@ -125,18 +125,14 @@ describe('SettingsPage', () => {
 
     it('renders form with loaded settings values', async () => {
       render(<SettingsPage />);
-      // Wait for settings to load by checking for a form field label
-      expect(await screen.findByLabelText('界面语言')).toBeInTheDocument();
-      // interface_language and default_definition_language are both '中文' in fixture;
-      // check the interface_language field specifically by label association
-      const interfaceSelect = screen.getByLabelText('界面语言') as HTMLSelectElement;
-      expect(interfaceSelect.value).toBe('中文');
+      const targetSelect = await screen.findByLabelText('默认学习语言') as HTMLSelectElement;
+      expect(targetSelect.value).toBe('英语');
     });
 
-    it('renders all four settings form fields', async () => {
+    it('renders learning settings without the interface language field', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
-      expect(screen.getByLabelText('界面语言')).toBeInTheDocument();
+      await screen.findByLabelText('默认学习语言');
+      expect(screen.queryByLabelText('界面语言')).not.toBeInTheDocument();
       expect(screen.getByLabelText('默认学习语言')).toBeInTheDocument();
       expect(screen.getByLabelText('默认释义语言')).toBeInTheDocument();
       expect(screen.getByLabelText('每日复习数量')).toBeInTheDocument();
@@ -151,9 +147,9 @@ describe('SettingsPage', () => {
 
     it('renders native labels while preserving canonical language values', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
-      for (const label of ['界面语言', '默认学习语言', '默认释义语言']) {
+      for (const label of ['默认学习语言', '默认释义语言']) {
         const select = screen.getByLabelText(label) as HTMLSelectElement;
         expect(Array.from(select.options).map((option) => option.value)).toEqual([...SUPPORTED_LANGUAGES]);
         expect(Array.from(select.options).map((option) => option.textContent)).toEqual(
@@ -177,9 +173,9 @@ describe('SettingsPage', () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
-      expect((screen.getByLabelText('界面语言') as HTMLSelectElement).value).toBe('中文');
+      expect(screen.queryByLabelText('界面语言')).not.toBeInTheDocument();
       expect((screen.getByLabelText('默认学习语言') as HTMLSelectElement).value).toBe('英语');
       expect((screen.getByLabelText('默认释义语言') as HTMLSelectElement).value).toBe('日语');
     });
@@ -216,18 +212,18 @@ describe('SettingsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
       expect(await screen.findByText('设置已保存')).toBeInTheDocument();
-      expect(patchBody).toMatchObject({
+      expect(patchBody).toEqual({
         daily_review_limit: 30,
-        interface_language: '中文',
         default_target_language: '日语',
         default_definition_language: '韩语',
       });
     });
 
-    it('keeps updated values visible after successful save', async () => {
+    it('keeps updated learning values visible after successful save', async () => {
       const updatedSettings: SettingsDto = {
         ...settings,
-        interface_language: '日语',
+        default_target_language: '日语',
+        default_definition_language: '韩语',
       };
 
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
@@ -240,37 +236,15 @@ describe('SettingsPage', () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
-      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '日语' } });
+      fireEvent.change(screen.getByLabelText('默认学习语言'), { target: { value: '日语' } });
+      fireEvent.change(screen.getByLabelText('默认释义语言'), { target: { value: '韩语' } });
       fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
-      await screen.findByText('設定を保存しました');
-      const select = screen.getByLabelText('インターフェース言語') as HTMLSelectElement;
-      expect(select.value).toBe('日语');
-    });
-
-    it('switches runtime language and shows translated messages immediately upon save', async () => {
-      const updatedSettings: SettingsDto = {
-        ...settings,
-        interface_language: '法语',
-      };
-
-      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-        const url = String(input);
-        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
-        if (init?.method === 'PATCH') return Promise.resolve(jsonResponse(updatedSettings));
-        return Promise.resolve(jsonResponse(settings));
-      });
-
-      render(<SettingsPage />);
-      await screen.findByLabelText('界面语言'); // Initial load with Chinese
-
-      fireEvent.change(screen.getByLabelText('界面语言'), { target: { value: '法语' } });
-      fireEvent.click(screen.getByRole('button', { name: '保存' }));
-
-      expect(await screen.findByText('Paramètres enregistrés')).toBeInTheDocument();
-      expect(screen.getByLabelText('Langue de l’interface')).toBeInTheDocument();
+      await screen.findByText('设置已保存');
+      expect(screen.getByLabelText('默认学习语言')).toHaveValue('日语');
+      expect(screen.getByLabelText('默认释义语言')).toHaveValue('韩语');
     });
   });
 
@@ -625,7 +599,7 @@ describe('SettingsPage', () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
       fireEvent.click(screen.getByRole('button', { name: '导出含有标记的卡片' }));
 
@@ -646,7 +620,7 @@ describe('SettingsPage', () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
       fireEvent.click(screen.getByRole('button', { name: '导出纯卡片' }));
 
@@ -669,7 +643,7 @@ describe('SettingsPage', () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
       fireEvent.click(screen.getByRole('button', { name: '导出含有标记的卡片' }));
 
@@ -689,7 +663,7 @@ describe('SettingsPage', () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
       fireEvent.click(screen.getByRole('button', { name: '导出纯卡片' }));
 
@@ -710,7 +684,7 @@ describe('SettingsPage', () => {
       const removeChildSpy = vi.spyOn(document.body, 'removeChild');
 
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
       fireEvent.click(screen.getByRole('button', { name: '导出含有标记的卡片' }));
 
@@ -749,25 +723,25 @@ describe('SettingsPage', () => {
 
     it('renders file input with aria-label 选择导入 zip', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
       expect(screen.getByLabelText('选择导入 zip')).toBeInTheDocument();
     });
 
     it('renders scan button 扫描导入文件', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
       expect(screen.getByRole('button', { name: '扫描导入文件' })).toBeInTheDocument();
     });
 
     it('renders execute button 执行导入', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
       expect(screen.getByRole('button', { name: '执行导入' })).toBeInTheDocument();
     });
 
     it('shows scan counts after scanning', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
       // Simulate file selection
       const fileInput = screen.getByLabelText('选择导入 zip') as HTMLInputElement;
@@ -786,7 +760,7 @@ describe('SettingsPage', () => {
 
     it('shows conflict target_word and context_meaning after scanning', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
       const fileInput = screen.getByLabelText('选择导入 zip') as HTMLInputElement;
       const file = new File(['dummy'], 'backup.zip', { type: 'application/zip' });
@@ -802,7 +776,7 @@ describe('SettingsPage', () => {
 
     it('shows missing_media filenames after scanning', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
       const fileInput = screen.getByLabelText('选择导入 zip') as HTMLInputElement;
       const file = new File(['dummy'], 'backup.zip', { type: 'application/zip' });
@@ -841,7 +815,7 @@ describe('SettingsPage', () => {
       );
 
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
 
       const fileInput = screen.getByLabelText('选择导入 zip') as HTMLInputElement;
       const file = new File(['dummy'], 'backup.zip', { type: 'application/zip' });
@@ -1020,25 +994,25 @@ describe('SettingsPage', () => {
 
     it('does not render text "本地 API"', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
       expect(screen.queryByText(/本地\s*API/)).not.toBeInTheDocument();
     });
 
     it('does not render text "CLI"', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
       expect(screen.queryByText(/CLI/)).not.toBeInTheDocument();
     });
 
     it('does not render text "AI 自动制卡"', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
       expect(screen.queryByText(/AI 自动制卡/)).not.toBeInTheDocument();
     });
 
     it('does not render text "同步"', async () => {
       render(<SettingsPage />);
-      await screen.findByLabelText('界面语言');
+      await screen.findByLabelText('默认学习语言');
       expect(screen.queryByText(/同步/)).not.toBeInTheDocument();
     });
   });
@@ -1055,7 +1029,7 @@ describe('SettingsPage', () => {
 
       const alert = await screen.findByRole('alert');
       expect(alert).toHaveTextContent('database unavailable');
-      expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
     });
 
     it('retries and shows settings form after clicking 重试', async () => {
@@ -1073,9 +1047,9 @@ describe('SettingsPage', () => {
       render(<SettingsPage />);
 
       await screen.findByRole('alert');
-      fireEvent.click(screen.getByRole('button', { name: '重试' }));
+      fireEvent.click(screen.getByRole('button', { name: /Retry|重试/ }));
 
-      expect(await screen.findByLabelText('界面语言')).toBeInTheDocument();
+      expect(await screen.findByLabelText('默认学习语言')).toBeInTheDocument();
     });
   });
 });
