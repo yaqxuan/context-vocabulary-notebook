@@ -820,6 +820,47 @@ body {
   color: #047857;
 }
 
+.card-create-batch-import-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(15, 118, 110, 0.24);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(204, 251, 241, 0.66), rgba(255, 247, 237, 0.9));
+  box-shadow: 0 16px 36px rgba(15, 118, 110, 0.12);
+  margin-bottom: 1rem;
+  padding: 1rem 1.125rem;
+}
+
+.card-create-batch-import-entry h2 {
+  margin: 0 0 0.25rem;
+  color: #172033;
+  font: 900 1.05rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.card-create-batch-import-entry p {
+  margin: 0;
+  color: #475569;
+  font: 650 0.9rem/1.45 ui-sans-serif, system-ui, sans-serif;
+}
+
+.card-create-batch-import-entry a {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff7e8;
+  font: 850 0.88rem ui-sans-serif, system-ui, sans-serif;
+  padding: 0.68rem 0.95rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.card-create-batch-import-entry a:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.26);
+  outline-offset: 3px;
+}
+
 .card-create-grid {
   display: grid;
   gap: 1rem;
@@ -1175,6 +1216,15 @@ body {
 }
 
 @media (max-width: 620px) {
+  .card-create-batch-import-entry {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .card-create-batch-import-entry a {
+    text-align: center;
+  }
+
   .card-create-language-row {
     grid-template-columns: 1fr;
   }
