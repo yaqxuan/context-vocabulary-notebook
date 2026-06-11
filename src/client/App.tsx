@@ -24,7 +24,6 @@ function getNavItems(t: Translator): NavItem[] {
   return [
     { href: '#/', label: t('nav.home.label'), description: t('nav.home.description'), match: (path) => path === '/' },
     { href: '#/create', label: t('nav.create.label'), description: t('nav.create.description'), match: (path) => path === '/create' },
-    { href: '#/batch-import', label: t('nav.batchImport.label'), description: t('nav.batchImport.description'), match: (path) => path === '/batch-import' },
     { href: '#/cards', label: t('nav.cards.label'), description: t('nav.cards.description'), match: (path) => path === '/cards' || path.startsWith('/cards/') },
     { href: '#/review', label: t('nav.review.label'), description: t('nav.review.description'), match: (path) => path === '/review' },
     { href: '#/tags', label: t('nav.tags.label'), description: t('nav.tags.description'), match: (path) => path === '/tags' },
