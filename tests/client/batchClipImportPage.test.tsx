@@ -148,7 +148,7 @@ describe('BatchClipImportPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /charge/ }));
     fireEvent.change(screen.getByLabelText('原句 clip.mp4'), { target: { value: 'They charge extra for breakfast.' } });
-    fireEvent.click(screen.getByRole('button', { name: '电影' }));
+    fireEvent.click(await screen.findByRole('button', { name: '电影' }));
     fireEvent.click(screen.getByRole('button', { name: '建议释义 clip.mp4' }));
 
     expect(await screen.findByDisplayValue('收费')).toBeInTheDocument();
