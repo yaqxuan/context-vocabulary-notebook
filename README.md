@@ -22,11 +22,13 @@
 
 - 围绕真实语境制卡：目标单词、当前语境释义、原句、备注、标签。
 - 保存本地媒体附件：视频 `mp4`，音频 `mp3`，图片 `jpg / png / webp`。
+- 本地剪辑分析：默认使用本机 whisper.cpp 做语音识别、Tesseract 做图片/视频帧 OCR，用来帮助识别原句。
+- 批量剪辑导入：一次导入多个视频/音频/图片片段，逐条检查识别出的句子并制卡。
 - 一个词义条目可关联多个语境实例，适合记录同一含义在不同材料里的用法。
 - 使用 FSRS 间隔复习，让单词回到你遇到它的上下文里。
 - 词义条目列表、搜索、标签筛选、收藏、统计。
 - ZIP 导入导出：支持个人完整备份和仅卡片分享。
-- V2 制卡页 AI 建议：可配置 OpenAI-compatible API，用于建议语境释义和用法说明；API Key 只保存在本地。
+- V2 制卡页 AI 建议：可配置 OpenAI-compatible API，用于候选词、语境释义和用法说明；API Key 只保存在本地。DeepSeek 等文本模型可以用于这些文本建议，但不承担 OCR/STT。
 
 ## 数据位置与磁盘占用提醒
 
@@ -56,7 +58,9 @@ uploads/
 | Git | 克隆 GitHub 仓库时需要 | 安装脚本会检查并尝试补齐。 |
 | 浏览器 | Chrome / Edge / Firefox / Safari 等现代浏览器 | 应用通过本地 Web 页面使用。 |
 | C/C++ 构建工具 | 可能需要 | `better-sqlite3` 是 native module；如果当前系统和 Node 版本没有可用预编译包，`npm ci` 会尝试本地编译。 |
-| ffmpeg | 视频转写需要；核心安装不强制 | 从视频提取音频时使用。安装脚本会检查 ffmpeg；缺少 ffmpeg 不会阻止核心应用安装。设置 `CVN_INSTALL_FFMPEG=1` 可让安装脚本尝试补齐。 |
+| ffmpeg | 视频/音频剪辑分析需要；核心安装不强制 | 从视频提取音频时使用。安装脚本会检查 ffmpeg；缺少 ffmpeg 不会阻止核心应用安装。设置 `CVN_INSTALL_FFMPEG=1` 可让安装脚本尝试补齐。 |
+| Tesseract OCR | 本地 OCR 默认使用；核心安装不强制 | 识别图片或视频帧里的可见文字。安装脚本会检查 Tesseract；缺少时 readiness endpoint / UI 会提示。Linux/WSL/macOS 可设置 `CVN_INSTALL_TESSERACT=1` 让脚本尝试通过 apt/brew 安装；Windows 可尝试 winget 安装或手动安装。 |
+| whisper.cpp + Whisper 模型 | 本地语音识别默认使用；核心安装不强制 | 识别音频或视频里的语音。安装脚本只提示状态，不会自动安装 whisper.cpp 或模型。需要手动下载模型并配置 `CVN_WHISPER_CPP_PATH`、`CVN_WHISPER_CPP_MODEL`。 |
 
 安装脚本会先检查本机已有环境。Linux / WSL 只有在缺少 Git 或 Node.js/npm 时，才会尝试通过 `apt-get` 补齐依赖；如果基础环境已满足，会跳过 `apt-get`，避免触发系统里无关的第三方软件源问题。macOS 脚本会在缺少依赖时尝试使用 Homebrew。Windows 原生脚本会在缺少依赖时尝试使用 `winget`。如果这些包管理器不可用，或当前用户没有安装权限，需要手动安装缺失环境后重试。
 
@@ -81,10 +85,17 @@ curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubuserc
 
 脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。Linux / WSL 如果基础依赖已满足，会跳过 `apt-get`。
 
-如需让脚本尝试安装可选的 ffmpeg（用于视频转写），先设置：
+如需让脚本尝试安装可选的 ffmpeg（用于从视频提取音频），先设置：
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+```
+
+如需让脚本尝试安装可选的 Tesseract（用于本地 OCR；不会安装 whisper.cpp 或 Whisper 模型），先设置：
+
+```bash
+export CVN_INSTALL_TESSERACT=1
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
@@ -108,10 +119,17 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 
 脚本会自动检查 Git、Node.js/npm 等依赖；已安装的依赖会直接复用。
 
-如需让脚本尝试安装可选的 ffmpeg（用于视频转写），先设置：
+如需让脚本尝试安装可选的 ffmpeg（用于从视频提取音频），先设置：
 
 ```powershell
 $env:CVN_INSTALL_FFMPEG = "1"
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
+
+如需让脚本尝试安装可选的 Tesseract（用于本地 OCR；不会安装 whisper.cpp 或 Whisper 模型），先设置：
+
+```powershell
+$env:CVN_INSTALL_TESSERACT = "1"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
@@ -122,7 +140,7 @@ https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install
 
 ```powershell
 $env:CVN_HOME = "C:\path\to\empty-folder"
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
 ### 遇到问题怎么办
@@ -131,7 +149,8 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 - Linux / WSL 如果 `apt-get update` 报 Docker、Chromium、Snap、GPG key 等错误，通常是系统已有 apt 源或未完成包配置异常，不是本项目依赖这些软件。可以先修复/禁用对应 apt 源，或手动安装 Git、Node.js 20+ 和 npm 后重试。
 - macOS 如果弹出 Xcode Command Line Tools 安装窗口，请点击“安装”，完成后重新运行安装命令。
 - Windows 如果提示需要安装编译环境，请按脚本提示继续；这是部分依赖编译时可能需要的环境。
-- 如果视频转写提示 `Audio extraction failed`，通常表示本机缺少 ffmpeg 或 ffmpeg 不在 PATH 中。Linux / WSL 可尝试 `sudo apt-get update && sudo apt-get install -y ffmpeg`；macOS 可尝试 `brew install ffmpeg`；Windows 可尝试 `winget install Gyan.FFmpeg`，然后重新打开终端再重试。
+- 如果剪辑分析提示 `Audio extraction failed`，通常表示本机缺少 ffmpeg 或 ffmpeg 不在 PATH 中。Linux / WSL 可尝试 `sudo apt-get update && sudo apt-get install -y ffmpeg`；macOS 可尝试 `brew install ffmpeg`；Windows 可尝试 `winget install Gyan.FFmpeg`，然后重新打开终端再重试。
+- 如果本地 OCR/STT 显示不可用，先查看应用里的本地识别就绪检查；它会提示缺少 Tesseract、whisper.cpp 可执行文件、Whisper 模型路径或语言数据。
 
 ## 更新到最新版
 
@@ -168,7 +187,8 @@ npm run dev
 Linux / macOS / WSL / Git Bash：
 
 ```bash
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
+cd "$HOME"
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
 cd context-vocabulary-notebook
 cp .env.example .env
 npm ci
@@ -178,7 +198,8 @@ npm run dev
 Windows 原生 PowerShell：
 
 ```powershell
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
+Set-Location $HOME
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
 Set-Location context-vocabulary-notebook
 Copy-Item .env.example .env
 npm ci
@@ -197,15 +218,106 @@ http://localhost:5173
 http://localhost:3107
 ```
 
-## 视频转写前置条件
+## 本地剪辑识别（OCR / STT）
 
-视频转写需要同时满足：
+剪辑分析默认走本机能力：
 
-- 本机已安装 `ffmpeg`，并且终端/服务进程可以在 PATH 中找到它。
-- 已配置可用的 OpenAI-compatible `/audio/transcriptions` 提供方和模型。
-- 上传文件未超过转写大小限制：`TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES` 当前为 100MB；媒体库视频附件大小限制为 300MB。
+- 语音识别（STT）：`whisper.cpp`，用于从音频或视频音轨识别句子。
+- OCR：`Tesseract`，用于从图片或视频帧里的可见文字识别句子。
+- ffmpeg：用于从视频提取音频，供 whisper.cpp 分析。
 
-缺少 ffmpeg 只会影响视频音频提取和视频转写，不会影响核心安装、制卡、复习或普通媒体上传。安装脚本会检查 ffmpeg；默认不会因为缺少 ffmpeg 而阻断核心安装。可设置 `CVN_INSTALL_FFMPEG=1` 选择让脚本尝试安装。
+这三类工具都是可选本地依赖：缺少它们不会阻止核心安装、手动制卡、复习或普通媒体上传；应用的 readiness endpoint / UI 会显示缺少哪些依赖。默认安装脚本保持轻量，只检查并提示状态，不会强制安装 Tesseract、whisper.cpp 或 Whisper 模型。
+
+DeepSeek、OpenAI-compatible 文本模型等 AI 配置只用于候选词、语境释义、用法说明等文本建议；它们不能替代本地 OCR/STT。`CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1` 仅表示允许在本地识别失败时使用已配置的云端转写回退，默认关闭。
+
+### 平台安装示例
+
+Linux / WSL（Debian / Ubuntu）：
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ffmpeg tesseract-ocr
+# 按目标语言安装 Tesseract 语言包，例如中文/日语/英语：
+sudo apt-get install -y tesseract-ocr-chi-sim tesseract-ocr-jpn tesseract-ocr-eng
+
+# whisper.cpp 需要手动安装；安装后把路径和模型写入 .env
+CVN_WHISPER_CPP_PATH=/path/to/whisper-cli
+CVN_WHISPER_CPP_MODEL=/path/to/ggml-base.bin
+```
+
+macOS：
+
+```bash
+brew install ffmpeg tesseract
+# 通过 Homebrew 或源码安装 whisper.cpp 后配置：
+CVN_WHISPER_CPP_PATH=/opt/homebrew/bin/whisper-cli
+CVN_WHISPER_CPP_MODEL=/path/to/ggml-base.bin
+```
+
+Windows PowerShell：
+
+```powershell
+winget install --id Gyan.FFmpeg -e --source winget
+winget install --id UB-Mannheim.TesseractOCR -e --source winget
+
+# 安装 whisper.cpp 并下载模型后，在 .env 中配置，例如：
+CVN_WHISPER_CPP_PATH=C:\tools\whisper.cpp\build\bin\Release\whisper-cli.exe
+CVN_WHISPER_CPP_MODEL=C:\models\ggml-base.bin
+```
+
+安装后重新打开终端，再启动应用，确保服务进程能读到 PATH 和 `.env`。
+
+### Whisper 模型选择
+
+Whisper 模型需要用户自行下载并配置路径。常见权衡：
+
+- `tiny` / `base`：体积小、速度快，适合普通电脑快速试用；噪声、口音或长句下准确率较低。
+- `small` / `medium`：准确率更好，但占用更多磁盘、内存和 CPU/GPU 时间。
+- `large`：准确率通常更高，但模型很大，普通电脑可能很慢，不适合作为默认安装内容。
+
+因此安装脚本不会自动下载模型。请根据机器性能、目标语言和材料难度选择模型，然后设置 `CVN_WHISPER_CPP_MODEL`。
+
+### Tesseract 语言包
+
+Tesseract 必须安装对应语言数据才能识别目标语言。默认会按学习语言选择常见语言码，例如中文 `chi_sim`、英语 `eng`、日语 `jpn`、韩语 `kor`、法语 `fra`、德语 `deu`、西班牙语 `spa`、俄语 `rus`。
+
+如果字幕或图片包含多种语言，可在 `.env` 中组合语言码：
+
+```env
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+如果语言数据安装在非默认目录，请按 Tesseract 官方方式配置 `TESSDATA_PREFIX`，或使用系统安装器提供的默认目录。
+
+### 相关环境变量
+
+```env
+CVN_STT_PROVIDER=whisper.cpp
+CVN_WHISPER_CPP_PATH=whisper-cli
+CVN_WHISPER_CPP_MODEL=/absolute/path/to/ggml-base.bin
+CVN_WHISPER_CPP_TIMEOUT_MS=120000
+
+CVN_OCR_PROVIDER=tesseract
+CVN_TESSERACT_PATH=tesseract
+CVN_TESSERACT_LANG=eng
+CVN_TESSERACT_TIMEOUT_MS=30000
+
+CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=0
+CVN_LOCAL_READINESS_TIMEOUT_MS=5000
+```
+
+可将 `CVN_STT_PROVIDER=disabled` 或 `CVN_OCR_PROVIDER=disabled` 用于临时关闭本地语音识别或 OCR。
+
+### 批量剪辑导入工作流
+
+批量剪辑导入适合一次处理多个本地视频、音频或图片片段：
+
+1. 上传或选择多个剪辑文件。
+2. 应用先做本地识别：视频用 ffmpeg 提取音频后交给 whisper.cpp，图片/视频帧交给 Tesseract。
+3. 在导入界面检查识别出的句子，必要时手动修正。
+4. 选择目标单词，保存为带媒体、原句和语境释义的卡片。
+
+本地识别只是辅助；没有可见字幕、音质较差、语言包缺失或模型过小都会影响结果，仍可手动填写原句。
 
 ## 环境变量
 
@@ -215,6 +327,16 @@ http://localhost:3107
 | `PORT` | 否 | `3107` | 后端 Express 服务端口。Vite 开发服务会把 `/api` 代理到该端口。 |
 | `DATABASE_PATH` | 否 | `./data/context-vocabulary-notebook.sqlite` | SQLite 数据库路径。相对路径会按项目根目录解析。 |
 | `UPLOADS_DIR` | 否 | `./uploads` | 上传媒体文件保存目录。相对路径会按项目根目录解析。 |
+| `CVN_STT_PROVIDER` | 否 | `whisper.cpp` | 本地语音识别提供方；可设为 `whisper.cpp` 或 `disabled`。 |
+| `CVN_WHISPER_CPP_PATH` | 否 | `whisper-cli` | whisper.cpp 可执行文件路径；如果系统只有旧版 `main`，可填 `main` 或绝对路径。 |
+| `CVN_WHISPER_CPP_MODEL` | 本地 STT 需要 | 空 | Whisper 模型文件路径；安装脚本不会自动下载模型。 |
+| `CVN_WHISPER_CPP_TIMEOUT_MS` | 否 | `120000` | whisper.cpp 单次识别超时时间。 |
+| `CVN_OCR_PROVIDER` | 否 | `tesseract` | 本地 OCR 提供方；可设为 `tesseract` 或 `disabled`。 |
+| `CVN_TESSERACT_PATH` | 否 | `tesseract` | Tesseract 可执行文件路径。 |
+| `CVN_TESSERACT_LANG` | 否 | 按目标语言自动选择 | Tesseract 语言码，例如 `eng`、`chi_sim`、`eng+chi_sim`。 |
+| `CVN_TESSERACT_TIMEOUT_MS` | 否 | `30000` | Tesseract 单次 OCR 超时时间。 |
+| `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK` | 否 | `0` | 本地剪辑识别失败时是否允许云端转写回退；默认关闭。 |
+| `CVN_LOCAL_READINESS_TIMEOUT_MS` | 否 | 默认由服务端决定 | 本地识别 readiness 检查超时时间。 |
 <!-- /AUTO-GENERATED:ENV -->
 
 开发时如需修改前端端口，可在运行命令时设置 `CLIENT_PORT`，默认 `5173`。该变量不在 `.env.example` 中，通常不需要配置。
@@ -281,7 +403,8 @@ AI API Key 属于本地敏感配置，不会随导出文件带走；换设备后
 - 不配置 AI 也可以正常手动制卡和复习。
 - API Key 存在本地数据库中，界面会做遮罩显示。
 - API Key 不会包含在导出文件里。
-- AI 只用于制卡时建议语境释义和用法说明，不是内置词典，也不是自动制卡。
+- AI 可用于制卡时建议候选词、语境释义和用法说明，不是内置词典，也不是自动制卡。
+- DeepSeek 等 OpenAI-compatible 文本模型可以提供这些文本建议，但不负责本地 OCR/STT；图片文字识别依赖 Tesseract，语音识别依赖 whisper.cpp。
 
 ## 常见问题
 
@@ -306,8 +429,8 @@ CLIENT_PORT=5174 npm run dev
 Linux / WSL：
 
 ```bash
-sudo apt update
-sudo apt install -y build-essential python3 make g++
+sudo apt-get update
+sudo apt-get install -y build-essential python3 make g++
 ```
 
 macOS：
@@ -317,6 +440,29 @@ xcode-select --install
 ```
 
 Windows 原生环境需要可用的 Python 和 Visual Studio Build Tools / MSVC native build 环境。如果这些工具配置不熟，建议改用 WSL，或先手动安装缺失环境后重试。
+
+### 剪辑里没有可见字幕，识别不到原句
+
+如果视频画面里没有字幕或字幕很小/模糊，OCR 可能识别不到句子；这时依赖语音识别。请确认 ffmpeg、whisper.cpp 和 `CVN_WHISPER_CPP_MODEL` 可用。如果音频里也没有清晰语音，只能手动填写原句。
+
+### 本地语音识别不可用
+
+常见原因：
+
+- 没有安装 whisper.cpp，或服务进程找不到 `whisper-cli` / `main`。
+- `.env` 中没有配置 `CVN_WHISPER_CPP_MODEL`，或模型文件路径不存在。
+- 模型太大导致超时，可调大 `CVN_WHISPER_CPP_TIMEOUT_MS`，或换用更小模型。
+- 目标视频需要 ffmpeg 提取音频，但 ffmpeg 不在 PATH 中。
+
+先查看应用中的本地识别 readiness 提示；如果可执行文件不在 PATH 中，请把 `CVN_WHISPER_CPP_PATH` 改成绝对路径。
+
+### Tesseract 语言数据缺失
+
+如果 OCR 报语言数据缺失，说明已找到 Tesseract，但没有安装对应 traineddata。请安装目标语言包，例如 Debian / Ubuntu 的 `tesseract-ocr-chi-sim`、`tesseract-ocr-jpn`、`tesseract-ocr-eng`，或将 `CVN_TESSERACT_LANG` 改成已安装语言。多语言可用 `eng+chi_sim`。
+
+### Whisper 模型路径未配置
+
+`CVN_WHISPER_CPP_MODEL` 没有默认模型。请下载 whisper.cpp 支持的 ggml 模型，并在 `.env` 中写入绝对路径。安装脚本不会自动下载模型，避免默认安装过大、过慢或选错语言/精度。
 
 ### 页面能打开，但 API 请求失败
 

@@ -32,13 +32,61 @@ function Test-Ffmpeg {
   return Has-Command "ffmpeg"
 }
 
+function Test-Tesseract {
+  return Has-Command "tesseract"
+}
+
+function Test-LooksLikeWhisperCpp($CommandName) {
+  try {
+    $HelpOutput = (& $CommandName --help 2>&1 | Select-Object -First 20) -join "`n"
+    return $HelpOutput -match '(?i)whisper\.cpp|whisper|--model|-m[ ,]'
+  } catch {
+    return $false
+  }
+}
+
+function Test-WhisperCpp {
+  if (Has-Command "whisper-cli") { return $true }
+  if ($env:CVN_WHISPER_CPP_PATH -and (Test-Path -LiteralPath $env:CVN_WHISPER_CPP_PATH -PathType Leaf)) { return $true }
+  return (Has-Command "main") -and (Test-LooksLikeWhisperCpp "main")
+}
+
 function Write-FfmpegStatus {
   if (Test-Ffmpeg) {
     $VersionLine = try { (& ffmpeg -version 2>$null | Select-Object -First 1) } catch { "已检测到" }
-    Write-Host "视频转写依赖 ffmpeg：已检测到 ($VersionLine)"
+    Write-Host "视频/音频处理依赖 ffmpeg：已检测到 ($VersionLine)"
   } else {
-    Write-Host "视频转写依赖 ffmpeg：未检测到。应用已安装完成；如需视频转写，请安装 ffmpeg，或重新运行安装命令并设置 CVN_INSTALL_FFMPEG=1。"
+    Write-Host "视频/音频处理依赖 ffmpeg：未检测到。应用已安装完成；如需从视频提取音频，请安装 ffmpeg，或重新运行安装命令并设置 CVN_INSTALL_FFMPEG=1。"
   }
+}
+
+function Write-TesseractStatus {
+  if (Test-Tesseract) {
+    $VersionLine = try { (& tesseract --version 2>$null | Select-Object -First 1) } catch { "已检测到" }
+    Write-Host "本地 OCR 依赖 Tesseract：已检测到 ($VersionLine)"
+  } else {
+    Write-Host "本地 OCR 依赖 Tesseract：未检测到。应用已安装完成；图片/视频帧文字识别会在就绪检查中提示缺失。可手动安装 Tesseract 后设置 CVN_TESSERACT_PATH；如需让脚本尝试 winget 安装，请设置 CVN_INSTALL_TESSERACT=1 后重新运行。"
+  }
+}
+
+function Write-WhisperCppStatus {
+  if (Has-Command "whisper-cli") {
+    $WhisperPath = (Get-Command "whisper-cli" -ErrorAction SilentlyContinue).Source
+    Write-Host "本地语音识别依赖 whisper.cpp：已检测到 whisper-cli ($WhisperPath)"
+  } elseif ($env:CVN_WHISPER_CPP_PATH -and (Test-Path -LiteralPath $env:CVN_WHISPER_CPP_PATH -PathType Leaf)) {
+    Write-Host "本地语音识别依赖 whisper.cpp：已检测到 CVN_WHISPER_CPP_PATH ($env:CVN_WHISPER_CPP_PATH)"
+  } elseif ((Has-Command "main") -and (Test-LooksLikeWhisperCpp "main")) {
+    $WhisperPath = (Get-Command "main" -ErrorAction SilentlyContinue).Source
+    Write-Host "本地语音识别依赖 whisper.cpp：已检测到 whisper.cpp main ($WhisperPath)。建议设置 CVN_WHISPER_CPP_PATH 指向该可执行文件。"
+  } else {
+    Write-Host "本地语音识别依赖 whisper.cpp：未检测到 whisper-cli。应用已安装完成；语音识别会在就绪检查中提示缺少依赖。如果使用非 whisper-cli 名称，请设置 CVN_WHISPER_CPP_PATH 指向 whisper.cpp 可执行文件，并设置 CVN_WHISPER_CPP_MODEL。"
+  }
+}
+
+function Write-LocalRecognitionStatus {
+  Write-TesseractStatus
+  Write-WhisperCppStatus
+  Write-Host "提示：安装脚本不会自动安装 whisper.cpp 或 Whisper 模型；本地识别状态也可在应用就绪检查界面查看。"
 }
 
 function Refresh-Path {
@@ -89,7 +137,19 @@ function Ensure-Environment {
       Write-Host "ffmpeg 安装后仍不可用。应用仍会继续安装；如需视频转写，请重新打开 PowerShell 后确认 ffmpeg 在 PATH 中。"
     }
   } elseif (-not (Test-Ffmpeg)) {
-    Write-Step "未检测到 ffmpeg；应用仍会继续安装。如需视频转写，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+    Write-Step "未检测到 ffmpeg；应用仍会继续安装。如需从视频提取音频，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+  }
+
+  if (($env:CVN_INSTALL_TESSERACT -eq "1") -and (-not (Test-Tesseract))) {
+    Ensure-Winget
+    Write-Step "CVN_INSTALL_TESSERACT=1，安装 Tesseract OCR"
+    winget install --id UB-Mannheim.TesseractOCR -e --source winget --accept-package-agreements --accept-source-agreements
+    Refresh-Path
+    if (-not (Test-Tesseract)) {
+      Write-Host "Tesseract 安装后仍不可用。应用仍会继续安装；如需本地 OCR，请重新打开 PowerShell 后确认 tesseract 在 PATH 中，或设置 CVN_TESSERACT_PATH。"
+    }
+  } elseif (-not (Test-Tesseract)) {
+    Write-Step "未检测到 Tesseract；应用仍会继续安装。如需本地 OCR，请手动安装 Tesseract，或设置 CVN_INSTALL_TESSERACT=1 后重新运行安装命令。"
   }
 
   if (-not (Has-Command "git")) { throw "Git 安装后仍不可用，请重新打开 PowerShell 后重试。" }
@@ -102,6 +162,7 @@ function Ensure-Environment {
   node --version
   npm --version
   Write-FfmpegStatus
+  Write-LocalRecognitionStatus
 }
 
 function Test-EmptyDir($Path) {
@@ -198,6 +259,7 @@ Windows 可尝试：
   Write-Host "  媒体文件：$InstallDir\uploads"
   Write-Host ""
   Write-FfmpegStatus
+  Write-LocalRecognitionStatus
 }
 
 Ensure-Environment

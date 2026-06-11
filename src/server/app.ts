@@ -3,6 +3,8 @@ import path from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { MediaType } from '../shared/constants.js';
 import type { AudioExtractor, SpeechToTextProvider } from './domain/transcriptions.js';
+import type { AnalyzeClipOptions } from './domain/clipAnalysis.js';
+import type { LocalRecognitionReadinessOptions } from './domain/localRecognitionReadiness.js';
 import { cardsRouter } from './routes/cards.js';
 import { contextsRouter } from './routes/contexts.js';
 import { tagsRouter } from './routes/tags.js';
@@ -12,8 +14,10 @@ import { settingsRouter } from './routes/settings.js';
 import { aiConfigsRouter } from './routes/aiConfigs.js';
 import { aiSuggestionsRouter } from './routes/aiSuggestions.js';
 import { transcriptionsRouter } from './routes/transcriptions.js';
+import { clipAnalysisRouter } from './routes/clipAnalysis.js';
 import { statisticsRouter } from './routes/statistics.js';
 import { importExportRouter } from './routes/importExport.js';
+import { localRecognitionRouter } from './routes/localRecognition.js';
 import { ensureUploadsDir, resolveUploadPath } from './storage/uploads.js';
 import { BadRequestError } from './http/errors.js';
 
@@ -26,6 +30,10 @@ export interface AppOptions {
     extractor?: AudioExtractor;
     stt?: SpeechToTextProvider;
   };
+  clipAnalysis?: {
+    analyze?: (options: AnalyzeClipOptions) => Promise<import('../shared/types.js').ClipAnalysisResponseDto>;
+  };
+  localRecognition?: LocalRecognitionReadinessOptions;
 }
 
 const DEFAULT_UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
@@ -78,6 +86,11 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
     extractor: options.transcription?.extractor,
     stt: options.transcription?.stt,
   }));
+  application.use('/api/clip-analysis', clipAnalysisRouter(db, uploadsDir, {
+    maxFileSizeBytes: options.transcriptionUploadMaxBytes,
+    analyze: options.clipAnalysis?.analyze,
+  }));
+  application.use('/api/local-recognition', localRecognitionRouter(options.localRecognition));
   application.use('/api/statistics', statisticsRouter(db));
   application.use('/api', importExportRouter(db, uploadsDir));
 
