@@ -56,7 +56,7 @@ describe('I18nProvider', () => {
     expect(screen.getByTestId('settings-label')).toHaveTextContent('Paramètres');
   });
 
-  it('falls back to Chinese when settings fetch fails', async () => {
+  it('falls back to English when settings fetch fails', async () => {
     vi.mocked(settingsApi.getSettings).mockRejectedValueOnce(new Error('Network error'));
 
     render(
@@ -66,10 +66,10 @@ describe('I18nProvider', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('language')).toHaveTextContent('中文');
+      expect(screen.getByTestId('language')).toHaveTextContent('英语');
     });
 
-    expect(screen.getByTestId('settings-label')).toHaveTextContent('设置');
+    expect(screen.getByTestId('settings-label')).toHaveTextContent('Settings');
   });
 
   it('switches language at runtime', async () => {

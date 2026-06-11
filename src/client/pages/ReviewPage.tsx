@@ -270,6 +270,7 @@ type PageState =
 
 export function ReviewPage() {
   const { t } = useI18n();
+  const tRef = useRef(t);
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -277,6 +278,10 @@ export function ReviewPage() {
   const [pendingRequiresConfirm, setPendingRequiresConfirm] = useState(false);
   const [lastRating, setLastRating] = useState<'again' | 'good' | null>(null);
   const [limitDismissed, setLimitDismissed] = useState(false);
+
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   const load = useCallback(() => {
     setState({ kind: 'loading' });
@@ -297,9 +302,9 @@ export function ReviewPage() {
         }
       })
       .catch((err: unknown) => {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : t('review.loadFailed') });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : tRef.current('review.loadFailed') });
       });
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -350,9 +355,9 @@ export function ReviewPage() {
       setLastRating(rating);
     } catch (err) {
       if (advanceAfterSubmit && ratingSubmitted) {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : t('review.loadFailed') });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : tRef.current('review.loadFailed') });
       } else {
-        setSubmitError(err instanceof Error ? err.message : t('review.submitFailed'));
+        setSubmitError(err instanceof Error ? err.message : tRef.current('review.submitFailed'));
       }
     } finally {
       setSubmitting(false);
@@ -390,9 +395,9 @@ export function ReviewPage() {
       }
     } catch (err) {
       if (rating && !ratingSubmitted) {
-        setSubmitError(err instanceof Error ? err.message : t('review.submitFailed'));
+        setSubmitError(err instanceof Error ? err.message : tRef.current('review.submitFailed'));
       } else {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : t('review.loadFailed') });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : tRef.current('review.loadFailed') });
       }
     } finally {
       setSubmitting(false);
@@ -449,9 +454,9 @@ export function ReviewPage() {
       }
     } catch (err) {
       if (mastered) {
-        setState({ kind: 'error', message: err instanceof Error ? err.message : t('review.loadFailed') });
+        setState({ kind: 'error', message: err instanceof Error ? err.message : tRef.current('review.loadFailed') });
       } else if (rating && !ratingSubmitted) {
-        setSubmitError(err instanceof Error ? err.message : t('review.submitFailed'));
+        setSubmitError(err instanceof Error ? err.message : tRef.current('review.submitFailed'));
       } else {
         setSubmitError(err instanceof Error ? err.message : t('review.masteredFailed'));
       }

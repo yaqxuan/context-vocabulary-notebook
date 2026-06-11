@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StatisticsPage } from '../../src/client/pages/StatisticsPage';
@@ -9,6 +9,22 @@ import type { StatisticsPageDto } from '../../src/shared/types';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+}
+
+const zhSettings = { interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' };
+
+function mockFetchWithSettings(body: unknown): void {
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    if (String(input) === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
+    return Promise.resolve(jsonResponse(body));
+  });
+}
+
+async function flushI18n(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 }
 
 // --- Fixtures ---
@@ -80,12 +96,12 @@ describe('StatisticsPage', () => {
 
   describe('loading and ready state', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(fullStats));
+      mockFetchWithSettings(fullStats);
     });
 
     it('shows loading state initially', () => {
       render(<I18nProvider><StatisticsPage /></I18nProvider>);
-      expect(screen.getByText('加载中...')).toBeInTheDocument();
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
     it('does not render the top statistics hero header', async () => {
@@ -127,7 +143,7 @@ describe('StatisticsPage', () => {
 
   describe('recent 14-day chart', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(fullStats));
+      mockFetchWithSettings(fullStats);
     });
 
     it('renders 最近 14 天数量图 section heading', async () => {
@@ -173,7 +189,7 @@ describe('StatisticsPage', () => {
 
   describe('monthly chart', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(fullStats));
+      mockFetchWithSettings(fullStats);
     });
 
     it('renders 历史月份数量图 section heading', async () => {
@@ -199,7 +215,7 @@ describe('StatisticsPage', () => {
 
   describe('accuracy chart', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(fullStats));
+      mockFetchWithSettings(fullStats);
     });
 
     it('renders 每日正确率折线图 section heading', async () => {
@@ -218,7 +234,7 @@ describe('StatisticsPage', () => {
 
   describe('tag distribution', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(fullStats));
+      mockFetchWithSettings(fullStats);
     });
 
     it('renders 标签分布 section heading', async () => {
@@ -243,7 +259,7 @@ describe('StatisticsPage', () => {
 
   describe('Again / Good trend', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(fullStats));
+      mockFetchWithSettings(fullStats);
     });
 
     it('renders Again explanation and bars in trend area', async () => {
@@ -281,7 +297,7 @@ describe('StatisticsPage', () => {
 
   describe('empty state', () => {
     beforeEach(() => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(emptyStats));
+      mockFetchWithSettings(emptyStats);
     });
 
     it('renders 还没有统计数据 when all arrays are empty', async () => {
@@ -293,9 +309,10 @@ describe('StatisticsPage', () => {
 
   describe('retryable error state', () => {
     it('shows error state with 重试 button on API failure', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        jsonResponse({ error: 'database unavailable' }, 500),
-      );
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        if (String(input) === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
+        return Promise.resolve(jsonResponse({ error: 'database unavailable' }, 500));
+      });
 
       render(<I18nProvider><StatisticsPage /></I18nProvider>);
 

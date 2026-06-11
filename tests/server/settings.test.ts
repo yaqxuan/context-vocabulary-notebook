@@ -45,7 +45,7 @@ afterAll(() => {
 });
 
 afterEach(() => {
-  db.prepare("UPDATE user_settings SET interface_language = 'zh-CN', default_target_language = '英语', default_definition_language = '中文', daily_review_limit = 20 WHERE id = 1").run();
+  db.prepare("UPDATE user_settings SET interface_language = '英语', default_target_language = '英语', default_definition_language = '中文', daily_review_limit = 20 WHERE id = 1").run();
 });
 
 describe('settings API', () => {
@@ -55,7 +55,7 @@ describe('settings API', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       id: 1,
-      interface_language: 'zh-CN',
+      interface_language: '英语',
       default_target_language: '英语',
       default_definition_language: '中文',
       daily_review_limit: 20,

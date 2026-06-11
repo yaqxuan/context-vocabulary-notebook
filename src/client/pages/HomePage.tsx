@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 
 import type { HomeStatisticsDto, SettingsDto } from '../../shared/types';
 import {
   DEFAULT_DEFINITION_LANGUAGE,
+  DEFAULT_INTERFACE_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
+  SUPPORTED_LANGUAGES,
   getNativeLanguageLabel,
   normalizeSupportedLanguage,
   type SupportedLanguage,
 } from '../../shared/constants';
 import { ErrorState, LoadingState } from '../components/UiStates';
 import { getHomeStatistics } from '../api/statistics';
-import { getSettings } from '../api/settings';
+import { getSettings, patchSettings } from '../api/settings';
 import { getHomeGreeting, getHomeGreetingText, type GreetingSelection } from '../lib/homeGreetings';
 import { useI18n } from '../i18n/I18nProvider';
 
@@ -80,6 +82,47 @@ function HomeLanguageBadge({ label, language }: { label: string; language: Suppo
   );
 }
 
+function HomeInterfaceLanguageSwitcher() {
+  const { language, setLanguage, t } = useI18n();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const currentLanguage = normalizeSupportedLanguage(language) ?? DEFAULT_INTERFACE_LANGUAGE;
+
+  async function handleChange(event: ChangeEvent<HTMLSelectElement>) {
+    const nextLanguage = normalizeSupportedLanguage(event.target.value);
+    if (!nextLanguage || nextLanguage === currentLanguage) return;
+
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await patchSettings({ interface_language: nextLanguage });
+      setLanguage(updated.interface_language);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('settings.learning.saveFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="home-interface-language home-interface-language--top-right">
+      <label htmlFor="home-interface-language-select">{t('settings.learning.interfaceLanguage')}</label>
+      <select
+        id="home-interface-language-select"
+        className="home-interface-language-select"
+        value={currentLanguage}
+        onChange={handleChange}
+        disabled={saving}
+      >
+        {SUPPORTED_LANGUAGES.map((supportedLanguage) => (
+          <option key={supportedLanguage} value={supportedLanguage}>{getNativeLanguageLabel(supportedLanguage)}</option>
+        ))}
+      </select>
+      {error && <span className="home-interface-language-error" role="alert">{error}</span>}
+    </div>
+  );
+}
+
 function HomeGreetingLine({ greeting, language }: { greeting: GreetingSelection; language: SupportedLanguage }) {
   return (
     <p className="home-greeting" lang={HOME_GREETING_LANG_ATTRS[language]}>{getHomeGreetingText(greeting, language)}</p>
@@ -143,6 +186,7 @@ export function HomePage() {
 
   return (
     <div className="home-desk">
+      <HomeInterfaceLanguageSwitcher />
       <HomeHero greeting={greeting} languages={languages} />
 
       <div className="home-content-stack">

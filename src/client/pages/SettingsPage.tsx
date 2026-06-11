@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   DEFAULT_DEFINITION_LANGUAGE,
-  DEFAULT_INTERFACE_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   SUPPORTED_LANGUAGES,
   getNativeLanguageLabel,
@@ -66,8 +65,7 @@ function LanguageSelect({ id, value, onChange }: LanguageSelectProps) {
 }
 
 function SettingsForm({ initial, onSaved }: SettingsFormProps) {
-  const { t, setLanguage } = useI18n();
-  const [interfaceLang, setInterfaceLang] = useState(normalizeSupportedLanguage(initial.interface_language) ?? DEFAULT_INTERFACE_LANGUAGE);
+  const { t } = useI18n();
   const [targetLang, setTargetLang] = useState(normalizeSupportedLanguage(initial.default_target_language) ?? DEFAULT_TARGET_LANGUAGE);
   const [defLang, setDefLang] = useState(normalizeSupportedLanguage(initial.default_definition_language) ?? DEFAULT_DEFINITION_LANGUAGE);
   const [dailyLimit, setDailyLimit] = useState(String(initial.daily_review_limit));
@@ -95,13 +93,11 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
     setSaveError(null);
     try {
       const updated = await patchSettings({
-        interface_language: interfaceLang,
         default_target_language: targetLang,
         default_definition_language: defLang,
         daily_review_limit: Number(dailyLimit),
       });
       onSaved(updated);
-      setLanguage(updated.interface_language);
       setSaved(true);
     } catch (err: unknown) {
       setSaveError(err instanceof Error ? err.message : t('settings.learning.saveFailed'));
@@ -115,17 +111,6 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
       <h2 className="phase7-settings-section-title">{t('settings.learning.title')}</h2>
 
       <div className="phase7-settings-form">
-        <div className="phase7-settings-field">
-          <label htmlFor="setting-interface-lang" className="phase7-settings-label">
-            {t('settings.learning.interfaceLanguage')}
-          </label>
-          <LanguageSelect
-            id="setting-interface-lang"
-            value={interfaceLang}
-            onChange={setInterfaceLang}
-          />
-        </div>
-
         <div className="phase7-settings-field">
           <label htmlFor="setting-target-lang" className="phase7-settings-label">
             {t('settings.learning.targetLanguage')}

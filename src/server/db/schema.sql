@@ -115,7 +115,7 @@ CREATE INDEX IF NOT EXISTS idx_review_logs_reviewed_at ON review_logs (reviewed_
 -- User settings: singleton row with id=1
 CREATE TABLE IF NOT EXISTS user_settings (
   id                        INTEGER PRIMARY KEY CHECK (id = 1),
-  interface_language        TEXT NOT NULL DEFAULT 'zh-CN',
+  interface_language        TEXT NOT NULL DEFAULT '英语',
   default_target_language   TEXT NOT NULL DEFAULT '英语',
   default_definition_language TEXT NOT NULL DEFAULT '中文',
   daily_review_limit        INTEGER NOT NULL DEFAULT 20,

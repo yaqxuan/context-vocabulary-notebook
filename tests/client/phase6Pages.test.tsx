@@ -41,6 +41,7 @@ describe('Phase 6 pages', () => {
   beforeEach(() => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse(tags));
       if (url.startsWith('/api/cards') && init?.method === 'PATCH') return Promise.resolve(jsonResponse(cards[0]));
       if (url.startsWith('/api/cards')) return Promise.resolve(jsonResponse({ items: cards, total: 1, page: 1, page_size: 20 }));
@@ -68,16 +69,16 @@ describe('Phase 6 pages', () => {
     expect(screen.getByText('收费')).toBeInTheDocument();
     expect(screen.getByText('The hotel charges $100 per night.')).toBeInTheDocument();
     expect(screen.getAllByText('美剧').length).toBeGreaterThan(0);
-    expect(screen.getByText('2 条语境')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '查看详情' })).toHaveAttribute('href', '#/cards/card-1');
+    expect(screen.getByText('2 contexts')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View detail' })).toHaveAttribute('href', '#/cards/card-1');
 
-    fireEvent.change(screen.getByLabelText('搜索单词、释义、原句、标签或备注'), { target: { value: 'charge' } });
+    fireEvent.change(screen.getByLabelText('Search words, definitions, sentences, tags or notes'), { target: { value: 'charge' } });
     expect(onFiltersChange).toHaveBeenCalledWith({ ...filters, search: 'charge', page: 1 });
 
-    fireEvent.click(screen.getByRole('button', { name: '标记为已掌握' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as mastered' }));
     expect(onToggleStatus).toHaveBeenCalledWith(cards[0]);
 
-    fireEvent.click(screen.getByRole('button', { name: '取消收藏' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove favorite' }));
     expect(onToggleFavorite).toHaveBeenCalledWith(cards[0]);
   });
 
@@ -102,6 +103,7 @@ describe('Phase 6 pages', () => {
     window.location.hash = '#/cards/card-1';
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse(cards[0]));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
       if (url === '/api/contexts/ctx-1/primary') return Promise.resolve(jsonResponse({ ok: true }));
@@ -138,6 +140,7 @@ describe('Phase 6 pages', () => {
     };
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(futureDetail));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse(tags));
       return Promise.resolve(jsonResponse({ ok: true }));
@@ -159,6 +162,7 @@ describe('Phase 6 pages', () => {
     window.location.hash = '#/cards/card-1';
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse(cards[0]));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
       return Promise.resolve(jsonResponse({ ok: true }));
@@ -176,6 +180,7 @@ describe('Phase 6 pages', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ...cards[0], context_meaning: '收费；要价' }));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
@@ -196,6 +201,7 @@ describe('Phase 6 pages', () => {
     window.location.hash = '#/cards/card-1';
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse(tags));
       return Promise.resolve(jsonResponse({ ok: true }));
@@ -221,6 +227,7 @@ describe('Phase 6 pages', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url === '/api/tags') return Promise.resolve(jsonResponse(allTags));
       if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse(cards[0]));
@@ -231,9 +238,10 @@ describe('Phase 6 pages', () => {
     render(<I18nProvider><CardDetailPage /></I18nProvider>);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '编辑标签' }));
+    expect(screen.getByRole('button', { name: /编辑标签|Edit tags/ })).toHaveClass('phase6-tag-edit-button');
+    fireEvent.click(screen.getByRole('button', { name: /编辑标签|Edit tags/ }));
     fireEvent.click(await screen.findByRole('button', { name: '电影' }));
-    fireEvent.click(screen.getByRole('button', { name: '保存标签' }));
+    fireEvent.click(screen.getByRole('button', { name: /保存标签|Save tags/ }));
 
     await waitFor(() => expect(requests.some((request) => request.url === '/api/cards/card-1' && request.method === 'PATCH' && request.body === JSON.stringify({ tag_ids: ['tag-1', 'tag-2'] }))).toBe(true));
     await waitFor(() => expect(requests.filter((request) => request.url === '/api/cards/card-1' && request.method === 'GET')).toHaveLength(2));
@@ -246,6 +254,7 @@ describe('Phase 6 pages', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url === '/api/tags' && init?.method === 'POST') return Promise.resolve(jsonResponse(createdTag, 201));
       if (url === '/api/tags') return Promise.resolve(jsonResponse(allTags));
@@ -257,11 +266,11 @@ describe('Phase 6 pages', () => {
     render(<I18nProvider><CardDetailPage /></I18nProvider>);
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '编辑标签' }));
+    fireEvent.click(screen.getByRole('button', { name: /编辑标签|Edit tags/ }));
     fireEvent.change(await screen.findByLabelText('新增标签名称'), { target: { value: '电影' } });
     fireEvent.click(screen.getByRole('button', { name: '新增并选中标签' }));
     expect(await screen.findByRole('button', { name: '电影' })).toHaveClass('selected');
-    fireEvent.click(screen.getByRole('button', { name: '保存标签' }));
+    fireEvent.click(screen.getByRole('button', { name: /保存标签|Save tags/ }));
 
     await waitFor(() => expect(requests.some((request) => request.url === '/api/tags' && request.method === 'POST' && request.body === JSON.stringify({ name: '电影' }))).toBe(true));
     await waitFor(() => expect(requests.some((request) => request.url === '/api/cards/card-1' && request.method === 'PATCH' && request.body === JSON.stringify({ tag_ids: ['tag-1', 'tag-2'] }))).toBe(true));
@@ -270,6 +279,7 @@ describe('Phase 6 pages', () => {
   it('creates edits and confirms tag deletion', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url === '/api/tags' && init?.method === 'POST') return Promise.resolve(jsonResponse({ id: 'tag-2', name: '电影', created_at: 'now', updated_at: 'now' }, 201));
       if (url === '/api/tags/tag-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ...tags[0], name: '美剧 updated' }));
       if (url === '/api/tags/tag-1' && init?.method === 'DELETE') return Promise.resolve(jsonResponse({ ok: true }));
@@ -286,14 +296,13 @@ describe('Phase 6 pages', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '编辑' }));
     fireEvent.change(screen.getByLabelText('标签名称'), { target: { value: '美剧 updated' } });
-    fireEvent.click(screen.getByRole('button', { name: '保存标签' }));
+    fireEvent.click(screen.getByRole('button', { name: /保存标签|Save tags/ }));
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/tags/tag-1', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ name: '美剧 updated' }) })));
   });
 
   it('renders English UI chrome when interface language is English for Tags page', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
       const url = String(input);
-      console.log('FETCH CALLED IN TEST:', url);
       if (url === '/api/settings') return Promise.resolve(new Response(JSON.stringify({ interface_language: '英语' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
       if (url.startsWith('/api/tags')) return Promise.resolve(new Response(JSON.stringify([{ id: 'tag-1', name: '美剧', created_at: 'now', updated_at: 'now' }]), { status: 200, headers: { 'Content-Type': 'application/json' } }));
       return Promise.resolve(new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }));

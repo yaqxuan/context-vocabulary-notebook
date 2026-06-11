@@ -187,7 +187,7 @@ describe('schema: singleton user_settings row', () => {
 
   it('has correct default interface_language', () => {
     const row = db.prepare('SELECT interface_language FROM user_settings WHERE id = 1').get() as Record<string, unknown>;
-    expect(row.interface_language).toBe('zh-CN');
+    expect(row.interface_language).toBe('英语');
   });
 
   it('has correct default default_target_language', () => {

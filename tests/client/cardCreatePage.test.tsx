@@ -25,10 +25,16 @@ async function flushPromises(): Promise<void> {
   });
 }
 
+async function renderCardCreatePage(): Promise<void> {
+  render(<I18nProvider><CardCreatePage /></I18nProvider>);
+  await flushPromises();
+}
+
 describe('CardCreatePage', () => {
   beforeEach(() => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
@@ -57,8 +63,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
-    await flushPromises();
+    await renderCardCreatePage();
 
     expect(screen.getByRole('button', { name: 'Create card' })).toBeInTheDocument();
     expect(screen.getByLabelText('Target word')).toHaveAttribute('placeholder', 'e.g.: charge');
@@ -67,7 +72,7 @@ describe('CardCreatePage', () => {
 
   // Test 1: render
   it('renders create workspace without removed hero and idle suggestions copy', async () => {
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     expect(screen.getByRole('button', { name: '保存词义条目' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '捕捉一个真实语境' })).not.toBeInTheDocument();
@@ -91,7 +96,7 @@ describe('CardCreatePage', () => {
   });
 
   it('orders create fields as sentence, target word, then meaning', async () => {
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     const labels = screen.getAllByLabelText(/原句|目标单词|当前语境释义/);
     expect(labels.map((el) => el.getAttribute('aria-label'))).toEqual(['原句', '目标单词', '当前语境释义']);
@@ -100,6 +105,7 @@ describe('CardCreatePage', () => {
   it('shows ghost AI meaning suggestion and accepts it with Enter', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
@@ -108,7 +114,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -123,6 +129,7 @@ describe('CardCreatePage', () => {
     let aiBody: Record<string, unknown> | null = null;
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
@@ -132,7 +139,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/settings', expect.any(Object)));
     await flushPromises();
 
@@ -151,6 +158,7 @@ describe('CardCreatePage', () => {
   it('fills meaning when clicking the ghost AI meaning suggestion', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
@@ -159,7 +167,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -173,6 +181,7 @@ describe('CardCreatePage', () => {
   it('clears ghost AI meaning suggestion with Backspace and shows none when there is no usage note', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
@@ -181,7 +190,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -195,6 +204,7 @@ describe('CardCreatePage', () => {
   it('does not show ghost AI meaning suggestion again after user types then clears meaning', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
@@ -203,7 +213,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -219,6 +229,7 @@ describe('CardCreatePage', () => {
   it('shows a new ghost AI meaning suggestion after rejecting one and changing sentence', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
@@ -233,7 +244,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -250,6 +261,7 @@ describe('CardCreatePage', () => {
   it('replaces an untouched AI-filled usage note when sentence changes', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
@@ -264,7 +276,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -280,6 +292,7 @@ describe('CardCreatePage', () => {
     let aiCallCount = 0;
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
@@ -292,7 +305,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -306,7 +319,7 @@ describe('CardCreatePage', () => {
 
   // Test 2: required field validation
   it('requires target word, meaning, and sentence for new card mode while video stays optional', async () => {
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.click(screen.getByRole('button', { name: '保存词义条目' }));
 
@@ -318,7 +331,7 @@ describe('CardCreatePage', () => {
 
   // Test 3: media file type validation
   it('rejects unsupported media file types before saving', async () => {
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('上传本地视频'), {
       target: { files: [file('clip.mov', 'video/quicktime')] },
@@ -337,7 +350,7 @@ describe('CardCreatePage', () => {
 
   // Test 3b: media file size validation
   it('rejects media files that exceed size limits', async () => {
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('上传本地视频'), {
       target: { files: [file('huge.mp4', 'video/mp4', MEDIA_SIZE_LIMITS_BYTES.video + 1)] },
@@ -358,6 +371,7 @@ describe('CardCreatePage', () => {
   it('uses exact target and meaning match to force append-to-existing mode', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) {
         return Promise.resolve(jsonResponse([
@@ -368,7 +382,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'Charge ' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: ' 收费 ' } });
@@ -384,6 +398,7 @@ describe('CardCreatePage', () => {
   it('keeps create-new available when same word exists but meaning does not match', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) {
         return Promise.resolve(jsonResponse([
@@ -394,7 +409,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '租赁' } });
@@ -408,12 +423,13 @@ describe('CardCreatePage', () => {
   it('shows suggestion error while still allowing new card creation', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.reject(new Error('network'));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
 
@@ -426,6 +442,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧', created_at: 'now', updated_at: 'now' }]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
@@ -439,7 +456,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/settings', expect.any(Object)));
     await flushPromises();
 
@@ -472,6 +489,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
@@ -484,7 +502,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -500,6 +518,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
@@ -513,7 +532,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -545,7 +564,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     await waitFor(() => expect(screen.getByLabelText('学习语言')).toHaveValue('日语'));
     expect(screen.getByLabelText('释义语言')).toHaveValue('英语');
@@ -561,12 +580,12 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/settings', expect.any(Object)));
     await flushPromises();
-    expect(screen.getByLabelText('学习语言')).toHaveValue('英语');
-    expect(screen.getByLabelText('释义语言')).toHaveValue('中文');
+    expect(screen.getByLabelText('Target Language')).toHaveValue('英语');
+    expect(screen.getByLabelText('Definition Language')).toHaveValue('中文');
   });
 
   // Test 12: explicit append mode keeps card languages, ignores settings
@@ -605,7 +624,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     await screen.findByDisplayValue('charge');
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/cards/card-1', expect.any(Object)));
@@ -640,6 +659,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(cardDetail));
@@ -652,7 +672,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     // Word and meaning loaded and disabled
     await screen.findByDisplayValue('charge');
@@ -684,6 +704,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url === '/api/tags' && init?.method === 'POST') return Promise.resolve(jsonResponse({ id: 'tag-1', name: '电影', created_at: 'now', updated_at: 'now' }, 201));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
@@ -692,7 +713,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     // Fill form
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
@@ -739,6 +760,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
@@ -747,7 +769,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     expect(await screen.findByDisplayValue('charge')).toBeInTheDocument();
     expect(screen.getByDisplayValue('收费')).toBeInTheDocument();
@@ -793,6 +815,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
@@ -801,7 +824,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     expect(await screen.findByDisplayValue('charge')).toBeInTheDocument();
 
@@ -834,6 +857,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/cards/suggestions?target_word=charge')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
@@ -842,7 +866,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -865,6 +889,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/cards/suggestions?target_word=charge')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
@@ -875,7 +900,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -909,6 +934,7 @@ describe('CardCreatePage', () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/cards/suggestions?target_word=charge')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
@@ -919,7 +945,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -933,7 +959,7 @@ describe('CardCreatePage', () => {
 
 
   it('keeps transcribe disabled when no video is selected', async () => {
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     expect(screen.getByRole('button', { name: '转文字' })).toBeDisabled();
   });
@@ -941,6 +967,7 @@ describe('CardCreatePage', () => {
   it('shows transcript panel after successful video transcription', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -948,7 +975,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('上传本地视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
     fireEvent.click(screen.getByRole('button', { name: '转文字' }));
@@ -961,6 +988,7 @@ describe('CardCreatePage', () => {
     const transcriptionBodies: FormData[] = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -971,8 +999,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
-    await flushPromises();
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('学习语言'), { target: { value: '日语' } });
     fireEvent.change(screen.getByLabelText('上传本地视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
@@ -987,6 +1014,7 @@ describe('CardCreatePage', () => {
     let resolveTranscription: ((response: Response) => void) | null = null;
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -998,7 +1026,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     const input = screen.getByLabelText('上传本地视频');
     fireEvent.change(input, { target: { files: [file('clip.mp4', 'video/mp4')] } });
@@ -1021,6 +1049,7 @@ describe('CardCreatePage', () => {
     const resolvers: Array<(response: Response) => void> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -1032,7 +1061,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     const input = screen.getByLabelText('上传本地视频');
     fireEvent.change(input, { target: { files: [file('old.mp4', 'video/mp4')] } });
@@ -1059,6 +1088,7 @@ describe('CardCreatePage', () => {
   it('copies transcript into sentence through use-as-sentence action', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -1066,7 +1096,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Old sentence.' } });
     fireEvent.change(screen.getByLabelText('上传本地视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
@@ -1081,6 +1111,7 @@ describe('CardCreatePage', () => {
   it('shows transcription failure and preserves current form values', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -1088,7 +1119,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
@@ -1106,6 +1137,7 @@ describe('CardCreatePage', () => {
     let spellingBody: Record<string, unknown> | null = null;
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -1116,8 +1148,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
-    await flushPromises();
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('学习语言'), { target: { value: '英语' } });
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Hte hotel charges $100 per night.' } });
@@ -1140,6 +1171,7 @@ describe('CardCreatePage', () => {
   it('accepts one spelling suggestion and replaces only that word', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -1149,8 +1181,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
-    await flushPromises();
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Hte hotel charges hte fee.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
@@ -1166,6 +1197,7 @@ describe('CardCreatePage', () => {
   it('does not display spelling suggestions for the target word', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -1175,8 +1207,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
-    await flushPromises();
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
@@ -1189,6 +1220,7 @@ describe('CardCreatePage', () => {
   it('shows retryable spelling check error', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
@@ -1196,8 +1228,7 @@ describe('CardCreatePage', () => {
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
-    render(<I18nProvider><CardCreatePage /></I18nProvider>);
-    await flushPromises();
+    await renderCardCreatePage();
 
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'Hte hotel charges $100 per night.' } });
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'hotel' } });
