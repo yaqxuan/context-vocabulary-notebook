@@ -38,12 +38,53 @@ ffmpeg_ok() {
   has_cmd ffmpeg
 }
 
+tesseract_ok() {
+  has_cmd tesseract
+}
+
+looks_like_whisper_cpp() {
+  local cmd="$1"
+  local help_output
+  help_output="$($cmd --help 2>&1 | head -n 20 || true)"
+  printf '%s\n' "$help_output" | grep -Eiq 'whisper\.cpp|whisper|--model|-m[ ,]'
+}
+
+whisper_cpp_ok() {
+  has_cmd whisper-cli || { [ -n "${CVN_WHISPER_CPP_PATH:-}" ] && [ -x "${CVN_WHISPER_CPP_PATH:-}" ]; } || { has_cmd main && looks_like_whisper_cpp main; }
+}
+
 ffmpeg_status_message() {
   if ffmpeg_ok; then
-    printf '视频转写依赖 ffmpeg：已检测到 (%s)\n' "$(ffmpeg -version 2>/dev/null | head -n 1)"
+    printf '视频/音频处理依赖 ffmpeg：已检测到 (%s)\n' "$(ffmpeg -version 2>/dev/null | head -n 1)"
   else
-    printf '视频转写依赖 ffmpeg：未检测到。应用已安装完成；如需视频转写，请安装 ffmpeg，或重新运行安装命令并设置 CVN_INSTALL_FFMPEG=1。\n'
+    printf '视频/音频处理依赖 ffmpeg：未检测到。应用已安装完成；如需从视频提取音频，请安装 ffmpeg，或重新运行安装命令并设置 CVN_INSTALL_FFMPEG=1。\n'
   fi
+}
+
+tesseract_status_message() {
+  if tesseract_ok; then
+    printf '本地 OCR 依赖 Tesseract：已检测到 (%s)\n' "$(tesseract --version 2>/dev/null | head -n 1)"
+  else
+    printf '本地 OCR 依赖 Tesseract：未检测到。应用已安装完成；图片/视频帧文字识别会在就绪检查中提示缺失。Linux/WSL 可设置 CVN_INSTALL_TESSERACT=1 后重新运行安装命令尝试 apt 安装；macOS 可运行 brew install tesseract；也可手动安装后设置 CVN_TESSERACT_PATH。\n'
+  fi
+}
+
+whisper_cpp_status_message() {
+  if has_cmd whisper-cli; then
+    printf '本地语音识别依赖 whisper.cpp：已检测到 whisper-cli (%s)\n' "$(command -v whisper-cli)"
+  elif [ -n "${CVN_WHISPER_CPP_PATH:-}" ] && [ -x "${CVN_WHISPER_CPP_PATH:-}" ]; then
+    printf '本地语音识别依赖 whisper.cpp：已检测到 CVN_WHISPER_CPP_PATH (%s)\n' "$CVN_WHISPER_CPP_PATH"
+  elif has_cmd main && looks_like_whisper_cpp main; then
+    printf '本地语音识别依赖 whisper.cpp：已检测到 whisper.cpp main (%s)。建议设置 CVN_WHISPER_CPP_PATH 指向该可执行文件。\n' "$(command -v main)"
+  else
+    printf '本地语音识别依赖 whisper.cpp：未检测到 whisper-cli。应用已安装完成；语音识别会在就绪检查中提示缺少依赖。如果使用非 whisper-cli 名称，请设置 CVN_WHISPER_CPP_PATH 指向 whisper.cpp 可执行文件，并设置 CVN_WHISPER_CPP_MODEL。\n'
+  fi
+}
+
+local_recognition_status_messages() {
+  tesseract_status_message
+  whisper_cpp_status_message
+  printf '提示：安装脚本不会自动安装 whisper.cpp 或 Whisper 模型；本地识别状态也可在应用就绪检查界面查看。\n'
 }
 
 need_sudo() {
@@ -86,6 +127,9 @@ install_linux_deps() {
   if [ "${CVN_INSTALL_FFMPEG:-}" = "1" ] && ! ffmpeg_ok; then
     apt_packages+=(ffmpeg)
   fi
+  if [ "${CVN_INSTALL_TESSERACT:-}" = "1" ] && ! tesseract_ok; then
+    apt_packages+=(tesseract-ocr)
+  fi
 
   if linux_core_ok; then
     log "Linux 基础依赖已满足，跳过 apt-get"
@@ -108,7 +152,25 @@ install_linux_deps() {
         fi
       fi
     elif ! ffmpeg_ok; then
-      log "未检测到 ffmpeg；应用仍会继续安装。如需视频转写，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+      log "未检测到 ffmpeg；应用仍会继续安装。如需从视频提取音频，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+    fi
+    if [ "${CVN_INSTALL_TESSERACT:-}" = "1" ] && ! tesseract_ok; then
+      if ! has_cmd apt-get; then
+        echo "未发现 apt-get，无法自动安装 Tesseract。应用仍会继续安装；如需本地 OCR，请手动安装 Tesseract。"
+      else
+        log "CVN_INSTALL_TESSERACT=1，准备使用 apt-get 安装 Tesseract OCR"
+        echo "提示：apt-get 会检查系统里所有 apt 源；如果 Docker、Chromium 等无关源报错，请先修复或禁用对应源后重试。"
+        if ! need_sudo apt-get update; then
+          explain_apt_failure
+          exit 1
+        fi
+        if ! need_sudo apt-get install -y tesseract-ocr; then
+          explain_apt_failure
+          exit 1
+        fi
+      fi
+    elif ! tesseract_ok; then
+      log "未检测到 Tesseract；应用仍会继续安装。如需本地 OCR，请安装 Tesseract，或在 Linux/WSL 设置 CVN_INSTALL_TESSERACT=1 后重新运行安装命令。"
     fi
     return
   fi
@@ -170,7 +232,13 @@ install_macos_deps() {
     log "CVN_INSTALL_FFMPEG=1，使用 Homebrew 安装 ffmpeg"
     brew install ffmpeg
   elif ! ffmpeg_ok; then
-    log "未检测到 ffmpeg；应用仍会继续安装。如需视频转写，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+    log "未检测到 ffmpeg；应用仍会继续安装。如需从视频提取音频，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+  fi
+  if [ "${CVN_INSTALL_TESSERACT:-}" = "1" ] && ! tesseract_ok; then
+    log "CVN_INSTALL_TESSERACT=1，使用 Homebrew 安装 Tesseract OCR"
+    brew install tesseract
+  elif ! tesseract_ok; then
+    log "未检测到 Tesseract；应用仍会继续安装。如需本地 OCR，请安装 Tesseract（macOS 可 brew install tesseract）。"
   fi
   if ! xcode-select -p >/dev/null 2>&1; then
     log "未检测到 Xcode Command Line Tools，正在触发安装。如弹出系统窗口，请点击「安装」，完成后重新运行本脚本。"
@@ -207,6 +275,7 @@ ensure_environment() {
   node --version
   npm --version
   ffmpeg_status_message
+  local_recognition_status_messages
 }
 
 is_empty_dir() {
@@ -292,6 +361,7 @@ EOF
   媒体文件：$INSTALL_DIR/uploads
 
 $(ffmpeg_status_message)
+$(local_recognition_status_messages)
 
 EOF
 }

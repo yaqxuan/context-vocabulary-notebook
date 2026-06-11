@@ -269,6 +269,52 @@ export type TranscribeMediaResponseDto =
       message: string;
     };
 
+export interface LocalRecognitionReadinessDto {
+  ffmpeg: { ready: boolean; message: string };
+  stt: {
+    provider: 'whisper.cpp' | 'disabled';
+    ready: boolean;
+    executablePath: string;
+    modelPath: string;
+    message: string;
+  };
+  ocr: {
+    provider: 'tesseract' | 'disabled';
+    ready: boolean;
+    executablePath: string;
+    language: string;
+    message: string;
+  };
+}
+
+export interface ClipSentenceCandidateDto {
+  source: 'subtitle_ocr' | 'audio_stt';
+  status: 'success' | 'none' | 'error';
+  text: string;
+  confidence: 'high' | 'medium' | 'low' | 'unknown';
+  message?: string;
+}
+
+export interface AiTargetWordCandidateDto {
+  target_word: string;
+  reason: string;
+  difficulty_hint: string;
+}
+
+export type ClipAnalysisResponseDto =
+  | {
+      status: 'success';
+      sentence: ClipSentenceCandidateDto;
+      candidates: AiTargetWordCandidateDto[];
+      note?: string;
+    }
+  | {
+      status: 'none';
+      sentence: null;
+      candidates: [];
+      message: string;
+    };
+
 export interface AiSpellingIssueDto {
   original: string;
   suggestion: string;

@@ -53,6 +53,11 @@ export const zh = {
       "title": "新建卡片",
       "description": "创建新卡片"
     },
+    "batchImport": {
+      "label": "批量导入",
+      "title": "批量导入",
+      "description": "从多个视频片段制卡"
+    },
     "cards": {
       "label": "卡片",
       "title": "所有卡片",
@@ -468,6 +473,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "title": "Create",
       "description": "Create meanings and contexts"
     },
+    "batchImport": {
+      "label": "Batch import",
+      "title": "Batch import",
+      "description": "Create from multiple clips"
+    },
     "cards": {
       "label": "Meaning entries",
       "title": "Meaning entries",
@@ -879,6 +889,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "label": "作成",
       "title": "作成",
       "description": "語義と文脈を作成"
+    },
+    "batchImport": {
+      "label": "Batch import",
+      "title": "Batch import",
+      "description": "Create from multiple clips"
     },
     "cards": {
       "label": "語義一覧",
@@ -1292,6 +1307,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "title": "새 카드 만들기",
       "description": "새 카드 만들기"
     },
+    "batchImport": {
+      "label": "Batch import",
+      "title": "Batch import",
+      "description": "Create from multiple clips"
+    },
     "cards": {
       "label": "카드",
       "title": "모든 카드",
@@ -1703,6 +1723,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "label": "Créer",
       "title": "Créer",
       "description": "Créer des sens et des contextes"
+    },
+    "batchImport": {
+      "label": "Batch import",
+      "title": "Batch import",
+      "description": "Create from multiple clips"
     },
     "cards": {
       "label": "Entrées de sens",
@@ -2116,6 +2141,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "title": "Neue Karte",
       "description": "Neue Karte erstellen"
     },
+    "batchImport": {
+      "label": "Batch import",
+      "title": "Batch import",
+      "description": "Create from multiple clips"
+    },
     "cards": {
       "label": "Karten",
       "title": "Alle Karten",
@@ -2528,6 +2558,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "title": "Nueva tarjeta",
       "description": "Crear nueva tarjeta"
     },
+    "batchImport": {
+      "label": "Batch import",
+      "title": "Batch import",
+      "description": "Create from multiple clips"
+    },
     "cards": {
       "label": "Tarjetas",
       "title": "Todas las tarjetas",
@@ -2939,6 +2974,11 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "label": "Создать",
       "title": "Новая карточка",
       "description": "Создать новую карточку"
+    },
+    "batchImport": {
+      "label": "Batch import",
+      "title": "Batch import",
+      "description": "Create from multiple clips"
     },
     "cards": {
       "label": "Карточки",

@@ -32,6 +32,13 @@ describe('App', () => {
       if (url === '/api/settings') {
         return Promise.resolve(json({ id: 1, interface_language: 'zh-CN', default_target_language: '英语', default_definition_language: '中文', daily_review_limit: 20, created_at: 'now', updated_at: 'now' }));
       }
+      if (url.startsWith('/api/local-recognition/readiness')) {
+        return Promise.resolve(json({
+          ffmpeg: { ready: true, message: 'ffmpeg is ready' },
+          stt: { provider: 'whisper.cpp', ready: true, executablePath: '/bin/whisper-cli', modelPath: '/models/ggml.bin', message: 'whisper.cpp executable and model are ready' },
+          ocr: { provider: 'tesseract', ready: true, executablePath: '/bin/tesseract', language: 'eng', message: 'Tesseract OCR is ready' },
+        }));
+      }
       if (url.startsWith('/api/tags')) return Promise.resolve(json([]));
       if (url === '/api/cards/card-1') {
         return Promise.resolve(json({
@@ -96,6 +103,7 @@ describe('App', () => {
 
   it.each([
     ['#/create', /^新建/],
+    ['#/batch-import', /^批量导入/],
     ['#/cards', /^卡片/],
     ['#/review', /^复习/],
     ['#/tags', /^标签/],
@@ -183,6 +191,13 @@ describe('App', () => {
       }
       if (url.startsWith('/api/statistics/home')) {
         return Promise.resolve(json({ due_count: 0, reviewed_today_count: 0, again_today_count: 0, good_today_count: 0, daily_review_limit: 20, is_daily_target_reached: false }));
+      }
+      if (url.startsWith('/api/local-recognition/readiness')) {
+        return Promise.resolve(json({
+          ffmpeg: { ready: true, message: 'ffmpeg is ready' },
+          stt: { provider: 'whisper.cpp', ready: true, executablePath: '/bin/whisper-cli', modelPath: '/models/ggml.bin', message: 'whisper.cpp executable and model are ready' },
+          ocr: { provider: 'tesseract', ready: true, executablePath: '/bin/tesseract', language: 'eng', message: 'Tesseract OCR is ready' },
+        }));
       }
       return Promise.resolve(json({ items: [], total: 0, page: 1, page_size: 20 }));
     });

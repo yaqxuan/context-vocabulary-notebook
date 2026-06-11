@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Layout, type NavItem } from './components/Layout';
 import { HomePage } from './pages/HomePage';
 import { CardCreatePage } from './pages/CardCreatePage';
+import { BatchClipImportPage } from './pages/BatchClipImportPage';
 import { CardDetailPage } from './pages/CardDetailPage';
 import { CardListPage } from './pages/CardListPage';
 import { FavoritesPage } from './pages/FavoritesPage';
@@ -23,6 +24,7 @@ function getNavItems(t: Translator): NavItem[] {
   return [
     { href: '#/', label: t('nav.home.label'), description: t('nav.home.description'), match: (path) => path === '/' },
     { href: '#/create', label: t('nav.create.label'), description: t('nav.create.description'), match: (path) => path === '/create' },
+    { href: '#/batch-import', label: t('nav.batchImport.label'), description: t('nav.batchImport.description'), match: (path) => path === '/batch-import' },
     { href: '#/cards', label: t('nav.cards.label'), description: t('nav.cards.description'), match: (path) => path === '/cards' || path.startsWith('/cards/') },
     { href: '#/review', label: t('nav.review.label'), description: t('nav.review.description'), match: (path) => path === '/review' },
     { href: '#/tags', label: t('nav.tags.label'), description: t('nav.tags.description'), match: (path) => path === '/tags' },
@@ -44,6 +46,9 @@ function routeFor(path: string, t: Translator): RouteResult {
   }
   if (path === '/create') {
     return { title: t('nav.create.title'), subtitle: t('nav.create.description'), element: <CardCreatePage /> };
+  }
+  if (path === '/batch-import') {
+    return { title: t('nav.batchImport.title'), subtitle: t('nav.batchImport.description'), element: <BatchClipImportPage /> };
   }
   if (path === '/cards') {
     return { title: t('nav.cards.title'), subtitle: t('nav.cards.description'), element: <CardListPage /> };
