@@ -59,6 +59,7 @@ describe('App', () => {
           fsrs: { due_date: 'now', stability: null, difficulty: null, elapsed_days: 0, scheduled_days: 0, learning_steps: 0, reps: 0, lapses: 0, state: 0, last_reviewed_at: null },
         }));
       }
+      if (url === '/api/ai-configs') return Promise.resolve(json([]));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(json([]));
       if (url.startsWith('/api/cards')) return Promise.resolve(json({ items: [], total: 0, page: 1, page_size: 20 }));
       return Promise.resolve(json({}));
@@ -80,6 +81,7 @@ describe('App', () => {
     expect(screen.getByRole('navigation', { name: '导航' })).toHaveTextContent('主页');
     expect(screen.getByRole('navigation', { name: '导航' })).toHaveTextContent('新建');
     expect(screen.getByRole('navigation', { name: '导航' })).toHaveTextContent('设置');
+    expect(screen.queryByRole('link', { name: /^批量导入/ })).not.toBeInTheDocument();
   });
 
   it('navigates with hash links and highlights current page', async () => {
@@ -103,7 +105,6 @@ describe('App', () => {
 
   it.each([
     ['#/create', /^新建/],
-    ['#/batch-import', /^批量导入/],
     ['#/cards', /^卡片/],
     ['#/review', /^复习/],
     ['#/tags', /^标签/],
@@ -115,6 +116,15 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('link', { name: navName })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('keeps batch import route reachable outside the sidebar', async () => {
+    window.location.hash = '#/batch-import';
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '批量导入' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '批量视频导入' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^批量导入/ })).not.toBeInTheDocument();
   });
 
   it('renders the real card create page on create route', async () => {

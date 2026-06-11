@@ -575,13 +575,9 @@ export function CardCreatePage() {
       {errors.submit ? <div className="card-create-alert" role="alert">{errors.submit}</div> : null}
       {successMessage ? <div className="card-create-success" role="status">{successMessage}</div> : null}
 
-      <section className="card-create-batch-import-entry" aria-label={t('create.batchImportEntry.aria')}>
-        <div>
-          <h2>{t('create.batchImportEntry.title')}</h2>
-          <p>{t('create.batchImportEntry.description')}</p>
-        </div>
+      <div className="card-create-batch-import-entry">
         <a href="#/batch-import">{t('create.batchImportEntry.action')}</a>
-      </section>
+      </div>
 
       <div className={`card-create-grid${showSuggestionPanel ? '' : ' card-create-grid--single'}`}>
         {/* Main form panel */}
