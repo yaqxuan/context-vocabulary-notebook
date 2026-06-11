@@ -318,7 +318,13 @@ export const zh = {
     "newWordFallback": "新单词",
     "firstContextNotice": "当前语境会成为第一条主语境",
     "noSameMeaning": "未找到相同词义",
-    "foundSameWord": "已找到同名词义，请确认是否相同："
+    "foundSameWord": "已找到同名词义，请确认是否相同：",
+    "batchImportEntry": {
+      "aria": "批量导入入口",
+      "title": "批量导入视频片段",
+      "description": "选择多个 MP4，逐个分析例句和候选目标词，再保存为卡片。",
+      "action": "进入批量导入"
+    }
   },
   "detail": {
     "title": "详情",
@@ -738,7 +744,13 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "newWordFallback": "New word",
     "firstContextNotice": "Current context will become the first main context",
     "noSameMeaning": "No identical meaning found",
-    "foundSameWord": "Meaning with same word found, please confirm if identical:"
+    "foundSameWord": "Meaning with same word found, please confirm if identical:",
+    "batchImportEntry": {
+      "aria": "Batch import entry",
+      "title": "Batch import video clips",
+      "description": "Select multiple MP4 clips, analyze sentences and candidate target words, then save them as cards.",
+      "action": "Go to batch import"
+    }
   },
   "detail": {
     "title": "Details",
@@ -1155,7 +1167,13 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "newWordFallback": "新しい単語",
     "firstContextNotice": "現在の文脈が最初の主要な文脈になります",
     "noSameMeaning": "同じ意味は見つかりませんでした",
-    "foundSameWord": "同じ単語の意味が見つかりました、同じかどうか確認してください："
+    "foundSameWord": "同じ単語の意味が見つかりました、同じかどうか確認してください：",
+    "batchImportEntry": {
+      "aria": "一括インポート入口",
+      "title": "動画クリップを一括インポート",
+      "description": "複数の MP4 を選択し、例文と候補語を順番に分析してカードとして保存します。",
+      "action": "一括インポートへ"
+    }
   },
   "detail": {
     "title": "详情",
@@ -1572,7 +1590,13 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "newWordFallback": "새 단어",
     "firstContextNotice": "현재 문맥이 첫 번째 주요 문맥이 됩니다",
     "noSameMeaning": "동일한 의미를 찾을 수 없습니다",
-    "foundSameWord": "같은 단어의 의미가 발견되었습니다, 동일한지 확인하세요:"
+    "foundSameWord": "같은 단어의 의미가 발견되었습니다, 동일한지 확인하세요:",
+    "batchImportEntry": {
+      "aria": "일괄 가져오기 입구",
+      "title": "동영상 클립 일괄 가져오기",
+      "description": "여러 MP4를 선택해 예문과 후보 단어를 차례로 분석한 뒤 카드로 저장합니다.",
+      "action": "일괄 가져오기로 이동"
+    }
   },
   "detail": {
     "title": "상세",
@@ -1989,7 +2013,13 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "newWordFallback": "Nouveau mot",
     "firstContextNotice": "Le contexte actuel deviendra le premier contexte principal",
     "noSameMeaning": "Aucun sens identique trouvé",
-    "foundSameWord": "Sens avec le même mot trouvé, veuillez confirmer s'il est identique :"
+    "foundSameWord": "Sens avec le même mot trouvé, veuillez confirmer s'il est identique :",
+    "batchImportEntry": {
+      "aria": "Entrée d'import par lot",
+      "title": "Importer des clips vidéo par lot",
+      "description": "Sélectionnez plusieurs MP4, analysez les phrases et mots candidats, puis enregistrez-les comme cartes.",
+      "action": "Aller à l'import par lot"
+    }
   },
   "detail": {
     "title": "Détails",
@@ -2406,7 +2436,13 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "newWordFallback": "Neues Wort",
     "firstContextNotice": "Der aktuelle Kontext wird der erste Hauptkontext",
     "noSameMeaning": "Keine identische Bedeutung gefunden",
-    "foundSameWord": "Bedeutung mit gleichem Wort gefunden, bitte bestätigen Sie, ob identisch:"
+    "foundSameWord": "Bedeutung mit gleichem Wort gefunden, bitte bestätigen Sie, ob identisch:",
+    "batchImportEntry": {
+      "aria": "Einstieg zum Batch-Import",
+      "title": "Videoclips per Batch importieren",
+      "description": "Wählen Sie mehrere MP4-Dateien, analysieren Sie Beispielsätze und Kandidatenwörter und speichern Sie sie als Karten.",
+      "action": "Zum Batch-Import"
+    }
   },
   "detail": {
     "title": "Details",
@@ -2823,7 +2859,13 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "newWordFallback": "Nueva palabra",
     "firstContextNotice": "El contexto actual se convertirá en el primer contexto principal",
     "noSameMeaning": "No se encontró ningún significado idéntico",
-    "foundSameWord": "Significado con la misma palabra encontrado, por favor confirma si es idéntico:"
+    "foundSameWord": "Significado con la misma palabra encontrado, por favor confirma si es idéntico:",
+    "batchImportEntry": {
+      "aria": "Entrada de importación por lotes",
+      "title": "Importar clips de vídeo por lotes",
+      "description": "Selecciona varios MP4, analiza oraciones y palabras candidatas, y guárdalos como tarjetas.",
+      "action": "Ir a importación por lotes"
+    }
   },
   "detail": {
     "title": "Detalles",
@@ -3240,7 +3282,13 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
     "newWordFallback": "Новое слово",
     "firstContextNotice": "Текущий контекст станет первым основным контекстом",
     "noSameMeaning": "Идентичное значение не найдено",
-    "foundSameWord": "Найдено значение с тем же словом, пожалуйста, подтвердите, идентично ли:"
+    "foundSameWord": "Найдено значение с тем же словом, пожалуйста, подтвердите, идентично ли:",
+    "batchImportEntry": {
+      "aria": "Вход в пакетный импорт",
+      "title": "Пакетный импорт видеоклипов",
+      "description": "Выберите несколько MP4, проанализируйте предложения и слова-кандидаты, затем сохраните их как карточки.",
+      "action": "Перейти к пакетному импорту"
+    }
   },
   "detail": {
     "title": "Детали",

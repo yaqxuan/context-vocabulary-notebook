@@ -68,6 +68,7 @@ describe('CardCreatePage', () => {
     expect(screen.getByRole('button', { name: 'Create card' })).toBeInTheDocument();
     expect(screen.getByLabelText('Target word')).toHaveAttribute('placeholder', 'e.g.: charge');
     expect(screen.getByText('Sentence')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Go to batch import' })).toHaveAttribute('href', '#/batch-import');
   });
 
   // Test 1: render
@@ -93,6 +94,15 @@ describe('CardCreatePage', () => {
     expect(screen.queryByLabelText(/视频网址/)).not.toBeInTheDocument();
 
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/tags', expect.any(Object)));
+  });
+
+  it('shows batch import entry on the create page', async () => {
+    await renderCardCreatePage();
+
+    expect(screen.getByRole('region', { name: '批量导入入口' })).toBeInTheDocument();
+    expect(screen.getByText('批量导入视频片段')).toBeInTheDocument();
+    expect(screen.getByText('选择多个 MP4，逐个分析例句和候选目标词，再保存为卡片。')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '进入批量导入' })).toHaveAttribute('href', '#/batch-import');
   });
 
   it('orders create fields as sentence, target word, then meaning', async () => {
