@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 
 import { getAiSuggestion } from '../api/aiSuggestions';
 import { createCard, getCardSuggestions } from '../api/cards';
@@ -32,6 +32,7 @@ interface BatchItem {
   note: string;
   sentenceTranslation: string;
   suggestionState: 'idle' | 'loading' | 'none' | 'success' | 'error';
+  suggestionRequestKey: string;
   candidates: AiTargetWordCandidateDto[];
   sentenceCandidate: ClipSentenceCandidateDto | null;
   comparisonNote: string;
@@ -56,6 +57,7 @@ function newItem(file: File): BatchItem {
     note: '',
     sentenceTranslation: '',
     suggestionState: 'idle',
+    suggestionRequestKey: '',
     candidates: [],
     sentenceCandidate: null,
     comparisonNote: '',
@@ -141,6 +143,7 @@ export function BatchClipImportPage() {
   const [readiness, setReadiness] = useState<LocalRecognitionReadinessDto | null>(null);
   const [readinessLoading, setReadinessLoading] = useState(true);
   const [readinessError, setReadinessError] = useState('');
+  const suggestionRequestSeqRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -176,14 +179,40 @@ export function BatchClipImportPage() {
 
   const hasProcessableItems = useMemo(() => items.some((item) => item.status === 'queued' || item.status === 'error'), [items]);
 
+  const clearReadyItemSuggestions = () => {
+    setItems((current) => current.map((item) => {
+      if (item.status !== 'ready') return item;
+      if (!item.meaning && !item.note && !item.sentenceTranslation && !item.suggestionRequestKey) return item;
+      return {
+        ...item,
+        meaning: '',
+        note: '',
+        sentenceTranslation: '',
+        suggestionState: 'idle',
+        suggestionRequestKey: '',
+        error: '',
+      };
+    }));
+  };
+
+  const handleTargetLanguageChange = (value: string) => {
+    setTargetLanguage(normalizeSupportedLanguage(value) ?? DEFAULT_TARGET_LANGUAGE);
+    clearReadyItemSuggestions();
+  };
+
+  const handleDefinitionLanguageChange = (value: string) => {
+    setDefinitionLanguage(normalizeSupportedLanguage(value) ?? DEFAULT_DEFINITION_LANGUAGE);
+    clearReadyItemSuggestions();
+  };
+
   const patchItem = (id: string, patch: Partial<BatchItem>) => {
     setItems((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
 
-  const patchSuggestionIfCurrent = (id: string, sentence: string, targetWord: string, patch: Partial<BatchItem>) => {
+  const patchSuggestionIfCurrent = (id: string, requestKey: string, patch: Partial<BatchItem>) => {
     setItems((current) => current.map((item) => {
       if (item.id !== id) return item;
-      if (item.sentence.trim() !== sentence.trim() || item.targetWord.trim() !== targetWord.trim()) return item;
+      if (item.suggestionRequestKey !== requestKey) return item;
       return { ...item, ...patch };
     }));
   };
@@ -203,7 +232,8 @@ export function BatchClipImportPage() {
   };
 
   const requestCandidateSuggestion = async (id: string, sentence: string, targetWord: string) => {
-    patchItem(id, { meaning: '', note: '', sentenceTranslation: '', suggestionState: 'loading', error: '' });
+    const requestKey = `${++suggestionRequestSeqRef.current}`;
+    patchItem(id, { meaning: '', note: '', sentenceTranslation: '', suggestionState: 'loading', suggestionRequestKey: requestKey, error: '' });
     try {
       const suggestion = await getAiSuggestion({
         target_word: targetWord,
@@ -212,7 +242,7 @@ export function BatchClipImportPage() {
         definition_language: definitionLanguage,
       });
       if (suggestion.status === 'success') {
-        patchSuggestionIfCurrent(id, sentence, targetWord, {
+        patchSuggestionIfCurrent(id, requestKey, {
           meaning: suggestion.meaning_suggestion,
           note: suggestion.usage_note,
           sentenceTranslation: suggestion.sentence_translation,
@@ -220,10 +250,10 @@ export function BatchClipImportPage() {
           error: '',
         });
       } else {
-        patchSuggestionIfCurrent(id, sentence, targetWord, { suggestionState: 'none', error: `AI 建议失败：${suggestion.message}` });
+        patchSuggestionIfCurrent(id, requestKey, { suggestionState: 'none', error: `AI 建议失败：${suggestion.message}` });
       }
     } catch (err) {
-      patchSuggestionIfCurrent(id, sentence, targetWord, { suggestionState: 'error', error: `AI 建议失败：${errorMessage(err, '建议失败')}` });
+      patchSuggestionIfCurrent(id, requestKey, { suggestionState: 'error', error: `AI 建议失败：${errorMessage(err, '建议失败')}` });
     }
   };
 
@@ -266,6 +296,7 @@ export function BatchClipImportPage() {
       note: '',
       sentenceTranslation: '',
       suggestionState: sentence && targetWord.trim() ? 'loading' : 'idle',
+      suggestionRequestKey: '',
       error: '',
     });
     if (sentence && targetWord.trim()) void requestCandidateSuggestion(item.id, sentence, targetWord.trim());
@@ -279,6 +310,7 @@ export function BatchClipImportPage() {
       note: '',
       sentenceTranslation: '',
       suggestionState: sentence.trim() && targetWord ? 'loading' : 'idle',
+      suggestionRequestKey: '',
       error: '',
     });
     if (sentence.trim() && targetWord) void requestCandidateSuggestion(item.id, sentence.trim(), targetWord);
@@ -354,13 +386,13 @@ export function BatchClipImportPage() {
         <div className="batch-import-controls">
           <label>
             学习语言
-            <select aria-label="学习语言" value={targetLanguage} onChange={(event) => setTargetLanguage(normalizeSupportedLanguage(event.target.value) ?? DEFAULT_TARGET_LANGUAGE)}>
+            <select aria-label="学习语言" value={targetLanguage} onChange={(event) => handleTargetLanguageChange(event.target.value)}>
               {SUPPORTED_LANGUAGES.map((language) => <option key={language} value={language}>{getNativeLanguageLabel(language)}</option>)}
             </select>
           </label>
           <label>
             释义语言
-            <select aria-label="释义语言" value={definitionLanguage} onChange={(event) => setDefinitionLanguage(normalizeSupportedLanguage(event.target.value) ?? DEFAULT_DEFINITION_LANGUAGE)}>
+            <select aria-label="释义语言" value={definitionLanguage} onChange={(event) => handleDefinitionLanguageChange(event.target.value)}>
               {SUPPORTED_LANGUAGES.map((language) => <option key={language} value={language}>{getNativeLanguageLabel(language)}</option>)}
             </select>
           </label>

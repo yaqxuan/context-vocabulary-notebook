@@ -288,6 +288,7 @@ export function CardCreatePage() {
     let active = true;
     setAiMeaningSuggestion('');
     setAiUsageSuggestion('');
+    setAiSentenceTranslation('');
     setAiSuggestionState('loading');
     if (!noteTouchedRef.current && aiAutoFilledNoteRef.current) {
       setNote('');
@@ -314,6 +315,7 @@ export function CardCreatePage() {
           } else {
             setAiMeaningSuggestion('');
             setAiUsageSuggestion('');
+            setAiSentenceTranslation('');
             setAiSuggestionState('none');
           }
         })
