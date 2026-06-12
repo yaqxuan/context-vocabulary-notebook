@@ -169,7 +169,7 @@ describe('clip analysis domain', () => {
     deleted_at: null,
   };
 
-  it('detects a sentence locally without active AI config and returns no candidates', async () => {
+  it('detects a sentence locally without active AI config and returns fallback candidates', async () => {
     const result = await analyzeClip({
       config: undefined,
       inputPath: '/tmp/clip.mp4',
@@ -184,7 +184,7 @@ describe('clip analysis domain', () => {
     expect(result).toEqual({
       status: 'success',
       sentence: { source: 'audio_stt', status: 'success', text: 'Heard sentence.', confidence: 'medium' },
-      candidates: [],
+      candidates: [{ target_word: 'heard', reason: 'fallback candidate from sentence', difficulty_hint: 'unknown' }, { target_word: 'sentence', reason: 'fallback candidate from sentence', difficulty_hint: 'unknown' }],
       note: 'Using audio transcription because subtitle OCR was unavailable.',
     });
   });
@@ -199,7 +199,88 @@ describe('clip analysis domain', () => {
     });
   });
 
-  it('uses OCR and STT successes to return the best sentence and candidates', async () => {
+  it('prefers STT over noisy medium-confidence OCR text', async () => {
+    const ocr = {
+      source: 'subtitle_ocr' as const,
+      status: 'success' as const,
+      text: 'J Tf : Hel Seas —) RUS Aeg Se iL StS 2276 . i COMM O RR NDLeE esos uid just moka',
+      confidence: 'medium' as const,
+    };
+    const stt = {
+      source: 'audio_stt' as const,
+      status: 'success' as const,
+      text: 'But I know a compliment about the office will just make her a day.',
+      confidence: 'medium' as const,
+    };
+
+    expect(chooseBestSentence(ocr, stt)).toEqual({
+      sentence: stt,
+      note: 'Using audio transcription because subtitle OCR looked noisy: J Tf : Hel Seas —) RUS Aeg Se iL StS 2276 . i COMM O RR NDLeE esos uid just moka',
+    });
+  });
+
+  it('prefers STT over short noisy OCR text', async () => {
+    const ocr = {
+      source: 'subtitle_ocr' as const,
+      status: 'success' as const,
+      text: '=i in 1” (0 ofits,',
+      confidence: 'medium' as const,
+    };
+    const stt = {
+      source: 'audio_stt' as const,
+      status: 'success' as const,
+      text: 'Nice office. Oh, it’s horrid.',
+      confidence: 'medium' as const,
+    };
+
+    expect(chooseBestSentence(ocr, stt)).toEqual({
+      sentence: stt,
+      note: 'Using audio transcription because subtitle OCR looked noisy: =i in 1” (0 ofits,',
+    });
+  });
+
+  it('prefers STT over symbol-heavy noisy OCR text', async () => {
+    const ocr = {
+      source: 'subtitle_ocr' as const,
+      status: 'success' as const,
+      text: 'haey Wig Fz ALAA ) — — 7 r “a” i',
+      confidence: 'medium' as const,
+    };
+    const stt = {
+      source: 'audio_stt' as const,
+      status: 'success' as const,
+      text: 'You look awful. You look hungover.',
+      confidence: 'medium' as const,
+    };
+
+    expect(chooseBestSentence(ocr, stt)).toEqual({
+      sentence: stt,
+      note: 'Using audio transcription because subtitle OCR looked noisy: haey Wig Fz ALAA ) — — 7 r “a” i',
+    });
+  });
+
+  it('keeps valid short-word OCR text over different STT text', async () => {
+    const ocr = { source: 'subtitle_ocr' as const, status: 'success' as const, text: 'To be or not to be', confidence: 'medium' as const };
+    const stt = { source: 'audio_stt' as const, status: 'success' as const, text: 'Today we are not going.', confidence: 'medium' as const };
+
+    expect(chooseBestSentence(ocr, stt)).toEqual({
+      sentence: ocr,
+      note: 'Using visible subtitle OCR; audio transcription differs: Today we are not going.',
+    });
+  });
+
+  it('keeps valid uppercase OCR text over different STT text', async () => {
+    const ocr = { source: 'subtitle_ocr' as const, status: 'success' as const, text: 'I CAN DO THIS ALL DAY NOW', confidence: 'medium' as const };
+    const stt = { source: 'audio_stt' as const, status: 'success' as const, text: 'I cannot do this anymore.', confidence: 'medium' as const };
+
+    expect(chooseBestSentence(ocr, stt)).toEqual({
+      sentence: ocr,
+      note: 'Using visible subtitle OCR; audio transcription differs: I cannot do this anymore.',
+    });
+  });
+
+  it('uses OCR and STT successes to return the best sentence and local candidates', async () => {
+    const candidates = vi.fn(async () => [{ target_word: 'ai-only', reason: 'important word', difficulty_hint: 'easy' }]);
     const result = await analyzeClip({
       config,
       inputPath: '/tmp/clip.mp4',
@@ -210,15 +291,40 @@ describe('clip analysis domain', () => {
       stt: vi.fn(async (): Promise<TranscribeMediaResponseDto> => ({ status: 'success', text: 'Heard sentence.', segments: [] })),
       frameExtractor: vi.fn(async () => ['/tmp/frame-001.jpg']),
       ocr: vi.fn(async () => ({ source: 'subtitle_ocr' as const, status: 'success' as const, text: 'Visible subtitle.', confidence: 'high' as const })),
-      candidates: vi.fn(async () => [{ target_word: 'Visible', reason: 'important word', difficulty_hint: 'easy' }]),
+      candidates,
     });
 
     expect(result).toEqual({
       status: 'success',
       sentence: { source: 'subtitle_ocr', status: 'success', text: 'Visible subtitle.', confidence: 'high' },
-      candidates: [{ target_word: 'Visible', reason: 'important word', difficulty_hint: 'easy' }],
+      candidates: [
+        { target_word: 'visible', reason: 'fallback candidate from sentence', difficulty_hint: 'unknown' },
+        { target_word: 'subtitle', reason: 'fallback candidate from sentence', difficulty_hint: 'unknown' },
+      ],
       note: 'Using visible subtitle OCR; audio transcription differs: Heard sentence.',
     });
+    expect(candidates).not.toHaveBeenCalled();
+  });
+
+  it('returns local target candidates even when an AI candidate provider is available', async () => {
+    const candidates = vi.fn(async () => [{ target_word: 'ai-only', reason: 'candidate', difficulty_hint: 'B1' }]);
+    const result = await analyzeClip({
+      config,
+      inputPath: '/tmp/clip.mp4',
+      audioPath: '/tmp/audio.wav',
+      frameDir: '/tmp/frames',
+      languages: { target_language: '英语', definition_language: '中文' },
+      extractor: vi.fn(async () => '/tmp/audio.wav'),
+      stt: vi.fn(async (): Promise<TranscribeMediaResponseDto> => ({ status: 'success', text: 'You look awful. You look hungover.', segments: [] })),
+      frameExtractor: vi.fn(async () => ['/tmp/frame-001.jpg']),
+      ocr: vi.fn(async () => ({ source: 'subtitle_ocr' as const, status: 'none' as const, text: '', confidence: 'unknown' as const, message: 'No visible subtitle' })),
+      candidates,
+    });
+
+    expect(result.status).toBe('success');
+    if (result.status !== 'success') throw new Error('expected success');
+    expect(result.candidates.map((candidate) => candidate.target_word)).toEqual(['look', 'awful', 'hungover']);
+    expect(candidates).not.toHaveBeenCalled();
   });
 
   it('falls back to STT when OCR fails', async () => {
@@ -281,7 +387,7 @@ describe('clip analysis domain', () => {
   });
 
 
-  it('does not call cloud fetch for sentence detection by default; candidates use cloud only with safe config', async () => {
+  it('does not call cloud fetch for sentence detection or target candidates by default', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(aiResponse({
       choices: [{ message: { content: JSON.stringify({ candidates: [{ target_word: 'Visible', reason: 'reason', difficulty_hint: 'easy' }] }) } }],
     }));
@@ -299,12 +405,14 @@ describe('clip analysis domain', () => {
 
     expect(result.status).toBe('success');
     if (result.status !== 'success') throw new Error('expected success');
-    expect(result.candidates).toEqual([{ target_word: 'Visible', reason: 'reason', difficulty_hint: 'easy' }]);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith('https://ai.example/v1/chat/completions', expect.anything());
+    expect(result.candidates).toEqual([
+      { target_word: 'visible', reason: 'fallback candidate from sentence', difficulty_hint: 'unknown' },
+      { target_word: 'subtitle', reason: 'fallback candidate from sentence', difficulty_hint: 'unknown' },
+    ]);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('does not call fetch at all when sentence exists but no AI config is active', async () => {
+  it('does not call fetch when no AI config is active and returns fallback candidates', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
     const result = await analyzeClip({
@@ -320,7 +428,10 @@ describe('clip analysis domain', () => {
 
     expect(result.status).toBe('success');
     if (result.status !== 'success') throw new Error('expected success');
-    expect(result.candidates).toEqual([]);
+    expect(result.candidates).toEqual([
+      { target_word: 'visible', reason: 'fallback candidate from sentence', difficulty_hint: 'unknown' },
+      { target_word: 'subtitle', reason: 'fallback candidate from sentence', difficulty_hint: 'unknown' },
+    ]);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

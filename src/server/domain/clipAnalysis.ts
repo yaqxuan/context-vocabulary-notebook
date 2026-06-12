@@ -195,6 +195,23 @@ function buildCandidatePrompt(sentence: string, languages?: ClipAnalysisLanguage
   ].join('\n');
 }
 
+const FALLBACK_TARGET_WORD_STOPWORDS = new Set([
+  'about', 'again', 'also', 'because', 'been', 'being', 'could', 'does', 'done', 'from', 'have', 'here', 'into', 'just', 'like', 'looked', 'make', 'more', 'much', 'that', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'very', 'were', 'what', 'when', 'where', 'which', 'with', 'would', 'your',
+]);
+
+function extractLocalTargetWordCandidates(sentence: string): AiTargetWordCandidateDto[] {
+  const seen = new Set<string>();
+  const candidates: AiTargetWordCandidateDto[] = [];
+  for (const token of sentence.match(/[\p{L}][\p{L}'’-]*/gu) ?? []) {
+    const word = token.replace(/^['’-]+|['’-]+$/gu, '').toLocaleLowerCase();
+    if (word.length < 4 || FALLBACK_TARGET_WORD_STOPWORDS.has(word) || seen.has(word)) continue;
+    seen.add(word);
+    candidates.push({ target_word: word, reason: 'fallback candidate from sentence', difficulty_hint: 'unknown' });
+    if (candidates.length >= 5) break;
+  }
+  return candidates;
+}
+
 function parseCandidateContent(content: string): AiTargetWordCandidateDto[] {
   try {
     const parsed = JSON.parse(stripJsonCodeFence(content)) as { candidates?: unknown };
@@ -260,16 +277,42 @@ export async function requestTargetWordCandidates(
   }
 }
 
+function isNoisyOcrToken(token: string): boolean {
+  if (token.length <= 2 && !/^\p{Ll}+$/u.test(token)) return true;
+  if (/\p{N}/u.test(token)) return true;
+  return /\p{Lu}/u.test(token)
+    && /\p{Ll}/u.test(token)
+    && !/^\p{Lu}\p{Ll}+$/u.test(token);
+}
+
+function looksLikeNoisyOcr(text: string): boolean {
+  const tokens = text.match(/[\p{L}\p{N}]+/gu) ?? [];
+  const compact = text.replace(/\s+/gu, '');
+  const symbolCount = compact.match(/[^\p{L}\p{N}]/gu)?.length ?? 0;
+  const digitCount = compact.match(/\p{N}/gu)?.length ?? 0;
+  const noisyTokens = tokens.filter(isNoisyOcrToken).length;
+  const noiseScore = symbolCount + digitCount + noisyTokens;
+  if (tokens.length < 6) {
+    return tokens.length > 0 && (symbolCount + digitCount) >= Math.max(2, Math.ceil(compact.length * 0.25));
+  }
+  return noiseScore >= Math.max(4, Math.ceil((tokens.length + symbolCount) * 0.35));
+}
+
 export function chooseBestSentence(
   ocr: ClipSentenceCandidateDto,
   stt: ClipSentenceCandidateDto,
 ): { sentence: ClipSentenceCandidateDto | null; note: string } {
-  const ocrOk = ocr.status === 'success' && ocr.text.trim().length > 0;
-  const sttOk = stt.status === 'success' && stt.text.trim().length > 0;
+  const ocrText = ocr.text.trim();
+  const sttText = stt.text.trim();
+  const ocrOk = ocr.status === 'success' && ocrText.length > 0;
+  const sttOk = stt.status === 'success' && sttText.length > 0;
 
   if (ocrOk) {
-    if (sttOk && ocr.text.trim() !== stt.text.trim()) {
-      return { sentence: ocr, note: `Using visible subtitle OCR; audio transcription differs: ${stt.text.trim()}` };
+    if (sttOk && ocrText !== sttText) {
+      if (ocr.confidence !== 'high' && looksLikeNoisyOcr(ocrText)) {
+        return { sentence: stt, note: `Using audio transcription because subtitle OCR looked noisy: ${ocrText}` };
+      }
+      return { sentence: ocr, note: `Using visible subtitle OCR; audio transcription differs: ${sttText}` };
     }
     if (!sttOk) return { sentence: ocr, note: 'Using visible subtitle OCR; audio transcription unavailable.' };
     return { sentence: ocr, note: 'Using visible subtitle OCR.' };
@@ -339,8 +382,6 @@ export async function analyzeClip(options: AnalyzeClipOptions): Promise<ClipAnal
   const ocrProvider = options.ocr ?? defaultLocalOcrProvider(options.languages);
   const audioExtractor = options.extractor ?? extractWavAudioWithFfmpeg;
   const sttProvider = options.stt ?? defaultLocalSttProvider(options.languages);
-  const candidateProvider = options.candidates ?? requestTargetWordCandidates;
-
   const ocrPromise = (async () => {
     let frames: string[] = [];
     try {
@@ -371,10 +412,7 @@ export async function analyzeClip(options: AnalyzeClipOptions): Promise<ClipAnal
     return { status: 'none', sentence: null, candidates: [], message: best.note };
   }
 
-  let targetCandidates: AiTargetWordCandidateDto[] = [];
-  if (options.config && await isSafeAiBaseUrl(options.config.base_url)) {
-    targetCandidates = await candidateProvider(options.config, best.sentence.text, options.languages);
-  }
+  const targetCandidates = extractLocalTargetWordCandidates(best.sentence.text);
   return { status: 'success', sentence: best.sentence, candidates: targetCandidates, note: best.note };
 }
 
