@@ -27,6 +27,7 @@ const typeSmokeAiSuggestion: AiSuggestionResponseDto = {
   status: 'success',
   meaning_suggestion: '收费',
   usage_note: '在句中表示收取费用。',
+  sentence_translation: '酒店每晚收费 100 美元。',
 };
 void typeSmokeAiConfig;
 void typeSmokeCreateAiConfig;
