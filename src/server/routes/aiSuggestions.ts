@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import type { Database } from 'better-sqlite3';
 import { SUPPORTED_LANGUAGES } from '../../shared/constants.js';
-import type { AiSpellingCheckRequestDto, AiSuggestionRequestDto } from '../../shared/types.js';
+import type { AiSpellingCheckRequestDto, AiSuggestionRequestDto, AiTargetWordLemmaRequestDto } from '../../shared/types.js';
 import { isNonEmptyString, isSupportedLanguage } from '../../shared/validators.js';
 import { BadRequestError } from '../http/errors.js';
 import { asyncRoute } from '../http/asyncRoute.js';
 import { getActiveAiConfigWithKey } from '../domain/aiConfigs.js';
-import { requestAiSpellingCheck, requestAiSuggestion } from '../domain/aiSuggestions.js';
+import { requestAiSpellingCheck, requestAiSuggestion, requestAiTargetWordLemma } from '../domain/aiSuggestions.js';
 
 function optionalSupportedLanguage(field: string, value: unknown): string | undefined {
   if (value === undefined) return undefined;
@@ -44,6 +44,20 @@ export function aiSuggestionsRouter(db: Database): Router {
     };
 
     res.json(await requestAiSuggestion(getActiveAiConfigWithKey(db), input));
+  }));
+
+
+  router.post('/target-word-lemma', asyncRoute(async (req, res) => {
+    const body = req.body as Record<string, unknown>;
+    const { targetWord, sentence } = parseAiTextInput(body);
+
+    const input: AiTargetWordLemmaRequestDto = {
+      target_word: targetWord,
+      sentence,
+      target_language: optionalSupportedLanguage('target_language', body.target_language),
+    };
+
+    res.json(await requestAiTargetWordLemma(getActiveAiConfigWithKey(db), input));
   }));
 
   router.post('/spelling-check', asyncRoute(async (req, res) => {
