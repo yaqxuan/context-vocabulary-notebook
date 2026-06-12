@@ -64,6 +64,14 @@ It is not recommended to run the app in these locations:
 
 The installation script will first check the existing environment on the local machine. On Linux / WSL, it will only attempt to fulfill dependencies via `apt-get` if Git or Node.js/npm are missing; if basic environments are met, it will skip `apt-get` to avoid triggering irrelevant third-party software source issues in the system. The macOS script will try to use Homebrew when dependencies are missing. The Windows native script will try to use `winget` when dependencies are missing. If these package managers are not available, or the current user does not have installation permissions, you need to manually install the missing environments and try again.
 
+### WSL / Native Windows Recommendation
+
+- WSL is usually the safest path: Node, Git, ffmpeg, Tesseract, and native build tools behave closer to Linux, and `better-sqlite3` / `node-gyp` failures are easier to fix.
+- Native Windows PowerShell can install the app: the script reuses existing Git / Node.js / npm and only tries `winget` when they are missing. If `npm ci` fails at `better-sqlite3`, install Python and Visual Studio Build Tools / MSVC as prompted, or use WSL.
+- OCR can be configured after install: install ffmpeg, Tesseract, and target-language traineddata, then use the Settings page local recognition panel to re-check readiness.
+- STT requires installing whisper.cpp separately and downloading a Whisper ggml model manually. The one-click installer does not download models automatically, avoiding a large, slow, or wrong default install.
+- On Windows, after installing ffmpeg / Tesseract / whisper.cpp, reopen PowerShell before running `npm run dev` so the service process can read the new PATH and `.env`.
+
 ## Pre-installation Notes and Disclaimer
 
 To the best of the author's current knowledge, this project's own source code does not contain any malicious code. The installation script will check the local environment and attempt to install missing dependencies such as Git, Node.js, and npm on supported platforms; when native build tools are missing, it prints guidance, and some platforms require manual installation.

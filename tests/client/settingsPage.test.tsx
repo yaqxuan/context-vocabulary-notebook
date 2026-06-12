@@ -139,6 +139,20 @@ describe('SettingsPage', () => {
       expect(await screen.findByText('本地识别配置 · English')).toBeInTheDocument();
     });
 
+    it('shows separate WSL and Windows recognition setup commands', async () => {
+      render(<SettingsPage />);
+      await screen.findByText('本地识别配置 · English');
+
+      fireEvent.click(screen.getByRole('button', { name: '查看安装命令' }));
+
+      expect(screen.getByText('Ubuntu / WSL')).toBeInTheDocument();
+      expect(screen.getByText('Windows 原生 PowerShell')).toBeInTheDocument();
+      expect(screen.getByText('Whisper .env（Linux / WSL / macOS）')).toBeInTheDocument();
+      expect(screen.getByText('Whisper .env（Windows 原生）')).toBeInTheDocument();
+      expect(screen.getByText(/重新打开 PowerShell/)).toBeInTheDocument();
+      expect(screen.getByText(/C:\\tools\\whisper\.cpp/)).toBeInTheDocument();
+    });
+
     it('keeps recognition readiness aligned with the latest selected learning language', async () => {
       let resolveEnglishReadiness: (response: Response) => void = () => undefined;
       let resolveJapaneseReadiness: (response: Response) => void = () => undefined;

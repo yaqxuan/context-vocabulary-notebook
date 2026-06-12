@@ -26,13 +26,24 @@ function statusLabel(ready: boolean): string {
   return ready ? '✅ 已就绪' : '⚠️ 需要配置';
 }
 
+function tesseractLanguagePackages(requiredLanguage: string): string[] {
+  return requiredLanguage
+    .split('+')
+    .map((language) => language.trim())
+    .filter(Boolean)
+    .map((language) => APT_TESSERACT_PACKAGES[language] ?? language);
+}
+
 function buildCommands(targetLanguage: SupportedLanguage, readiness: LocalRecognitionReadinessDto | null) {
   const requiredLanguage = readiness?.ocr?.requiredLanguage ?? readiness?.ocr?.language ?? 'eng';
-  const aptPackage = APT_TESSERACT_PACKAGES[requiredLanguage] ?? requiredLanguage;
+  const aptPackages = tesseractLanguagePackages(requiredLanguage)
+    .map((language) => `tesseract-ocr-${language}`)
+    .join(' ');
   const label = getNativeLanguageLabel(targetLanguage);
   const ubuntu = [
     'sudo apt-get update',
-    `sudo apt-get install -y ffmpeg tesseract-ocr tesseract-ocr-${aptPackage}`,
+    `sudo apt-get install -y ffmpeg tesseract-ocr ${aptPackages}`,
+    '# 如果 apt-get 报 Docker / Chrome / NVIDIA / GPG key 等错误，先修复系统 apt 源；也可以手动安装后回来点“重新检测”。',
   ].join('\n');
   const macos = [
     'brew install ffmpeg tesseract',
@@ -41,16 +52,24 @@ function buildCommands(targetLanguage: SupportedLanguage, readiness: LocalRecogn
   const windows = [
     'winget install --id Gyan.FFmpeg -e --source winget',
     'winget install --id UB-Mannheim.TesseractOCR -e --source winget',
+    '# 安装后重新打开 PowerShell，让服务进程读到新的 PATH。',
     `# 如果 ${label} OCR 仍缺少 ${requiredLanguage}，请把对应 traineddata 放入 Tesseract tessdata 目录。`,
   ].join('\n');
-  const whisper = [
+  const whisperUnix = [
     '# 推荐使用多语言模型；非英语不要使用 *.en.bin',
     'CVN_STT_PROVIDER=whisper.cpp',
     'CVN_WHISPER_CPP_PATH=/absolute/path/to/whisper-cli',
     'CVN_WHISPER_CPP_MODEL=/absolute/path/to/ggml-small.bin',
     'CVN_WHISPER_CPP_TIMEOUT_MS=120000',
   ].join('\n');
-  return { ubuntu, macos, windows, whisper };
+  const whisperWindows = [
+    '# 推荐使用多语言模型；非英语不要使用 *.en.bin',
+    'CVN_STT_PROVIDER=whisper.cpp',
+    'CVN_WHISPER_CPP_PATH=C:\\tools\\whisper.cpp\\build\\bin\\Release\\whisper-cli.exe',
+    'CVN_WHISPER_CPP_MODEL=C:\\models\\ggml-small.bin',
+    'CVN_WHISPER_CPP_TIMEOUT_MS=120000',
+  ].join('\n');
+  return { ubuntu, macos, windows, whisperUnix, whisperWindows };
 }
 
 async function copyText(text: string) {
@@ -70,7 +89,7 @@ export function RecognitionSetupCard({ targetLanguage, readiness, loading, error
       <header className="recognition-setup-header">
         <div>
           <h3>本地识别配置 · {languageLabel}</h3>
-          <p>应用不会自动安装依赖；你可以复制命令到终端手动执行，安装后重新检测。</p>
+          <p>核心应用安装不强制 OCR/STT。OCR 可通过 ffmpeg + Tesseract 配好；语音识别还需要手动安装 whisper.cpp 并下载 Whisper 模型。复制对应系统命令执行后，重新打开终端并检测。</p>
         </div>
         <button type="button" onClick={onRefresh} disabled={loading}>{loading ? '检测中…' : '我已安装，重新检测'}</button>
       </header>
@@ -107,8 +126,9 @@ export function RecognitionSetupCard({ targetLanguage, readiness, loading, error
         <div className="recognition-setup-commands">
           <CommandBlock title="Ubuntu / WSL" command={commands.ubuntu} />
           <CommandBlock title="macOS" command={commands.macos} />
-          <CommandBlock title="Windows" command={commands.windows} />
-          <CommandBlock title="Whisper .env 配置" command={commands.whisper} />
+          <CommandBlock title="Windows 原生 PowerShell" command={commands.windows} />
+          <CommandBlock title="Whisper .env（Linux / WSL / macOS）" command={commands.whisperUnix} />
+          <CommandBlock title="Whisper .env（Windows 原生）" command={commands.whisperWindows} />
         </div>
       ) : null}
     </section>
