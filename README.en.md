@@ -22,11 +22,13 @@ Good for:
 
 - Create cards around real contexts: target word, contextual definition, original sentence, notes, tags.
 - Save local media attachments: video `mp4`, audio `mp3`, image `jpg / png / webp`.
+- Local clip analysis: uses whisper.cpp for speech recognition and Tesseract for image/video-frame OCR by default to help recover original sentences.
+- Batch clip import: import multiple video/audio/image clips, review detected sentences, then create cards one by one.
 - Link one meaning entry to multiple context instances, useful for recording the same meaning across different materials.
 - Review with FSRS spaced repetition, bringing each word back to the context where you met it.
 - Meaning entry list, search, tag filtering, favorites, statistics.
 - ZIP import and export for full personal backup and card-only sharing.
-- V2 card creation page AI suggestions: configure an OpenAI-compatible API for contextual definitions and usage notes; the API Key is saved locally only.
+- V2 card creation page AI suggestions: configure an OpenAI-compatible API for contextual definitions, usage notes, sentence translation, lemmatization, and spelling checks; the API Key is saved locally only. Batch clip target-word candidates are generated locally by default; text models such as DeepSeek do not perform OCR/STT.
 
 ## Data Location and Disk Space Warning
 
@@ -56,13 +58,15 @@ It is not recommended to run the app in these locations:
 | Git | Required for cloning the GitHub repository | The install script will check and try to fulfill this. |
 | Browser | Modern browsers like Chrome / Edge / Firefox / Safari | The application is used via local Web pages. |
 | C/C++ Build Tools | May be required | `better-sqlite3` is a native module; if there is no precompiled package available for the current system and Node version, `npm ci` will attempt local compilation. |
-| ffmpeg | Required for video transcription; not required for core install | Used to extract audio from videos. The installer checks ffmpeg; missing ffmpeg does not block the core app install. Set `CVN_INSTALL_FFMPEG=1` to let the installer try to install it. |
+| ffmpeg | Required for video/audio clip analysis; not required for core install | Used to extract audio from videos. The installer checks ffmpeg; missing ffmpeg does not block the core app install. Set `CVN_INSTALL_FFMPEG=1` to let the installer try to install it. |
+| Tesseract OCR | Local OCR default; not required for core install | Recognizes visible text in images or video frames. The installer checks Tesseract; missing Tesseract is reported by the readiness endpoint / UI. Linux/WSL/macOS can set `CVN_INSTALL_TESSERACT=1` to let the script try apt/brew installation; Windows can use winget or manual install. |
+| whisper.cpp + Whisper model | Local STT default; not required for core install | Recognizes speech in audio/video. The installer only reports status; it does not install whisper.cpp or download models. Configure `CVN_WHISPER_CPP_PATH` and `CVN_WHISPER_CPP_MODEL` manually. |
 
 The installation script will first check the existing environment on the local machine. On Linux / WSL, it will only attempt to fulfill dependencies via `apt-get` if Git or Node.js/npm are missing; if basic environments are met, it will skip `apt-get` to avoid triggering irrelevant third-party software source issues in the system. The macOS script will try to use Homebrew when dependencies are missing. The Windows native script will try to use `winget` when dependencies are missing. If these package managers are not available, or the current user does not have installation permissions, you need to manually install the missing environments and try again.
 
 ## Pre-installation Notes and Disclaimer
 
-To the best of the author's current knowledge, this project's own source code does not contain any malicious code. The installation script will check the local environment and attempt to install missing dependencies such as Git, Node.js, npm, and native build tools on supported platforms.
+To the best of the author's current knowledge, this project's own source code does not contain any malicious code. The installation script will check the local environment and attempt to install missing dependencies such as Git, Node.js, and npm on supported platforms; when native build tools are missing, it prints guidance, and some platforms require manual installation.
 
 The project installation will fetch third-party software and dependencies via system package managers and npm. The installation and usage process may still be affected by factors such as system permissions, network status, package manager availability, antivirus software, corporate device policies, disk space, third-party dependency supply chains, and Node native module compilation results. Users are solely responsible for any issues and consequences arising from running the installation script, installing dependencies, modifying the system environment, and uploading and saving local files.
 
@@ -81,10 +85,17 @@ curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubuserc
 
 The script will automatically check for dependencies like Git, Node.js/npm; installed dependencies will be directly reused. For Linux / WSL, if basic dependencies are met, it will skip `apt-get`.
 
-To let the script try to install optional ffmpeg for video transcription, set this first:
+To let the script try to install optional ffmpeg for video/audio clip analysis, set this first:
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+```
+
+To let the script try to install optional Tesseract for local OCR (it will not install whisper.cpp or Whisper models), set this first:
+
+```bash
+export CVN_INSTALL_TESSERACT=1
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
@@ -108,10 +119,17 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 
 The script will automatically check for dependencies like Git, Node.js/npm; installed dependencies will be directly reused.
 
-To let the script try to install optional ffmpeg for video transcription, set this first:
+To let the script try to install optional ffmpeg for video/audio clip analysis, set this first:
 
 ```powershell
 $env:CVN_INSTALL_FFMPEG = "1"
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
+
+To let the script try to install optional Tesseract for local OCR (it will not install whisper.cpp or Whisper models), set this first:
+
+```powershell
+$env:CVN_INSTALL_TESSERACT = "1"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
@@ -131,7 +149,8 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 - For Linux / WSL, if `apt-get update` reports errors like Docker, Chromium, Snap, GPG keys, etc., it is usually due to existing apt sources or incomplete package configurations in the system, not because this project depends on these software. You can fix/disable the corresponding apt sources first, or manually install Git, Node.js 20+ and npm, then retry.
 - For macOS, if the Xcode Command Line Tools installation window pops up, click "Install", and after it completes, re-run the installation command.
 - For Windows, if it prompts that a compilation environment needs to be installed, please continue as prompted; this is an environment that may be needed during the compilation of some dependencies.
-- If video transcription shows `Audio extraction failed`, ffmpeg is usually missing or not on PATH. On Linux / WSL, try `sudo apt-get update && sudo apt-get install -y ffmpeg`; on macOS, try `brew install ffmpeg`; on Windows, try `winget install Gyan.FFmpeg`, then reopen the terminal and retry.
+- If clip analysis shows `Audio extraction failed`, ffmpeg is usually missing or not on PATH. On Linux / WSL, try `sudo apt-get update && sudo apt-get install -y ffmpeg`; on macOS, try `brew install ffmpeg`; on Windows, try `winget install Gyan.FFmpeg`, then reopen the terminal and retry.
+- If local OCR/STT is unavailable, check the in-app local recognition readiness panel; it reports missing Tesseract, whisper.cpp executable, Whisper model path, or language data.
 
 ## Update to Latest Version
 
@@ -197,15 +216,87 @@ Default backend address:
 http://localhost:3107
 ```
 
-## Video Transcription Prerequisites
+## Local Clip Recognition (OCR / STT)
 
-Video transcription requires all of the following:
+Clip analysis uses local tools by default:
 
-- Local `ffmpeg` is installed and visible on PATH to the terminal/server process.
-- An OpenAI-compatible `/audio/transcriptions` provider and model are configured and reachable.
-- The uploaded file is within the transcription size limit: `TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES` is currently 100MB; the media-library video attachment limit is 300MB.
+- Speech recognition (STT): `whisper.cpp`, used to transcribe speech from audio or video tracks.
+- OCR: `Tesseract`, used to recognize visible text in images or video frames.
+- ffmpeg: used to extract audio from videos before whisper.cpp analysis.
 
-Missing ffmpeg only affects video audio extraction and video transcription. It does not affect core install, card creation, review, or normal media upload. The installer checks ffmpeg and, by default, does not block the core install when ffmpeg is missing. Set `CVN_INSTALL_FFMPEG=1` to opt in to installer-managed ffmpeg installation.
+These tools are optional local dependencies. Missing tools do not block core install, manual card creation, review, or normal media upload; the readiness endpoint / UI reports what is missing. The default installer stays lightweight: it checks and reports status, but does not force-install Tesseract, whisper.cpp, or Whisper models.
+
+DeepSeek, OpenAI-compatible text models, and other AI settings are only used for target-card text suggestions such as contextual definitions, usage notes, sentence translation, lemmatization, and spelling checks. They do not replace local OCR/STT. `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1` only allows configured cloud transcription/vision fallback when local recognition fails, and is disabled by default.
+
+### Platform setup examples
+
+Linux / WSL (Debian / Ubuntu):
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ffmpeg tesseract-ocr
+# Install Tesseract language packs for target languages, for example Chinese/Japanese/English:
+sudo apt-get install -y tesseract-ocr-chi-sim tesseract-ocr-jpn tesseract-ocr-eng
+
+# Install whisper.cpp manually, then write paths into .env:
+CVN_WHISPER_CPP_PATH=/path/to/whisper-cli
+CVN_WHISPER_CPP_MODEL=/path/to/ggml-base.bin
+```
+
+macOS:
+
+```bash
+brew install ffmpeg tesseract
+# After installing whisper.cpp via Homebrew or from source:
+CVN_WHISPER_CPP_PATH=/opt/homebrew/bin/whisper-cli
+CVN_WHISPER_CPP_MODEL=/path/to/ggml-base.bin
+```
+
+Windows PowerShell:
+
+```powershell
+winget install --id Gyan.FFmpeg -e --source winget
+winget install --id UB-Mannheim.TesseractOCR -e --source winget
+
+# After installing whisper.cpp and downloading a model, configure .env, for example:
+CVN_WHISPER_CPP_PATH=C:\tools\whisper.cpp\build\bin\Release\whisper-cli.exe
+CVN_WHISPER_CPP_MODEL=C:\models\ggml-base.bin
+```
+
+After installing tools, reopen the terminal before starting the app so the service process can read PATH and `.env`.
+
+### Whisper model choice
+
+Whisper models are downloaded and configured by the user. Common trade-offs:
+
+- `tiny` / `base`: small and fast; lower accuracy with noise, accents, or long sentences.
+- `small` / `medium`: better accuracy, but uses more disk, memory, and CPU/GPU time.
+- `large`: often more accurate, but very large and slow on ordinary computers.
+
+The installer does not download a model automatically. Choose based on your machine, target language, and media difficulty, then set `CVN_WHISPER_CPP_MODEL`.
+
+### Tesseract language packs
+
+Tesseract needs matching language data. Defaults follow the learning language, for example Chinese `chi_sim`, English `eng`, Japanese `jpn`, Korean `kor`, French `fra`, German `deu`, Spanish `spa`, and Russian `rus`.
+
+For mixed-language subtitles or images, combine language codes in `.env`:
+
+```env
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+If language data is installed outside the default directory, configure `TESSDATA_PREFIX` as documented by Tesseract, or use the default path from your system installer.
+
+### Batch clip import workflow
+
+Batch clip import can process multiple local video, audio, or image clips:
+
+1. Upload or select multiple clip files.
+2. The app runs local recognition: ffmpeg extracts video audio for whisper.cpp; Tesseract handles images/video frames.
+3. Review detected sentences in the import UI and edit them if needed.
+4. Select target words and save cards with media, original sentences, and contextual meanings.
+
+Local recognition is only assistance. Missing visible subtitles, poor audio, missing language packs, or too-small models can reduce accuracy; you can always fill the sentence manually.
 
 ## Environment Variables
 
@@ -215,6 +306,16 @@ Missing ffmpeg only affects video audio extraction and video transcription. It d
 | `PORT` | No | `3107` | Backend Express server port. Vite dev server proxies `/api` to this port. |
 | `DATABASE_PATH` | No | `./data/context-vocabulary-notebook.sqlite` | SQLite database path. Relative paths are resolved against the project root. |
 | `UPLOADS_DIR` | No | `./uploads` | Upload media files save directory. Relative paths are resolved against the project root. |
+| `CVN_STT_PROVIDER` | No | `whisper.cpp` | Local speech recognition provider; use `whisper.cpp` or `disabled`. |
+| `CVN_WHISPER_CPP_PATH` | No | `whisper-cli` | whisper.cpp executable path; if your system only has the old `main`, use `main` or an absolute path. |
+| `CVN_WHISPER_CPP_MODEL` | Required for local STT | Empty | Whisper model file path; the installer does not download models. |
+| `CVN_WHISPER_CPP_TIMEOUT_MS` | No | `120000` | Per-run whisper.cpp timeout. |
+| `CVN_OCR_PROVIDER` | No | `tesseract` | Local OCR provider; use `tesseract` or `disabled`. |
+| `CVN_TESSERACT_PATH` | No | `tesseract` | Tesseract executable path. |
+| `CVN_TESSERACT_LANG` | No | Auto-selected by target language | Tesseract language code, for example `eng`, `chi_sim`, or `eng+chi_sim`. |
+| `CVN_TESSERACT_TIMEOUT_MS` | No | `30000` | Per-run Tesseract OCR timeout. |
+| `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK` | No | `0` | Whether to allow configured cloud fallback when local clip recognition fails; disabled by default. |
+| `CVN_LOCAL_READINESS_TIMEOUT_MS` | No | Server default | Local recognition readiness check timeout. |
 <!-- /AUTO-GENERATED:ENV -->
 
 To change the frontend port during development, you can set `CLIENT_PORT` when running the command, defaults to `5173`. This variable is not in `.env.example` and usually doesn't need to be configured.
@@ -281,7 +382,8 @@ Note:
 - Manual card creation and review work perfectly fine without configuring AI.
 - The API Key is stored in the local database and will be masked on the UI.
 - The API Key will not be included in exported files.
-- AI is only used to suggest contextual definitions and usage notes during card creation. It is not a built-in dictionary, nor does it create cards automatically.
+- AI is used during card creation for contextual definitions, usage notes, sentence translation, lemmatization, and spelling checks. It is not a built-in dictionary, nor does it create cards automatically.
+- Batch clip target-word candidates are generated locally by default; DeepSeek and other OpenAI-compatible text models do not perform local OCR/STT. Image text recognition depends on Tesseract, and speech recognition depends on whisper.cpp.
 
 ## FAQ
 
@@ -318,6 +420,29 @@ xcode-select --install
 
 The Windows native environment requires available Python and Visual Studio Build Tools / MSVC native build environments. If you are not familiar with configuring these tools, it is recommended to use WSL instead, or manually install the missing environments first and try again.
 
+### Clip has no visible subtitles, so no sentence is detected
+
+If the video has no subtitles, or subtitles are too small/blurry, OCR may not detect a sentence. In that case, speech recognition is needed. Confirm ffmpeg, whisper.cpp, and `CVN_WHISPER_CPP_MODEL` are available. If audio is also unclear, fill the sentence manually.
+
+### Local speech recognition is unavailable
+
+Common causes:
+
+- whisper.cpp is not installed, or the service process cannot find `whisper-cli` / `main`.
+- `.env` does not configure `CVN_WHISPER_CPP_MODEL`, or the model path does not exist.
+- The model is too large and times out; increase `CVN_WHISPER_CPP_TIMEOUT_MS` or use a smaller model.
+- Video needs ffmpeg for audio extraction, but ffmpeg is not on PATH.
+
+Check the app's local recognition readiness panel first. If the executable is not on PATH, set `CVN_WHISPER_CPP_PATH` to an absolute path.
+
+### Tesseract language data is missing
+
+If OCR reports missing language data, Tesseract was found but the matching traineddata file is missing. Install the target language package, for example Debian / Ubuntu packages `tesseract-ocr-chi-sim`, `tesseract-ocr-jpn`, or `tesseract-ocr-eng`, or set `CVN_TESSERACT_LANG` to an installed language. Use `eng+chi_sim` for multiple languages.
+
+### Whisper model path is not configured
+
+`CVN_WHISPER_CPP_MODEL` has no default model. Download a ggml model supported by whisper.cpp and write its absolute path into `.env`. The installer does not download models automatically to avoid a large, slow, or wrong default install.
+
 ### Page opens, but API requests fail
 
 Confirm the backend is running:
@@ -348,7 +473,7 @@ Tech stack for this project:
 - Vitest
 - Playwright
 
-The first version adheres to local-first, no built-in dictionaries, no dictionary connections, no website video links, and no synchronization. The current V2 only adds AI suggestion capabilities during card creation.
+The first version adheres to local-first, no built-in dictionaries, no dictionary connections, no website video links, and no synchronization. The current V2 adds AI suggestion capabilities during card creation plus local clip recognition assistance.
 
 ## License
 

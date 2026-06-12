@@ -77,21 +77,32 @@ function modelWarning(targetLanguage: SupportedLanguage | undefined, modelPath: 
   return `English-only Whisper model is not recommended for ${targetLanguage}. Use a multilingual model such as ggml-base.bin or ggml-small.bin.`;
 }
 
+type TesseractLanguageCheck = {
+  installedLanguages: string[];
+  languageReady: boolean;
+  languageMessage: string;
+};
+
 async function checkTesseractLanguages(
   executablePath: string,
   requiredLanguage: string,
   runner: ReadinessExecFileRunner,
-): Promise<Pick<LocalRecognitionReadinessDto['ocr'], 'installedLanguages' | 'languageReady' | 'languageMessage'>> {
+): Promise<TesseractLanguageCheck> {
   try {
     const result = await runner(executablePath, ['--list-langs'], { timeout: resolveReadinessTimeoutMs() });
     const installedLanguages = parseTesseractLanguages(result.stdout);
-    const languageReady = installedLanguages.includes(requiredLanguage);
+    const requiredLanguages = requiredLanguage
+      .split('+')
+      .map((language) => language.trim())
+      .filter(Boolean);
+    const missingLanguages = requiredLanguages.filter((language) => !installedLanguages.includes(language));
+    const languageReady = missingLanguages.length === 0;
     return {
       installedLanguages,
       languageReady,
       languageMessage: languageReady
         ? `Tesseract language data ${requiredLanguage} is installed`
-        : `Tesseract language data ${requiredLanguage} is missing. Install the matching language package, then rerun readiness check.`,
+        : `Tesseract language data ${missingLanguages.join('+')} is missing. Install the matching language package, then rerun readiness check.`,
     };
   } catch (error) {
     return {

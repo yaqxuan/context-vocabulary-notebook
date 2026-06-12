@@ -167,6 +167,26 @@ describe('local recognition readiness domain', () => {
     expect(result.ocr.installedLanguages).toEqual(['eng', 'jpn']);
   });
 
+  it('marks combined tesseract languages ready only when every language is installed', async () => {
+    const runner = vi.fn(async (_file: string, args: string[]) => {
+      if (args[0] === '--version') return { stdout: 'tesseract 5', stderr: '' };
+      if (args[0] === '--help') return { stdout: 'whisper help', stderr: '' };
+      if (args[0] === '--list-langs') return { stdout: 'List of available languages\neng\nchi_sim\n', stderr: '' };
+      return { stdout: 'ok', stderr: '' };
+    }) satisfies ReadinessExecFileRunner;
+
+    const result = await getLocalRecognitionReadiness('英语', {
+      runner,
+      fsAccess: { access: async () => undefined },
+      resolveConfig: () => config({
+        ocr: { provider: 'tesseract', executablePath: 'tesseract', language: 'eng+chi_sim', timeoutMs: 30_000 },
+      }),
+    });
+
+    expect(result.ocr.languageReady).toBe(true);
+    expect(result.ocr.languageMessage).toBe('Tesseract language data eng+chi_sim is installed');
+  });
+
   it('marks target tesseract language missing when list-langs lacks it', async () => {
     const runner = vi.fn(async (_file: string, args: string[]) => {
       if (args[0] === '--version') return { stdout: 'tesseract 5', stderr: '' };
