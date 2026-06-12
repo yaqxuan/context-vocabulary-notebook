@@ -92,7 +92,7 @@ describe('shared components', () => {
     expect(await screen.findByText('File unavailable')).toBeInTheDocument();
   });
 
-  it('runs confirm and cancel callbacks and renders default English labels', async () => {
+  it('renders confirm dialog as a fixed modal overlay and runs callbacks', async () => {
     mockEnglishSettings();
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
@@ -102,7 +102,10 @@ describe('shared components', () => {
       </I18nProvider>
     );
 
-    expect(await screen.findByRole('button', { name: 'Confirm' })).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: 'Delete Card' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog.parentElement).toHaveClass('fixed', 'inset-0', 'z-50');
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
