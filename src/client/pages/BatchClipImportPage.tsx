@@ -181,7 +181,7 @@ export function BatchClipImportPage() {
 
   const clearReadyItemSuggestions = () => {
     setItems((current) => current.map((item) => {
-      if (item.status !== 'ready') return item;
+      if (item.status !== 'ready' && item.status !== 'partialSaveError') return item;
       if (!item.meaning && !item.note && !item.sentenceTranslation && !item.suggestionRequestKey) return item;
       return {
         ...item,
