@@ -235,11 +235,30 @@ export type AiSuggestionResponseDto =
       status: 'success';
       meaning_suggestion: string;
       usage_note: string;
+      sentence_translation: string;
     }
   | {
       status: 'none';
       meaning_suggestion: '';
       usage_note: '';
+      sentence_translation: '';
+      message: string;
+    };
+
+export interface AiTargetWordLemmaRequestDto {
+  target_word: string;
+  sentence: string;
+  target_language?: string;
+}
+
+export type AiTargetWordLemmaResponseDto =
+  | {
+      status: 'success';
+      lemma: string;
+    }
+  | {
+      status: 'none';
+      lemma: '';
       message: string;
     };
 

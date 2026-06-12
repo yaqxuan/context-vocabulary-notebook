@@ -40,6 +40,7 @@ describe('AI suggestions API', () => {
       status: 'none',
       meaning_suggestion: '',
       usage_note: '',
+      sentence_translation: '',
       message: 'No active AI config',
     });
   });
@@ -58,6 +59,7 @@ describe('AI suggestions API', () => {
           content: JSON.stringify({
             meaning_suggestion: '收费',
             usage_note: '在句中表示酒店按每晚收取费用。',
+            sentence_translation: '酒店每晚收费 100 美元。',
           }),
         },
       }],
@@ -72,6 +74,7 @@ describe('AI suggestions API', () => {
       status: 'success',
       meaning_suggestion: '收费',
       usage_note: '在句中表示酒店按每晚收取费用。',
+      sentence_translation: '酒店每晚收费 100 美元。',
     });
     expect(fetchMock).toHaveBeenCalledWith('https://ai.example/v1/chat/completions', expect.objectContaining({
       method: 'POST',
@@ -91,7 +94,7 @@ describe('AI suggestions API', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(aiResponse({
       choices: [{
         message: {
-          content: '```json\n{"meaning_suggestion":"收费","usage_note":"在句中表示酒店按每晚收取费用。"}\n```',
+          content: '```json\n{"meaning_suggestion":"收费","usage_note":"在句中表示酒店按每晚收取费用。","sentence_translation":"酒店每晚收费 100 美元。"}\n```',
         },
       }],
     }));
@@ -105,6 +108,7 @@ describe('AI suggestions API', () => {
       status: 'success',
       meaning_suggestion: '收费',
       usage_note: '在句中表示酒店按每晚收取费用。',
+      sentence_translation: '酒店每晚收费 100 美元。',
     });
   });
 
@@ -344,7 +348,7 @@ describe('AI suggestions API', () => {
       is_active: true,
     });
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(aiResponse({
-      choices: [{ message: { content: '{"meaning_suggestion":"收费","usage_note":"用法说明"}' } }],
+      choices: [{ message: { content: '{"meaning_suggestion":"收费","usage_note":"用法说明","sentence_translation":"酒店每晚收费 100 美元。"}' } }],
     }));
 
     await request(createApp(db)).post('/api/ai/suggestions').send({
@@ -392,6 +396,8 @@ describe('AI suggestions API', () => {
     const prompt = body.messages[1].content as string;
     expect(prompt).toContain('目标词属于学习语言：英语');
     expect(prompt).toContain('meaning_suggestion 和 usage_note 必须使用释义语言：法语');
+    expect(prompt).toContain('sentence_translation 必须是整句翻译，使用释义语言：法语');
+    expect(prompt).toContain('整句翻译必须使用释义语言：法语');
     expect(prompt).toContain('meaning_suggestion 只写这个语境下的一个词或很短释义');
     expect(prompt).toContain('usage_note 写成给用户看的学习笔记，不要只解释这个句子');
     expect(prompt).toContain('目标词原型/词典形');
@@ -425,6 +431,73 @@ describe('AI suggestions API', () => {
     }).expect(400);
 
     expect(sentenceRes.body.message).toBe('sentence must be at most 2000 characters');
+  });
+
+
+  describe('AI target word lemma API', () => {
+    it('returns none when no active AI config exists', async () => {
+      const res = await request(createApp(db)).post('/api/ai/target-word-lemma').send({
+        target_word: 'charges',
+        sentence: 'The hotel charges $100 per night.',
+        target_language: '英语',
+      }).expect(200);
+
+      expect(res.body).toEqual({ status: 'none', lemma: '', message: 'No active AI config' });
+    });
+
+    it('calls active OpenAI-compatible endpoint and parses a lemma', async () => {
+      createAiConfig(db, {
+        name: 'Local AI',
+        base_url: 'https://ai.example/v1',
+        api_key: 'sk-secret',
+        model: 'test-model',
+        is_active: true,
+      });
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(aiResponse({
+        choices: [{ message: { content: JSON.stringify({ lemma: 'charge' }) } }],
+      }));
+
+      const res = await request(createApp(db)).post('/api/ai/target-word-lemma').send({
+        target_word: 'charges',
+        sentence: 'The hotel charges $100 per night.',
+        target_language: '英语',
+      }).expect(200);
+
+      expect(res.body).toEqual({ status: 'success', lemma: 'charge' });
+      expect(fetchMock).toHaveBeenCalledWith('https://ai.example/v1/chat/completions', expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer sk-secret' }),
+        redirect: 'manual',
+      }));
+    });
+
+    it('returns none for malformed lemma content', async () => {
+      createAiConfig(db, {
+        name: 'Local AI',
+        base_url: 'https://ai.example/v1',
+        api_key: 'sk-secret',
+        model: 'test-model',
+        is_active: true,
+      });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(aiResponse({ choices: [{ message: { content: 'not json' } }] }));
+
+      const res = await request(createApp(db)).post('/api/ai/target-word-lemma').send({
+        target_word: 'charges',
+        sentence: 'The hotel charges $100 per night.',
+      }).expect(200);
+
+      expect(res.body).toEqual({ status: 'none', lemma: '', message: 'AI target word lemma unavailable' });
+    });
+
+    it('validates target language for lemma requests', async () => {
+      const res = await request(createApp(db)).post('/api/ai/target-word-lemma').send({
+        target_word: 'charges',
+        sentence: 'The hotel charges $100 per night.',
+        target_language: 'Klingon',
+      }).expect(400);
+
+      expect(res.body.message).toBe('target_language must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语');
+    });
   });
 
   it('checks spelling through active OpenAI-compatible endpoint', async () => {
