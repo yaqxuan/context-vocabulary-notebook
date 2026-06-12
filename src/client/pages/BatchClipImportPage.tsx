@@ -30,6 +30,8 @@ interface BatchItem {
   targetWord: string;
   meaning: string;
   note: string;
+  sentenceTranslation: string;
+  suggestionState: 'idle' | 'loading' | 'none' | 'success' | 'error';
   candidates: AiTargetWordCandidateDto[];
   sentenceCandidate: ClipSentenceCandidateDto | null;
   comparisonNote: string;
@@ -52,6 +54,8 @@ function newItem(file: File): BatchItem {
     targetWord: '',
     meaning: '',
     note: '',
+    sentenceTranslation: '',
+    suggestionState: 'idle',
     candidates: [],
     sentenceCandidate: null,
     comparisonNote: '',
@@ -97,7 +101,7 @@ function readinessCopy(language: SupportedLanguage): ReadinessCopy {
       ffmpeg: 'FFmpeg',
       stt: '本地 STT whisper.cpp',
       ocr: '本地 OCR Tesseract',
-      privacy: 'OCR/STT 在本机运行；只有候选单词和释义建议可能使用文本 AI。OCR、STT 或 ffmpeg 缺失时会分别降级，不会互相阻塞。',
+      privacy: 'OCR/STT 在本机运行；候选词来自本地分析，只有释义建议可能使用文本 AI。OCR、STT 或 ffmpeg 缺失时会分别降级，不会互相阻塞。',
     };
   }
 
@@ -111,7 +115,7 @@ function readinessCopy(language: SupportedLanguage): ReadinessCopy {
     ffmpeg: 'FFmpeg',
     stt: 'Local STT whisper.cpp',
     ocr: 'Local OCR Tesseract',
-    privacy: 'OCR/STT run locally on this machine; only candidate words and meaning suggestions may use text AI. Missing OCR, STT, or ffmpeg paths degrade independently.',
+    privacy: 'OCR/STT run locally on this machine; candidate words come from local analysis, and only meaning suggestions may use text AI. Missing OCR, STT, or ffmpeg paths degrade independently.',
   };
 }
 
@@ -176,6 +180,14 @@ export function BatchClipImportPage() {
     setItems((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
 
+  const patchSuggestionIfCurrent = (id: string, sentence: string, targetWord: string, patch: Partial<BatchItem>) => {
+    setItems((current) => current.map((item) => {
+      if (item.id !== id) return item;
+      if (item.sentence.trim() !== sentence.trim() || item.targetWord.trim() !== targetWord.trim()) return item;
+      return { ...item, ...patch };
+    }));
+  };
+
   const handleFiles = (event: ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? []);
     const accepted: File[] = [];
@@ -190,6 +202,31 @@ export function BatchClipImportPage() {
     event.target.value = '';
   };
 
+  const requestCandidateSuggestion = async (id: string, sentence: string, targetWord: string) => {
+    patchItem(id, { meaning: '', note: '', sentenceTranslation: '', suggestionState: 'loading', error: '' });
+    try {
+      const suggestion = await getAiSuggestion({
+        target_word: targetWord,
+        sentence,
+        target_language: targetLanguage,
+        definition_language: definitionLanguage,
+      });
+      if (suggestion.status === 'success') {
+        patchSuggestionIfCurrent(id, sentence, targetWord, {
+          meaning: suggestion.meaning_suggestion,
+          note: suggestion.usage_note,
+          sentenceTranslation: suggestion.sentence_translation,
+          suggestionState: 'success',
+          error: '',
+        });
+      } else {
+        patchSuggestionIfCurrent(id, sentence, targetWord, { suggestionState: 'none', error: `AI 建议失败：${suggestion.message}` });
+      }
+    } catch (err) {
+      patchSuggestionIfCurrent(id, sentence, targetWord, { suggestionState: 'error', error: `AI 建议失败：${errorMessage(err, '建议失败')}` });
+    }
+  };
+
   const processAll = async () => {
     setProcessing(true);
     try {
@@ -202,13 +239,14 @@ export function BatchClipImportPage() {
             patchItem(item.id, { status: 'error', error: result.message });
             continue;
           }
+          const sentence = result.sentence.text;
           patchItem(item.id, {
             status: 'ready',
-            sentence: result.sentence.text,
+            sentence,
             sentenceCandidate: result.sentence,
             candidates: result.candidates,
             comparisonNote: result.note ?? '',
-            targetWord: item.targetWord || result.candidates[0]?.target_word || '',
+            targetWord: item.targetWord,
             error: '',
           });
         } catch (err) {
@@ -220,29 +258,39 @@ export function BatchClipImportPage() {
     }
   };
 
-  const suggestMeaning = async (item: BatchItem) => {
-    const word = item.targetWord.trim();
+  const updateItemTargetWord = (item: BatchItem, targetWord: string) => {
     const sentence = item.sentence.trim();
-    if (!word || !sentence) {
-      patchItem(item.id, { error: '请先填写原句和目标单词' });
+    patchItem(item.id, {
+      targetWord,
+      meaning: '',
+      note: '',
+      sentenceTranslation: '',
+      suggestionState: sentence && targetWord.trim() ? 'loading' : 'idle',
+      error: '',
+    });
+    if (sentence && targetWord.trim()) void requestCandidateSuggestion(item.id, sentence, targetWord.trim());
+  };
+
+  const updateItemSentence = (item: BatchItem, sentence: string) => {
+    const targetWord = item.targetWord.trim();
+    patchItem(item.id, {
+      sentence,
+      meaning: '',
+      note: '',
+      sentenceTranslation: '',
+      suggestionState: sentence.trim() && targetWord ? 'loading' : 'idle',
+      error: '',
+    });
+    if (sentence.trim() && targetWord) void requestCandidateSuggestion(item.id, sentence.trim(), targetWord);
+  };
+
+  const selectCandidate = (item: BatchItem, targetWord: string) => {
+    const sentence = item.sentence.trim();
+    if (!sentence) {
+      patchItem(item.id, { targetWord, error: '请先填写原句' });
       return;
     }
-    patchItem(item.id, { error: '' });
-    try {
-      const result = await getAiSuggestion({
-        target_word: word,
-        sentence,
-        target_language: targetLanguage,
-        definition_language: definitionLanguage,
-      });
-      if (result.status === 'success') {
-        patchItem(item.id, { meaning: result.meaning_suggestion, note: result.usage_note });
-      } else {
-        patchItem(item.id, { error: result.message });
-      }
-    } catch (err) {
-      patchItem(item.id, { error: errorMessage(err, '建议释义失败') });
-    }
+    updateItemTargetWord(item, targetWord);
   };
 
   const saveItem = async (item: BatchItem) => {
@@ -300,7 +348,7 @@ export function BatchClipImportPage() {
       <div className="batch-import-toolbar">
         <div>
           <h2>批量导入视频片段</h2>
-          <p>选择多个 MP4，逐个分析例句和候选目标词，再保存为卡片。</p>
+          <p>选择多个 MP4，先分析例句和本地候选词；选中目标词后生成 AI 释义建议，再保存为卡片。</p>
           <p className="batch-import-privacy">{copy.privacy}</p>
         </div>
         <div className="batch-import-controls">
@@ -351,7 +399,7 @@ export function BatchClipImportPage() {
                 <h3>{item.file.name}</h3>
                 <p>{item.status === 'queued' ? '待分析' : item.status === 'analyzing' ? '分析中…' : item.status === 'ready' ? '待保存' : item.status === 'saving' ? '保存中…' : item.status === 'saved' ? '已保存' : item.status === 'partialSaveError' ? '部分保存' : '分析失败'}</p>
               </div>
-              {item.status === 'ready' || item.status === 'partialSaveError' ? <button type="button" onClick={() => saveItem(item)}>保存 {item.file.name}</button> : null}
+              {item.status === 'ready' || item.status === 'partialSaveError' ? <button type="button" onClick={() => saveItem(item)} title="保存会创建新卡片或追加到已有卡片，并上传媒体。">保存 {item.file.name}</button> : null}
             </header>
 
             {item.sentenceCandidate ? <p className="batch-import-meta">来源：{item.sentenceCandidate.source} · 置信度：{item.sentenceCandidate.confidence}</p> : null}
@@ -363,16 +411,17 @@ export function BatchClipImportPage() {
               <div className="batch-import-form">
                 <label>
                   原句
-                  <textarea aria-label={`原句 ${item.file.name}`} value={item.sentence} onChange={(event) => patchItem(item.id, { sentence: event.target.value })} />
+                  <textarea aria-label={`原句 ${item.file.name}`} value={item.sentence} onChange={(event) => updateItemSentence(item, event.target.value)} />
                 </label>
                 <label>
                   目标单词
-                  <input aria-label={`目标单词 ${item.file.name}`} value={item.targetWord} onChange={(event) => patchItem(item.id, { targetWord: event.target.value })} />
+                  <input aria-label={`目标单词 ${item.file.name}`} value={item.targetWord} onChange={(event) => updateItemTargetWord(item, event.target.value)} />
                 </label>
                 {item.candidates.length ? (
                   <div className="batch-import-candidates" aria-label="候选目标词">
+                    <p>候选词来自本地分析。选择目标词后会生成 AI 释义建议。</p>
                     {item.candidates.map((candidate) => (
-                      <button key={`${item.id}-${candidate.target_word}`} type="button" onClick={() => patchItem(item.id, { targetWord: candidate.target_word })}>
+                      <button key={`${item.id}-${candidate.target_word}`} type="button" onClick={() => selectCandidate(item, candidate.target_word)}>
                         {candidate.target_word} · {candidate.difficulty_hint}
                       </button>
                     ))}
@@ -382,11 +431,12 @@ export function BatchClipImportPage() {
                   当前语境释义
                   <input aria-label={`当前语境释义 ${item.file.name}`} value={item.meaning} onChange={(event) => patchItem(item.id, { meaning: event.target.value })} />
                 </label>
-                <button type="button" onClick={() => suggestMeaning(item)}>建议释义 {item.file.name}</button>
                 <label>
                   AI 建议
                   <textarea aria-label={`AI 建议 ${item.file.name}`} value={item.note} onChange={(event) => patchItem(item.id, { note: event.target.value })} />
                 </label>
+                {item.suggestionState === 'loading' ? <p className="batch-import-note">AI 建议生成中…</p> : null}
+                {item.sentenceTranslation ? <p className="batch-import-note">{item.sentenceTranslation}</p> : null}
                 <div>
                   <p>标签</p>
                   <TagAssignmentEditor

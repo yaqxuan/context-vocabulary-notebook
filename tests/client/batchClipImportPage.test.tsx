@@ -79,8 +79,9 @@ describe('BatchClipImportPage', () => {
     expect(screen.getAllByText(/OCR\/STT 在本机运行/).length).toBeGreaterThan(0);
   });
 
-  it('processes queued clips sequentially and keeps a failed item from blocking another item', async () => {
+  it('processes queued clips sequentially without auto-selecting or auto-suggesting meaning', async () => {
     const analysisBodies: FormData[] = [];
+    const suggestionBodies: unknown[] = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ default_target_language: '英语', default_definition_language: '中文', interface_language: '中文' }));
@@ -97,6 +98,10 @@ describe('BatchClipImportPage', () => {
           note: 'audio clearer than subtitles',
         }));
       }
+      if (url === '/api/ai/suggestions') {
+        suggestionBodies.push(JSON.parse(String(init?.body)));
+        return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '这里表示收取额外费用。', sentence_translation: '他们早餐额外收费。' }));
+      }
       return Promise.resolve(jsonResponse([]));
     });
 
@@ -111,10 +116,116 @@ describe('BatchClipImportPage', () => {
     expect((analysisBodies[1].get('file') as File).name).toBe('bad.mp4');
     expect(analysisBodies[0].get('target_language')).toBe('英语');
     expect(await screen.findByDisplayValue('They charge extra for breakfast.')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('charge')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'charge · B1' })).toBeInTheDocument();
+    expect(screen.getByLabelText('目标单词 ok.mp4')).toHaveValue('');
+    expect(screen.getByLabelText('当前语境释义 ok.mp4')).toHaveValue('');
+    expect(screen.getByLabelText('AI 建议 ok.mp4')).toHaveValue('');
+    expect(suggestionBodies).toEqual([]);
     expect(screen.getByText('来源：audio_stt · 置信度：high')).toBeInTheDocument();
     expect(screen.getByText('audio clearer than subtitles')).toBeInTheDocument();
     expect(screen.getByText('provider down')).toBeInTheDocument();
+  });
+
+  it('auto-suggests after candidate selection but ignores stale suggestion responses', async () => {
+    const suggestionResolvers: Array<(response: Response) => void> = [];
+    const suggestionBodies: unknown[] = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ default_target_language: '英语', default_definition_language: '中文', interface_language: '中文' }));
+      if (url.startsWith('/api/local-recognition/readiness')) return Promise.resolve(jsonResponse(readyReadiness()));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
+      if (url === '/api/clip-analysis') return Promise.resolve(jsonResponse({
+        status: 'success',
+        sentence: { source: 'audio_stt', status: 'success', text: 'They charge extra.', confidence: 'medium' },
+        candidates: [
+          { target_word: 'charge', reason: 'candidate', difficulty_hint: 'B1' },
+          { target_word: 'extra', reason: 'candidate', difficulty_hint: 'A2' },
+        ],
+      }));
+      if (url === '/api/ai/suggestions') {
+        suggestionBodies.push(JSON.parse(String(init?.body)));
+        return new Promise<Response>((resolve) => { suggestionResolvers.push(resolve); });
+      }
+      return Promise.resolve(jsonResponse([]));
+    });
+
+    renderPage();
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'charge · B1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'extra · A2' }));
+    await waitFor(() => expect(suggestionBodies).toHaveLength(2));
+
+    suggestionResolvers[1](jsonResponse({ status: 'success', meaning_suggestion: '额外的', usage_note: '这里表示附加的。', sentence_translation: '他们额外收费。' }));
+    expect(await screen.findByDisplayValue('额外的')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('这里表示附加的。')).toBeInTheDocument();
+    expect(screen.getByText('他们额外收费。')).toBeInTheDocument();
+
+    suggestionResolvers[0](jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '这里表示收取额外费用。', sentence_translation: '他们早餐额外收费。' }));
+    await waitFor(() => expect(screen.getByLabelText('目标单词 clip.mp4')).toHaveValue('extra'));
+    expect(screen.queryByDisplayValue('收费')).not.toBeInTheDocument();
+  });
+
+  it('continues analyzing later clips without starting AI suggestions during analysis', async () => {
+    const analysisBodies: FormData[] = [];
+    const suggestionBodies: unknown[] = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ default_target_language: '英语', default_definition_language: '中文', interface_language: '中文' }));
+      if (url.startsWith('/api/local-recognition/readiness')) return Promise.resolve(jsonResponse(readyReadiness()));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
+      if (url === '/api/clip-analysis') {
+        analysisBodies.push(init?.body as FormData);
+        const uploaded = (init?.body as FormData).get('file') as File;
+        return Promise.resolve(jsonResponse({
+          status: 'success',
+          sentence: { source: 'audio_stt', status: 'success', text: `${uploaded.name} sentence.`, confidence: 'medium' },
+          candidates: [{ target_word: 'sentence', reason: 'candidate', difficulty_hint: 'B1' }],
+        }));
+      }
+      if (url === '/api/ai/suggestions') {
+        suggestionBodies.push(JSON.parse(String(init?.body)));
+        return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '句子', usage_note: '用法。', sentence_translation: '句子。' }));
+      }
+      return Promise.resolve(jsonResponse([]));
+    });
+
+    renderPage();
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('one.mp4', 'video/mp4'), file('two.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
+
+    await waitFor(() => expect(analysisBodies).toHaveLength(2));
+    expect(await screen.findByDisplayValue('one.mp4 sentence.')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('two.mp4 sentence.')).toBeInTheDocument();
+    expect(suggestionBodies).toEqual([]);
+  });
+
+  it('keeps analyzed clips editable when candidate-triggered meaning suggestion fails', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ default_target_language: '英语', default_definition_language: '中文', interface_language: '中文' }));
+      if (url.startsWith('/api/local-recognition/readiness')) return Promise.resolve(jsonResponse(readyReadiness()));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
+      if (url === '/api/clip-analysis') return Promise.resolve(jsonResponse({
+        status: 'success',
+        sentence: { source: 'audio_stt', status: 'success', text: 'They charge extra.', confidence: 'medium' },
+        candidates: [{ target_word: 'charge', reason: 'candidate', difficulty_hint: 'B1' }],
+      }));
+      if (url === '/api/ai/suggestions') return Promise.reject(new Error('AI timeout'));
+      return Promise.resolve(jsonResponse([]));
+    });
+
+    renderPage();
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
+
+    expect(await screen.findByDisplayValue('They charge extra.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'charge · B1' }));
+
+    expect(await screen.findByDisplayValue('charge')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '保存 clip.mp4' })).toBeInTheDocument();
+    expect(await screen.findByText('AI 建议失败：AI timeout')).toBeInTheDocument();
   });
 
   it('selects candidates, edits sentence, suggests meaning, then creates a card and uploads media', async () => {
@@ -133,7 +244,7 @@ describe('BatchClipImportPage', () => {
           { target_word: 'charge', reason: 'target candidate', difficulty_hint: 'B1' },
         ],
       }));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '这里表示收取费用。' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '这里表示收取费用。', sentence_translation: '他们早餐额外收费。' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/cards') return Promise.resolve(jsonResponse({ card: { id: 'card-1' }, context: { id: 'ctx-1' } }, 201));
       if (url === '/api/media') return Promise.resolve(jsonResponse({ id: 'media-1' }, 201));
@@ -145,14 +256,15 @@ describe('BatchClipImportPage', () => {
     fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
     fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
     expect(await screen.findByRole('button', { name: /charge/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /AI 建议释义/ })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /charge/ }));
     fireEvent.change(screen.getByLabelText('原句 clip.mp4'), { target: { value: 'They charge extra for breakfast.' } });
+    fireEvent.click(screen.getByRole('button', { name: /charge/ }));
     fireEvent.click(await screen.findByRole('button', { name: '电影' }));
-    fireEvent.click(screen.getByRole('button', { name: '建议释义 clip.mp4' }));
 
     expect(await screen.findByDisplayValue('收费')).toBeInTheDocument();
     expect(screen.getByDisplayValue('这里表示收取费用。')).toBeInTheDocument();
+    expect(screen.getByText('他们早餐额外收费。')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '保存 clip.mp4' }));
 
     await waitFor(() => expect(screen.getAllByText('已保存').length).toBeGreaterThan(0));
@@ -184,6 +296,7 @@ describe('BatchClipImportPage', () => {
         sentence: { source: 'audio_stt', status: 'success', text: 'They charge extra.', confidence: 'high' },
         candidates: [{ target_word: 'charge', reason: 'candidate', difficulty_hint: 'B1' }],
       }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '这里表示收取费用。', sentence_translation: '他们早餐额外收费。' }));
       if (url.startsWith('/api/cards/suggestions')) {
         suggestionRequests.push(url);
         return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
@@ -204,6 +317,7 @@ describe('BatchClipImportPage', () => {
     renderPage();
     fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
     fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'charge · B1' }));
     await screen.findByDisplayValue('charge');
     fireEvent.change(screen.getByLabelText('当前语境释义 clip.mp4'), { target: { value: '收费' } });
     fireEvent.click(screen.getByRole('button', { name: '保存 clip.mp4' }));
