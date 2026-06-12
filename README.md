@@ -64,6 +64,14 @@ uploads/
 
 安装脚本会先检查本机已有环境。Linux / WSL 只有在缺少 Git 或 Node.js/npm 时，才会尝试通过 `apt-get` 补齐依赖；如果基础环境已满足，会跳过 `apt-get`，避免触发系统里无关的第三方软件源问题。macOS 脚本会在缺少依赖时尝试使用 Homebrew。Windows 原生脚本会在缺少依赖时尝试使用 `winget`。如果这些包管理器不可用，或当前用户没有安装权限，需要手动安装缺失环境后重试。
 
+### WSL / Windows 原生选择建议
+
+- WSL 通常最稳：Node、Git、ffmpeg、Tesseract 和 native build tools 的安装路径更接近 Linux，遇到 `better-sqlite3` / `node-gyp` 编译问题时也更容易处理。
+- Windows 原生 PowerShell 可以安装：脚本会复用已有 Git / Node.js / npm，缺少时才尝试 `winget`；如果 `npm ci` 在 `better-sqlite3` 处失败，需要按提示安装 Python 和 Visual Studio Build Tools / MSVC，或改用 WSL。
+- OCR 后续可以配置成功：安装 ffmpeg、Tesseract 和目标语言 traineddata 后，在设置页点击“本地识别配置”重新检测即可。
+- STT 需要单独安装 whisper.cpp，并手动下载 Whisper ggml 模型；一键安装脚本不会自动下载模型，避免默认安装过大、过慢或选错语言/精度。
+- Windows 配好 ffmpeg / Tesseract / whisper.cpp 后，通常需要重新打开 PowerShell，再启动 `npm run dev`，让服务进程读到新的 PATH 和 `.env`。
+
 ## 安装前说明与免责声明
 
 据作者当前认知，本项目自有源码不包含任何恶意代码。安装脚本会检查本机环境，并在受支持的平台上尝试安装缺失依赖，例如 Git、Node.js 和 npm；native build tools 缺失时会给出处理建议，部分平台需要用户手动安装。

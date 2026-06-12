@@ -126,6 +126,9 @@ describe('README current behavior docs', () => {
     expect(readme).toContain('整句翻译');
     expect(readme).toContain('词形还原');
     expect(readme).toContain('拼写检查');
+    expect(readme).toContain('WSL 通常最稳');
+    expect(readme).toContain('Windows 原生 PowerShell 可以安装');
+    expect(readme).toContain('STT 需要单独安装 whisper.cpp');
     expect(englishReadme).toContain('Local Clip Recognition (OCR / STT)');
     expect(englishReadme).toContain('whisper.cpp');
     expect(englishReadme).toContain('Tesseract');
