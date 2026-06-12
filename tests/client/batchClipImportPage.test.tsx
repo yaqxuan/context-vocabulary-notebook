@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { I18nProvider } from '../../src/client/i18n/I18nProvider';
@@ -155,16 +155,70 @@ describe('BatchClipImportPage', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'charge · B1' }));
     fireEvent.click(screen.getByRole('button', { name: 'extra · A2' }));
-    await waitFor(() => expect(suggestionBodies).toHaveLength(2));
+    await waitFor(() => expect(suggestionBodies).toHaveLength(1));
 
-    suggestionResolvers[1](jsonResponse({ status: 'success', meaning_suggestion: '额外的', usage_note: '这里表示附加的。', sentence_translation: '他们额外收费。' }));
+    suggestionResolvers[0](jsonResponse({ status: 'success', meaning_suggestion: '额外的', usage_note: '这里表示附加的。', sentence_translation: '他们额外收费。' }));
     expect(await screen.findByDisplayValue('额外的')).toBeInTheDocument();
     expect(screen.getByDisplayValue('这里表示附加的。')).toBeInTheDocument();
     expect(screen.getByText('他们额外收费。')).toBeInTheDocument();
 
-    suggestionResolvers[0](jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '这里表示收取额外费用。', sentence_translation: '他们早餐额外收费。' }));
     await waitFor(() => expect(screen.getByLabelText('目标单词 clip.mp4')).toHaveValue('extra'));
     expect(screen.queryByDisplayValue('收费')).not.toBeInTheDocument();
+  });
+
+  it('ignores stale lemma responses after a newer target word is selected', async () => {
+    const lemmaResolvers: Array<(response: Response) => void> = [];
+    const suggestionBodies: unknown[] = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ default_target_language: '英语', default_definition_language: '中文', interface_language: '中文' }));
+      if (url.startsWith('/api/local-recognition/readiness')) return Promise.resolve(jsonResponse(readyReadiness()));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
+      if (url === '/api/clip-analysis') return Promise.resolve(jsonResponse({
+        status: 'success',
+        sentence: { source: 'audio_stt', status: 'success', text: 'They charge extra.', confidence: 'medium' },
+        candidates: [
+          { target_word: 'presented', reason: 'candidate', difficulty_hint: 'B1' },
+          { target_word: 'extra', reason: 'candidate', difficulty_hint: 'A2' },
+        ],
+      }));
+      if (url === '/api/ai/target-word-lemma') {
+        return new Promise<Response>((resolve) => { lemmaResolvers.push(resolve); });
+      }
+      if (url === '/api/ai/suggestions') {
+        const body = JSON.parse(String(init?.body));
+        suggestionBodies.push(body);
+        return Promise.resolve(jsonResponse({
+          status: 'success',
+          meaning_suggestion: body.target_word === 'extra' ? '额外的' : '呈现',
+          usage_note: body.target_word === 'extra' ? 'extra note' : 'present note',
+          sentence_translation: '他们额外收费。',
+        }));
+      }
+      return Promise.resolve(jsonResponse([]));
+    });
+
+    renderPage();
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'presented · B1' }));
+    await waitFor(() => expect(lemmaResolvers).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: 'extra · A2' }));
+    await waitFor(() => expect(lemmaResolvers).toHaveLength(2));
+
+    lemmaResolvers[1](jsonResponse({ status: 'success', lemma: 'extra' }));
+    expect(await screen.findByDisplayValue('额外的')).toBeInTheDocument();
+    expect(screen.getByLabelText('目标单词 clip.mp4')).toHaveValue('extra');
+
+    await act(async () => {
+      lemmaResolvers[0](jsonResponse({ status: 'success', lemma: 'present' }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(suggestionBodies).toHaveLength(1);
+    expect(screen.getByLabelText('目标单词 clip.mp4')).toHaveValue('extra');
+    expect(screen.queryByDisplayValue('呈现')).not.toBeInTheDocument();
   });
 
   it('continues analyzing later clips without starting AI suggestions during analysis', async () => {
@@ -226,6 +280,57 @@ describe('BatchClipImportPage', () => {
     expect(await screen.findByDisplayValue('charge')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '保存 clip.mp4' })).toBeInTheDocument();
     expect(await screen.findByText('AI 建议失败：AI timeout')).toBeInTheDocument();
+  });
+
+  it('normalizes selected inflected target word before suggestions and save', async () => {
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ default_target_language: '英语', default_definition_language: '中文', interface_language: '中文' }));
+      if (url.startsWith('/api/local-recognition/readiness')) return Promise.resolve(jsonResponse(readyReadiness()));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
+      if (url === '/api/clip-analysis') return Promise.resolve(jsonResponse({
+        status: 'success',
+        sentence: { source: 'audio_stt', status: 'success', text: 'She presented the plan.', confidence: 'medium' },
+        candidates: [{ target_word: 'presented', reason: 'candidate', difficulty_hint: 'B1' }],
+      }));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'success', lemma: 'present' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '呈现', usage_note: '原型/词典形：present', sentence_translation: '她展示了计划。' }));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/cards') return Promise.resolve(jsonResponse({ card: { id: 'card-lemma' }, context: { id: 'ctx-lemma' } }, 201));
+      if (url === '/api/media') return Promise.resolve(jsonResponse({ id: 'media-1' }, 201));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    renderPage();
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'presented · B1' }));
+
+    expect(await screen.findByDisplayValue('present')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '还原：presented' })).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('呈现')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '保存 clip.mp4' }));
+
+    await waitFor(() => expect(screen.getAllByText('已保存').length).toBeGreaterThan(0));
+    const aiSuggestionRequest = requests.find((request) => request.url === '/api/ai/suggestions');
+    expect(aiSuggestionRequest?.body).toBe(JSON.stringify({
+      target_word: 'present',
+      sentence: 'She presented the plan.',
+      target_language: '英语',
+      definition_language: '中文',
+    }));
+    const cardRequest = requests.find((request) => request.url === '/api/cards' && request.method === 'POST');
+    expect(cardRequest?.body).toBe(JSON.stringify({
+      target_word: 'present',
+      context_meaning: '呈现',
+      target_language: '英语',
+      definition_language: '中文',
+      sentence: 'She presented the plan.',
+      note: '原型/词典形：present',
+      tag_ids: [],
+    }));
   });
 
   it('selects candidates, edits sentence, suggests meaning, then creates a card and uploads media', async () => {

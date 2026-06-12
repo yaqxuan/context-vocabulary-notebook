@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 
-import { getAiSuggestion } from '../api/aiSuggestions';
+import { getAiSuggestion, getAiTargetWordLemma } from '../api/aiSuggestions';
 import { createCard, getCardSuggestions } from '../api/cards';
 import { analyzeClip } from '../api/clipAnalysis';
 import { uploadMedia } from '../api/media';
@@ -33,6 +33,7 @@ interface BatchItem {
   sentenceTranslation: string;
   suggestionState: 'idle' | 'loading' | 'none' | 'success' | 'error';
   suggestionRequestKey: string;
+  lemmaSuggestion: { original: string; lemma: string; sentence: string } | null;
   candidates: AiTargetWordCandidateDto[];
   sentenceCandidate: ClipSentenceCandidateDto | null;
   comparisonNote: string;
@@ -58,6 +59,7 @@ function newItem(file: File): BatchItem {
     sentenceTranslation: '',
     suggestionState: 'idle',
     suggestionRequestKey: '',
+    lemmaSuggestion: null,
     candidates: [],
     sentenceCandidate: null,
     comparisonNote: '',
@@ -144,6 +146,11 @@ export function BatchClipImportPage() {
   const [readinessLoading, setReadinessLoading] = useState(true);
   const [readinessError, setReadinessError] = useState('');
   const suggestionRequestSeqRef = useRef(0);
+  const itemsRef = useRef<BatchItem[]>([]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useEffect(() => {
     let active = true;
@@ -190,6 +197,7 @@ export function BatchClipImportPage() {
         sentenceTranslation: '',
         suggestionState: 'idle',
         suggestionRequestKey: '',
+        lemmaSuggestion: null,
         error: '',
       };
     }));
@@ -206,15 +214,27 @@ export function BatchClipImportPage() {
   };
 
   const patchItem = (id: string, patch: Partial<BatchItem>) => {
-    setItems((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    setItems((current) => {
+      const next = current.map((item) => (item.id === id ? { ...item, ...patch } : item));
+      itemsRef.current = next;
+      return next;
+    });
+  };
+
+  const isCurrentSuggestionRequest = (id: string, requestKey: string): boolean => {
+    return itemsRef.current.some((item) => item.id === id && item.suggestionRequestKey === requestKey);
   };
 
   const patchSuggestionIfCurrent = (id: string, requestKey: string, patch: Partial<BatchItem>) => {
-    setItems((current) => current.map((item) => {
-      if (item.id !== id) return item;
-      if (item.suggestionRequestKey !== requestKey) return item;
-      return { ...item, ...patch };
-    }));
+    setItems((current) => {
+      const next = current.map((item) => {
+        if (item.id !== id) return item;
+        if (item.suggestionRequestKey !== requestKey) return item;
+        return { ...item, ...patch };
+      });
+      itemsRef.current = next;
+      return next;
+    });
   };
 
   const handleFiles = (event: ChangeEvent<HTMLInputElement>) => {
@@ -231,9 +251,11 @@ export function BatchClipImportPage() {
     event.target.value = '';
   };
 
-  const requestCandidateSuggestion = async (id: string, sentence: string, targetWord: string) => {
-    const requestKey = `${++suggestionRequestSeqRef.current}`;
-    patchItem(id, { meaning: '', note: '', sentenceTranslation: '', suggestionState: 'loading', suggestionRequestKey: requestKey, error: '' });
+  const requestCandidateSuggestion = async (id: string, sentence: string, targetWord: string, existingRequestKey?: string) => {
+    const requestKey = existingRequestKey ?? `${++suggestionRequestSeqRef.current}`;
+    const loadingPatch = { meaning: '', note: '', sentenceTranslation: '', suggestionState: 'loading' as const, suggestionRequestKey: requestKey, error: '' };
+    if (existingRequestKey) patchSuggestionIfCurrent(id, requestKey, loadingPatch);
+    else patchItem(id, loadingPatch);
     try {
       const suggestion = await getAiSuggestion({
         target_word: targetWord,
@@ -255,6 +277,40 @@ export function BatchClipImportPage() {
     } catch (err) {
       patchSuggestionIfCurrent(id, requestKey, { suggestionState: 'error', error: `AI 建议失败：${errorMessage(err, '建议失败')}` });
     }
+  };
+
+  const requestLemmaThenSuggestion = async (id: string, sentence: string, targetWord: string) => {
+    const requestKey = `${++suggestionRequestSeqRef.current}`;
+    patchItem(id, {
+      targetWord,
+      meaning: '',
+      note: '',
+      sentenceTranslation: '',
+      suggestionState: 'loading',
+      suggestionRequestKey: requestKey,
+      lemmaSuggestion: null,
+      error: '',
+    });
+    let suggestionWord = targetWord;
+    try {
+      const result = await getAiTargetWordLemma({
+        target_word: targetWord,
+        sentence,
+        target_language: targetLanguage,
+      });
+      const lemma = result.status === 'success' ? result.lemma.trim() : '';
+      if (lemma && lemma.toLocaleLowerCase() !== targetWord.toLocaleLowerCase()) {
+        suggestionWord = lemma;
+        patchSuggestionIfCurrent(id, requestKey, {
+          targetWord: lemma,
+          lemmaSuggestion: { original: targetWord, lemma, sentence },
+        });
+      }
+    } catch {
+      // Lemma lookup is advisory; suggestion generation still uses the typed word.
+    }
+    if (!isCurrentSuggestionRequest(id, requestKey)) return;
+    await requestCandidateSuggestion(id, sentence, suggestionWord, requestKey);
   };
 
   const processAll = async () => {
@@ -299,7 +355,7 @@ export function BatchClipImportPage() {
       suggestionRequestKey: '',
       error: '',
     });
-    if (sentence && targetWord.trim()) void requestCandidateSuggestion(item.id, sentence, targetWord.trim());
+    if (sentence && targetWord.trim()) void requestLemmaThenSuggestion(item.id, sentence, targetWord.trim());
   };
 
   const updateItemSentence = (item: BatchItem, sentence: string) => {
@@ -313,7 +369,7 @@ export function BatchClipImportPage() {
       suggestionRequestKey: '',
       error: '',
     });
-    if (sentence.trim() && targetWord) void requestCandidateSuggestion(item.id, sentence.trim(), targetWord);
+    if (sentence.trim() && targetWord) void requestLemmaThenSuggestion(item.id, sentence.trim(), targetWord);
   };
 
   const selectCandidate = (item: BatchItem, targetWord: string) => {
@@ -323,6 +379,23 @@ export function BatchClipImportPage() {
       return;
     }
     updateItemTargetWord(item, targetWord);
+  };
+
+  const restoreOriginalTargetWord = (item: BatchItem) => {
+    if (!item.lemmaSuggestion) return;
+    const sentence = item.sentence.trim();
+    const original = item.lemmaSuggestion.original;
+    patchItem(item.id, {
+      targetWord: original,
+      lemmaSuggestion: null,
+      meaning: '',
+      note: '',
+      sentenceTranslation: '',
+      suggestionState: sentence ? 'loading' : 'idle',
+      suggestionRequestKey: '',
+      error: '',
+    });
+    if (sentence) void requestCandidateSuggestion(item.id, sentence, original);
   };
 
   const saveItem = async (item: BatchItem) => {
@@ -448,6 +521,11 @@ export function BatchClipImportPage() {
                 <label>
                   目标单词
                   <input aria-label={`目标单词 ${item.file.name}`} value={item.targetWord} onChange={(event) => updateItemTargetWord(item, event.target.value)} />
+                  {item.lemmaSuggestion && item.targetWord.trim().toLocaleLowerCase() === item.lemmaSuggestion.lemma.toLocaleLowerCase() ? (
+                    <button type="button" onClick={() => restoreOriginalTargetWord(item)}>
+                      还原：{item.lemmaSuggestion.original}
+                    </button>
+                  ) : null}
                 </label>
                 {item.candidates.length ? (
                   <div className="batch-import-candidates" aria-label="候选目标词">
