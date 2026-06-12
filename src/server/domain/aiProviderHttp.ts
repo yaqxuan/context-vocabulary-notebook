@@ -110,6 +110,10 @@ export async function prepareSafeAiRequest(baseUrl: string): Promise<SafeAiReque
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
 
+  if (isPrivateAiProviderAllowed()) {
+    return { baseUrl: normalizeAiBaseUrl(baseUrl), close: async () => {} };
+  }
+
   const hostname = url.hostname.toLowerCase();
   const dnsName = hostname.endsWith('.') ? hostname.slice(0, -1) : hostname;
   if (isBlockedAiHostname(dnsName)) return null;
