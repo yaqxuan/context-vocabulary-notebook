@@ -189,13 +189,33 @@ describe('clip analysis domain', () => {
     });
   });
 
-  it('prefers OCR over different STT text and records the audio difference', async () => {
+  it('prefers high-confidence OCR over different STT text and records the audio difference', async () => {
     const ocr = { source: 'subtitle_ocr' as const, status: 'success' as const, text: 'Visible subtitle.', confidence: 'high' as const };
     const stt = { source: 'audio_stt' as const, status: 'success' as const, text: 'Heard sentence.', confidence: 'medium' as const };
 
     expect(chooseBestSentence(ocr, stt)).toEqual({
       sentence: ocr,
       note: 'Using visible subtitle OCR; audio transcription differs: Heard sentence.',
+    });
+  });
+
+  it('prefers STT over medium-confidence OCR when the texts differ', async () => {
+    const ocr = {
+      source: 'subtitle_ocr' as const,
+      status: 'success' as const,
+      text: '— affice equismant on pour first day.',
+      confidence: 'medium' as const,
+    };
+    const stt = {
+      source: 'audio_stt' as const,
+      status: 'success' as const,
+      text: 'Weaponizing Office Equipment on your first day.',
+      confidence: 'medium' as const,
+    };
+
+    expect(chooseBestSentence(ocr, stt)).toEqual({
+      sentence: stt,
+      note: 'Using audio transcription because subtitle OCR was medium confidence and differed: — affice equismant on pour first day.',
     });
   });
 
@@ -259,23 +279,23 @@ describe('clip analysis domain', () => {
     });
   });
 
-  it('keeps valid short-word OCR text over different STT text', async () => {
+  it('prefers STT over medium-confidence short OCR text when the texts differ', async () => {
     const ocr = { source: 'subtitle_ocr' as const, status: 'success' as const, text: 'To be or not to be', confidence: 'medium' as const };
     const stt = { source: 'audio_stt' as const, status: 'success' as const, text: 'Today we are not going.', confidence: 'medium' as const };
 
     expect(chooseBestSentence(ocr, stt)).toEqual({
-      sentence: ocr,
-      note: 'Using visible subtitle OCR; audio transcription differs: Today we are not going.',
+      sentence: stt,
+      note: 'Using audio transcription because subtitle OCR was medium confidence and differed: To be or not to be',
     });
   });
 
-  it('keeps valid uppercase OCR text over different STT text', async () => {
+  it('prefers STT over medium-confidence uppercase OCR text when the texts differ', async () => {
     const ocr = { source: 'subtitle_ocr' as const, status: 'success' as const, text: 'I CAN DO THIS ALL DAY NOW', confidence: 'medium' as const };
     const stt = { source: 'audio_stt' as const, status: 'success' as const, text: 'I cannot do this anymore.', confidence: 'medium' as const };
 
     expect(chooseBestSentence(ocr, stt)).toEqual({
-      sentence: ocr,
-      note: 'Using visible subtitle OCR; audio transcription differs: I cannot do this anymore.',
+      sentence: stt,
+      note: 'Using audio transcription because subtitle OCR was medium confidence and differed: I CAN DO THIS ALL DAY NOW',
     });
   });
 

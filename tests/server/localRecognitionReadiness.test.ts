@@ -27,7 +27,10 @@ function config(overrides: Partial<LocalRecognitionConfig> = {}): LocalRecogniti
 
 describe('local recognition readiness domain', () => {
   it('reports ffmpeg, whisper.cpp model, and tesseract ready', async () => {
-    const runner = vi.fn(async () => ({ stdout: 'ok', stderr: '' })) satisfies ReadinessExecFileRunner;
+    const runner = vi.fn(async (_file: string, args: string[]) => {
+      if (args[0] === '--list-langs') return { stdout: 'List of available languages\neng\n', stderr: '' };
+      return { stdout: 'ok', stderr: '' };
+    }) satisfies ReadinessExecFileRunner;
     const fsAccess = { access: vi.fn(async () => undefined) };
 
     await expect(getLocalRecognitionReadiness('英语', {
@@ -48,7 +51,11 @@ describe('local recognition readiness domain', () => {
         ready: true,
         executablePath: '/bin/tesseract',
         language: 'eng',
-        message: 'Tesseract OCR is ready',
+        requiredLanguage: 'eng',
+        installedLanguages: ['eng'],
+        languageReady: true,
+        languageMessage: 'Tesseract language data eng is installed',
+        message: 'Tesseract language data eng is installed',
       },
     });
     expect(runner).toHaveBeenCalledWith('ffmpeg', ['-version'], { timeout: 5000 });
@@ -100,8 +107,9 @@ describe('local recognition readiness domain', () => {
   });
 
   it('reports a missing executable without doing recognition work', async () => {
-    const runner = vi.fn(async (file) => {
+    const runner = vi.fn(async (file, args) => {
       if (file === '/bin/whisper-cli') throw new Error('ENOENT');
+      if (args[0] === '--list-langs') return { stdout: 'List of available languages\neng\n', stderr: '' };
       return { stdout: 'ok', stderr: '' };
     }) satisfies ReadinessExecFileRunner;
     const fsAccess = { access: vi.fn(async () => undefined) };
@@ -119,7 +127,10 @@ describe('local recognition readiness domain', () => {
   });
 
   it('reports a missing whisper.cpp model separately', async () => {
-    const runner = vi.fn(async () => ({ stdout: 'ok', stderr: '' })) satisfies ReadinessExecFileRunner;
+    const runner = vi.fn(async (_file: string, args: string[]) => {
+      if (args[0] === '--list-langs') return { stdout: 'List of available languages\neng\n', stderr: '' };
+      return { stdout: 'ok', stderr: '' };
+    }) satisfies ReadinessExecFileRunner;
     const fsAccess = { access: vi.fn().mockRejectedValue(new Error('EACCES')) };
 
     const result = await getLocalRecognitionReadiness(undefined, {
@@ -132,6 +143,69 @@ describe('local recognition readiness domain', () => {
     expect(result.stt.message).toContain('whisper.cpp model is not readable at /models/ggml.bin');
     expect(result.ffmpeg.ready).toBe(true);
     expect(result.ocr.ready).toBe(true);
+  });
+
+  it('marks target tesseract language ready when list-langs contains it', async () => {
+    const runner = vi.fn(async (_file: string, args: string[]) => {
+      if (args[0] === '--version') return { stdout: 'tesseract 5', stderr: '' };
+      if (args[0] === '--help') return { stdout: 'whisper help', stderr: '' };
+      if (args[0] === '--list-langs') return { stdout: 'List of available languages\neng\njpn\n', stderr: '' };
+      return { stdout: 'ok', stderr: '' };
+    }) satisfies ReadinessExecFileRunner;
+
+    const result = await getLocalRecognitionReadiness('日语', {
+      runner,
+      fsAccess: { access: async () => undefined },
+      resolveConfig: () => config({
+        stt: { provider: 'whisper.cpp', executablePath: 'whisper-cli', modelPath: '/models/ggml-base.bin', timeoutMs: 120_000, language: 'ja' },
+        ocr: { provider: 'tesseract', executablePath: 'tesseract', language: 'jpn', timeoutMs: 30_000 },
+      }),
+    });
+
+    expect(result.ocr.requiredLanguage).toBe('jpn');
+    expect(result.ocr.languageReady).toBe(true);
+    expect(result.ocr.installedLanguages).toEqual(['eng', 'jpn']);
+  });
+
+  it('marks target tesseract language missing when list-langs lacks it', async () => {
+    const runner = vi.fn(async (_file: string, args: string[]) => {
+      if (args[0] === '--version') return { stdout: 'tesseract 5', stderr: '' };
+      if (args[0] === '--help') return { stdout: 'whisper help', stderr: '' };
+      if (args[0] === '--list-langs') return { stdout: 'List of available languages\neng\nchi_sim\n', stderr: '' };
+      return { stdout: 'ok', stderr: '' };
+    }) satisfies ReadinessExecFileRunner;
+
+    const result = await getLocalRecognitionReadiness('日语', {
+      runner,
+      fsAccess: { access: async () => undefined },
+      resolveConfig: () => config({
+        stt: { provider: 'whisper.cpp', executablePath: 'whisper-cli', modelPath: '/models/ggml-base.bin', timeoutMs: 120_000, language: 'ja' },
+        ocr: { provider: 'tesseract', executablePath: 'tesseract', language: 'jpn', timeoutMs: 30_000 },
+      }),
+    });
+
+    expect(result.ocr.languageReady).toBe(false);
+    expect(result.ocr.languageMessage).toContain('jpn');
+  });
+
+  it('warns when a non-English target language uses an English-only Whisper model', async () => {
+    const runner = vi.fn(async (_file: string, args: string[]) => {
+      if (args[0] === '--version' || args[0] === '--help') return { stdout: 'ok', stderr: '' };
+      if (args[0] === '--list-langs') return { stdout: 'List of available languages\njpn\n', stderr: '' };
+      return { stdout: 'ok', stderr: '' };
+    }) satisfies ReadinessExecFileRunner;
+
+    const result = await getLocalRecognitionReadiness('日语', {
+      runner,
+      fsAccess: { access: async () => undefined },
+      resolveConfig: () => config({
+        stt: { provider: 'whisper.cpp', executablePath: 'whisper-cli', modelPath: '/models/ggml-base.en.bin', timeoutMs: 120_000, language: 'ja' },
+        ocr: { provider: 'tesseract', executablePath: 'tesseract', language: 'jpn', timeoutMs: 30_000 },
+      }),
+    });
+
+    expect(result.stt.language).toBe('ja');
+    expect(result.stt.modelWarning).toContain('English-only');
   });
 
   it('does not check disabled OCR/STT executables', async () => {
@@ -157,6 +231,9 @@ describe('local recognition readiness domain', () => {
       ready: false,
       executablePath: '/bin/tesseract',
       language: 'eng',
+      requiredLanguage: 'eng',
+      languageReady: false,
+      languageMessage: 'Local OCR is disabled',
       message: 'Local OCR is disabled',
     });
     expect(runner).toHaveBeenCalledOnce();

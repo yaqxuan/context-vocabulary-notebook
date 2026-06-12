@@ -295,13 +295,19 @@ export interface LocalRecognitionReadinessDto {
     ready: boolean;
     executablePath: string;
     modelPath: string;
+    language?: string;
     message: string;
+    modelWarning?: string;
   };
   ocr: {
     provider: 'tesseract' | 'disabled';
     ready: boolean;
     executablePath: string;
     language: string;
+    requiredLanguage?: string;
+    installedLanguages?: string[];
+    languageReady?: boolean;
+    languageMessage?: string;
     message: string;
   };
 }

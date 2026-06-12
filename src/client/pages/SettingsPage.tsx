@@ -15,6 +15,7 @@ import type {
   ImportExecuteDecisionDto,
   ImportExecuteResponseDto,
   ImportScanResponseDto,
+  LocalRecognitionReadinessDto,
   SettingsDto,
 } from '../../shared/types';
 import {
@@ -27,9 +28,11 @@ import {
   setActiveAiConfig,
 } from '../api/aiConfigs';
 import { exportCards, executeImport, scanImport } from '../api/importExport';
+import { getLocalRecognitionReadiness } from '../api/localRecognition';
 import { getSettings, patchSettings } from '../api/settings';
 import { useI18n } from '../i18n/I18nProvider';
 import { Button } from '../components/Button';
+import { RecognitionSetupCard } from '../components/RecognitionSetupCard';
 import { ErrorState, LoadingState } from '../components/UiStates';
 
 // ─── Type helpers ─────────────────────────────────────────────────────────────
@@ -73,6 +76,31 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [readiness, setReadiness] = useState<LocalRecognitionReadinessDto | null>(null);
+  const [readinessLoading, setReadinessLoading] = useState(false);
+  const [readinessError, setReadinessError] = useState('');
+  const readinessRequestSeqRef = useRef(0);
+
+  const loadReadiness = useCallback(async () => {
+    const requestSeq = ++readinessRequestSeqRef.current;
+    setReadinessLoading(true);
+    setReadinessError('');
+    try {
+      const result = await getLocalRecognitionReadiness(targetLang);
+      if (requestSeq !== readinessRequestSeqRef.current) return;
+      setReadiness(result);
+    } catch (err) {
+      if (requestSeq !== readinessRequestSeqRef.current) return;
+      setReadiness(null);
+      setReadinessError(err instanceof Error ? err.message : '本地识别状态读取失败');
+    } finally {
+      if (requestSeq === readinessRequestSeqRef.current) setReadinessLoading(false);
+    }
+  }, [targetLang]);
+
+  useEffect(() => {
+    void loadReadiness();
+  }, [loadReadiness]);
 
   function validateAll(): boolean {
     let ok = true;
@@ -149,6 +177,14 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
           )}
         </div>
       </div>
+
+      <RecognitionSetupCard
+        targetLanguage={targetLang}
+        readiness={readiness}
+        loading={readinessLoading}
+        error={readinessError}
+        onRefresh={() => void loadReadiness()}
+      />
 
       <div className="phase7-settings-actions">
         <Button onClick={handleSave} disabled={saving}>

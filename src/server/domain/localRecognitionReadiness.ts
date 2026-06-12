@@ -60,6 +60,48 @@ async function checkCommand(label: string, executablePath: string, args: string[
   }
 }
 
+function parseTesseractLanguages(stdout: string): string[] {
+  return stdout
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line && !/^list of available languages/i.test(line));
+}
+
+function isEnglishOnlyWhisperModel(modelPath: string): boolean {
+  return /\.en\.(?:bin|gguf)$/iu.test(modelPath.trim());
+}
+
+function modelWarning(targetLanguage: SupportedLanguage | undefined, modelPath: string): string | undefined {
+  if (!targetLanguage || targetLanguage === '英语') return undefined;
+  if (!isEnglishOnlyWhisperModel(modelPath)) return undefined;
+  return `English-only Whisper model is not recommended for ${targetLanguage}. Use a multilingual model such as ggml-base.bin or ggml-small.bin.`;
+}
+
+async function checkTesseractLanguages(
+  executablePath: string,
+  requiredLanguage: string,
+  runner: ReadinessExecFileRunner,
+): Promise<Pick<LocalRecognitionReadinessDto['ocr'], 'installedLanguages' | 'languageReady' | 'languageMessage'>> {
+  try {
+    const result = await runner(executablePath, ['--list-langs'], { timeout: resolveReadinessTimeoutMs() });
+    const installedLanguages = parseTesseractLanguages(result.stdout);
+    const languageReady = installedLanguages.includes(requiredLanguage);
+    return {
+      installedLanguages,
+      languageReady,
+      languageMessage: languageReady
+        ? `Tesseract language data ${requiredLanguage} is installed`
+        : `Tesseract language data ${requiredLanguage} is missing. Install the matching language package, then rerun readiness check.`,
+    };
+  } catch (error) {
+    return {
+      installedLanguages: [],
+      languageReady: false,
+      languageMessage: commandErrorMessage('Tesseract language list', executablePath, error),
+    };
+  }
+}
+
 export async function getLocalRecognitionReadiness(
   targetLanguage?: SupportedLanguage,
   options: LocalRecognitionReadinessOptions = {},
@@ -70,6 +112,8 @@ export async function getLocalRecognitionReadiness(
 
   const ffmpeg = await checkCommand('ffmpeg', 'ffmpeg', ['-version'], runner);
 
+  const sttLanguage = config.stt.language;
+  const sttModelWarning = modelWarning(targetLanguage, config.stt.modelPath);
   let stt: LocalRecognitionReadinessDto['stt'];
   if (config.stt.provider === 'disabled') {
     stt = {
@@ -77,7 +121,9 @@ export async function getLocalRecognitionReadiness(
       ready: false,
       executablePath: config.stt.executablePath,
       modelPath: config.stt.modelPath,
+      language: sttLanguage,
       message: 'Local STT is disabled',
+      ...(sttModelWarning ? { modelWarning: sttModelWarning } : {}),
     };
   } else if (!config.stt.modelPath) {
     stt = {
@@ -85,7 +131,9 @@ export async function getLocalRecognitionReadiness(
       ready: false,
       executablePath: config.stt.executablePath,
       modelPath: config.stt.modelPath,
+      language: sttLanguage,
       message: 'whisper.cpp model path is not configured',
+      ...(sttModelWarning ? { modelWarning: sttModelWarning } : {}),
     };
   } else {
     const executable = await checkCommand('whisper.cpp', config.stt.executablePath, ['--help'], runner);
@@ -95,7 +143,9 @@ export async function getLocalRecognitionReadiness(
         ready: false,
         executablePath: config.stt.executablePath,
         modelPath: config.stt.modelPath,
+        language: sttLanguage,
         message: executable.message,
+        ...(sttModelWarning ? { modelWarning: sttModelWarning } : {}),
       };
     } else {
       try {
@@ -105,7 +155,9 @@ export async function getLocalRecognitionReadiness(
           ready: true,
           executablePath: config.stt.executablePath,
           modelPath: config.stt.modelPath,
+          language: sttLanguage,
           message: 'whisper.cpp executable and model are ready',
+          ...(sttModelWarning ? { modelWarning: sttModelWarning } : {}),
         };
       } catch (error) {
         const detail = error instanceof Error && error.message ? `: ${error.message}` : '';
@@ -114,12 +166,15 @@ export async function getLocalRecognitionReadiness(
           ready: false,
           executablePath: config.stt.executablePath,
           modelPath: config.stt.modelPath,
+          language: sttLanguage,
           message: `whisper.cpp model is not readable at ${config.stt.modelPath}${detail}`,
+          ...(sttModelWarning ? { modelWarning: sttModelWarning } : {}),
         };
       }
     }
   }
 
+  const requiredLanguage = config.ocr.language;
   let ocr: LocalRecognitionReadinessDto['ocr'];
   if (config.ocr.provider === 'disabled') {
     ocr = {
@@ -127,16 +182,26 @@ export async function getLocalRecognitionReadiness(
       ready: false,
       executablePath: config.ocr.executablePath,
       language: config.ocr.language,
+      requiredLanguage,
+      languageReady: false,
+      languageMessage: 'Local OCR is disabled',
       message: 'Local OCR is disabled',
     };
   } else {
     const executable = await checkCommand('Tesseract OCR', config.ocr.executablePath, ['--version'], runner);
+    const languageCheck = executable.ready
+      ? await checkTesseractLanguages(config.ocr.executablePath, requiredLanguage, runner)
+      : { installedLanguages: [], languageReady: false, languageMessage: executable.message };
     ocr = {
       provider: 'tesseract',
-      ready: executable.ready,
+      ready: executable.ready && languageCheck.languageReady,
       executablePath: config.ocr.executablePath,
       language: config.ocr.language,
-      message: executable.message,
+      requiredLanguage,
+      installedLanguages: languageCheck.installedLanguages,
+      languageReady: languageCheck.languageReady,
+      languageMessage: languageCheck.languageMessage,
+      message: executable.ready ? languageCheck.languageMessage : executable.message,
     };
   }
 

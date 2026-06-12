@@ -45,6 +45,11 @@ function getFormDataEntry(body: BodyInit | null | undefined, key: string): FormD
 function defaultSettingsFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input);
   if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
+  if (url.startsWith('/api/local-recognition/readiness')) return Promise.resolve(jsonResponse({
+    ffmpeg: { ready: true, message: 'ffmpeg is ready' },
+    stt: { provider: 'whisper.cpp', ready: true, executablePath: 'whisper-cli', modelPath: '/models/ggml-base.bin', language: 'en', message: 'whisper.cpp executable and model are ready' },
+    ocr: { provider: 'tesseract', ready: true, executablePath: 'tesseract', language: 'eng', requiredLanguage: 'eng', installedLanguages: ['eng'], languageReady: true, languageMessage: 'Tesseract language data eng is installed', message: 'Tesseract language data eng is installed' },
+  }));
   return Promise.resolve(jsonResponse(settings));
 }
 
@@ -127,6 +132,48 @@ describe('SettingsPage', () => {
       render(<SettingsPage />);
       const targetSelect = await screen.findByLabelText('默认学习语言') as HTMLSelectElement;
       expect(targetSelect.value).toBe('英语');
+    });
+
+    it('renders local recognition setup for the default learning language', async () => {
+      render(<SettingsPage />);
+      expect(await screen.findByText('本地识别配置 · English')).toBeInTheDocument();
+    });
+
+    it('keeps recognition readiness aligned with the latest selected learning language', async () => {
+      let resolveEnglishReadiness: (response: Response) => void = () => undefined;
+      let resolveJapaneseReadiness: (response: Response) => void = () => undefined;
+      vi.mocked(globalThis.fetch).mockImplementation((input) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(settings));
+        if (url.includes('target_language=%E6%97%A5%E8%AF%AD')) {
+          return new Promise<Response>((resolve) => { resolveJapaneseReadiness = resolve; });
+        }
+        if (url.startsWith('/api/local-recognition/readiness')) {
+          return new Promise<Response>((resolve) => { resolveEnglishReadiness = resolve; });
+        }
+        return Promise.resolve(jsonResponse({ ok: true }));
+      });
+
+      render(<SettingsPage />);
+      const targetSelect = await screen.findByLabelText('默认学习语言');
+      fireEvent.change(targetSelect, { target: { value: '日语' } });
+
+      resolveJapaneseReadiness(jsonResponse({
+        ffmpeg: { ready: true, message: 'ffmpeg is ready' },
+        stt: { provider: 'whisper.cpp', ready: true, executablePath: 'whisper-cli', modelPath: '/models/ggml-base.bin', language: 'ja', message: 'ready' },
+        ocr: { provider: 'tesseract', ready: true, executablePath: 'tesseract', language: 'jpn', requiredLanguage: 'jpn', installedLanguages: ['jpn'], languageReady: true, languageMessage: 'Tesseract language data jpn is installed', message: 'Tesseract language data jpn is installed' },
+      }));
+      expect(await screen.findByText('目标语言包：jpn')).toBeInTheDocument();
+
+      resolveEnglishReadiness(jsonResponse({
+        ffmpeg: { ready: true, message: 'ffmpeg is ready' },
+        stt: { provider: 'whisper.cpp', ready: true, executablePath: 'whisper-cli', modelPath: '/models/ggml-base.bin', language: 'en', message: 'ready' },
+        ocr: { provider: 'tesseract', ready: true, executablePath: 'tesseract', language: 'eng', requiredLanguage: 'eng', installedLanguages: ['eng'], languageReady: true, languageMessage: 'Tesseract language data eng is installed', message: 'Tesseract language data eng is installed' },
+      }));
+
+      await waitFor(() => expect(screen.getByText('目标语言包：jpn')).toBeInTheDocument());
+      expect(screen.queryByText('目标语言包：eng')).not.toBeInTheDocument();
     });
 
     it('renders learning settings without the interface language field', async () => {

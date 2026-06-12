@@ -14,11 +14,11 @@ function file(name: string, type: string, size = 6): File {
   return sample;
 }
 
-function readyReadiness() {
+function readyReadiness(language = 'eng') {
   return {
     ffmpeg: { ready: true, message: 'ffmpeg is ready' },
-    stt: { provider: 'whisper.cpp', ready: true, executablePath: '/bin/whisper-cli', modelPath: '/models/ggml.bin', message: 'whisper.cpp executable and model are ready' },
-    ocr: { provider: 'tesseract', ready: true, executablePath: '/bin/tesseract', language: 'eng', message: 'Tesseract OCR is ready' },
+    stt: { provider: 'whisper.cpp', ready: true, executablePath: '/bin/whisper-cli', modelPath: '/models/ggml.bin', language: language === 'jpn' ? 'ja' : 'en', message: 'whisper.cpp executable and model are ready' },
+    ocr: { provider: 'tesseract', ready: true, executablePath: '/bin/tesseract', language, requiredLanguage: language, installedLanguages: [language], languageReady: true, languageMessage: `Tesseract language data ${language} is installed`, message: `Tesseract language data ${language} is installed` },
   };
 }
 
@@ -64,6 +64,24 @@ describe('BatchClipImportPage', () => {
     expect(within(panel).getByText('whisper.cpp model is not readable at /missing/model.bin')).toBeInTheDocument();
     expect(within(panel).getByText('本地 OCR Tesseract · 已关闭')).toBeInTheDocument();
     expect(within(panel).getByText(/OCR\/STT 在本机运行/)).toBeInTheDocument();
+  });
+
+  it('renders recognition setup and updates it when learning language changes', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ default_target_language: '英语', default_definition_language: '中文', interface_language: '中文' }));
+      if (url.includes('target_language=%E6%97%A5%E8%AF%AD')) return Promise.resolve(jsonResponse(readyReadiness('jpn')));
+      if (url.startsWith('/api/local-recognition/readiness')) return Promise.resolve(jsonResponse(readyReadiness('eng')));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('本地识别配置 · English')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('学习语言'), { target: { value: '日语' } });
+    expect(await screen.findByText('本地识别配置 · 日本語')).toBeInTheDocument();
+    expect(await screen.findByText('目标语言包：jpn')).toBeInTheDocument();
   });
 
   it('queues only MP4 files and reports non-MP4 files', async () => {
@@ -221,6 +239,44 @@ describe('BatchClipImportPage', () => {
     expect(screen.queryByDisplayValue('呈现')).not.toBeInTheDocument();
   });
 
+  it('skips a queued clip removed while batch analysis is running', async () => {
+    const analysisCalls: string[] = [];
+    const analysisResolvers: Array<(response: Response) => void> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ default_target_language: '英语', default_definition_language: '中文', interface_language: '中文' }));
+      if (url.startsWith('/api/local-recognition/readiness')) return Promise.resolve(jsonResponse(readyReadiness()));
+      if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
+      if (url === '/api/clip-analysis') {
+        const uploaded = (init?.body as FormData).get('file') as File;
+        analysisCalls.push(uploaded.name);
+        return new Promise<Response>((resolve) => { analysisResolvers.push(resolve); });
+      }
+      return Promise.resolve(jsonResponse([]));
+    });
+
+    renderPage();
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('one.mp4', 'video/mp4'), file('two.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
+
+    await waitFor(() => expect(analysisCalls).toEqual(['one.mp4']));
+    fireEvent.click(screen.getByRole('button', { name: '移除 two.mp4' }));
+    expect(screen.queryByText('two.mp4')).not.toBeInTheDocument();
+
+    await act(async () => {
+      analysisResolvers[0](jsonResponse({
+        status: 'success',
+        sentence: { source: 'audio_stt', status: 'success', text: 'one sentence.', confidence: 'medium' },
+        candidates: [{ target_word: 'sentence', reason: 'candidate', difficulty_hint: 'B1' }],
+      }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByDisplayValue('one sentence.')).toBeInTheDocument();
+    expect(analysisCalls).toEqual(['one.mp4']);
+  });
+
   it('continues analyzing later clips without starting AI suggestions during analysis', async () => {
     const analysisBodies: FormData[] = [];
     const suggestionBodies: unknown[] = [];
@@ -313,7 +369,7 @@ describe('BatchClipImportPage', () => {
     expect(await screen.findByDisplayValue('呈现')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '保存 clip.mp4' }));
 
-    await waitFor(() => expect(screen.getAllByText('已保存').length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.queryByText('clip.mp4')).not.toBeInTheDocument());
     const aiSuggestionRequest = requests.find((request) => request.url === '/api/ai/suggestions');
     expect(aiSuggestionRequest?.body).toBe(JSON.stringify({
       target_word: 'present',
@@ -372,7 +428,7 @@ describe('BatchClipImportPage', () => {
     expect(screen.getByText('他们早餐额外收费。')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '保存 clip.mp4' }));
 
-    await waitFor(() => expect(screen.getAllByText('已保存').length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.queryByText('clip.mp4')).not.toBeInTheDocument());
     const cardRequest = requests.find((r) => r.url === '/api/cards' && r.method === 'POST');
     expect(cardRequest?.body).toBe(JSON.stringify({
       target_word: 'charge',
@@ -384,6 +440,18 @@ describe('BatchClipImportPage', () => {
       tag_ids: ['tag-1'],
     }));
     expect(requests.filter((r) => r.url === '/api/media' && r.method === 'POST')).toHaveLength(1);
+  });
+
+  it('removes a queued clip from the local batch list when remove is clicked', async () => {
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+
+    expect(await screen.findByText('clip.mp4')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '移除 clip.mp4' }));
+
+    expect(screen.queryByText('clip.mp4')).not.toBeInTheDocument();
+    expect(screen.getByText('还没有待处理视频。')).toBeInTheDocument();
   });
 
   it('appends to an exact matched card and retries failed media upload without creating another card', async () => {
@@ -430,7 +498,7 @@ describe('BatchClipImportPage', () => {
     expect(await screen.findByText('卡片已保存，但媒体上传失败：disk full')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '保存 clip.mp4' }));
 
-    await waitFor(() => expect(screen.getAllByText('已保存').length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.queryByText('clip.mp4')).not.toBeInTheDocument());
     expect(cardRequests).toHaveLength(1);
     expect(suggestionRequests).toHaveLength(1);
     expect(uploadedContextIds).toEqual(['ctx-2', 'ctx-2']);

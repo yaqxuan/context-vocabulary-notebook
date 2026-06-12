@@ -6,6 +6,7 @@ import { analyzeClip } from '../api/clipAnalysis';
 import { uploadMedia } from '../api/media';
 import { getLocalRecognitionReadiness } from '../api/localRecognition';
 import { getSettings } from '../api/settings';
+import { RecognitionSetupCard } from '../components/RecognitionSetupCard';
 import { TagAssignmentEditor } from '../components/TagAssignmentEditor';
 import { useI18n } from '../i18n/I18nProvider';
 import {
@@ -145,6 +146,7 @@ export function BatchClipImportPage() {
   const [readiness, setReadiness] = useState<LocalRecognitionReadinessDto | null>(null);
   const [readinessLoading, setReadinessLoading] = useState(true);
   const [readinessError, setReadinessError] = useState('');
+  const [readinessRefreshKey, setReadinessRefreshKey] = useState(0);
   const suggestionRequestSeqRef = useRef(0);
   const itemsRef = useRef<BatchItem[]>([]);
 
@@ -182,7 +184,7 @@ export function BatchClipImportPage() {
         if (active) setReadinessLoading(false);
       });
     return () => { active = false; };
-  }, [copy.unavailable, targetLanguage]);
+  }, [copy.unavailable, readinessRefreshKey, targetLanguage]);
 
   const hasProcessableItems = useMemo(() => items.some((item) => item.status === 'queued' || item.status === 'error'), [items]);
 
@@ -216,6 +218,14 @@ export function BatchClipImportPage() {
   const patchItem = (id: string, patch: Partial<BatchItem>) => {
     setItems((current) => {
       const next = current.map((item) => (item.id === id ? { ...item, ...patch } : item));
+      itemsRef.current = next;
+      return next;
+    });
+  };
+
+  const removeItem = (id: string) => {
+    setItems((current) => {
+      const next = current.filter((item) => item.id !== id);
       itemsRef.current = next;
       return next;
     });
@@ -318,6 +328,8 @@ export function BatchClipImportPage() {
     try {
       const targets = items.filter((item) => item.status === 'queued' || item.status === 'error');
       for (const item of targets) {
+        const currentItem = itemsRef.current.find((candidate) => candidate.id === item.id);
+        if (!currentItem || (currentItem.status !== 'queued' && currentItem.status !== 'error')) continue;
         patchItem(item.id, { status: 'analyzing', error: '' });
         try {
           const result = await analyzeClip(item.file, targetLanguage, definitionLanguage);
@@ -434,7 +446,7 @@ export function BatchClipImportPage() {
 
       try {
         await uploadMedia(contextId, item.file);
-        patchItem(item.id, { status: 'saved', error: '', savedContextId: contextId, savedCardId: cardId });
+        removeItem(item.id);
       } catch (err) {
         patchItem(item.id, {
           status: 'partialSaveError',
@@ -493,6 +505,14 @@ export function BatchClipImportPage() {
         ) : null}
       </aside>
 
+      <RecognitionSetupCard
+        targetLanguage={targetLanguage}
+        readiness={readiness}
+        loading={readinessLoading}
+        error={readinessError}
+        onRefresh={() => setReadinessRefreshKey((key) => key + 1)}
+      />
+
       {fileError ? <p className="batch-import-error">{fileError}</p> : null}
       {items.length === 0 ? <p className="batch-import-empty">还没有待处理视频。</p> : null}
 
@@ -504,7 +524,10 @@ export function BatchClipImportPage() {
                 <h3>{item.file.name}</h3>
                 <p>{item.status === 'queued' ? '待分析' : item.status === 'analyzing' ? '分析中…' : item.status === 'ready' ? '待保存' : item.status === 'saving' ? '保存中…' : item.status === 'saved' ? '已保存' : item.status === 'partialSaveError' ? '部分保存' : '分析失败'}</p>
               </div>
-              {item.status === 'ready' || item.status === 'partialSaveError' ? <button type="button" onClick={() => saveItem(item)} title="保存会创建新卡片或追加到已有卡片，并上传媒体。">保存 {item.file.name}</button> : null}
+              <div className="batch-import-item-actions">
+                {item.status === 'ready' || item.status === 'partialSaveError' ? <button className="batch-import-save-button" type="button" onClick={() => saveItem(item)} title="保存会创建新卡片或追加到已有卡片，并上传媒体。">保存 {item.file.name}</button> : null}
+                {item.status !== 'analyzing' && item.status !== 'saving' ? <button className="batch-import-remove-button" type="button" onClick={() => removeItem(item.id)} title="只从本次批量导入列表移除，不删除已保存卡片或媒体。">移除 {item.file.name}</button> : null}
+              </div>
             </header>
 
             {item.sentenceCandidate ? <p className="batch-import-meta">来源：{item.sentenceCandidate.source} · 置信度：{item.sentenceCandidate.confidence}</p> : null}

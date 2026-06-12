@@ -312,6 +312,9 @@ export function chooseBestSentence(
       if (ocr.confidence !== 'high' && looksLikeNoisyOcr(ocrText)) {
         return { sentence: stt, note: `Using audio transcription because subtitle OCR looked noisy: ${ocrText}` };
       }
+      if (ocr.confidence !== 'high') {
+        return { sentence: stt, note: `Using audio transcription because subtitle OCR was ${ocr.confidence} confidence and differed: ${ocrText}` };
+      }
       return { sentence: ocr, note: `Using visible subtitle OCR; audio transcription differs: ${sttText}` };
     }
     if (!sttOk) return { sentence: ocr, note: 'Using visible subtitle OCR; audio transcription unavailable.' };
