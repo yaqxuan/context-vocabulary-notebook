@@ -4,7 +4,7 @@ import { createCard, getCard, patchCard } from '../api/cards';
 import { getCardSuggestions } from '../api/cards';
 import { uploadMedia } from '../api/media';
 import { transcribeUpload } from '../api/transcriptions';
-import { checkAiSpelling, getAiSuggestion } from '../api/aiSuggestions';
+import { checkAiSpelling, getAiSuggestion, getAiTargetWordLemma } from '../api/aiSuggestions';
 import { TagAssignmentEditor } from '../components/TagAssignmentEditor';
 import { getSettings } from '../api/settings';
 import { useI18n } from '../i18n/I18nProvider';
@@ -112,7 +112,9 @@ export function CardCreatePage() {
   const [suggestionState, setSuggestionState] = useState<'idle' | 'loading' | 'empty' | 'success' | 'error'>('idle');
   const [aiMeaningSuggestion, setAiMeaningSuggestion] = useState('');
   const [aiUsageSuggestion, setAiUsageSuggestion] = useState('');
+  const [aiSentenceTranslation, setAiSentenceTranslation] = useState('');
   const [aiSuggestionState, setAiSuggestionState] = useState<'idle' | 'loading' | 'none' | 'success' | 'error'>('idle');
+  const [lemmaSuggestion, setLemmaSuggestion] = useState<{ original: string; lemma: string } | null>(null);
   const [spellingCheckState, setSpellingCheckState] = useState<'idle' | 'loading' | 'empty' | 'success' | 'error'>('idle');
   const [spellingIssues, setSpellingIssues] = useState<AiSpellingIssueDto[]>([]);
   const [meaningTouched, setMeaningTouched] = useState(false);
@@ -131,6 +133,7 @@ export function CardCreatePage() {
   const [tagSourceCardId, setTagSourceCardId] = useState<string | null>(null);
   const aiAutoFilledNoteRef = useRef(false);
   const aiMeaningInputKeyRef = useRef('');
+  const lemmaCheckedKeysRef = useRef(new Set<string>());
   const noteTouchedRef = useRef(false);
   const originalTagIdsRef = useRef<string[]>([]);
   const currentVideoRef = useRef<File | null>(null);
@@ -219,6 +222,52 @@ export function CardCreatePage() {
     };
   }, [targetWord, targetLanguage, explicitCardId]);
 
+  useEffect(() => {
+    if (explicitCardId) return;
+    const word = targetWord.trim();
+    const currentSentence = sentence.trim();
+    if (!word || !currentSentence) return;
+
+    const key = `${targetLanguage}\n${word}\n${currentSentence}`;
+    if (lemmaCheckedKeysRef.current.has(key)) return;
+
+    let active = true;
+    const timer = window.setTimeout(() => {
+      if (!active) return;
+      getAiTargetWordLemma({
+        target_word: word,
+        sentence: currentSentence,
+        target_language: targetLanguage,
+      })
+        .then((result) => {
+          if (!active) return;
+          if (result.status !== 'success') {
+            lemmaCheckedKeysRef.current.add(key);
+            return;
+          }
+          const lemma = result.lemma.trim();
+          lemmaCheckedKeysRef.current.add(key);
+          if (!lemma || wordsEqual(lemma, word)) {
+            setLemmaSuggestion(null);
+            return;
+          }
+          lemmaCheckedKeysRef.current.add(`${targetLanguage}\n${lemma}\n${currentSentence}`);
+          setLemmaSuggestion({ original: word, lemma });
+        })
+        .catch(() => undefined);
+    }, 350);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [targetWord, sentence, targetLanguage, explicitCardId]);
+
+  useEffect(() => {
+    if (!lemmaSuggestion) return;
+    if (!wordsEqual(lemmaSuggestion.original, targetWord) || !sentence.trim()) setLemmaSuggestion(null);
+  }, [lemmaSuggestion, targetWord, sentence]);
+
   // Load AI suggestions when both target word and sentence are present
   useEffect(() => {
     if (explicitCardId) return;
@@ -227,6 +276,7 @@ export function CardCreatePage() {
     if (!trimmedWord || !trimmedSentence) {
       setAiMeaningSuggestion('');
       setAiUsageSuggestion('');
+      setAiSentenceTranslation('');
       setAiSuggestionState('idle');
       if (!noteTouchedRef.current && aiAutoFilledNoteRef.current) {
         setNote('');
@@ -255,6 +305,7 @@ export function CardCreatePage() {
           if (result.status === 'success') {
             setAiMeaningSuggestion(result.meaning_suggestion);
             setAiUsageSuggestion(result.usage_note);
+            setAiSentenceTranslation(result.sentence_translation);
             setAiSuggestionState('success');
             if (!noteTouchedRef.current && result.usage_note) {
               setNote(result.usage_note);
@@ -415,6 +466,12 @@ export function CardCreatePage() {
     setAiMeaningSuggestion('');
   }
 
+  function acceptLemmaSuggestion() {
+    if (!lemmaSuggestion) return;
+    setTargetWord(lemmaSuggestion.lemma);
+    setLemmaSuggestion(null);
+  }
+
   function handleMeaningKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (!meaning.trim() && aiMeaningSuggestion) {
       if (event.key === 'Enter') {
@@ -554,7 +611,7 @@ export function CardCreatePage() {
   }
 
   const saveLabel = isSaving ? t('create.saving') : mode.kind === 'existing' ? t('create.addToExisting') : t('create.createCard');
-  const currentMeaning = mode.kind === 'existing' ? mode.meaning : meaning;
+  const currentMeaning = explicitCardId && mode.kind === 'existing' ? mode.meaning : meaning;
   const showAiMeaningGhost = Boolean(!currentMeaning && aiMeaningSuggestion && !meaningTouched);
   const showSuggestionPanel = Boolean(targetWord.trim());
   const suggestionTitle = appendCard ? t('create.findExistingTitle') : t('create.findExisting');
@@ -625,6 +682,11 @@ export function CardCreatePage() {
               placeholder={t('create.targetWordPlaceholder')}
               disabled={Boolean(explicitCardId)}
             />
+            {lemmaSuggestion ? (
+              <button type="button" className="card-create-lemma-button" onClick={acceptLemmaSuggestion}>
+                使用原型：{lemmaSuggestion.lemma}
+              </button>
+            ) : null}
             {errors.targetWord ? <em>{errors.targetWord}</em> : null}
           </label>
 
@@ -638,7 +700,7 @@ export function CardCreatePage() {
                 value={currentMeaning}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => handleMeaningChange(e.target.value)}
                 onKeyDown={handleMeaningKeyDown}
-                disabled={mode.kind === 'existing' || Boolean(explicitCardId)}
+                disabled={Boolean(explicitCardId)}
                 placeholder={showAiMeaningGhost ? '' : t('create.meaningPlaceholder')}
               />
               {showAiMeaningGhost ? (
@@ -702,6 +764,7 @@ export function CardCreatePage() {
               placeholder={aiSuggestionState === 'loading' ? t('create.aiGenerating') : 'none'}
               rows={7}
             />
+            {aiSentenceTranslation ? <p className="card-create-translation">{aiSentenceTranslation}</p> : null}
             <small>{aiUsageSuggestion ? t('create.aiNoteHelp') : 'none'}</small>
           </label>
 

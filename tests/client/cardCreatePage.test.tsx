@@ -36,9 +36,10 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
-        return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+        return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
       }
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -58,8 +59,9 @@ describe('CardCreatePage', () => {
         return Promise.resolve(jsonResponse({ interface_language: '英语', default_target_language: '英语', default_definition_language: '中文' }));
       }
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
@@ -117,9 +119,10 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
-        return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '在句中表示收取费用。' }));
+        return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '在句中表示收取费用。', sentence_translation: '酒店每晚收费 100 美元。' }));
       }
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -133,6 +136,226 @@ describe('CardCreatePage', () => {
     fireEvent.keyDown(screen.getByLabelText('当前语境释义'), { key: 'Enter' });
     expect(screen.getByLabelText('当前语境释义')).toHaveValue('收费');
     expect(screen.getByLabelText('AI 建议')).toHaveValue('在句中表示收取费用。');
+    expect(screen.getByText('酒店每晚收费 100 美元。')).toBeInTheDocument();
+  });
+
+  it('replaces an inflected target word with the AI dictionary form during card creation', async () => {
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') {
+        const body = JSON.parse(String(init?.body));
+        if (body.target_word === 'charges') return Promise.resolve(jsonResponse({ status: 'success', lemma: 'charge' }));
+        return Promise.resolve(jsonResponse({ status: 'success', lemma: body.target_word }));
+      }
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/cards') {
+        return Promise.resolve(jsonResponse({
+          card: { id: 'card-1', target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文', status: 'reviewing', is_favorite: 0, created_at: 'now', updated_at: 'now' },
+          context: { id: 'ctx-1', card_id: 'card-1', sentence: 'The hotel charges $100 per night.', note: null, is_primary: 1, sort_order: 10, created_at: 'now', updated_at: 'now' },
+        }, 201));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    await renderCardCreatePage();
+
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charges' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+
+    expect(await screen.findByRole('button', { name: '使用原型：charge' })).toBeInTheDocument();
+    expect(screen.getByLabelText('目标单词')).toHaveValue('charges');
+    fireEvent.click(screen.getByRole('button', { name: '使用原型：charge' }));
+    expect(screen.queryByRole('button', { name: '使用原型：charge' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('目标单词')).toHaveValue('charge');
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存词义条目' }));
+
+    await waitFor(() => expect(window.location.hash).toBe('#/cards/card-1'));
+    const cardRequest = requests.find((r) => r.url === '/api/cards' && r.method === 'POST');
+    expect(cardRequest?.body).toBe(JSON.stringify({
+      target_word: 'charge',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      sentence: 'The hotel charges $100 per night.',
+      tag_ids: [],
+    }));
+  });
+
+  it('keeps typed target word when dictionary-form action is ignored', async () => {
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'success', lemma: 'charge' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/cards') {
+        return Promise.resolve(jsonResponse({
+          card: { id: 'card-typed', target_word: 'charges', context_meaning: '收费', target_language: '英语', definition_language: '中文', status: 'reviewing', is_favorite: 0, created_at: 'now', updated_at: 'now' },
+          context: { id: 'ctx-typed', card_id: 'card-typed', sentence: 'The hotel charges $100 per night.', note: null, is_primary: 1, sort_order: 10, created_at: 'now', updated_at: 'now' },
+        }, 201));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    await renderCardCreatePage();
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charges' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    expect(await screen.findByRole('button', { name: '使用原型：charge' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存词义条目' }));
+
+    await waitFor(() => expect(window.location.hash).toBe('#/cards/card-typed'));
+    const cardRequest = requests.find((r) => r.url === '/api/cards' && r.method === 'POST');
+    expect(cardRequest?.body).toBe(JSON.stringify({
+      target_word: 'charges',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      sentence: 'The hotel charges $100 per night.',
+      tag_ids: [],
+    }));
+  });
+
+  it('keeps the typed target word when AI lemma lookup returns none', async () => {
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/cards') {
+        return Promise.resolve(jsonResponse({
+          card: { id: 'card-2', target_word: 'charges', context_meaning: '收费', target_language: '英语', definition_language: '中文', status: 'reviewing', is_favorite: 0, created_at: 'now', updated_at: 'now' },
+          context: { id: 'ctx-2', card_id: 'card-2', sentence: 'The hotel charges $100 per night.', note: null, is_primary: 1, sort_order: 10, created_at: 'now', updated_at: 'now' },
+        }, 201));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    await renderCardCreatePage();
+
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charges' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+    await waitFor(() => expect(requests.some((r) => r.url === '/api/ai/target-word-lemma')).toBe(true));
+    expect(screen.getByLabelText('目标单词')).toHaveValue('charges');
+
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存词义条目' }));
+
+    await waitFor(() => expect(window.location.hash).toBe('#/cards/card-2'));
+    const cardRequest = requests.find((r) => r.url === '/api/cards' && r.method === 'POST');
+    expect(cardRequest?.body).toBe(JSON.stringify({
+      target_word: 'charges',
+      context_meaning: '收费',
+      target_language: '英语',
+      definition_language: '中文',
+      sentence: 'The hotel charges $100 per night.',
+      tag_ids: [],
+    }));
+  });
+
+  it('retries AI lemma lookup after an earlier debounce for the same inputs is canceled', async () => {
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'success', lemma: 'charge' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    vi.useFakeTimers();
+    try {
+      await renderCardCreatePage();
+
+      fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charges' } });
+      fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+      fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
+      fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      await flushPromises();
+
+      expect(requests.filter((r) => r.url === '/api/ai/target-word-lemma')).toHaveLength(1);
+      expect(screen.getByRole('button', { name: '使用原型：charge' })).toBeInTheDocument();
+      expect(screen.getByLabelText('目标单词')).toHaveValue('charges');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('retries AI lemma lookup after restoring inputs while the earlier request is in flight', async () => {
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    const lemmaResolvers: Array<(response: Response) => void> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') {
+        return new Promise<Response>((resolve) => {
+          lemmaResolvers.push(resolve);
+        });
+      }
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    vi.useFakeTimers();
+    try {
+      await renderCardCreatePage();
+
+      fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charges' } });
+      fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      expect(lemmaResolvers).toHaveLength(1);
+
+      fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
+      fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      expect(lemmaResolvers).toHaveLength(2);
+
+      await act(async () => {
+        lemmaResolvers[0](jsonResponse({ status: 'success', lemma: 'charge' }));
+      });
+      await flushPromises();
+      expect(screen.getByLabelText('目标单词')).toHaveValue('charges');
+
+      await act(async () => {
+        lemmaResolvers[1](jsonResponse({ status: 'success', lemma: 'charge' }));
+      });
+      await flushPromises();
+      expect(screen.getByRole('button', { name: '使用原型：charge' })).toBeInTheDocument();
+      expect(screen.getByLabelText('目标单词')).toHaveValue('charges');
+
+      expect(requests.filter((r) => r.url === '/api/ai/target-word-lemma')).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('sends selected languages when requesting AI suggestions', async () => {
@@ -141,10 +364,11 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
         aiBody = JSON.parse(String(init?.body ?? '{}'));
-        return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+        return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
       }
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -170,6 +394,7 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
         return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '' }));
@@ -193,6 +418,7 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
         return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '' }));
@@ -216,6 +442,7 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
         return Promise.resolve(jsonResponse({ status: 'success', meaning_suggestion: '收费', usage_note: '' }));
@@ -241,6 +468,7 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
         const body = JSON.parse(String(init?.body ?? '{}')) as { sentence?: string };
@@ -273,6 +501,7 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
         const body = JSON.parse(String(init?.body ?? '{}')) as { sentence?: string };
@@ -304,6 +533,7 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/ai/suggestions') {
         aiCallCount += 1;
@@ -383,6 +613,7 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) {
         return Promise.resolve(jsonResponse([
           { id: 'card-1', target_word: 'charge', context_meaning: '收费' },
@@ -404,12 +635,59 @@ describe('CardCreatePage', () => {
     expect(screen.getByText('不同语义，仅供参考')).toBeInTheDocument();
   });
 
+  it('allows editing the meaning after an exact match and then creates a new word sense', async () => {
+    const requests: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url.startsWith('/api/ai/target-word-lemma')) return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
+      if (url.startsWith('/api/cards/suggestions')) {
+        return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
+      }
+      if (url === '/api/cards') {
+        return Promise.resolve(jsonResponse({
+          card: { id: 'card-2', target_word: 'charge', context_meaning: '要价', target_language: '英语', definition_language: '中文', status: 'reviewing', is_favorite: 0, created_at: 'now', updated_at: 'now' },
+          context: { id: 'ctx-2', card_id: 'card-2', sentence: 'They charge too much.', note: null, is_primary: 1, sort_order: 10, created_at: 'now', updated_at: 'now' },
+        }, 201));
+      }
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    await renderCardCreatePage();
+
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charge' } });
+    fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
+    expect(await screen.findByText('已找到相同词义：charge = 收费')).toBeInTheDocument();
+
+    const meaningInput = screen.getByLabelText('当前语境释义');
+    expect(meaningInput).not.toBeDisabled();
+    fireEvent.change(meaningInput, { target: { value: '要价' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge too much.' } });
+
+    expect(await screen.findByText('未找到相同词义')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '保存词义条目' }));
+
+    await waitFor(() => expect(window.location.hash).toBe('#/cards/card-2'));
+    const cardRequest = requests.find((r) => r.url === '/api/cards' && r.method === 'POST');
+    expect(cardRequest?.body).toBe(JSON.stringify({
+      target_word: 'charge',
+      context_meaning: '要价',
+      target_language: '英语',
+      definition_language: '中文',
+      sentence: 'They charge too much.',
+      tag_ids: [],
+    }));
+  });
+
   // Test 5: no exact match – create-new remains available
   it('keeps create-new available when same word exists but meaning does not match', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) {
         return Promise.resolve(jsonResponse([
           { id: 'card-1', target_word: 'charge', context_meaning: '收费' },
@@ -435,6 +713,7 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.reject(new Error('network'));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -455,6 +734,7 @@ describe('CardCreatePage', () => {
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧', created_at: 'now', updated_at: 'now' }]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/cards') {
         return Promise.resolve(jsonResponse({
@@ -502,6 +782,7 @@ describe('CardCreatePage', () => {
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/cards') {
         return Promise.resolve(jsonResponse({
@@ -531,6 +812,7 @@ describe('CardCreatePage', () => {
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards') {
         return Promise.resolve(jsonResponse({
@@ -564,6 +846,7 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/settings') return Promise.resolve(jsonResponse({
         id: 1, interface_language: '中文', created_at: 'now', updated_at: 'now',
@@ -585,6 +868,7 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ error: 'fail' }, 500));
       return Promise.resolve(jsonResponse({ ok: true }));
@@ -623,6 +907,7 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = String(input);
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/settings') return Promise.resolve(jsonResponse({
         id: 1, interface_language: '中文', created_at: 'now', updated_at: 'now',
@@ -670,6 +955,9 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      if (url === '/api/ai/target-word-lemma') {
+        return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
+      }
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(cardDetail));
@@ -718,6 +1006,7 @@ describe('CardCreatePage', () => {
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url === '/api/tags' && init?.method === 'POST') return Promise.resolve(jsonResponse({ id: 'tag-1', name: '电影', created_at: 'now', updated_at: 'now' }, 201));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
       if (url === '/api/cards' && init?.method === 'POST') return Promise.resolve(jsonResponse({ card: { id: 'card-1' }, context: { id: 'ctx-1' } }, 201));
       return Promise.resolve(jsonResponse({ ok: true }));
@@ -771,6 +1060,9 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      if (url === '/api/ai/target-word-lemma') {
+        return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
+      }
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
@@ -826,6 +1118,9 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      if (url === '/api/ai/target-word-lemma') {
+        return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
+      }
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
@@ -872,7 +1167,7 @@ describe('CardCreatePage', () => {
       if (url.startsWith('/api/cards/suggestions?target_word=charge')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards/card-1') return Promise.resolve(jsonResponse(detail));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
@@ -900,13 +1195,16 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      if (url === '/api/ai/target-word-lemma') {
+        return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
+      }
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/cards/suggestions?target_word=charge')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
       if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ok: true }));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
       if (url === '/api/cards' && init?.method === 'POST') return Promise.resolve(jsonResponse({ card: { id: 'card-1' }, context: { id: 'ctx-1' } }, 201));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
@@ -945,13 +1243,16 @@ describe('CardCreatePage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      if (url === '/api/ai/target-word-lemma') {
+        return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
+      }
       requests.push({ url, method: init?.method ?? 'GET', body: init?.body ?? null });
       if (url.startsWith('/api/cards/suggestions?target_word=charge')) return Promise.resolve(jsonResponse([{ id: 'card-1', target_word: 'charge', context_meaning: '收费' }]));
       if (url === '/api/cards/card-1' && (!init?.method || init.method === 'GET')) return Promise.resolve(jsonResponse(detail));
       if (url === '/api/cards/card-1' && init?.method === 'PATCH') return Promise.resolve(jsonResponse({ ok: true }));
       if (url === '/api/tags') return Promise.resolve(jsonResponse([{ id: 'tag-1', name: '美剧' }, { id: 'tag-2', name: '电影' }]));
       if (url === '/api/cards' && init?.method === 'POST') return Promise.resolve(jsonResponse({ card: { id: 'card-1' }, context: { id: 'ctx-1' } }, 201));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: 'No active AI config' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
 
@@ -979,8 +1280,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/transcriptions') return Promise.resolve(jsonResponse({ status: 'success', text: 'They charge extra for breakfast.', segments: [], language: 'en' }));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -1000,8 +1302,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/transcriptions') {
         transcriptionBodies.push(init?.body as FormData);
         return Promise.resolve(jsonResponse({ status: 'success', text: '彼は駅まで走った。', segments: [], language: 'ja' }));
@@ -1026,8 +1329,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/transcriptions') {
         return new Promise<Response>((resolve) => {
           resolveTranscription = resolve;
@@ -1061,8 +1365,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/transcriptions') {
         return new Promise<Response>((resolve) => {
           resolvers.push(resolve);
@@ -1100,8 +1405,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/transcriptions') return Promise.resolve(jsonResponse({ status: 'success', text: 'They charge extra for breakfast.', segments: [] }));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -1123,8 +1429,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/transcriptions') return Promise.reject(new Error('provider unavailable'));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
@@ -1149,8 +1456,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/ai/spelling-check') {
         spellingBody = JSON.parse(String(init?.body ?? '{}'));
         return Promise.resolve(jsonResponse({ status: 'success', issues: [{ original: 'Hte', suggestion: 'The' }] }));
@@ -1183,8 +1491,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/ai/spelling-check') {
         return Promise.resolve(jsonResponse({ status: 'success', issues: [{ original: 'Hte', suggestion: 'The' }] }));
       }
@@ -1209,8 +1518,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/ai/spelling-check') {
         return Promise.resolve(jsonResponse({ status: 'success', issues: [{ original: 'hotel', suggestion: 'hostel' }] }));
       }
@@ -1232,8 +1542,9 @@ describe('CardCreatePage', () => {
       const url = String(input);
       if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
       if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'none', lemma: '', message: 'No active AI config' }));
       if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
-      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', message: '' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: '' }));
       if (url === '/api/ai/spelling-check') return Promise.reject(new Error('network down'));
       return Promise.resolve(jsonResponse({ ok: true }));
     });
