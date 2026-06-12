@@ -167,10 +167,7 @@ describe('CardCreatePage', () => {
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charges' } });
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
 
-    expect(await screen.findByRole('button', { name: '使用原型：charge' })).toBeInTheDocument();
-    expect(screen.getByLabelText('目标单词')).toHaveValue('charges');
-    fireEvent.click(screen.getByRole('button', { name: '使用原型：charge' }));
-    expect(screen.queryByRole('button', { name: '使用原型：charge' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '还原：charges' })).toBeInTheDocument();
     expect(screen.getByLabelText('目标单词')).toHaveValue('charge');
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
     fireEvent.click(screen.getByRole('button', { name: '保存词义条目' }));
@@ -187,7 +184,28 @@ describe('CardCreatePage', () => {
     }));
   });
 
-  it('keeps typed target word when dictionary-form action is ignored', async () => {
+  it('clears dictionary-form restore action when sentence changes', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = String(input);
+      if (url === '/api/settings') return Promise.resolve(jsonResponse({ interface_language: '中文', default_target_language: '英语', default_definition_language: '中文' }));
+      if (url.startsWith('/api/tags')) return Promise.resolve(jsonResponse([]));
+      if (url === '/api/ai/target-word-lemma') return Promise.resolve(jsonResponse({ status: 'success', lemma: 'charge' }));
+      if (url === '/api/ai/suggestions') return Promise.resolve(jsonResponse({ status: 'none', meaning_suggestion: '', usage_note: '', sentence_translation: '', message: 'No active AI config' }));
+      if (url.startsWith('/api/cards/suggestions')) return Promise.resolve(jsonResponse([]));
+      return Promise.resolve(jsonResponse({ ok: true }));
+    });
+
+    await renderCardCreatePage();
+    fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charges' } });
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
+
+    expect(await screen.findByRole('button', { name: '还原：charges' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'They charge extra for breakfast.' } });
+
+    expect(screen.queryByRole('button', { name: '还原：charges' })).not.toBeInTheDocument();
+  });
+
+  it('restores typed target word when dictionary-form replacement is rejected', async () => {
     const requests: Array<{ url: string; method: string; body: unknown }> = [];
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
       const url = String(input);
@@ -209,7 +227,10 @@ describe('CardCreatePage', () => {
     await renderCardCreatePage();
     fireEvent.change(screen.getByLabelText('目标单词'), { target: { value: 'charges' } });
     fireEvent.change(screen.getByLabelText('原句'), { target: { value: 'The hotel charges $100 per night.' } });
-    expect(await screen.findByRole('button', { name: '使用原型：charge' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '还原：charges' })).toBeInTheDocument();
+    expect(screen.getByLabelText('目标单词')).toHaveValue('charge');
+    fireEvent.click(screen.getByRole('button', { name: '还原：charges' }));
+    expect(screen.getByLabelText('目标单词')).toHaveValue('charges');
     fireEvent.change(screen.getByLabelText('当前语境释义'), { target: { value: '收费' } });
     fireEvent.click(screen.getByRole('button', { name: '保存词义条目' }));
 
@@ -294,8 +315,8 @@ describe('CardCreatePage', () => {
       await flushPromises();
 
       expect(requests.filter((r) => r.url === '/api/ai/target-word-lemma')).toHaveLength(1);
-      expect(screen.getByRole('button', { name: '使用原型：charge' })).toBeInTheDocument();
-      expect(screen.getByLabelText('目标单词')).toHaveValue('charges');
+      expect(screen.getByRole('button', { name: '还原：charges' })).toBeInTheDocument();
+      expect(screen.getByLabelText('目标单词')).toHaveValue('charge');
     } finally {
       vi.useRealTimers();
     }
@@ -349,8 +370,8 @@ describe('CardCreatePage', () => {
         lemmaResolvers[1](jsonResponse({ status: 'success', lemma: 'charge' }));
       });
       await flushPromises();
-      expect(screen.getByRole('button', { name: '使用原型：charge' })).toBeInTheDocument();
-      expect(screen.getByLabelText('目标单词')).toHaveValue('charges');
+      expect(screen.getByRole('button', { name: '还原：charges' })).toBeInTheDocument();
+      expect(screen.getByLabelText('目标单词')).toHaveValue('charge');
 
       expect(requests.filter((r) => r.url === '/api/ai/target-word-lemma')).toHaveLength(2);
     } finally {

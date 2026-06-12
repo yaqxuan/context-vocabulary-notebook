@@ -114,7 +114,7 @@ export function CardCreatePage() {
   const [aiUsageSuggestion, setAiUsageSuggestion] = useState('');
   const [aiSentenceTranslation, setAiSentenceTranslation] = useState('');
   const [aiSuggestionState, setAiSuggestionState] = useState<'idle' | 'loading' | 'none' | 'success' | 'error'>('idle');
-  const [lemmaSuggestion, setLemmaSuggestion] = useState<{ original: string; lemma: string } | null>(null);
+  const [lemmaSuggestion, setLemmaSuggestion] = useState<{ original: string; lemma: string; sentence: string } | null>(null);
   const [spellingCheckState, setSpellingCheckState] = useState<'idle' | 'loading' | 'empty' | 'success' | 'error'>('idle');
   const [spellingIssues, setSpellingIssues] = useState<AiSpellingIssueDto[]>([]);
   const [meaningTouched, setMeaningTouched] = useState(false);
@@ -252,7 +252,8 @@ export function CardCreatePage() {
             return;
           }
           lemmaCheckedKeysRef.current.add(`${targetLanguage}\n${lemma}\n${currentSentence}`);
-          setLemmaSuggestion({ original: word, lemma });
+          setLemmaSuggestion({ original: word, lemma, sentence: currentSentence });
+          setTargetWord(lemma);
         })
         .catch(() => undefined);
     }, 350);
@@ -265,7 +266,9 @@ export function CardCreatePage() {
 
   useEffect(() => {
     if (!lemmaSuggestion) return;
-    if (!wordsEqual(lemmaSuggestion.original, targetWord) || !sentence.trim()) setLemmaSuggestion(null);
+    if (sentence.trim() !== lemmaSuggestion.sentence || (!wordsEqual(lemmaSuggestion.lemma, targetWord) && !wordsEqual(lemmaSuggestion.original, targetWord))) {
+      setLemmaSuggestion(null);
+    }
   }, [lemmaSuggestion, targetWord, sentence]);
 
   // Load AI suggestions when both target word and sentence are present
@@ -323,6 +326,7 @@ export function CardCreatePage() {
           if (!active) return;
           setAiMeaningSuggestion('');
           setAiUsageSuggestion('');
+          setAiSentenceTranslation('');
           setAiSuggestionState('error');
         });
     }, 400);
@@ -468,9 +472,9 @@ export function CardCreatePage() {
     setAiMeaningSuggestion('');
   }
 
-  function acceptLemmaSuggestion() {
+  function restoreOriginalTargetWord() {
     if (!lemmaSuggestion) return;
-    setTargetWord(lemmaSuggestion.lemma);
+    setTargetWord(lemmaSuggestion.original);
     setLemmaSuggestion(null);
   }
 
@@ -684,9 +688,9 @@ export function CardCreatePage() {
               placeholder={t('create.targetWordPlaceholder')}
               disabled={Boolean(explicitCardId)}
             />
-            {lemmaSuggestion ? (
-              <button type="button" className="card-create-lemma-button" onClick={acceptLemmaSuggestion}>
-                使用原型：{lemmaSuggestion.lemma}
+            {lemmaSuggestion && wordsEqual(lemmaSuggestion.lemma, targetWord) ? (
+              <button type="button" className="card-create-lemma-button" onClick={restoreOriginalTargetWord}>
+                还原：{lemmaSuggestion.original}
               </button>
             ) : null}
             {errors.targetWord ? <em>{errors.targetWord}</em> : null}
