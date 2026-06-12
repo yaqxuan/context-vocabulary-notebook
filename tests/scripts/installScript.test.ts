@@ -117,6 +117,25 @@ describe('install.sh path selection', () => {
   });
 });
 
+describe('README current behavior docs', () => {
+  it('documents current local OCR/STT and AI suggestion behavior', () => {
+    const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
+    const englishReadme = fs.readFileSync(path.join(repoRoot, 'README.en.md'), 'utf8');
+    const envExample = fs.readFileSync(path.join(repoRoot, '.env.example'), 'utf8');
+
+    expect(readme).toContain('整句翻译');
+    expect(readme).toContain('词形还原');
+    expect(readme).toContain('拼写检查');
+    expect(englishReadme).toContain('Local Clip Recognition (OCR / STT)');
+    expect(englishReadme).toContain('whisper.cpp');
+    expect(englishReadme).toContain('Tesseract');
+    expect(englishReadme).not.toContain('/audio/transcriptions');
+    expect(englishReadme).not.toContain('TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES');
+    expect(envExample).toContain('CVN_WHISPER_CPP_MODEL');
+    expect(envExample).toContain('CVN_TESSERACT_LANG');
+  });
+});
+
 describe('install.ps1 installer safeguards', () => {
   it('only requires winget when a missing dependency must be installed', () => {
     const script = readPowerShellInstallScript();
