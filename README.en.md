@@ -87,7 +87,6 @@ If the script cannot automatically fulfill the environment, it will output the m
 Copy and run the following command. The script will install the project to the current directory:
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 

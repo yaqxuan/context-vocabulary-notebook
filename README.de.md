@@ -74,7 +74,6 @@ Wenn das Skript die Umgebung nicht automatisch erfüllen kann, gibt es die fehle
 Kopieren Sie den folgenden Befehl und führen Sie ihn aus. Das Skript installiert das Projekt im aktuellen Verzeichnis:
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 

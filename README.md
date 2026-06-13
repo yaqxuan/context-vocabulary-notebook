@@ -87,7 +87,6 @@ uploads/
 复制下面命令运行即可。脚本会把项目安装到当前目录：
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 

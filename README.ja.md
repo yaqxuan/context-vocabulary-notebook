@@ -74,7 +74,6 @@ uploads/
 以下のコマンドをコピーして実行します。スクリプトはプロジェクトを現在のディレクトリにインストールします：
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
