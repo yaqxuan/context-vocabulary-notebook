@@ -145,12 +145,27 @@ describe('SettingsPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: '查看安装命令' }));
 
-      expect(screen.getByText('Ubuntu / WSL')).toBeInTheDocument();
-      expect(screen.getByText('Windows 原生 PowerShell')).toBeInTheDocument();
-      expect(screen.getByText('Whisper .env（Linux / WSL / macOS）')).toBeInTheDocument();
-      expect(screen.getByText('Whisper .env（Windows 原生）')).toBeInTheDocument();
-      expect(screen.getByText(/重新打开 PowerShell/)).toBeInTheDocument();
-      expect(screen.getByText(/C:\\tools\\whisper\.cpp/)).toBeInTheDocument();
+      expect(screen.getByRole('group', { name: '选择操作系统' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Windows 原生 PowerShell' })).toHaveAttribute('aria-pressed', 'true');
+      const linuxButton = screen.getByRole('button', { name: 'Linux / WSL' });
+      expect(linuxButton).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'macOS' })).toBeInTheDocument();
+      expect(screen.getByText('步骤 1 · 安装基础工具')).toBeInTheDocument();
+      expect(screen.getByText(/winget install --id Gyan\.FFmpeg/)).toBeInTheDocument();
+      expect(screen.getByText(/Microsoft\.VisualStudio\.2022\.BuildTools/)).toBeInTheDocument();
+      expect(screen.getByText(/Add-Content -Encoding UTF8 \.env/)).toBeInTheDocument();
+      expect(screen.getAllByText(/tools\\whisper\.cpp/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/models\\ggml-small\.bin/).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/C:\\tools\\whisper\.cpp/)).not.toBeInTheDocument();
+
+      fireEvent.click(linuxButton);
+
+      expect(linuxButton).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText(/sudo apt-get install -y ffmpeg/)).toBeInTheDocument();
+      expect(screen.getAllByText(/tools\/whisper\.cpp/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/models\/ggml-small\.bin/).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/winget install --id Gyan\.FFmpeg/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Add-Content -Encoding UTF8 \.env/)).not.toBeInTheDocument();
     });
 
     it('keeps recognition readiness aligned with the latest selected learning language', async () => {
