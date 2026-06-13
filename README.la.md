@@ -74,7 +74,6 @@ Si scriptum ambitum automatice implere nequit, instrumenta deficientia et method
 Copia et exsequere praeceptum sequens. Scriptum propositum in directorio praesenti installabit:
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 

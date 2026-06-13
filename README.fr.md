@@ -74,7 +74,6 @@ Si le script ne peut pas remplir automatiquement l'environnement, il affichera l
 Copiez et exécutez la commande suivante. Le script installera le projet dans le répertoire actuel :
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook" && cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
