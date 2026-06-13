@@ -342,6 +342,32 @@ describe('ReviewPage', () => {
       expect(await screen.findByRole('heading', { name: 'laconic' })).toBeInTheDocument();
     });
 
+    it('keeps review page visible when due card response omits tags', async () => {
+      const cardWithoutTags = { ...dueCard } as unknown as Omit<DueReviewCardDto, 'tags'>;
+      delete (cardWithoutTags as { tags?: unknown }).tags;
+      const dueResponseWithoutTags: ReviewDueResponseDto = {
+        status: 'due',
+        card: cardWithoutTags as DueReviewCardDto,
+        progress,
+      };
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
+        if (url.startsWith('/api/review/due')) return Promise.resolve(jsonResponse(dueResponseWithoutTags));
+        return Promise.resolve(jsonResponse({}));
+      });
+
+      await renderReviewPage();
+
+      await screen.findByRole('heading', { name: 'ephemeral' });
+      expect(() => fireEvent.click(screen.getByRole('button', { name: 'Good' }))).not.toThrow();
+
+      expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
+      expect(screen.getByText('短暂的')).toBeInTheDocument();
+      expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
+    });
+
     it('uses next-card action after choosing Good from an already open context', async () => {
       const nextCard: DueReviewCardDto = {
         ...dueCard,
