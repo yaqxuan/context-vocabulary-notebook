@@ -8,6 +8,7 @@ import type { TestDb } from '../../src/server/db/testDb.js';
 import { createCard } from '../../src/server/domain/cards.js';
 import { createContext } from '../../src/server/domain/contexts.js';
 import { getDueQueue } from '../../src/server/domain/review.js';
+import { addTagToCard, createTag } from '../../src/server/domain/tags.js';
 
 let db: TestDb;
 let app: ReturnType<typeof createApp>;
@@ -266,6 +267,20 @@ describe('review API', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('target_language must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语');
+  });
+
+  it('includes card tags in the due response', async () => {
+    const card = createCard(db, { target_word: 'tagged', context_meaning: '有标签', target_language: '英语', definition_language: '中文' });
+    const tag = createTag(db, { name: 'important' });
+    addTagToCard(db, card.id, tag.id);
+
+    const res = await request(app).get('/api/review/due');
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('due');
+    expect(res.body.card.tags).toEqual([
+      expect.objectContaining({ id: tag.id, name: 'important' }),
+    ]);
   });
 
   it('includes card media in the due response', async () => {

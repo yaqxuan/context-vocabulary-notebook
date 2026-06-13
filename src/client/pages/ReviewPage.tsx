@@ -71,6 +71,7 @@ function ContextPanel({ card, revealDetails }: { card: DueReviewCardDto; revealD
   const otherContexts = [...card.contexts]
     .filter((c) => c.id !== primaryCtx?.id)
     .sort((a, b) => a.sort_order - b.sort_order);
+  const tags = card.tags ?? [];
 
   const primaryMedia = card.media.filter((m) => m.context_example_id === primaryCtx?.id);
   const videos = primaryMedia.filter((m) => m.media_type === 'video').slice(0, 1);
@@ -103,11 +104,11 @@ function ContextPanel({ card, revealDetails }: { card: DueReviewCardDto; revealD
           <p>{primaryCtx.note}</p>
         </div>
       ) : null}
-      {revealDetails && card.tags.length > 0 ? (
+      {revealDetails && tags.length > 0 ? (
         <div className="phase7-review-context-tags">
           <p className="phase7-review-media-label">{t('catalogue.tagLabel')}</p>
           <div className="phase7-review-tag-list">
-            {card.tags.map((tag) => <span key={tag.id} className="phase7-review-tag">{tag.name}</span>)}
+            {tags.map((tag) => <span key={tag.id} className="phase7-review-tag">{tag.name}</span>)}
           </div>
         </div>
       ) : null}

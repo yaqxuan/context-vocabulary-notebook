@@ -6,6 +6,7 @@ import { getContextsForCard } from '../domain/contexts.js';
 import { getMediaForCard } from '../domain/media.js';
 import { getDailyReviewProgress, getNextDueCard, submitReview } from '../domain/review.js';
 import { getSettings } from '../domain/settings.js';
+import { getCardTags } from '../domain/tags.js';
 import { asyncRoute } from '../http/asyncRoute.js';
 import { BadRequestError, NotFoundError } from '../http/errors.js';
 
@@ -52,6 +53,7 @@ export function reviewRouter(db: Database): Router {
         ...card,
         contexts: getContextsForCard(db, card.id),
         media: getMediaForCard(db, card.id),
+        tags: getCardTags(db, card.id),
       },
       progress,
     });
