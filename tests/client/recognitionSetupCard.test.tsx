@@ -2,6 +2,23 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RecognitionSetupCard } from '../../src/client/components/RecognitionSetupCard';
+import { I18nProvider } from '../../src/client/i18n/I18nProvider';
+
+function jsonResponse(body: unknown): Response {
+  return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+}
+
+function settingsResponse(interfaceLanguage = '中文') {
+  return jsonResponse({
+    id: 1,
+    interface_language: interfaceLanguage,
+    default_target_language: '英语',
+    default_definition_language: '中文',
+    daily_review_limit: 20,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  });
+}
 
 function readiness() {
   return {
@@ -30,26 +47,192 @@ function readiness() {
 }
 
 describe('RecognitionSetupCard', () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
 
   it('shows readiness warnings and copyable commands for the selected language', () => {
-    render(<RecognitionSetupCard targetLanguage="日语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />);
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="日语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
 
-    expect(screen.getByText('本地识别配置 · 日本語')).toBeInTheDocument();
+    expect(screen.getByText('Local recognition setup · 日本語')).toBeInTheDocument();
     expect(screen.getByText(/English-only Whisper model/)).toBeInTheDocument();
     expect(screen.getAllByText(/jpn is missing/).length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole('button', { name: '查看安装命令' }));
+    fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Linux / WSL' }));
 
     expect(screen.getByText(/sudo apt-get install -y ffmpeg tesseract-ocr tesseract-ocr-jpn/)).toBeInTheDocument();
-    expect(screen.getByText(/CVN_WHISPER_CPP_MODEL=\/absolute\/path\/to\/ggml-small.bin/)).toBeInTheDocument();
+    expect(screen.getByText(/cat >> \.env <<EOF/)).toBeInTheDocument();
+    expect(screen.getByText(/CVN_WHISPER_CPP_PATH=\$WHISPER_ROOT\/build\/bin\/whisper-cli/)).toBeInTheDocument();
+    expect(screen.getByText(/CVN_WHISPER_CPP_MODEL=\$APP_ROOT\/models\/ggml-small.bin/)).toBeInTheDocument();
+    expect(screen.queryByText(/cat >> \.env <<'EOF'/)).not.toBeInTheDocument();
+  });
+
+  it('uses a native PowerShell command to write Windows whisper.cpp settings into .env', () => {
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+
+    const windowsBlock = screen.getByText(/Add-Content -Encoding UTF8 \.env/).closest('.recognition-setup-command-block');
+
+    expect(windowsBlock).not.toBeNull();
+    expect(windowsBlock?.textContent).toContain('@"');
+    expect(windowsBlock?.textContent).toContain('$WhisperExe');
+    expect(windowsBlock?.textContent).toContain('$ModelPath');
+    expect(windowsBlock?.textContent).not.toContain('cat >> .env');
+    expect(windowsBlock?.textContent).not.toContain('C:\\tools\\whisper.cpp');
+    expect(windowsBlock?.textContent).not.toContain('C:\\models\\ggml-small.bin');
+  });
+
+  it('uses the localized auto package fallback before Chinese readiness loads', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(settingsResponse('中文'));
+
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={null} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    expect(await screen.findByText('本地识别配置 · English')).toBeInTheDocument();
+    expect(screen.getByText('目标语言包：自动选择')).toBeInTheDocument();
+  });
+
+  it('uses Japanese setup copy when the interface language is Japanese', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(settingsResponse('日语'));
+
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={null} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    expect(await screen.findByText('ローカル認識設定 · English')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'インストールコマンドを表示' })).toBeInTheDocument();
+    expect(screen.getByText('対象言語パッケージ：自動選択')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['中文', '查看安装命令', 'Windows 构建 whisper.cpp 还需要 Visual Studio Build Tools / MSVC C++ 工具链。'],
+    ['英语', 'View installation commands', 'Building whisper.cpp on Windows also requires Visual Studio Build Tools / the MSVC C++ toolchain.'],
+    ['日语', 'インストールコマンドを表示', 'Windows で whisper.cpp をビルドするには Visual Studio Build Tools / MSVC C++ toolchain も必要です。'],
+    ['韩语', '설치 명령 보기', 'Windows에서 whisper.cpp를 빌드하려면 Visual Studio Build Tools / MSVC C++ toolchain도 필요합니다.'],
+    ['法语', 'Afficher les commandes d’installation', 'La compilation de whisper.cpp sous Windows nécessite aussi Visual Studio Build Tools / la chaîne C++ MSVC.'],
+    ['德语', 'Installationsbefehle anzeigen', 'Zum Bauen von whisper.cpp unter Windows werden außerdem Visual Studio Build Tools / die MSVC-C++-Toolchain benötigt.'],
+    ['西班牙语', 'Ver comandos de instalación', 'Compilar whisper.cpp en Windows también requiere Visual Studio Build Tools / la cadena de herramientas C++ de MSVC.'],
+    ['俄语', 'Показать команды установки', 'Для сборки whisper.cpp в Windows также требуются Visual Studio Build Tools / цепочка инструментов C++ MSVC.'],
+  ])('localizes the Windows Build Tools guide note for %s', async (language, showCommands, expectedSnippet) => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(settingsResponse(language));
+
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: showCommands }));
+
+    expect(screen.getAllByText((content) => content.includes(expectedSnippet)).length).toBeGreaterThan(0);
+    if (language !== '英语') {
+      expect(screen.queryByText(/Building whisper\.cpp on Windows also requires/)).not.toBeInTheDocument();
+    }
+  });
+
+  it('shows only the selected platform guide', () => {
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="日语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+
+    expect(screen.getByRole('button', { name: 'Windows native PowerShell' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Step 1 · Install base tools')).toBeInTheDocument();
+    expect(screen.getByText(/winget install --id Gyan\.FFmpeg/)).toBeInTheDocument();
+    expect(screen.getByText(/Microsoft\.VisualStudio\.2022\.BuildTools/)).toBeInTheDocument();
+    expect(screen.queryByText(/sudo apt-get install -y ffmpeg/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/brew install ffmpeg tesseract git cmake/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Linux / WSL' }));
+
+    expect(screen.getByRole('button', { name: 'Linux / WSL' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/sudo apt-get install -y ffmpeg/)).toBeInTheDocument();
+    expect(screen.getAllByText(/APP_ROOT="\$\(pwd\)"/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/winget install --id Gyan\.FFmpeg/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'macOS' }));
+
+    expect(screen.getByRole('button', { name: 'macOS' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/brew install ffmpeg tesseract git cmake/)).toBeInTheDocument();
+    expect(screen.getByText(/If 日本語 OCR still misses jpn, install the traineddata file/)).toBeInTheDocument();
+    expect(screen.getAllByText(/WHISPER_ROOT="\$APP_ROOT\/tools\/whisper\.cpp"/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/sudo apt-get install -y ffmpeg/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/winget install --id Gyan\.FFmpeg/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Add-Content -Encoding UTF8 \.env/)).not.toBeInTheDocument();
+  });
+
+  it('uses project-local tools and models paths in Windows commands', () => {
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+
+    const windowsBlock = screen.getByText(/Add-Content -Encoding UTF8 \.env/).closest('.recognition-setup-command-block');
+
+    expect(windowsBlock).not.toBeNull();
+    expect(windowsBlock).toHaveTextContent(/\$AppRoot = \(Get-Location\)\.Path/);
+    expect(windowsBlock).toHaveTextContent(/\$WhisperRoot = Join-Path \$AppRoot "tools\\whisper\.cpp"/);
+    expect(windowsBlock).toHaveTextContent(/\$WhisperExe = Join-Path \$WhisperRoot "build\\bin\\Release\\whisper-cli\.exe"/);
+    expect(windowsBlock).toHaveTextContent(/\$ModelPath = Join-Path \$AppRoot "models\\ggml-small\.bin"/);
+    expect(windowsBlock).toHaveTextContent(/CVN_WHISPER_CPP_PATH=\$WhisperExe/);
+    expect(windowsBlock).toHaveTextContent(/CVN_WHISPER_CPP_MODEL=\$ModelPath/);
+    expect(windowsBlock).toHaveTextContent(/Add-Content -Encoding UTF8 \.env/);
+    expect(windowsBlock).not.toHaveTextContent('C:\\tools\\whisper.cpp');
+    expect(windowsBlock).not.toHaveTextContent('C:\\models\\ggml-small.bin');
+    expect(windowsBlock).not.toHaveTextContent('/absolute/path/to/ggml-small.bin');
+  });
+
+  it('tells users where to run the install commands', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(settingsResponse('中文'));
+
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '查看安装命令' }));
+
+    expect(screen.getByText(/请在单词本安装目录运行这些命令/)).toBeInTheDocument();
+    expect(screen.getByText(/也就是包含 package\.json 和 \.env 的目录/)).toBeInTheDocument();
+    expect(screen.getByText(/Windows 请选择 PowerShell/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Linux / WSL' }));
+
+    expect(screen.getByText(/Linux \/ WSL 请在终端里进入同一个单词本目录后运行/)).toBeInTheDocument();
   });
 
   it('calls refresh when the user asks to rerun checks', () => {
     const onRefresh = vi.fn();
-    render(<RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={onRefresh} />);
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={onRefresh} />
+      </I18nProvider>,
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: '我已安装，重新检测' }));
+    fireEvent.click(screen.getByRole('button', { name: 'I installed it, check again' }));
 
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
