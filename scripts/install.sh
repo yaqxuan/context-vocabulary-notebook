@@ -55,36 +55,36 @@ whisper_cpp_ok() {
 
 ffmpeg_status_message() {
   if ffmpeg_ok; then
-    printf '视频/音频处理依赖 ffmpeg：已检测到 (%s)\n' "$(ffmpeg -version 2>/dev/null | head -n 1)"
+    printf 'ffmpeg for video/audio processing: found (%s)\n' "$(ffmpeg -version 2>/dev/null | head -n 1)"
   else
-    printf '视频/音频处理依赖 ffmpeg：未检测到。应用已安装完成；如需从视频提取音频，请安装 ffmpeg，或重新运行安装命令并设置 CVN_INSTALL_FFMPEG=1。\n'
+    printf 'ffmpeg for video/audio processing: not found. The app install can continue; install ffmpeg if you need video audio extraction, or rerun the installer with CVN_INSTALL_FFMPEG=1.\n'
   fi
 }
 
 tesseract_status_message() {
   if tesseract_ok; then
-    printf '本地 OCR 依赖 Tesseract：已检测到 (%s)\n' "$(tesseract --version 2>/dev/null | head -n 1)"
+    printf 'Tesseract for local OCR: found (%s)\n' "$(tesseract --version 2>/dev/null | head -n 1)"
   else
-    printf '本地 OCR 依赖 Tesseract：未检测到。应用已安装完成；图片/视频帧文字识别会在就绪检查中提示缺失。Linux/WSL 可设置 CVN_INSTALL_TESSERACT=1 后重新运行安装命令尝试 apt 安装；macOS 可运行 brew install tesseract；也可手动安装后设置 CVN_TESSERACT_PATH。\n'
+    printf 'Tesseract for local OCR: not found. The app install can continue; image/video-frame OCR readiness will report it as missing. On Linux/WSL, rerun with CVN_INSTALL_TESSERACT=1 to try apt installation; on macOS, run brew install tesseract; or install it manually and set CVN_TESSERACT_PATH.\n'
   fi
 }
 
 whisper_cpp_status_message() {
   if has_cmd whisper-cli; then
-    printf '本地语音识别依赖 whisper.cpp：已检测到 whisper-cli (%s)\n' "$(command -v whisper-cli)"
+    printf 'whisper.cpp for local speech recognition: found whisper-cli (%s)\n' "$(command -v whisper-cli)"
   elif [ -n "${CVN_WHISPER_CPP_PATH:-}" ] && [ -x "${CVN_WHISPER_CPP_PATH:-}" ]; then
-    printf '本地语音识别依赖 whisper.cpp：已检测到 CVN_WHISPER_CPP_PATH (%s)\n' "$CVN_WHISPER_CPP_PATH"
+    printf 'whisper.cpp for local speech recognition: found CVN_WHISPER_CPP_PATH (%s)\n' "$CVN_WHISPER_CPP_PATH"
   elif has_cmd main && looks_like_whisper_cpp main; then
-    printf '本地语音识别依赖 whisper.cpp：已检测到 whisper.cpp main (%s)。建议设置 CVN_WHISPER_CPP_PATH 指向该可执行文件。\n' "$(command -v main)"
+    printf 'whisper.cpp for local speech recognition: found whisper.cpp main (%s). Consider setting CVN_WHISPER_CPP_PATH to this executable.\n' "$(command -v main)"
   else
-    printf '本地语音识别依赖 whisper.cpp：未检测到 whisper-cli。应用已安装完成；语音识别会在就绪检查中提示缺少依赖。如果使用非 whisper-cli 名称，请设置 CVN_WHISPER_CPP_PATH 指向 whisper.cpp 可执行文件，并设置 CVN_WHISPER_CPP_MODEL。\n'
+    printf 'whisper.cpp for local speech recognition: whisper-cli not found. The app install can continue; speech recognition readiness will report the missing dependency. If your executable has another name, set CVN_WHISPER_CPP_PATH to the whisper.cpp executable and set CVN_WHISPER_CPP_MODEL.\n'
   fi
 }
 
 local_recognition_status_messages() {
   tesseract_status_message
   whisper_cpp_status_message
-  printf '提示：安装脚本不会自动安装 whisper.cpp 或 Whisper 模型；本地识别状态也可在应用就绪检查界面查看。\n'
+  printf 'Note: this installer does not install whisper.cpp or Whisper models automatically; local recognition status is also available in the app readiness panel.\n'
 }
 
 need_sudo() {
@@ -92,7 +92,7 @@ need_sudo() {
     if has_cmd sudo; then
       sudo "$@"
     else
-      echo "需要管理员权限，但系统没有 sudo：$*"
+      echo "Administrator privileges are required, but sudo is not available: $*"
       exit 1
     fi
   else
@@ -111,13 +111,13 @@ linux_native_tools_ok() {
 explain_apt_failure() {
   cat <<'EOF'
 
-apt-get 失败。这通常不是本项目问题，而是当前系统已有 apt 源或未完成包配置异常。
-常见例子：Docker / Chrome / NVIDIA 等第三方源缺 GPG key，或 chromium-browser / snapd 配置卡住。
+apt-get failed. This is usually a system package-source problem, not a project problem.
+Common causes include broken Docker / Chrome / NVIDIA third-party apt sources, missing GPG keys, or stuck chromium-browser / snapd configuration.
 
-你可以选择：
-  1. 修复或禁用系统里损坏的 apt 源后重试；
-  2. 手动安装 Git、Node.js 20+ 和 npm 后重试；
-  3. 如果 npm ci 后续提示 native module 编译失败，再安装 python3、make、g++ 或 build-essential。
+Options:
+  1. Fix or disable the broken apt sources, then rerun this installer;
+  2. Install Git, Node.js 20+, and npm manually, then rerun this installer;
+  3. If npm ci later reports native module build errors, install python3, make, g++, or build-essential.
 
 EOF
 }
@@ -132,16 +132,16 @@ install_linux_deps() {
   fi
 
   if linux_core_ok; then
-    log "Linux 基础依赖已满足，跳过 apt-get"
+    log "Linux core dependencies are already available; skipping apt-get"
     if ! linux_native_tools_ok; then
-      log "未检测到完整 native build tools；如果 npm ci 编译 better-sqlite3 失败，请再安装 python3、make、g++ 或 build-essential。"
+      log "Native build tools may be incomplete; if npm ci fails while building better-sqlite3, install python3, make, g++, or build-essential."
     fi
     if [ "${CVN_INSTALL_FFMPEG:-}" = "1" ] && ! ffmpeg_ok; then
       if ! has_cmd apt-get; then
-        echo "未发现 apt-get，无法自动安装 ffmpeg。应用仍会继续安装；如需视频转写，请手动安装 ffmpeg。"
+        echo "apt-get was not found, so ffmpeg cannot be installed automatically. The app install will continue; install ffmpeg manually if you need video transcription."
       else
-        log "CVN_INSTALL_FFMPEG=1，准备使用 apt-get 安装 ffmpeg"
-        echo "提示：apt-get 会检查系统里所有 apt 源；如果 Docker、Chromium 等无关源报错，请先修复或禁用对应源后重试。"
+        log "CVN_INSTALL_FFMPEG=1; preparing to install ffmpeg with apt-get"
+        echo "Note: apt-get checks every apt source on the system; if unrelated Docker, Chromium, or other sources fail, fix or disable those sources and rerun this installer."
         if ! need_sudo apt-get update; then
           explain_apt_failure
           exit 1
@@ -152,14 +152,14 @@ install_linux_deps() {
         fi
       fi
     elif ! ffmpeg_ok; then
-      log "未检测到 ffmpeg；应用仍会继续安装。如需从视频提取音频，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+      log "ffmpeg was not found; the app install will continue. Install ffmpeg if you need video audio extraction, or rerun with CVN_INSTALL_FFMPEG=1."
     fi
     if [ "${CVN_INSTALL_TESSERACT:-}" = "1" ] && ! tesseract_ok; then
       if ! has_cmd apt-get; then
-        echo "未发现 apt-get，无法自动安装 Tesseract。应用仍会继续安装；如需本地 OCR，请手动安装 Tesseract。"
+        echo "apt-get was not found, so Tesseract cannot be installed automatically. The app install will continue; install Tesseract manually if you need local OCR."
       else
-        log "CVN_INSTALL_TESSERACT=1，准备使用 apt-get 安装 Tesseract OCR"
-        echo "提示：apt-get 会检查系统里所有 apt 源；如果 Docker、Chromium 等无关源报错，请先修复或禁用对应源后重试。"
+        log "CVN_INSTALL_TESSERACT=1; preparing to install Tesseract OCR with apt-get"
+        echo "Note: apt-get checks every apt source on the system; if unrelated Docker, Chromium, or other sources fail, fix or disable those sources and rerun this installer."
         if ! need_sudo apt-get update; then
           explain_apt_failure
           exit 1
@@ -170,18 +170,18 @@ install_linux_deps() {
         fi
       fi
     elif ! tesseract_ok; then
-      log "未检测到 Tesseract；应用仍会继续安装。如需本地 OCR，请安装 Tesseract，或在 Linux/WSL 设置 CVN_INSTALL_TESSERACT=1 后重新运行安装命令。"
+      log "Tesseract was not found; the app install will continue. Install Tesseract if you need local OCR, or on Linux/WSL rerun with CVN_INSTALL_TESSERACT=1."
     fi
     return
   fi
 
   if ! has_cmd apt-get; then
-    echo "未发现 apt-get。请手动安装 Git、Node.js 22 LTS、npm、Python3、make、g++ 或对应 build tools 后重试。"
+    echo "apt-get was not found. Install Git, Node.js 22 LTS, npm, Python3, make, g++, or equivalent build tools manually, then rerun this installer."
     exit 1
   fi
 
-  log "检测到缺少 Git 或 Node.js/npm，准备使用 apt-get 安装缺失环境"
-  echo "提示：apt-get 会检查系统里所有 apt 源；如果 Docker、Chromium 等无关源报错，请先修复或禁用对应源后重试。"
+  log "Git or Node.js/npm is missing; preparing to install missing environment dependencies with apt-get"
+  echo "Note: apt-get checks every apt source on the system; if unrelated Docker, Chromium, or other sources fail, fix or disable those sources and rerun this installer."
 
   if ! need_sudo apt-get update; then
     explain_apt_failure
@@ -194,7 +194,7 @@ install_linux_deps() {
   fi
 
   if ! node_ok; then
-    log "安装或升级 Node.js 22 LTS"
+    log "Installing or upgrading Node.js 22 LTS"
     need_sudo install -d -m 0755 /etc/apt/keyrings
     tmp_nodesource_key="$(mktemp)"
     trap 'rm -f "$tmp_nodesource_key"' EXIT
@@ -214,36 +214,36 @@ install_linux_deps() {
       exit 1
     fi
     export PATH="/usr/local/bin:/usr/bin:$PATH"
-    log "已更新 PATH，若仍提示命令不存在请重新打开终端再试"
+    log "PATH has been updated; if commands are still unavailable, reopen your terminal and rerun this installer"
   fi
 }
 
 install_macos_deps() {
   if ! has_cmd brew; then
-    echo "未发现 Homebrew。请先安装 Homebrew，或手动安装 Git、Node.js 22 LTS 和 Xcode Command Line Tools 后重试。"
+    echo "Homebrew was not found. Install Homebrew first, or install Git, Node.js 22 LTS, and Xcode Command Line Tools manually, then rerun this installer."
     echo "Homebrew: https://brew.sh/"
     exit 1
   fi
 
-  log "使用 Homebrew 安装缺失环境"
+  log "Installing missing environment dependencies with Homebrew"
   has_cmd git || brew install git
   node_ok || brew install node
   if [ "${CVN_INSTALL_FFMPEG:-}" = "1" ] && ! ffmpeg_ok; then
-    log "CVN_INSTALL_FFMPEG=1，使用 Homebrew 安装 ffmpeg"
+    log "CVN_INSTALL_FFMPEG=1; installing ffmpeg with Homebrew"
     brew install ffmpeg
   elif ! ffmpeg_ok; then
-    log "未检测到 ffmpeg；应用仍会继续安装。如需从视频提取音频，请安装 ffmpeg，或设置 CVN_INSTALL_FFMPEG=1 后重新运行安装命令。"
+    log "ffmpeg was not found; the app install will continue. Install ffmpeg if you need video audio extraction, or rerun with CVN_INSTALL_FFMPEG=1."
   fi
   if [ "${CVN_INSTALL_TESSERACT:-}" = "1" ] && ! tesseract_ok; then
-    log "CVN_INSTALL_TESSERACT=1，使用 Homebrew 安装 Tesseract OCR"
+    log "CVN_INSTALL_TESSERACT=1; installing Tesseract OCR with Homebrew"
     brew install tesseract
   elif ! tesseract_ok; then
-    log "未检测到 Tesseract；应用仍会继续安装。如需本地 OCR，请安装 Tesseract（macOS 可 brew install tesseract）。"
+    log "Tesseract was not found; the app install will continue. Install Tesseract if you need local OCR (on macOS, run brew install tesseract)."
   fi
   if ! xcode-select -p >/dev/null 2>&1; then
-    log "未检测到 Xcode Command Line Tools，正在触发安装。如弹出系统窗口，请点击「安装」，完成后重新运行本脚本。"
+    log "Xcode Command Line Tools were not found; starting the installer. If a system dialog appears, click Install, then rerun this script after it completes."
     xcode-select --install 2>/dev/null || true
-    echo "请在 Xcode Command Line Tools 安装完成后重新运行本脚本。"
+    echo "Rerun this script after Xcode Command Line Tools installation completes."
     exit 1
   fi
 }
@@ -253,24 +253,24 @@ ensure_environment() {
     Linux*) install_linux_deps ;;
     Darwin*) install_macos_deps ;;
     *)
-      echo "当前 Bash 环境不在 Linux/macOS/WSL 支持范围内。Windows 原生请使用 PowerShell 安装脚本。"
+      echo "This Bash environment is not supported. Use the PowerShell installer on native Windows."
       exit 1
       ;;
   esac
 
   for cmd in git node npm; do
     if ! has_cmd "$cmd"; then
-      echo "缺少命令：$cmd。请手动安装后重试。"
+      echo "Missing command: $cmd. Install it manually, then rerun this installer."
       exit 1
     fi
   done
 
   if ! node_ok; then
-    echo "Node.js 版本过低。请安装 Node.js 20+，推荐 Node.js 22 LTS。"
+    echo "Node.js is too old. Install Node.js 20+; Node.js 22 LTS is recommended."
     exit 1
   fi
 
-  log "环境确认"
+  log "Environment check"
   git --version
   node --version
   npm --version
@@ -287,17 +287,17 @@ install_project() {
   mkdir -p "$INSTALL_DIR"
 
   if is_project_dir "$INSTALL_DIR"; then
-    log "发现已有项目目录，更新代码：$INSTALL_DIR"
+    log "Existing project directory found; updating: $INSTALL_DIR"
     git -C "$INSTALL_DIR" pull --ff-only
   else
     if ! is_empty_dir "$INSTALL_DIR"; then
       cat <<EOF
-当前目录不是空目录，也不是 Context Vocabulary Notebook 项目目录：
+The target directory is not empty and is not a Context Vocabulary Notebook project directory:
   $INSTALL_DIR
 
-为避免把项目文件混入其他文件，请换到一个空目录后重新运行，或显式设置 CVN_HOME 指向要安装的目录。
+To avoid mixing project files into an unrelated folder, rerun this installer from an empty directory, or set CVN_HOME to the directory where you want the project installed.
 
-示例：
+Example:
   mkdir -p "$HOME/context-vocabulary-notebook"
   cd "$HOME/context-vocabulary-notebook"
   curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
@@ -306,7 +306,7 @@ EOF
       exit 1
     fi
 
-    log "克隆项目到当前目录：$INSTALL_DIR"
+    log "Cloning project into the current directory: $INSTALL_DIR"
     (cd "$INSTALL_DIR" && git clone "$REPO_URL" .)
   fi
 
@@ -314,16 +314,16 @@ EOF
 
   if [ ! -f .env ]; then
     cp .env.example .env
-    log "已创建 .env"
+    log "Created .env"
   fi
 
-  log "安装项目依赖"
+  log "Installing project dependencies"
   if ! npm ci; then
     cat <<'EOF'
 
-npm ci 失败。请先查看上方 npm 错误。
-如果错误提到 better-sqlite3、node-gyp、Python、make 或 g++，通常是 native build tools 不完整。
-Ubuntu / Debian / WSL 可尝试：
+npm ci failed. Check the npm error above first.
+If the error mentions better-sqlite3, node-gyp, Python, make, or g++, native build tools are likely incomplete.
+On Ubuntu / Debian / WSL, try:
   sudo apt-get update
   sudo apt-get install -y python3 make g++ build-essential
 
@@ -331,34 +331,34 @@ EOF
     exit 1
   fi
 
-  log "构建项目"
+  log "Building project"
   npm run build
 
   cat <<EOF
 
-安装完成。
+Installation complete.
 
-启动应用：
+Start the app:
   cd "$INSTALL_DIR"
   npm run dev
 
-浏览器打开：
+Open in your browser:
   http://localhost:5173
 
-本地 API 健康检查：
+Local API health check:
   http://localhost:3107/api/health
 
-以后更新：
+To update later:
   cd "$INSTALL_DIR"
   git pull --ff-only
   npm ci
   npm run build
 
-也可以重新运行本安装命令；请保持相同 CVN_HOME 或相同运行目录。
+You can also rerun this installer; keep the same CVN_HOME or run it from the same directory.
 
-数据位置：
-  数据库：$INSTALL_DIR/data/context-vocabulary-notebook.sqlite
-  媒体文件：$INSTALL_DIR/uploads
+Data locations:
+  Database: $INSTALL_DIR/data/context-vocabulary-notebook.sqlite
+  Media files: $INSTALL_DIR/uploads
 
 $(ffmpeg_status_message)
 $(local_recognition_status_messages)
