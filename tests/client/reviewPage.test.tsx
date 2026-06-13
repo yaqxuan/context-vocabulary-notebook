@@ -123,7 +123,10 @@ const dueCard: DueReviewCardDto = {
   updated_at: '2026-01-01T00:00:00Z',
   primary_sentence: 'The ephemeral beauty of cherry blossoms is part of their charm.',
   context_count: 2,
-  tags: [],
+  tags: [
+    { id: 'tag-1', name: 'movie', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+    { id: 'tag-2', name: 'important', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  ],
   due_date: '2026-01-01T00:00:00Z',
   contexts: [
     {
@@ -176,6 +179,10 @@ const submitResponse: SubmitReviewResponseDto = {
 // --- Tests ---
 
 describe('ReviewPage', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+  });
+
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
@@ -242,7 +249,7 @@ describe('ReviewPage', () => {
       expect(marks).toEqual(['go', 'go']);
     });
 
-    it('toggles context panel showing media, unavailable media badge, note, other contexts', async () => {
+    it('toggles context panel showing media, unavailable media badge, and other contexts without notes', async () => {
       await renderReviewPage();
 
       await screen.findByRole('heading', { name: 'ephemeral' });
@@ -253,8 +260,10 @@ describe('ReviewPage', () => {
       // Click toggle button
       fireEvent.click(screen.getByRole('button', { name: /查看当时语境/ }));
 
-      // Panel content should appear
-      expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
+      // Context notes and tags should stay hidden until the user chooses a rating.
+      expect(screen.queryByText('S01E03 12:45')).not.toBeInTheDocument();
+      expect(screen.queryByText('movie')).not.toBeInTheDocument();
+      expect(screen.queryByText('important')).not.toBeInTheDocument();
 
       // Available media should render as playable/viewable elements, not just file names.
       expect(document.querySelector('video[src="/uploads/clip.mp4"]')).toBeInTheDocument();
@@ -276,10 +285,10 @@ describe('ReviewPage', () => {
       await screen.findByRole('heading', { name: 'ephemeral' });
 
       fireEvent.click(screen.getByRole('button', { name: /查看当时语境/ }));
-      expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
+      expect(screen.getByText('Youth is ephemeral.')).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: /收起/ }));
-      expect(screen.queryByText('S01E03 12:45')).not.toBeInTheDocument();
+      expect(screen.queryByText('Youth is ephemeral.')).not.toBeInTheDocument();
     });
   });
 
@@ -318,6 +327,10 @@ describe('ReviewPage', () => {
 
       expect(screen.getByText('短暂的')).toBeInTheDocument();
       expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
+      expect(screen.getByText('movie')).toBeInTheDocument();
+      expect(screen.getByText('important')).toBeInTheDocument();
+      expect(document.querySelector('video[src="/uploads/clip.mp4"]')).toHaveAttribute('autoplay');
+      expect(document.querySelector('audio[src="/uploads/clip.mp3"]')).toHaveAttribute('autoplay');
       expect(screen.getByRole('button', { name: '记错了，Again' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '下一张' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '确认 Good' })).not.toBeInTheDocument();
@@ -329,7 +342,7 @@ describe('ReviewPage', () => {
       expect(await screen.findByRole('heading', { name: 'laconic' })).toBeInTheDocument();
     });
 
-    it('asks for Good confirmation when context was already open before rating', async () => {
+    it('uses next-card action after choosing Good from an already open context', async () => {
       const nextCard: DueReviewCardDto = {
         ...dueCard,
         id: 'card-2',
@@ -339,6 +352,7 @@ describe('ReviewPage', () => {
         media: [],
       };
       const nextResponse: ReviewDueResponseDto = { status: 'due', card: nextCard, progress: submitResponse.progress };
+      const play = vi.mocked(HTMLMediaElement.prototype.play);
 
       let dueCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
@@ -360,19 +374,16 @@ describe('ReviewPage', () => {
 
       await screen.findByRole('heading', { name: 'ephemeral' });
       fireEvent.click(screen.getByRole('button', { name: /查看当时语境/ }));
+      expect(play).not.toHaveBeenCalled();
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
 
+      await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
+      expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '记错了，Again' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '确认 Good' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: '下一张' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '确认 Good' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '下一张' })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'laconic' })).not.toBeInTheDocument();
       expect(globalThis.fetch).toHaveBeenCalledTimes(2);
-
-      fireEvent.click(screen.getByRole('button', { name: '确认 Good' }));
-
-      await screen.findByText(/Good 已记录/);
-      expect(screen.getByRole('heading', { name: 'ephemeral' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '下一张' })).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: '下一张' }));
       expect(await screen.findByRole('heading', { name: 'laconic' })).toBeInTheDocument();
@@ -554,6 +565,9 @@ describe('ReviewPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Again' }));
 
       expect(screen.getByText('S01E03 12:45')).toBeInTheDocument();
+      expect(screen.getByText('movie')).toBeInTheDocument();
+      expect(screen.getByText('important')).toBeInTheDocument();
+      expect(screen.getByText('Youth is ephemeral.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '确认 Again' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '改为 Good' })).not.toBeInTheDocument();

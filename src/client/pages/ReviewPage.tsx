@@ -25,9 +25,18 @@ function mediaUrl(item: MediaDto): string {
   return `/uploads/${encodeURIComponent(item.file_name)}`;
 }
 
-function MediaItem({ item }: { item: MediaDto }) {
+function MediaItem({ item, autoPlay = false }: { item: MediaDto; autoPlay?: boolean }) {
   const { t } = useI18n();
+  const mediaRef = useRef<HTMLMediaElement | null>(null);
   const unavailable = item.is_available === 0;
+
+  useEffect(() => {
+    if (!autoPlay || !mediaRef.current) return;
+    const playResult = mediaRef.current.play();
+    if (playResult && typeof playResult.catch === 'function') {
+      void playResult.catch(() => undefined);
+    }
+  }, [autoPlay, item.id]);
   if (unavailable) {
     return (
       <div className="phase7-review-media-item phase7-review-media-item--unavailable">
@@ -41,13 +50,13 @@ function MediaItem({ item }: { item: MediaDto }) {
   return (
     <div className="phase7-review-media-item">
       {item.media_type === 'video' ? (
-        <video className="phase7-review-media-player" src={src} controls preload="metadata" />
+        <video ref={(element) => { mediaRef.current = element; }} className="phase7-review-media-player" src={src} controls preload="metadata" autoPlay={autoPlay} />
       ) : null}
       {item.media_type === 'image' ? (
         <img className="phase7-review-media-image" src={src} alt={item.file_name} />
       ) : null}
       {item.media_type === 'audio' ? (
-        <audio className="phase7-review-media-player" src={src} controls preload="metadata" />
+        <audio ref={(element) => { mediaRef.current = element; }} className="phase7-review-media-player" src={src} controls preload="metadata" autoPlay={autoPlay} />
       ) : null}
       <span className="phase7-review-media-name">{item.file_name}</span>
     </div>
@@ -56,7 +65,7 @@ function MediaItem({ item }: { item: MediaDto }) {
 
 // --- Context panel ---
 
-function ContextPanel({ card }: { card: DueReviewCardDto }) {
+function ContextPanel({ card, revealDetails }: { card: DueReviewCardDto; revealDetails: boolean }) {
   const { t } = useI18n();
   const primaryCtx = card.contexts.find((c) => c.is_primary === 1) ?? card.contexts[0] ?? null;
   const otherContexts = [...card.contexts]
@@ -73,7 +82,7 @@ function ContextPanel({ card }: { card: DueReviewCardDto }) {
       {videos.length > 0 && (
         <div className="phase7-review-media-section">
           <p className="phase7-review-media-label">{t('review.media.video')}</p>
-          {videos.map((m) => <MediaItem key={m.id} item={m} />)}
+          {videos.map((m) => <MediaItem key={m.id} item={m} autoPlay={revealDetails} />)}
         </div>
       )}
       {images.length > 0 && (
@@ -85,13 +94,21 @@ function ContextPanel({ card }: { card: DueReviewCardDto }) {
       {audios.length > 0 && (
         <div className="phase7-review-media-section">
           <p className="phase7-review-media-label">{t('review.media.audio')}</p>
-          {audios.map((m) => <MediaItem key={m.id} item={m} />)}
+          {audios.map((m) => <MediaItem key={m.id} item={m} autoPlay={revealDetails} />)}
         </div>
       )}
-      {primaryCtx?.note ? (
+      {revealDetails && primaryCtx?.note ? (
         <div className="phase7-review-context-note">
           <p className="phase7-review-media-label">{t('review.media.note')}</p>
           <p>{primaryCtx.note}</p>
+        </div>
+      ) : null}
+      {revealDetails && card.tags.length > 0 ? (
+        <div className="phase7-review-context-tags">
+          <p className="phase7-review-media-label">{t('catalogue.tagLabel')}</p>
+          <div className="phase7-review-tag-list">
+            {card.tags.map((tag) => <span key={tag.id} className="phase7-review-tag">{tag.name}</span>)}
+          </div>
         </div>
       ) : null}
       {otherContexts.length > 0 && (
@@ -147,7 +164,7 @@ interface ReviewCardProps {
   pendingRating: 'again' | 'good' | null;
   pendingRequiresConfirm: boolean;
   lastRating: 'again' | 'good' | null;
-  onChooseRating: (rating: 'again' | 'good', contextWasOpen: boolean) => void;
+  onChooseRating: (rating: 'again' | 'good') => void;
   onConfirmRating: (advanceAfterSubmit?: boolean) => void;
   onToggleFavorite: () => void;
   onMarkMastered: () => void;
@@ -238,7 +255,7 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
           </div>
         ) : pendingRating === 'good' ? (
           <div className="phase7-review-rating-row">
-            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again', true)}>{t('review.wrongAgain')}</Button>
+            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again')}>{t('review.wrongAgain')}</Button>
             <Button variant="primary" disabled={submitting} onClick={pendingRequiresConfirm ? () => onConfirmRating() : onNext}>
               {pendingRequiresConfirm ? t('review.confirmGood') : t('review.next')}
             </Button>
@@ -249,13 +266,13 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
           </div>
         ) : (
           <div className="phase7-review-rating-row">
-            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again', contextOpenRef.current)}>Again</Button>
-            <Button variant="primary" disabled={submitting} onClick={() => onChooseRating('good', contextOpenRef.current)}>Good</Button>
+            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again')}>Again</Button>
+            <Button variant="primary" disabled={submitting} onClick={() => onChooseRating('good')}>Good</Button>
           </div>
         )}
       </div>
 
-      {contextOpen ? <ContextPanel card={card} /> : null}
+      {contextOpen ? <ContextPanel card={card} revealDetails={answerRevealed} /> : null}
     </div>
   );
 }
@@ -310,11 +327,11 @@ export function ReviewPage() {
     load();
   }, [load]);
 
-  const handleChooseRating = (rating: 'again' | 'good', contextWasOpen: boolean) => {
+  const handleChooseRating = (rating: 'again' | 'good') => {
     setSubmitError(null);
     setLastRating(null);
     setPendingRating(rating);
-    setPendingRequiresConfirm(rating === 'again' || contextWasOpen);
+    setPendingRequiresConfirm(rating === 'again');
   };
 
   const handleConfirmRating = async (advanceAfterSubmit = false) => {
