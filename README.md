@@ -67,7 +67,7 @@ uploads/
 ### WSL / Windows 原生选择建议
 
 - WSL 通常最稳：Node、Git、ffmpeg、Tesseract 和 native build tools 的安装路径更接近 Linux，遇到 `better-sqlite3` / `node-gyp` 编译问题时也更容易处理。
-- Windows 原生 PowerShell 可以安装：脚本会复用已有 Git / Node.js / npm，缺少时才尝试 `winget`；如果 `npm ci` 在 `better-sqlite3` 处失败，脚本会尝试通过 `winget` 安装 Python / Visual Studio Build Tools / MSVC 并重试一次。若仍失败，可按提示处理或改用 WSL。
+- Windows 原生 PowerShell 可以安装：脚本会复用已有 Git / Node.js / npm，缺少时才尝试 `winget`；如果 `npm ci` 在 `better-sqlite3` 处失败，需要按提示安装 Python 和 Visual Studio Build Tools / MSVC，或改用 WSL。
 - OCR 后续可以配置成功：安装 ffmpeg、Tesseract 和目标语言 traineddata 后，在设置页点击“本地识别配置”重新检测即可。
 - STT 需要单独安装 whisper.cpp，并手动下载 Whisper ggml 模型；一键安装脚本不会自动下载模型，避免默认安装过大、过慢或选错语言/精度。
 - Windows 配好 ffmpeg / Tesseract / whisper.cpp 后，通常需要重新打开 PowerShell，再启动 `npm run dev`，让服务进程读到新的 PATH 和 `.env`。
