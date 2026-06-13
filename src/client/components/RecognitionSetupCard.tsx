@@ -109,7 +109,7 @@ const ZH_COPY: RecognitionSetupCopy = {
   platformWindows: 'Windows 原生 PowerShell',
   platformLinux: 'Linux / WSL',
   platformMacos: 'macOS',
-  installLocationNote: '默认会安装到当前 notebook 目录下的 tools/ 和 models/。不要求放在 C 盘；如果 .env 写入真实绝对路径，任意目录都可以。',
+  installLocationNote: '步骤 1 安装系统依赖，可以在任意目录运行。步骤 2–5 请先进入本 notebook 安装目录后再执行。',
   windowsBuildToolsNote: 'Windows 构建 whisper.cpp 还需要 Visual Studio Build Tools / MSVC C++ 工具链。',
   stepInstallBaseTools: '步骤 1 · 安装基础工具',
   stepInstallWhisper: '步骤 2 · 构建 whisper.cpp',
@@ -154,7 +154,7 @@ const EN_COPY: RecognitionSetupCopy = {
   platformWindows: 'Windows native PowerShell',
   platformLinux: 'Linux / WSL',
   platformMacos: 'macOS',
-  installLocationNote: 'By default these commands install under the current notebook directory in tools/ and models/. C: drive is not required; any path is fine when .env contains real absolute paths.',
+  installLocationNote: 'Step 1 installs system dependencies and can run from any folder. Run steps 2–5 from this notebook install directory first.',
   windowsBuildToolsNote: 'Building whisper.cpp on Windows also requires Visual Studio Build Tools / the MSVC C++ toolchain.',
   stepInstallBaseTools: 'Step 1 · Install base tools',
   stepInstallWhisper: 'Step 2 · Build whisper.cpp',
@@ -198,7 +198,7 @@ const JA_COPY: RecognitionSetupCopy = {
   platformWindows: 'Windows ネイティブ PowerShell',
   platformLinux: 'Linux / WSL',
   platformMacos: 'macOS',
-  installLocationNote: '既定では現在の notebook ディレクトリ配下の tools/ と models/ に入ります。C ドライブは不要で、.env に実際の絶対パスを書けば任意の場所で使えます。',
+  installLocationNote: 'ステップ 1 はシステム依存関係のインストールなので任意のフォルダーで実行できます。ステップ 2〜5 は先にこの notebook インストールディレクトリへ移動してから実行してください。',
   windowsBuildToolsNote: 'Windows で whisper.cpp をビルドするには Visual Studio Build Tools / MSVC C++ toolchain も必要です。',
   stepInstallBaseTools: 'ステップ 1 · 基本ツールをインストール',
   stepInstallWhisper: 'ステップ 2 · whisper.cpp をビルド',
@@ -242,7 +242,7 @@ const KO_COPY: RecognitionSetupCopy = {
   platformWindows: 'Windows 네이티브 PowerShell',
   platformLinux: 'Linux / WSL',
   platformMacos: 'macOS',
-  installLocationNote: '기본값은 현재 notebook 디렉터리 아래 tools/와 models/에 설치합니다. C 드라이브가 아니어도 되며, .env에 실제 절대 경로를 쓰면 어떤 경로든 사용할 수 있습니다.',
+  installLocationNote: '1단계는 시스템 의존성 설치이므로 어느 폴더에서나 실행할 수 있습니다. 2–5단계는 먼저 이 notebook 설치 디렉터리로 이동한 뒤 실행하세요.',
   windowsBuildToolsNote: 'Windows에서 whisper.cpp를 빌드하려면 Visual Studio Build Tools / MSVC C++ toolchain도 필요합니다.',
   stepInstallBaseTools: '1단계 · 기본 도구 설치',
   stepInstallWhisper: '2단계 · whisper.cpp 빌드',
@@ -286,7 +286,7 @@ const FR_COPY: RecognitionSetupCopy = {
   platformWindows: 'PowerShell Windows natif',
   platformLinux: 'Linux / WSL',
   platformMacos: 'macOS',
-  installLocationNote: 'Par défaut, ces commandes installent dans tools/ et models/ sous le dossier notebook actuel. Le disque C: n’est pas requis ; tout chemin convient si .env contient de vrais chemins absolus.',
+  installLocationNote: 'L’étape 1 installe des dépendances système et peut être exécutée depuis n’importe quel dossier. Exécutez les étapes 2 à 5 après être entré dans ce dossier d’installation du notebook.',
   windowsBuildToolsNote: 'La compilation de whisper.cpp sous Windows nécessite aussi Visual Studio Build Tools / la chaîne C++ MSVC.',
   stepInstallBaseTools: 'Étape 1 · Installer les outils',
   stepInstallWhisper: 'Étape 2 · Compiler whisper.cpp',
@@ -330,7 +330,7 @@ const DE_COPY: RecognitionSetupCopy = {
   platformWindows: 'Natives Windows PowerShell',
   platformLinux: 'Linux / WSL',
   platformMacos: 'macOS',
-  installLocationNote: 'Standardmäßig wird im aktuellen Notebook-Ordner unter tools/ und models/ installiert. Laufwerk C: ist nicht nötig; jeder Pfad funktioniert, wenn .env echte absolute Pfade enthält.',
+  installLocationNote: 'Schritt 1 installiert Systemabhängigkeiten und kann in jedem Ordner ausgeführt werden. Für Schritt 2–5 zuerst in diesen Notebook-Installationsordner wechseln.',
   windowsBuildToolsNote: 'Zum Bauen von whisper.cpp unter Windows werden außerdem Visual Studio Build Tools / die MSVC-C++-Toolchain benötigt.',
   stepInstallBaseTools: 'Schritt 1 · Basiswerkzeuge installieren',
   stepInstallWhisper: 'Schritt 2 · whisper.cpp bauen',
@@ -374,7 +374,7 @@ const ES_COPY: RecognitionSetupCopy = {
   platformWindows: 'PowerShell nativo de Windows',
   platformLinux: 'Linux / WSL',
   platformMacos: 'macOS',
-  installLocationNote: 'De forma predeterminada se instala en tools/ y models/ dentro del directorio actual del notebook. No hace falta la unidad C:; cualquier ruta sirve si .env contiene rutas absolutas reales.',
+  installLocationNote: 'El paso 1 instala dependencias del sistema y puede ejecutarse desde cualquier carpeta. Ejecuta los pasos 2–5 después de entrar en este directorio de instalación del notebook.',
   windowsBuildToolsNote: 'Compilar whisper.cpp en Windows también requiere Visual Studio Build Tools / la cadena de herramientas C++ de MSVC.',
   stepInstallBaseTools: 'Paso 1 · Instalar herramientas base',
   stepInstallWhisper: 'Paso 2 · Compilar whisper.cpp',
@@ -418,7 +418,7 @@ const RU_COPY: RecognitionSetupCopy = {
   platformWindows: 'Нативный Windows PowerShell',
   platformLinux: 'Linux / WSL',
   platformMacos: 'macOS',
-  installLocationNote: 'По умолчанию установка идёт в tools/ и models/ внутри текущего каталога notebook. Диск C: не обязателен; подойдёт любой путь, если в .env указаны реальные абсолютные пути.',
+  installLocationNote: 'Шаг 1 устанавливает системные зависимости и может запускаться из любой папки. Шаги 2–5 выполняйте после перехода в каталог установки этого notebook.',
   windowsBuildToolsNote: 'Для сборки whisper.cpp в Windows также требуются Visual Studio Build Tools / цепочка инструментов C++ MSVC.',
   stepInstallBaseTools: 'Шаг 1 · Установить базовые инструменты',
   stepInstallWhisper: 'Шаг 2 · Собрать whisper.cpp',
@@ -454,43 +454,43 @@ function copyFor(language: UiLanguage): RecognitionSetupCopy {
 
 function runLocationNote(language: UiLanguage, platform: InstallPlatform): string {
   if (language === '中文') {
-    if (platform === 'windows') return '请在单词本安装目录运行这些命令，也就是包含 package.json 和 .env 的目录。Windows 请选择 PowerShell。';
-    if (platform === 'linux') return 'Linux / WSL 请在终端里进入同一个单词本目录后运行，也就是包含 package.json 和 .env 的目录。';
-    return 'macOS 请在终端里进入单词本安装目录后运行，也就是包含 package.json 和 .env 的目录。';
+    if (platform === 'windows') return '步骤 1 可在任意目录运行；步骤 2–5 请在 notebook 安装目录（包含 package.json 和 .env）用 PowerShell 运行。';
+    if (platform === 'linux') return '步骤 1 可在任意目录运行；步骤 2–5 请先在终端进入 notebook 安装目录（包含 package.json 和 .env）。';
+    return '步骤 1 可在任意目录运行；步骤 2–5 请先在终端进入 notebook 安装目录（包含 package.json 和 .env）。';
   }
   if (language === '日语') {
-    if (platform === 'windows') return 'package.json と .env がある単語帳インストールディレクトリで実行してください。Windows では PowerShell を使ってください。';
-    if (platform === 'linux') return 'Linux / WSL では、ターミナルで package.json と .env がある同じ単語帳ディレクトリに移動してから実行してください。';
-    return 'macOS では、ターミナルで package.json と .env がある単語帳ディレクトリに移動してから実行してください。';
+    if (platform === 'windows') return 'ステップ 1 は任意のフォルダーで実行できます。ステップ 2〜5 は package.json と .env がある notebook インストールディレクトリで PowerShell から実行してください。';
+    if (platform === 'linux') return 'ステップ 1 は任意のフォルダーで実行できます。ステップ 2〜5 はターミナルで package.json と .env がある notebook インストールディレクトリへ移動してから実行してください。';
+    return 'ステップ 1 は任意のフォルダーで実行できます。ステップ 2〜5 はターミナルで package.json と .env がある notebook インストールディレクトリへ移動してから実行してください。';
   }
   if (language === '韩语') {
-    if (platform === 'windows') return 'package.json과 .env가 있는 단어장 설치 디렉터리에서 실행하세요. Windows에서는 PowerShell을 사용하세요.';
-    if (platform === 'linux') return 'Linux / WSL에서는 터미널에서 package.json과 .env가 있는 같은 단어장 디렉터리로 이동한 뒤 실행하세요.';
-    return 'macOS에서는 터미널에서 package.json과 .env가 있는 단어장 디렉터리로 이동한 뒤 실행하세요.';
+    if (platform === 'windows') return '1단계는 어느 폴더에서나 실행할 수 있습니다. 2–5단계는 package.json과 .env가 있는 notebook 설치 디렉터리에서 PowerShell로 실행하세요.';
+    if (platform === 'linux') return '1단계는 어느 폴더에서나 실행할 수 있습니다. 2–5단계는 터미널에서 package.json과 .env가 있는 notebook 설치 디렉터리로 이동한 뒤 실행하세요.';
+    return '1단계는 어느 폴더에서나 실행할 수 있습니다. 2–5단계는 터미널에서 package.json과 .env가 있는 notebook 설치 디렉터리로 이동한 뒤 실행하세요.';
   }
   if (language === '法语') {
-    if (platform === 'windows') return 'Exécutez ces commandes dans le dossier d’installation du carnet, celui qui contient package.json et .env. Sous Windows, utilisez PowerShell.';
-    if (platform === 'linux') return 'Sous Linux / WSL, ouvrez un terminal dans le même dossier du carnet qui contient package.json et .env, puis exécutez les commandes.';
-    return 'Sous macOS, ouvrez un terminal dans le dossier du carnet qui contient package.json et .env, puis exécutez les commandes.';
+    if (platform === 'windows') return 'L’étape 1 peut être exécutée depuis n’importe quel dossier. Pour les étapes 2 à 5, utilisez PowerShell dans le dossier d’installation du notebook qui contient package.json et .env.';
+    if (platform === 'linux') return 'L’étape 1 peut être exécutée depuis n’importe quel dossier. Pour les étapes 2 à 5, ouvrez un terminal dans le dossier d’installation du notebook qui contient package.json et .env.';
+    return 'L’étape 1 peut être exécutée depuis n’importe quel dossier. Pour les étapes 2 à 5, ouvrez un terminal dans le dossier d’installation du notebook qui contient package.json et .env.';
   }
   if (language === '德语') {
-    if (platform === 'windows') return 'Führe diese Befehle im Installationsordner des Vokabelnotizbuchs aus, der package.json und .env enthält. Unter Windows PowerShell verwenden.';
-    if (platform === 'linux') return 'Unter Linux / WSL im Terminal in denselben Notizbuchordner mit package.json und .env wechseln und dort ausführen.';
-    return 'Unter macOS im Terminal in den Notizbuchordner mit package.json und .env wechseln und dort ausführen.';
+    if (platform === 'windows') return 'Schritt 1 kann in jedem Ordner ausgeführt werden. Schritt 2–5 in PowerShell im Notebook-Installationsordner mit package.json und .env ausführen.';
+    if (platform === 'linux') return 'Schritt 1 kann in jedem Ordner ausgeführt werden. Für Schritt 2–5 im Terminal in den Notebook-Installationsordner mit package.json und .env wechseln.';
+    return 'Schritt 1 kann in jedem Ordner ausgeführt werden. Für Schritt 2–5 im Terminal in den Notebook-Installationsordner mit package.json und .env wechseln.';
   }
   if (language === '西班牙语') {
-    if (platform === 'windows') return 'Ejecuta estos comandos en la carpeta de instalación del cuaderno, la que contiene package.json y .env. En Windows usa PowerShell.';
-    if (platform === 'linux') return 'En Linux / WSL, entra con la terminal en la misma carpeta del cuaderno que contiene package.json y .env antes de ejecutar los comandos.';
-    return 'En macOS, entra con la terminal en la carpeta del cuaderno que contiene package.json y .env antes de ejecutar los comandos.';
+    if (platform === 'windows') return 'El paso 1 puede ejecutarse desde cualquier carpeta. Para los pasos 2–5, usa PowerShell dentro del directorio de instalación del notebook que contiene package.json y .env.';
+    if (platform === 'linux') return 'El paso 1 puede ejecutarse desde cualquier carpeta. Para los pasos 2–5, entra con la terminal en el directorio de instalación del notebook que contiene package.json y .env.';
+    return 'El paso 1 puede ejecutarse desde cualquier carpeta. Para los pasos 2–5, entra con la terminal en el directorio de instalación del notebook que contiene package.json y .env.';
   }
   if (language === '俄语') {
-    if (platform === 'windows') return 'Запускайте эти команды в папке установки словаря, где находятся package.json и .env. В Windows используйте PowerShell.';
-    if (platform === 'linux') return 'В Linux / WSL перейдите в терминале в ту же папку словаря с package.json и .env, затем запускайте команды.';
-    return 'В macOS перейдите в терминале в папку словаря с package.json и .env, затем запускайте команды.';
+    if (platform === 'windows') return 'Шаг 1 можно запускать из любой папки. Шаги 2–5 выполняйте в PowerShell из каталога установки notebook, где находятся package.json и .env.';
+    if (platform === 'linux') return 'Шаг 1 можно запускать из любой папки. Для шагов 2–5 перейдите в терминале в каталог установки notebook, где находятся package.json и .env.';
+    return 'Шаг 1 можно запускать из любой папки. Для шагов 2–5 перейдите в терминале в каталог установки notebook, где находятся package.json и .env.';
   }
-  if (platform === 'windows') return 'Run these commands in the vocabulary notebook install directory, the folder that contains package.json and .env. On Windows, use PowerShell.';
-  if (platform === 'linux') return 'On Linux / WSL, open a terminal in the same notebook directory that contains package.json and .env before running these commands.';
-  return 'On macOS, open a terminal in the notebook directory that contains package.json and .env before running these commands.';
+  if (platform === 'windows') return 'Step 1 can run from any folder. Run steps 2–5 in PowerShell from the notebook install directory that contains package.json and .env.';
+  if (platform === 'linux') return 'Step 1 can run from any folder. For steps 2–5, open a terminal in the notebook install directory that contains package.json and .env.';
+  return 'Step 1 can run from any folder. For steps 2–5, open a terminal in the notebook install directory that contains package.json and .env.';
 }
 
 function statusLabel(ready: boolean, copy: RecognitionSetupCopy): string {
