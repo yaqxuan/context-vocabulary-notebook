@@ -111,7 +111,7 @@ describe('install.sh path selection', () => {
       ]).toString();
     }
 
-    expect(output).toContain('当前目录不是空目录');
+    expect(output).toContain('The target directory is not empty');
     const commands = fs.readFileSync(logPath, 'utf8');
     expect(commands).not.toContain('git clone');
   });
@@ -174,18 +174,48 @@ describe('install.ps1 installer safeguards', () => {
   it('does not block on Visual Studio Build Tools before trying npm install', () => {
     const ensureEnvironment = functionBody(readPowerShellInstallScript(), 'Ensure-Environment');
 
-    expect(ensureEnvironment).not.toContain('Has-VCTools');
+    expect(ensureEnvironment).not.toContain('Install-WindowsNativeBuildTools');
     expect(ensureEnvironment).not.toContain('Visual Studio Build Tools');
   });
 
-  it('prints Windows native-build guidance when npm install fails', () => {
-    const installProject = functionBody(readPowerShellInstallScript(), 'Install-Project');
+  it('installs Windows native build tools and retries npm install after native dependency failure', () => {
+    const script = readPowerShellInstallScript();
+    const invokeNpmCi = functionBody(script, 'Invoke-NpmCi');
+    const installProject = functionBody(script, 'Install-Project');
+    const installNativeBuildTools = functionBody(script, 'Install-WindowsNativeBuildTools');
+    const nativeBuildFailureCheck = functionBody(script, 'Test-NpmNativeBuildFailure');
 
+    expect(invokeNpmCi).toContain('cmd.exe');
+    expect(invokeNpmCi).toContain('npm ci >');
+    expect(invokeNpmCi).not.toContain('2>&1 | Tee-Object');
+    expect(invokeNpmCi).not.toContain('> $script:LastNpmCiLog 2>&1');
     expect(installProject).toContain('if (-not (Invoke-NpmCi))');
-    expect(installProject).toContain('better-sqlite3');
-    expect(installProject).toContain('node-gyp');
-    expect(installProject).toContain('Python');
-    expect(installProject).toContain('Visual Studio Build Tools');
+    expect(installProject).toContain('if (Test-NpmNativeBuildFailure)');
+    expect(installProject).toContain('Install-WindowsNativeBuildTools');
+    expect(installProject).toContain('Retrying npm ci after installing native build tools');
+    expect(installProject).toContain('if (-not (Invoke-NpmCi))');
+    expect(nativeBuildFailureCheck).toContain('better-sqlite3');
+    expect(nativeBuildFailureCheck).toContain('node-gyp');
+    const pythonAvailableCheck = functionBody(script, 'Test-PythonAvailable');
+    const vsWherePath = functionBody(script, 'Get-VSWherePath');
+    const vcToolsAvailableCheck = functionBody(script, 'Test-VCToolsAvailable');
+
+    expect(nativeBuildFailureCheck).toContain('gyp ERR! find VS');
+    expect(pythonAvailableCheck).toContain('python --version');
+    expect(vsWherePath).toContain('vswhere.exe');
+    expect(vcToolsAvailableCheck).toContain('Microsoft.VisualStudio.Component.VC.Tools.x86.x64');
+    expect(installNativeBuildTools).toContain('setup.exe');
+    expect(installNativeBuildTools).toContain('modify');
+    expect(installNativeBuildTools).toContain('Microsoft.VisualStudio.Workload.VCTools');
+    expect(installNativeBuildTools).toContain('if (-not (Test-VCToolsAvailable))');
+    expect(installNativeBuildTools).toContain('Visual Studio Build Tools was installed or modified, but MSVC C++ tools are still unavailable');
+    expect(installNativeBuildTools).toContain('if (-not (Test-PythonAvailable))');
+    expect(installNativeBuildTools).not.toContain('if (-not (Has-Command "python"))');
+    expect(installNativeBuildTools).toContain('if (Test-VCToolsAvailable)');
+    expect(installNativeBuildTools).toContain('Visual Studio Build Tools with MSVC C++ tools already found');
+    expect(installNativeBuildTools).toContain('Microsoft.VisualStudio.2022.BuildTools');
+    expect(installNativeBuildTools).toContain('Microsoft.VisualStudio.Workload.VCTools');
+    expect(installNativeBuildTools).toContain('Refresh-Path');
   });
 
   it('installs directly into the current PowerShell location in examples', () => {

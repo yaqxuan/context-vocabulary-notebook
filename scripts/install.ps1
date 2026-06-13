@@ -113,6 +113,83 @@ function Ensure-Winget {
   }
 }
 
+function Test-PythonAvailable {
+  if (-not (Has-Command "python")) { return $false }
+  cmd.exe /d /s /c "python --version >nul 2>nul"
+  return $LASTEXITCODE -eq 0
+}
+
+function Get-VSInstallerDir {
+  $ProgramFilesX86 = [System.Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
+  if (-not $ProgramFilesX86) { return $null }
+  return Join-Path $ProgramFilesX86 "Microsoft Visual Studio\Installer"
+}
+
+function Get-VSWherePath {
+  $InstallerDir = Get-VSInstallerDir
+  if (-not $InstallerDir) { return $null }
+  $VsWhere = Join-Path $InstallerDir "vswhere.exe"
+  if (-not (Test-Path -LiteralPath $VsWhere)) { return $null }
+  return $VsWhere
+}
+
+function Test-VCToolsAvailable {
+  $VsWhere = Get-VSWherePath
+  if (-not $VsWhere) { return $false }
+  & $VsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath > $null 2> $null
+  return $LASTEXITCODE -eq 0
+}
+
+function Get-BuildToolsInstallPath {
+  $VsWhere = Get-VSWherePath
+  if (-not $VsWhere) { return $null }
+  $InstallPath = & $VsWhere -latest -products Microsoft.VisualStudio.Product.BuildTools -property installationPath 2> $null
+  if ($LASTEXITCODE -ne 0) { return $null }
+  if (-not $InstallPath) { return $null }
+  return ($InstallPath | Select-Object -First 1).Trim()
+}
+
+function Install-WindowsNativeBuildTools {
+  Ensure-Winget
+
+  if (-not (Test-PythonAvailable)) {
+    Write-Step "Python was not found; installing Python 3 for native module builds"
+    winget install --id Python.Python.3.12 -e --source winget --accept-package-agreements --accept-source-agreements
+    if ($LASTEXITCODE -ne 0) {
+      throw "winget failed while installing Python 3 (exit code $LASTEXITCODE). Install Python manually, reopen PowerShell, then rerun this installer."
+    }
+    Refresh-Path
+  }
+
+  if (Test-VCToolsAvailable) {
+    Write-Step "Visual Studio Build Tools with MSVC C++ tools already found"
+    return
+  }
+
+  $BuildToolsPath = Get-BuildToolsInstallPath
+  $InstallerDir = Get-VSInstallerDir
+  $SetupExe = if ($InstallerDir) { Join-Path $InstallerDir "setup.exe" } else { $null }
+
+  if ($BuildToolsPath -and $SetupExe -and (Test-Path -LiteralPath $SetupExe)) {
+    Write-Step "Adding MSVC C++ tools to the existing Visual Studio Build Tools installation"
+    & $SetupExe modify --installPath $BuildToolsPath --quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended
+    if ($LASTEXITCODE -ne 0) {
+      throw "Visual Studio Installer failed while adding MSVC C++ tools (exit code $LASTEXITCODE). Open Visual Studio Installer, add Desktop development with C++, reopen PowerShell, then rerun this installer."
+    }
+  } else {
+    Write-Step "Installing Visual Studio Build Tools with MSVC C++ tools for native module builds"
+    winget install --id Microsoft.VisualStudio.2022.BuildTools -e --source winget --accept-package-agreements --accept-source-agreements --override "--wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+    if ($LASTEXITCODE -ne 0) {
+      throw "winget failed while installing Visual Studio Build Tools (exit code $LASTEXITCODE). Install Visual Studio Build Tools with Desktop development with C++ manually, reopen PowerShell, then rerun this installer."
+    }
+  }
+
+  Refresh-Path
+  if (-not (Test-VCToolsAvailable)) {
+    throw "Visual Studio Build Tools was installed or modified, but MSVC C++ tools are still unavailable. Open Visual Studio Installer, add Desktop development with C++, reopen PowerShell, then rerun this installer."
+  }
+}
+
 function Ensure-Environment {
   if (-not (Has-Command "git")) {
     Ensure-Winget
@@ -171,8 +248,19 @@ function Test-EmptyDir($Path) {
 }
 
 function Invoke-NpmCi {
-  npm ci
-  return $LASTEXITCODE -eq 0
+  $script:LastNpmCiLog = Join-Path ([System.IO.Path]::GetTempPath()) "cvn-npm-ci-$PID.log"
+  $NpmCommand = "npm ci > `"$script:LastNpmCiLog`" 2>&1"
+  cmd.exe /d /s /c $NpmCommand
+  $ExitCode = $LASTEXITCODE
+  Get-Content -LiteralPath $script:LastNpmCiLog | ForEach-Object { Write-Host $_ }
+  return $ExitCode -eq 0
+}
+
+function Test-NpmNativeBuildFailure {
+  if (-not $script:LastNpmCiLog) { return $false }
+  if (-not (Test-Path -LiteralPath $script:LastNpmCiLog)) { return $false }
+  $Log = Get-Content -Raw -LiteralPath $script:LastNpmCiLog
+  return $Log -match '(?i)better-sqlite3|node-gyp|gyp ERR! find VS|Visual Studio|MSVC|C\+\+ build tools|prebuild-install'
 }
 
 function Install-Project {
@@ -217,17 +305,32 @@ Example:
 
   Write-Step "Installing project dependencies"
   if (-not (Invoke-NpmCi)) {
-    throw @"
+    if (Test-NpmNativeBuildFailure) {
+      Write-Host "npm ci failed during native dependency installation. If the failure came from better-sqlite3, node-gyp, Python, MSVC, or C++ build tools, the Windows native build environment is likely incomplete."
+      Write-Host "The installer will install Visual Studio Build Tools with MSVC C++ tools, then retry npm ci once."
+      Install-WindowsNativeBuildTools
+      Write-Step "Retrying npm ci after installing native build tools"
+      if (-not (Invoke-NpmCi)) {
+        throw @"
 
-npm ci failed. Check the npm error above first.
-If the error mentions better-sqlite3, node-gyp, Python, Visual Studio Build Tools, MSVC, or C++ build tools, native build tools are likely incomplete.
-On Windows, try:
-  1. Install Python 3: winget install --id Python.Python.3.12 -e --source winget
-  2. Install Visual Studio Build Tools with MSVC C++ tools:
-     winget install --id Microsoft.VisualStudio.2022.BuildTools -e --source winget --accept-package-agreements --accept-source-agreements --override "--wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
-  3. Reopen PowerShell, then rerun this installer.
+npm ci failed again after installing Windows native build tools. Check the npm error above first.
+Common causes: locked node_modules files, antivirus file locks, corporate network/proxy restrictions, or a failed Visual Studio Build Tools installation.
+Try closing editors/terminals that may hold node_modules, reopen PowerShell, then rerun this installer. If it still fails, remove node_modules and rerun:
+  Remove-Item -Recurse -Force .\node_modules
+  irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 
 "@
+      }
+    } else {
+      throw @"
+
+npm ci failed. Check the npm error above first.
+The failure did not look like a native build-tools issue, so the installer did not install Visual Studio Build Tools automatically.
+Common causes: registry/network/proxy failures, lockfile/package errors, or local npm cache issues.
+After fixing the reported npm problem, rerun this installer from the same directory.
+
+"@
+    }
   }
 
   Write-Step "Building project"

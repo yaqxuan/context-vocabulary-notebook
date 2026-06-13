@@ -67,7 +67,7 @@ The installation script will first check the existing environment on the local m
 ### WSL / Native Windows Recommendation
 
 - WSL is usually the safest path: Node, Git, ffmpeg, Tesseract, and native build tools behave closer to Linux, and `better-sqlite3` / `node-gyp` failures are easier to fix.
-- Native Windows PowerShell can install the app: the script reuses existing Git / Node.js / npm and only tries `winget` when they are missing. If `npm ci` fails at `better-sqlite3`, install Python and Visual Studio Build Tools / MSVC as prompted, or use WSL.
+- Native Windows PowerShell can install the app: the script reuses existing Git / Node.js / npm and only tries `winget` when they are missing. If `npm ci` fails at `better-sqlite3`, the script will try to install Python / Visual Studio Build Tools / MSVC via `winget`, then retry `npm ci` once. If it still fails, follow the prompt or use WSL.
 - OCR can be configured after install: install ffmpeg, Tesseract, and target-language traineddata, then use the Settings page local recognition panel to re-check readiness.
 - STT requires installing whisper.cpp separately and downloading a Whisper ggml model manually. The one-click installer does not download models automatically, avoiding a large, slow, or wrong default install.
 - On Windows, after installing ffmpeg / Tesseract / whisper.cpp, reopen PowerShell before running `npm run dev` so the service process can read the new PATH and `.env`.
