@@ -204,8 +204,17 @@ describe('RecognitionSetupCard', () => {
     expect(windowsBlock).not.toHaveTextContent('/absolute/path/to/ggml-small.bin');
   });
 
-  it('tells users where to run the install commands', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(settingsResponse('中文'));
+  it.each([
+    ['中文', '查看安装命令', '步骤 1 安装系统依赖，可以在任意目录运行。步骤 2–5 请先进入本 notebook 安装目录后再执行。'],
+    ['英语', 'View installation commands', 'Step 1 installs system dependencies and can run from any folder. Run steps 2–5 from this notebook install directory first.'],
+    ['日语', 'インストールコマンドを表示', 'ステップ 1 はシステム依存関係のインストールなので任意のフォルダーで実行できます。ステップ 2〜5 は先にこの notebook インストールディレクトリへ移動してから実行してください。'],
+    ['韩语', '설치 명령 보기', '1단계는 시스템 의존성 설치이므로 어느 폴더에서나 실행할 수 있습니다. 2–5단계는 먼저 이 notebook 설치 디렉터리로 이동한 뒤 실행하세요.'],
+    ['法语', 'Afficher les commandes d’installation', 'L’étape 1 installe des dépendances système et peut être exécutée depuis n’importe quel dossier. Exécutez les étapes 2 à 5 après être entré dans ce dossier d’installation du notebook.'],
+    ['德语', 'Installationsbefehle anzeigen', 'Schritt 1 installiert Systemabhängigkeiten und kann in jedem Ordner ausgeführt werden. Für Schritt 2–5 zuerst in diesen Notebook-Installationsordner wechseln.'],
+    ['西班牙语', 'Ver comandos de instalación', 'El paso 1 instala dependencias del sistema y puede ejecutarse desde cualquier carpeta. Ejecuta los pasos 2–5 después de entrar en este directorio de instalación del notebook.'],
+    ['俄语', 'Показать команды установки', 'Шаг 1 устанавливает системные зависимости и может запускаться из любой папки. Шаги 2–5 выполняйте после перехода в каталог установки этого notebook.'],
+  ])('localizes where each install step should run for %s', async (language, showCommands, expectedNote) => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(settingsResponse(language));
 
     render(
       <I18nProvider>
@@ -213,15 +222,12 @@ describe('RecognitionSetupCard', () => {
       </I18nProvider>,
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: '查看安装命令' }));
+    fireEvent.click(await screen.findByRole('button', { name: showCommands }));
 
-    expect(screen.getByText(/请在单词本安装目录运行这些命令/)).toBeInTheDocument();
-    expect(screen.getByText(/也就是包含 package\.json 和 \.env 的目录/)).toBeInTheDocument();
-    expect(screen.getByText(/Windows 请选择 PowerShell/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Linux / WSL' }));
-
-    expect(screen.getByText(/Linux \/ WSL 请在终端里进入同一个单词本目录后运行/)).toBeInTheDocument();
+    expect(screen.getByText(expectedNote)).toBeInTheDocument();
+    if (language !== '英语') {
+      expect(screen.queryByText(/Step 1 installs system dependencies/)).not.toBeInTheDocument();
+    }
   });
 
   it('calls refresh when the user asks to rerun checks', () => {
