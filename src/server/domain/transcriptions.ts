@@ -6,6 +6,7 @@ import { TRANSCRIPTION_MESSAGES } from '../../shared/constants.js';
 import type { TranscriptSegmentDto, TranscribeMediaResponseDto } from '../../shared/types.js';
 import type { AiConfigRow } from './aiConfigs.js';
 import { AI_FETCH_TIMEOUT_MS, closeUnreadSafeAiResponse, fetchSafeAiProvider, isSafeAiBaseUrl } from './aiProviderHttp.js';
+import { resolveLocalRecognitionConfig } from './localRecognitionConfig.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -42,7 +43,8 @@ function none(message: string): TranscribeMediaResponseDto {
 }
 
 export async function extractAudioWithFfmpeg(inputPath: string, outputPath: string): Promise<string> {
-  await execFileAsync('ffmpeg', [
+  const localConfig = resolveLocalRecognitionConfig();
+  await execFileAsync(localConfig.ffmpeg.executablePath, [
     '-y',
     '-i', inputPath,
     '-vn',

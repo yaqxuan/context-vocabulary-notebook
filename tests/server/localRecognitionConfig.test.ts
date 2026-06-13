@@ -9,6 +9,8 @@ import {
 const ENV_KEYS = [
   'CVN_STT_PROVIDER',
   'CVN_OCR_PROVIDER',
+  'CVN_FFMPEG_PATH',
+  'CVN_FFMPEG_EXECUTABLE',
   'CVN_WHISPER_CPP_PATH',
   'CVN_WHISPER_CPP_EXECUTABLE',
   'CVN_WHISPER_CPP_MODEL',
@@ -37,6 +39,9 @@ describe('local recognition config', () => {
     for (const key of ENV_KEYS) delete process.env[key];
 
     expect(resolveLocalRecognitionConfig('英语')).toEqual({
+      ffmpeg: {
+        executablePath: 'ffmpeg',
+      },
       stt: {
         provider: 'whisper.cpp',
         executablePath: 'whisper-cli',
@@ -65,6 +70,7 @@ describe('local recognition config', () => {
   });
 
   it('honors environment overrides', () => {
+    process.env.CVN_FFMPEG_PATH = '/opt/ffmpeg';
     process.env.CVN_STT_PROVIDER = 'disabled';
     process.env.CVN_OCR_PROVIDER = 'disabled';
     process.env.CVN_WHISPER_CPP_PATH = '/opt/whisper-cli';
@@ -76,6 +82,9 @@ describe('local recognition config', () => {
     process.env.CVN_CLIP_ANALYSIS_CLOUD_FALLBACK = '1';
 
     expect(resolveLocalRecognitionConfig('中文')).toEqual({
+      ffmpeg: {
+        executablePath: '/opt/ffmpeg',
+      },
       stt: {
         provider: 'disabled',
         executablePath: '/opt/whisper-cli',

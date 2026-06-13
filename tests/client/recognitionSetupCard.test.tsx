@@ -129,7 +129,7 @@ describe('RecognitionSetupCard', () => {
     ['德语', 'Installationsbefehle anzeigen', 'Zum Bauen von whisper.cpp unter Windows werden außerdem Visual Studio Build Tools / die MSVC-C++-Toolchain benötigt.'],
     ['西班牙语', 'Ver comandos de instalación', 'Compilar whisper.cpp en Windows también requiere Visual Studio Build Tools / la cadena de herramientas C++ de MSVC.'],
     ['俄语', 'Показать команды установки', 'Для сборки whisper.cpp в Windows также требуются Visual Studio Build Tools / цепочка инструментов C++ MSVC.'],
-  ])('localizes the Windows Build Tools guide note for %s', async (language, showCommands, expectedSnippet) => {
+  ])('does not show the heavy Windows Build Tools note in default setup for %s', async (language, showCommands, hiddenSnippet) => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(settingsResponse(language));
 
     render(
@@ -140,10 +140,7 @@ describe('RecognitionSetupCard', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: showCommands }));
 
-    expect(screen.getAllByText((content) => content.includes(expectedSnippet)).length).toBeGreaterThan(0);
-    if (language !== '英语') {
-      expect(screen.queryByText(/Building whisper\.cpp on Windows also requires/)).not.toBeInTheDocument();
-    }
+    expect(screen.queryByText((content) => content.includes(hiddenSnippet))).not.toBeInTheDocument();
   });
 
   it('shows only the selected platform guide', () => {
@@ -157,8 +154,9 @@ describe('RecognitionSetupCard', () => {
 
     expect(screen.getByRole('button', { name: 'Windows native PowerShell' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Step 1 · Install base tools')).toBeInTheDocument();
-    expect(screen.getByText(/winget install --id Gyan\.FFmpeg/)).toBeInTheDocument();
-    expect(screen.getByText(/Microsoft\.VisualStudio\.2022\.BuildTools/)).toBeInTheDocument();
+    expect(screen.getByText(/api.github.com\/repos\/BtbN\/FFmpeg-Builds\/releases\/latest/)).toBeInTheDocument();
+    expect(screen.getByText(/tesseract-ocr-w64-setup/)).toBeInTheDocument();
+    expect(screen.queryByText(/Microsoft\.VisualStudio\.2022\.BuildTools/)).not.toBeInTheDocument();
     expect(screen.queryByText(/sudo apt-get install -y ffmpeg/)).not.toBeInTheDocument();
     expect(screen.queryByText(/brew install ffmpeg tesseract git cmake/)).not.toBeInTheDocument();
 
@@ -189,30 +187,52 @@ describe('RecognitionSetupCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
 
-    const windowsBlock = screen.getByText(/Add-Content -Encoding UTF8 \.env/).closest('.recognition-setup-command-block');
+    const commands = screen.getByText(/CVN_WHISPER_CPP_MODEL=/).closest('.recognition-setup-commands');
 
-    expect(windowsBlock).not.toBeNull();
-    expect(windowsBlock).toHaveTextContent(/\$AppRoot = \(Get-Location\)\.Path/);
-    expect(windowsBlock).toHaveTextContent(/\$WhisperRoot = Join-Path \$AppRoot "tools\\whisper\.cpp"/);
-    expect(windowsBlock).toHaveTextContent(/\$WhisperExe = Join-Path \$WhisperRoot "build\\bin\\Release\\whisper-cli\.exe"/);
-    expect(windowsBlock).toHaveTextContent(/\$ModelPath = Join-Path \$AppRoot "models\\ggml-small\.bin"/);
-    expect(windowsBlock).toHaveTextContent(/CVN_WHISPER_CPP_PATH=\$WhisperExe/);
-    expect(windowsBlock).toHaveTextContent(/CVN_WHISPER_CPP_MODEL=\$ModelPath/);
-    expect(windowsBlock).toHaveTextContent(/Add-Content -Encoding UTF8 \.env/);
-    expect(windowsBlock).not.toHaveTextContent('C:\\tools\\whisper.cpp');
-    expect(windowsBlock).not.toHaveTextContent('C:\\models\\ggml-small.bin');
-    expect(windowsBlock).not.toHaveTextContent('/absolute/path/to/ggml-small.bin');
+    expect(commands).not.toBeNull();
+    expect(commands).toHaveTextContent(/\$AppRoot = \(Get-Location\)\.Path/);
+    expect(commands).toHaveTextContent(/tools\\ffmpeg/);
+    expect(commands).toHaveTextContent(/tools\\tesseract/);
+    expect(commands).toHaveTextContent(/tools\\whisper\.cpp/);
+    expect(commands).toHaveTextContent(/models\\ggml-small\.bin/);
+    expect(commands).toHaveTextContent(/CVN_FFMPEG_PATH=\$FfmpegExe/);
+    expect(commands).toHaveTextContent(/CVN_TESSERACT_PATH=\$TesseractExe/);
+    expect(commands).toHaveTextContent(/CVN_WHISPER_CPP_PATH=\$WhisperExe/);
+    expect(commands).toHaveTextContent(/CVN_WHISPER_CPP_MODEL=\$ModelPath/);
+    expect(commands).toHaveTextContent(/Add-Content -Encoding UTF8 \.env/);
+    expect(commands).not.toHaveTextContent('C:\\tools\\whisper.cpp');
+    expect(commands).not.toHaveTextContent('C:\\models\\ggml-small.bin');
+    expect(commands).not.toHaveTextContent('/absolute/path/to/ggml-small.bin');
+  });
+
+  it('does not require Visual Studio Build Tools in the default Windows commands', () => {
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+
+    const commands = screen.getByText(/CVN_WHISPER_CPP_MODEL=/).closest('.recognition-setup-commands');
+
+    expect(commands).not.toBeNull();
+    expect(commands).toHaveTextContent(/whisper-bin-x64\.zip/);
+    expect(commands).toHaveTextContent(/api.github.com\/repos\/BtbN\/FFmpeg-Builds\/releases\/latest/);
+    expect(commands).toHaveTextContent(/tesseract-ocr-w64-setup/);
+    expect(commands).not.toHaveTextContent(/Microsoft\.VisualStudio\.2022\.BuildTools/);
+    expect(commands).not.toHaveTextContent(/cmake --build/);
   });
 
   it.each([
-    ['中文', '查看安装命令', '步骤 1 安装系统依赖，可以在任意目录运行。步骤 2–5 请先进入本 notebook 安装目录后再执行。'],
-    ['英语', 'View installation commands', 'Step 1 installs system dependencies and can run from any folder. Run steps 2–5 from this notebook install directory first.'],
-    ['日语', 'インストールコマンドを表示', 'ステップ 1 はシステム依存関係のインストールなので任意のフォルダーで実行できます。ステップ 2〜5 は先にこの notebook インストールディレクトリへ移動してから実行してください。'],
-    ['韩语', '설치 명령 보기', '1단계는 시스템 의존성 설치이므로 어느 폴더에서나 실행할 수 있습니다. 2–5단계는 먼저 이 notebook 설치 디렉터리로 이동한 뒤 실행하세요.'],
-    ['法语', 'Afficher les commandes d’installation', 'L’étape 1 installe des dépendances système et peut être exécutée depuis n’importe quel dossier. Exécutez les étapes 2 à 5 après être entré dans ce dossier d’installation du notebook.'],
-    ['德语', 'Installationsbefehle anzeigen', 'Schritt 1 installiert Systemabhängigkeiten und kann in jedem Ordner ausgeführt werden. Für Schritt 2–5 zuerst in diesen Notebook-Installationsordner wechseln.'],
-    ['西班牙语', 'Ver comandos de instalación', 'El paso 1 instala dependencias del sistema y puede ejecutarse desde cualquier carpeta. Ejecuta los pasos 2–5 después de entrar en este directorio de instalación del notebook.'],
-    ['俄语', 'Показать команды установки', 'Шаг 1 устанавливает системные зависимости и может запускаться из любой папки. Шаги 2–5 выполняйте после перехода в каталог установки этого notebook.'],
+    ['中文', '查看安装命令', '步骤 1 准备基础工具：Windows 会放到本 notebook 的 tools/，Linux / macOS 使用系统包管理器。步骤 2–5 请先进入本 notebook 安装目录后再执行。'],
+    ['英语', 'View installation commands', 'Step 1 prepares base tools: Windows stores them under this notebook’s tools/ folder; Linux / macOS use the system package manager. Run steps 2–5 from this notebook install directory first.'],
+    ['日语', 'インストールコマンドを表示', 'ステップ 1 は基本ツールを準備します。Windows ではこの notebook の tools/ に置き、Linux / macOS ではシステムのパッケージマネージャーを使います。ステップ 2〜5 は先にこの notebook インストールディレクトリへ移動してから実行してください。'],
+    ['韩语', '설치 명령 보기', '1단계는 기본 도구를 준비합니다. Windows는 이 notebook의 tools/ 폴더에 저장하고, Linux / macOS는 시스템 패키지 관리자를 사용합니다. 2–5단계는 먼저 이 notebook 설치 디렉터리로 이동한 뒤 실행하세요.'],
+    ['法语', 'Afficher les commandes d’installation', 'L’étape 1 prépare les outils de base : sous Windows ils sont placés dans tools/ de ce notebook ; Linux / macOS utilisent le gestionnaire de paquets système. Exécutez les étapes 2 à 5 après être entré dans ce dossier d’installation du notebook.'],
+    ['德语', 'Installationsbefehle anzeigen', 'Schritt 1 bereitet Basiswerkzeuge vor: Windows legt sie im tools/-Ordner dieses Notebooks ab; Linux / macOS nutzen den Systempaketmanager. Für Schritt 2–5 zuerst in diesen Notebook-Installationsordner wechseln.'],
+    ['西班牙语', 'Ver comandos de instalación', 'El paso 1 prepara herramientas base: en Windows se guardan en tools/ dentro de este notebook; Linux / macOS usan el gestor de paquetes del sistema. Ejecuta los pasos 2–5 después de entrar en este directorio de instalación del notebook.'],
+    ['俄语', 'Показать команды установки', 'Шаг 1 подготавливает базовые инструменты: в Windows они сохраняются в tools/ этого notebook; Linux / macOS используют системный менеджер пакетов. Шаги 2–5 выполняйте после перехода в каталог установки этого notebook.'],
   ])('localizes where each install step should run for %s', async (language, showCommands, expectedNote) => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(settingsResponse(language));
 
@@ -224,9 +244,9 @@ describe('RecognitionSetupCard', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: showCommands }));
 
-    expect(screen.getByText(expectedNote)).toBeInTheDocument();
+    expect(screen.getAllByText(expectedNote).length).toBeGreaterThan(0);
     if (language !== '英语') {
-      expect(screen.queryByText(/Step 1 installs system dependencies/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Step 1 prepares base tools/)).not.toBeInTheDocument();
     }
   });
 

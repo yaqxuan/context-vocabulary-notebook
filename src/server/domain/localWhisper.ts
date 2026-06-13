@@ -23,9 +23,10 @@ function none(message: string): TranscribeMediaResponseDto {
 export async function extractWavAudioWithFfmpeg(
   inputPath: string,
   outputPath: string,
+  executablePath = 'ffmpeg',
   runner: ExecFileRunner = defaultRunner,
 ): Promise<string> {
-  await runner('ffmpeg', [
+  await runner(executablePath, [
     '-y',
     '-i', inputPath,
     '-vn',

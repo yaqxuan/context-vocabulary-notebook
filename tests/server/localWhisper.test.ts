@@ -7,12 +7,12 @@ import {
 } from '../../src/server/domain/localWhisper.js';
 
 describe('local whisper.cpp transcription', () => {
-  it('extracts mono 16k wav audio with ffmpeg', async () => {
+  it('extracts mono 16k wav audio with configured ffmpeg', async () => {
     const runner = vi.fn(async () => ({ stdout: '', stderr: '' })) satisfies ExecFileRunner;
 
-    await expect(extractWavAudioWithFfmpeg('/tmp/input.mp4', '/tmp/audio.wav', runner)).resolves.toBe('/tmp/audio.wav');
+    await expect(extractWavAudioWithFfmpeg('/tmp/input.mp4', '/tmp/audio.wav', '/opt/ffmpeg', runner)).resolves.toBe('/tmp/audio.wav');
 
-    expect(runner).toHaveBeenCalledWith('ffmpeg', [
+    expect(runner).toHaveBeenCalledWith('/opt/ffmpeg', [
       '-y',
       '-i', '/tmp/input.mp4',
       '-vn',
