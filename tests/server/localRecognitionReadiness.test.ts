@@ -8,6 +8,9 @@ import type { LocalRecognitionConfig } from '../../src/server/domain/localRecogn
 
 function config(overrides: Partial<LocalRecognitionConfig> = {}): LocalRecognitionConfig {
   return {
+    ffmpeg: {
+      executablePath: '/bin/ffmpeg',
+    },
     stt: {
       provider: 'whisper.cpp',
       executablePath: '/bin/whisper-cli',
@@ -58,7 +61,7 @@ describe('local recognition readiness domain', () => {
         message: 'Tesseract language data eng is installed',
       },
     });
-    expect(runner).toHaveBeenCalledWith('ffmpeg', ['-version'], { timeout: 5000 });
+    expect(runner).toHaveBeenCalledWith('/bin/ffmpeg', ['-version'], { timeout: 5000 });
     expect(runner).toHaveBeenCalledWith('/bin/whisper-cli', ['--help'], { timeout: 5000 });
     expect(runner).toHaveBeenCalledWith('/bin/tesseract', ['--version'], { timeout: 5000 });
     expect(fsAccess.access).toHaveBeenCalledWith('/models/ggml.bin');
@@ -81,7 +84,7 @@ describe('local recognition readiness domain', () => {
       else process.env.CVN_LOCAL_READINESS_TIMEOUT_MS = previous;
     }
 
-    expect(runner).toHaveBeenCalledWith('ffmpeg', ['-version'], { timeout: 7500 });
+    expect(runner).toHaveBeenCalledWith('/bin/ffmpeg', ['-version'], { timeout: 7500 });
     expect(runner).toHaveBeenCalledWith('/bin/whisper-cli', ['--help'], { timeout: 7500 });
     expect(runner).toHaveBeenCalledWith('/bin/tesseract', ['--version'], { timeout: 7500 });
   });
@@ -103,7 +106,7 @@ describe('local recognition readiness domain', () => {
       else process.env.CVN_LOCAL_READINESS_TIMEOUT_MS = previous;
     }
 
-    expect(runner).toHaveBeenCalledWith('ffmpeg', ['-version'], { timeout: 5000 });
+    expect(runner).toHaveBeenCalledWith('/bin/ffmpeg', ['-version'], { timeout: 5000 });
   });
 
   it('reports a missing executable without doing recognition work', async () => {
@@ -257,7 +260,7 @@ describe('local recognition readiness domain', () => {
       message: 'Local OCR is disabled',
     });
     expect(runner).toHaveBeenCalledOnce();
-    expect(runner).toHaveBeenCalledWith('ffmpeg', ['-version'], { timeout: 5000 });
+    expect(runner).toHaveBeenCalledWith('/bin/ffmpeg', ['-version'], { timeout: 5000 });
   });
 });
 

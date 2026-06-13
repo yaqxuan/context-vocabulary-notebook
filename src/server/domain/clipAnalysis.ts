@@ -82,10 +82,10 @@ function stripJsonCodeFence(content: string): string {
   return fenced?.[1] ?? trimmed;
 }
 
-export async function extractSubtitleFramesWithFfmpeg(inputPath: string, outputDir: string): Promise<string[]> {
+export async function extractSubtitleFramesWithFfmpeg(inputPath: string, outputDir: string, executablePath = 'ffmpeg'): Promise<string[]> {
   await fs.mkdir(outputDir, { recursive: true });
   const outputPattern = path.join(outputDir, 'frame-%03d.jpg');
-  await execFileAsync('ffmpeg', [
+  await execFileAsync(executablePath, [
     '-y',
     '-i', inputPath,
     '-vf', 'fps=1/2,crop=iw:ih*0.35:0:ih*0.65,scale=1280:-1',
@@ -381,9 +381,10 @@ async function maybeUseCloudSttFallback(options: AnalyzeClipOptions, localStt: C
 }
 
 export async function analyzeClip(options: AnalyzeClipOptions): Promise<ClipAnalysisResponseDto> {
-  const frameExtractor = options.frameExtractor ?? extractSubtitleFramesWithFfmpeg;
+  const localConfig = resolveLocalRecognitionConfig(options.languages?.target_language);
+  const frameExtractor = options.frameExtractor ?? ((inputPath: string, outputDir: string) => extractSubtitleFramesWithFfmpeg(inputPath, outputDir, localConfig.ffmpeg.executablePath));
   const ocrProvider = options.ocr ?? defaultLocalOcrProvider(options.languages);
-  const audioExtractor = options.extractor ?? extractWavAudioWithFfmpeg;
+  const audioExtractor = options.extractor ?? ((inputPath: string, outputPath: string) => extractWavAudioWithFfmpeg(inputPath, outputPath, localConfig.ffmpeg.executablePath));
   const sttProvider = options.stt ?? defaultLocalSttProvider(options.languages);
   const ocrPromise = (async () => {
     let frames: string[] = [];

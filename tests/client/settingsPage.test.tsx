@@ -151,9 +151,13 @@ describe('SettingsPage', () => {
       expect(linuxButton).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'macOS' })).toBeInTheDocument();
       expect(screen.getByText('步骤 1 · 安装基础工具')).toBeInTheDocument();
-      expect(screen.getByText(/winget install --id Gyan\.FFmpeg/)).toBeInTheDocument();
-      expect(screen.getByText(/Microsoft\.VisualStudio\.2022\.BuildTools/)).toBeInTheDocument();
+      expect(screen.getByText(/api.github.com\/repos\/BtbN\/FFmpeg-Builds\/releases\/latest/)).toBeInTheDocument();
+      expect(screen.getByText(/tesseract-ocr-w64-setup/)).toBeInTheDocument();
+      expect(screen.getByText(/whisper-bin-x64\.zip/)).toBeInTheDocument();
+      expect(screen.queryByText(/Microsoft\.VisualStudio\.2022\.BuildTools/)).not.toBeInTheDocument();
       expect(screen.getByText(/Add-Content -Encoding UTF8 \.env/)).toBeInTheDocument();
+      expect(screen.getAllByText(/tools\\ffmpeg/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/tools\\tesseract/).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/tools\\whisper\.cpp/).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/models\\ggml-small\.bin/).length).toBeGreaterThan(0);
       expect(screen.queryByText(/C:\\tools\\whisper\.cpp/)).not.toBeInTheDocument();

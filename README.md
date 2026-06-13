@@ -334,6 +334,7 @@ CVN_LOCAL_READINESS_TIMEOUT_MS=5000
 | `PORT` | 否 | `3107` | 后端 Express 服务端口。Vite 开发服务会把 `/api` 代理到该端口。 |
 | `DATABASE_PATH` | 否 | `./data/context-vocabulary-notebook.sqlite` | SQLite 数据库路径。相对路径会按项目根目录解析。 |
 | `UPLOADS_DIR` | 否 | `./uploads` | 上传媒体文件保存目录。相对路径会按项目根目录解析。 |
+| `CVN_FFMPEG_PATH` | 否 | `ffmpeg` | ffmpeg 可执行文件路径；Windows 本地 tools 安装可填绝对路径。 |
 | `CVN_STT_PROVIDER` | 否 | `whisper.cpp` | 本地语音识别提供方；可设为 `whisper.cpp` 或 `disabled`。 |
 | `CVN_WHISPER_CPP_PATH` | 否 | `whisper-cli` | whisper.cpp 可执行文件路径；如果系统只有旧版 `main`，可填 `main` 或绝对路径。 |
 | `CVN_WHISPER_CPP_MODEL` | 本地 STT 需要 | 空 | Whisper 模型文件路径；安装脚本不会自动下载模型。 |

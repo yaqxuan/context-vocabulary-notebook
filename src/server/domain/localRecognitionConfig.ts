@@ -5,6 +5,9 @@ export type LocalSttProvider = 'whisper.cpp' | 'disabled';
 export type LocalOcrProvider = 'tesseract' | 'disabled';
 
 export interface LocalRecognitionConfig {
+  ffmpeg: {
+    executablePath: string;
+  };
   stt: {
     provider: LocalSttProvider;
     executablePath: string;
@@ -72,6 +75,9 @@ export function getTesseractLanguageCode(language?: SupportedLanguage): string {
 
 export function resolveLocalRecognitionConfig(targetLanguage?: SupportedLanguage): LocalRecognitionConfig {
   return {
+    ffmpeg: {
+      executablePath: readEnv('CVN_FFMPEG_PATH', 'CVN_FFMPEG_EXECUTABLE') || 'ffmpeg',
+    },
     stt: {
       provider: parseProvider(process.env.CVN_STT_PROVIDER, ['whisper.cpp', 'disabled'] as const, 'whisper.cpp'),
       executablePath: readEnv('CVN_WHISPER_CPP_PATH', 'CVN_WHISPER_CPP_EXECUTABLE') || 'whisper-cli',

@@ -121,7 +121,7 @@ export async function getLocalRecognitionReadiness(
   const fsAccess = options.fsAccess ?? defaultFsAccess;
   const config = (options.resolveConfig ?? resolveLocalRecognitionConfig)(targetLanguage);
 
-  const ffmpeg = await checkCommand('ffmpeg', 'ffmpeg', ['-version'], runner);
+  const ffmpeg = await checkCommand('ffmpeg', config.ffmpeg.executablePath, ['-version'], runner);
 
   const sttLanguage = config.stt.language;
   const sttModelWarning = modelWarning(targetLanguage, config.stt.modelPath);
