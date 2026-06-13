@@ -224,6 +224,43 @@ describe('RecognitionSetupCard', () => {
     expect(commands).not.toHaveTextContent(/cmake --build/);
   });
 
+  it('keeps each Windows step title matched to its command', () => {
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+
+    const step2 = screen.getByRole('heading', { name: 'Step 2 · Install whisper.cpp CLI' }).closest('.recognition-setup-guide-step');
+    const step4 = screen.getByRole('heading', { name: 'Step 4 · Write absolute paths to .env' }).closest('.recognition-setup-guide-step');
+
+    expect(step2).not.toBeNull();
+    expect(step2).toHaveTextContent(/whisper-bin-x64\.zip/);
+    expect(step2).not.toHaveTextContent(/CVN_FFMPEG_PATH/);
+    expect(step2).not.toHaveTextContent(/Add-Content -Encoding UTF8 \.env/);
+
+    expect(step4).not.toBeNull();
+    expect(step4).toHaveTextContent(/CVN_FFMPEG_PATH=\$FfmpegExe/);
+    expect(step4).toHaveTextContent(/Add-Content -Encoding UTF8 \.env/);
+    expect(step4).not.toHaveTextContent(/whisper-bin-x64\.zip/);
+  });
+
+  it('does not show stale Windows run-location wording', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(settingsResponse('中文'));
+
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '查看安装命令' }));
+
+    expect(screen.queryByText(/步骤 1 可在任意目录运行/)).not.toBeInTheDocument();
+  });
+
   it.each([
     ['中文', '查看安装命令', '步骤 1 准备基础工具：Windows 会放到本 notebook 的 tools/，Linux / macOS 使用系统包管理器。步骤 2–5 请先进入本 notebook 安装目录后再执行。'],
     ['英语', 'View installation commands', 'Step 1 prepares base tools: Windows stores them under this notebook’s tools/ folder; Linux / macOS use the system package manager. Run steps 2–5 from this notebook install directory first.'],

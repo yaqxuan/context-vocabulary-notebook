@@ -452,47 +452,6 @@ function copyFor(language: UiLanguage): RecognitionSetupCopy {
   return COPY_BY_LANGUAGE[language];
 }
 
-function runLocationNote(language: UiLanguage, platform: InstallPlatform): string {
-  if (language === '中文') {
-    if (platform === 'windows') return '步骤 1 可在任意目录运行；步骤 2–5 请在 notebook 安装目录（包含 package.json 和 .env）用 PowerShell 运行。';
-    if (platform === 'linux') return '步骤 1 可在任意目录运行；步骤 2–5 请先在终端进入 notebook 安装目录（包含 package.json 和 .env）。';
-    return '步骤 1 可在任意目录运行；步骤 2–5 请先在终端进入 notebook 安装目录（包含 package.json 和 .env）。';
-  }
-  if (language === '日语') {
-    if (platform === 'windows') return 'ステップ 1 は任意のフォルダーで実行できます。ステップ 2〜5 は package.json と .env がある notebook インストールディレクトリで PowerShell から実行してください。';
-    if (platform === 'linux') return 'ステップ 1 は任意のフォルダーで実行できます。ステップ 2〜5 はターミナルで package.json と .env がある notebook インストールディレクトリへ移動してから実行してください。';
-    return 'ステップ 1 は任意のフォルダーで実行できます。ステップ 2〜5 はターミナルで package.json と .env がある notebook インストールディレクトリへ移動してから実行してください。';
-  }
-  if (language === '韩语') {
-    if (platform === 'windows') return '1단계는 어느 폴더에서나 실행할 수 있습니다. 2–5단계는 package.json과 .env가 있는 notebook 설치 디렉터리에서 PowerShell로 실행하세요.';
-    if (platform === 'linux') return '1단계는 어느 폴더에서나 실행할 수 있습니다. 2–5단계는 터미널에서 package.json과 .env가 있는 notebook 설치 디렉터리로 이동한 뒤 실행하세요.';
-    return '1단계는 어느 폴더에서나 실행할 수 있습니다. 2–5단계는 터미널에서 package.json과 .env가 있는 notebook 설치 디렉터리로 이동한 뒤 실행하세요.';
-  }
-  if (language === '法语') {
-    if (platform === 'windows') return 'L’étape 1 peut être exécutée depuis n’importe quel dossier. Pour les étapes 2 à 5, utilisez PowerShell dans le dossier d’installation du notebook qui contient package.json et .env.';
-    if (platform === 'linux') return 'L’étape 1 peut être exécutée depuis n’importe quel dossier. Pour les étapes 2 à 5, ouvrez un terminal dans le dossier d’installation du notebook qui contient package.json et .env.';
-    return 'L’étape 1 peut être exécutée depuis n’importe quel dossier. Pour les étapes 2 à 5, ouvrez un terminal dans le dossier d’installation du notebook qui contient package.json et .env.';
-  }
-  if (language === '德语') {
-    if (platform === 'windows') return 'Schritt 1 kann in jedem Ordner ausgeführt werden. Schritt 2–5 in PowerShell im Notebook-Installationsordner mit package.json und .env ausführen.';
-    if (platform === 'linux') return 'Schritt 1 kann in jedem Ordner ausgeführt werden. Für Schritt 2–5 im Terminal in den Notebook-Installationsordner mit package.json und .env wechseln.';
-    return 'Schritt 1 kann in jedem Ordner ausgeführt werden. Für Schritt 2–5 im Terminal in den Notebook-Installationsordner mit package.json und .env wechseln.';
-  }
-  if (language === '西班牙语') {
-    if (platform === 'windows') return 'El paso 1 puede ejecutarse desde cualquier carpeta. Para los pasos 2–5, usa PowerShell dentro del directorio de instalación del notebook que contiene package.json y .env.';
-    if (platform === 'linux') return 'El paso 1 puede ejecutarse desde cualquier carpeta. Para los pasos 2–5, entra con la terminal en el directorio de instalación del notebook que contiene package.json y .env.';
-    return 'El paso 1 puede ejecutarse desde cualquier carpeta. Para los pasos 2–5, entra con la terminal en el directorio de instalación del notebook que contiene package.json y .env.';
-  }
-  if (language === '俄语') {
-    if (platform === 'windows') return 'Шаг 1 можно запускать из любой папки. Шаги 2–5 выполняйте в PowerShell из каталога установки notebook, где находятся package.json и .env.';
-    if (platform === 'linux') return 'Шаг 1 можно запускать из любой папки. Для шагов 2–5 перейдите в терминале в каталог установки notebook, где находятся package.json и .env.';
-    return 'Шаг 1 можно запускать из любой папки. Для шагов 2–5 перейдите в терминале в каталог установки notebook, где находятся package.json и .env.';
-  }
-  if (platform === 'windows') return 'Step 1 can run from any folder. Run steps 2–5 in PowerShell from the notebook install directory that contains package.json and .env.';
-  if (platform === 'linux') return 'Step 1 can run from any folder. For steps 2–5, open a terminal in the notebook install directory that contains package.json and .env.';
-  return 'Step 1 can run from any folder. For steps 2–5, open a terminal in the notebook install directory that contains package.json and .env.';
-}
-
 function statusLabel(ready: boolean, copy: RecognitionSetupCopy): string {
   return ready ? copy.ready : copy.needsConfig;
 }
@@ -737,7 +696,6 @@ export function RecognitionSetupCard({ targetLanguage, readiness, loading, error
               </button>
             ))}
           </div>
-          <p>{runLocationNote(language, selectedPlatform)}</p>
           {selectedGuide.steps.map((step) => (
             <section key={`${selectedPlatform}:${step.title}:${step.command ?? ''}`} className="recognition-setup-guide-step">
               <h4>{step.title}</h4>
