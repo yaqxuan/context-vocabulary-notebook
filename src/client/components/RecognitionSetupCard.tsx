@@ -24,7 +24,8 @@ interface InstallStep {
 interface PlatformGuide {
   platform: InstallPlatform;
   title: string;
-  steps: InstallStep[];
+  quickStep: InstallStep;
+  advancedSteps: InstallStep[];
 }
 
 const APT_TESSERACT_PACKAGES: Record<string, string> = {
@@ -71,6 +72,11 @@ interface RecognitionSetupCopy {
   stepDownloadModel: string;
   stepWriteEnv: string;
   stepVerifyRestart: string;
+  stepOneLineInstall: string;
+  oneLineInstallDescription: string;
+  showAdvancedCommands: string;
+  hideAdvancedCommands: string;
+  advancedCommandsDescription: string;
   modelDownloadNote: string;
   envPathNote: string;
   restartNote: string;
@@ -116,6 +122,11 @@ const ZH_COPY: RecognitionSetupCopy = {
   stepDownloadModel: '步骤 3 · 手动下载 Whisper 模型',
   stepWriteEnv: '步骤 4 · 写入 .env 绝对路径',
   stepVerifyRestart: '步骤 5 · 验证并重启',
+  stepOneLineInstall: '推荐 · 一键安装本地识别',
+  oneLineInstallDescription: '先进入本 notebook 安装目录，再复制这一行执行；脚本会把工具放到本 notebook 的 tools/ 和 models/，并安全更新 .env。',
+  showAdvancedCommands: '显示高级手动命令',
+  hideAdvancedCommands: '隐藏高级手动命令',
+  advancedCommandsDescription: '如果一键脚本失败，可展开查看分步手动命令。',
   modelDownloadNote: '手动下载多语言 base 或 small 模型到 ./models；非英语不要使用 *.en.bin。',
   envPathNote: '把当前 notebook 目录下的 whisper.cpp 和模型绝对路径写入 .env；移动 notebook 目录后需要重新生成这些路径。',
   restartNote: '验证二进制和模型后，重启应用并重新检测。',
@@ -161,6 +172,11 @@ const EN_COPY: RecognitionSetupCopy = {
   stepDownloadModel: 'Step 3 · Download Whisper model manually',
   stepWriteEnv: 'Step 4 · Write absolute paths to .env',
   stepVerifyRestart: 'Step 5 · Verify and restart',
+  stepOneLineInstall: 'Recommended · One-line local recognition install',
+  oneLineInstallDescription: 'Enter this notebook install directory first, then run this one line. The script stores tools in this notebook’s tools/ and models/ folders and safely updates .env.',
+  showAdvancedCommands: 'Show advanced manual commands',
+  hideAdvancedCommands: 'Hide advanced manual commands',
+  advancedCommandsDescription: 'If the one-line installer fails, expand these manual steps to install each dependency yourself.',
   modelDownloadNote: 'Manually download a multilingual base or small model into ./models; avoid *.en.bin for non-English audio.',
   envPathNote: 'Write absolute paths for whisper.cpp and the model under the current notebook directory into .env; regenerate them if you move the notebook directory.',
   restartNote: 'Verify binaries and model, then restart the app and check again.',
@@ -456,6 +472,10 @@ function statusLabel(ready: boolean, copy: RecognitionSetupCopy): string {
   return ready ? copy.ready : copy.needsConfig;
 }
 
+function safeTesseractLanguage(requiredLanguage: string): string {
+  return /^[A-Za-z0-9_]+(\+[A-Za-z0-9_]+)*$/.test(requiredLanguage) ? requiredLanguage : 'eng';
+}
+
 function tesseractLanguagePackages(requiredLanguage: string): string[] {
   return requiredLanguage
     .split('+')
@@ -469,12 +489,14 @@ function buildGuides(
   copy: RecognitionSetupCopy,
   languageLabel: string,
 ): Record<InstallPlatform, PlatformGuide> {
-  const requiredLanguage = readiness?.ocr?.requiredLanguage ?? readiness?.ocr?.language ?? 'eng';
+  const requiredLanguage = safeTesseractLanguage(readiness?.ocr?.requiredLanguage ?? readiness?.ocr?.language ?? 'eng');
   const aptPackages = tesseractLanguagePackages(requiredLanguage)
     .map((language) => `tesseract-ocr-${language}`)
     .join(' ');
   const windowsTessdataNote = copy.windowsTessdataNote(languageLabel, requiredLanguage);
   const macosTessdataNote = copy.macosTessdataNote(languageLabel, requiredLanguage);
+  const windowsOneLineInstaller = `$env:CVN_TESSERACT_LANG='${requiredLanguage}'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex`;
+  const unixOneLineInstaller = `curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition.sh | CVN_TESSERACT_LANG='${requiredLanguage}' bash`;
   const linuxBase = [
     'sudo apt-get update',
     `sudo apt-get install -y ffmpeg tesseract-ocr ${aptPackages} git cmake build-essential`,
@@ -594,7 +616,8 @@ function buildGuides(
     windows: {
       platform: 'windows',
       title: copy.platformWindows,
-      steps: [
+      quickStep: { title: copy.stepOneLineInstall, description: copy.oneLineInstallDescription, command: windowsOneLineInstaller },
+      advancedSteps: [
         { title: copy.stepInstallBaseTools, description: `${copy.installLocationNote} ${windowsTessdataNote}`, command: windowsBase },
         { title: copy.stepInstallWhisper, description: copy.installLocationNote, command: windowsWhisper },
         { title: copy.stepDownloadModel, description: copy.modelDownloadNote, command: windowsModel },
@@ -605,7 +628,8 @@ function buildGuides(
     linux: {
       platform: 'linux',
       title: copy.platformLinux,
-      steps: [
+      quickStep: { title: copy.stepOneLineInstall, description: copy.oneLineInstallDescription, command: unixOneLineInstaller },
+      advancedSteps: [
         { title: copy.stepInstallBaseTools, description: copy.installLocationNote, command: linuxBase },
         { title: copy.stepInstallWhisper, description: copy.installLocationNote, command: unixWhisper },
         { title: copy.stepDownloadModel, description: copy.modelDownloadNote, command: unixModel },
@@ -616,7 +640,8 @@ function buildGuides(
     macos: {
       platform: 'macos',
       title: copy.platformMacos,
-      steps: [
+      quickStep: { title: copy.stepOneLineInstall, description: copy.oneLineInstallDescription, command: unixOneLineInstaller },
+      advancedSteps: [
         { title: copy.stepInstallBaseTools, description: `${copy.installLocationNote} ${macosTessdataNote}`, command: 'brew install ffmpeg tesseract git cmake' },
         { title: copy.stepInstallWhisper, description: copy.installLocationNote, command: unixWhisper },
         { title: copy.stepDownloadModel, description: copy.modelDownloadNote, command: unixModel },
@@ -635,6 +660,7 @@ export function RecognitionSetupCard({ targetLanguage, readiness, loading, error
   const { language } = useI18n();
   const copy = copyFor(language);
   const [commandsOpen, setCommandsOpen] = useState(false);
+  const [advancedCommandsOpen, setAdvancedCommandsOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<InstallPlatform>('windows');
   const languageLabel = getNativeLanguageLabel(targetLanguage);
   const guides = useMemo(() => buildGuides(readiness, copy, languageLabel), [copy, readiness, languageLabel]);
@@ -642,6 +668,9 @@ export function RecognitionSetupCard({ targetLanguage, readiness, loading, error
   const sttReady = Boolean(readiness?.stt?.ready);
   const ocrReady = Boolean(readiness?.ocr?.ready);
   const ffmpegReady = Boolean(readiness?.ffmpeg?.ready);
+  const displayedRequiredLanguage = readiness?.ocr
+    ? safeTesseractLanguage(readiness.ocr.requiredLanguage ?? readiness.ocr.language ?? 'eng')
+    : copy.autoPackage;
 
   return (
     <section className="recognition-setup-card" aria-label={copy.ariaLabel(languageLabel)}>
@@ -671,7 +700,7 @@ export function RecognitionSetupCard({ targetLanguage, readiness, loading, error
           <strong>{copy.ocrTitle}</strong>
           <span>{statusLabel(ocrReady, copy)}</span>
           <small>{readiness?.ocr?.languageMessage ?? copy.ocrFallback(languageLabel)}</small>
-          <small>{copy.targetLanguagePackage}{readiness?.ocr?.requiredLanguage ?? readiness?.ocr?.language ?? copy.autoPackage}</small>
+          <small>{copy.targetLanguagePackage}{displayedRequiredLanguage}</small>
         </div>
       </div>
 
@@ -696,13 +725,34 @@ export function RecognitionSetupCard({ targetLanguage, readiness, loading, error
               </button>
             ))}
           </div>
-          {selectedGuide.steps.map((step) => (
-            <section key={`${selectedPlatform}:${step.title}:${step.command ?? ''}`} className="recognition-setup-guide-step">
-              <h4>{step.title}</h4>
-              <p>{step.description}</p>
-              {step.command ? <CommandBlock key={`${selectedPlatform}:${step.command}`} title={step.title} command={step.command} copy={copy} showTitle={false} /> : null}
-            </section>
-          ))}
+          <section className="recognition-setup-guide-step">
+            <h4>{selectedGuide.quickStep.title}</h4>
+            <p>{selectedGuide.quickStep.description}</p>
+            {selectedGuide.quickStep.command ? (
+              <CommandBlock
+                key={`${selectedPlatform}:quick:${selectedGuide.quickStep.command}`}
+                title={selectedGuide.quickStep.title}
+                command={selectedGuide.quickStep.command}
+                copy={copy}
+                showTitle={false}
+              />
+            ) : null}
+          </section>
+          <button type="button" onClick={() => setAdvancedCommandsOpen((open) => !open)}>
+            {advancedCommandsOpen ? copy.hideAdvancedCommands : copy.showAdvancedCommands}
+          </button>
+          {advancedCommandsOpen ? (
+            <div className="recognition-setup-advanced-commands">
+              <p>{copy.advancedCommandsDescription}</p>
+              {selectedGuide.advancedSteps.map((step) => (
+                <section key={`${selectedPlatform}:${step.title}:${step.command ?? ''}`} className="recognition-setup-guide-step">
+                  <h4>{step.title}</h4>
+                  <p>{step.description}</p>
+                  {step.command ? <CommandBlock key={`${selectedPlatform}:${step.command}`} title={step.title} command={step.command} copy={copy} showTitle={false} /> : null}
+                </section>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

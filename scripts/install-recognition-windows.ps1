@@ -1,0 +1,204 @@
+$ErrorActionPreference = "Stop"
+
+$ProjectName = "context-vocabulary-notebook"
+$ModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
+$TesseractInstallerUrl = "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe"
+$WhisperZipUrl = "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip"
+
+$AppRoot = (Get-Location).Path
+$ToolsRoot = Join-Path $AppRoot "tools"
+$ModelsRoot = Join-Path $AppRoot "models"
+$FfmpegRoot = Join-Path $ToolsRoot "ffmpeg"
+$TesseractRoot = Join-Path $ToolsRoot "tesseract"
+$TessdataRoot = Join-Path $TesseractRoot "tessdata"
+$WhisperRoot = Join-Path $ToolsRoot "whisper.cpp"
+$ModelPath = Join-Path $ModelsRoot "ggml-small.bin"
+$EnvPath = Join-Path $AppRoot ".env"
+$TesseractLang = if ($env:CVN_TESSERACT_LANG) { $env:CVN_TESSERACT_LANG } else { "eng" }
+
+function Write-Step($Message) {
+  Write-Host "`n[$(Get-Date -Format HH:mm:ss)] $Message"
+}
+
+function Assert-TesseractLang($Language) {
+  if ($Language -notmatch '^[A-Za-z0-9_]+(\+[A-Za-z0-9_]+)*$') {
+    throw "Invalid CVN_TESSERACT_LANG: use codes like eng, jpn, or eng+chi_sim."
+  }
+}
+
+function Test-ProjectDir($Path) {
+  $PackageJson = Join-Path $Path "package.json"
+  if (-not (Test-Path -LiteralPath $PackageJson -PathType Leaf)) {
+    return $false
+  }
+
+  $PackageContent = Get-Content -Raw -LiteralPath $PackageJson
+  return $PackageContent -match '"name"\s*:\s*"context-vocabulary-notebook"'
+}
+
+function Find-FirstFile($Root, $Filter) {
+  if (-not (Test-Path -LiteralPath $Root)) { return $null }
+  return Get-ChildItem -LiteralPath $Root -Recurse -Filter $Filter -File -ErrorAction SilentlyContinue | Select-Object -First 1
+}
+
+function Download-File($Uri, $OutFile) {
+  $OutDir = Split-Path -Parent $OutFile
+  [System.IO.Directory]::CreateDirectory($OutDir) | Out-Null
+  Invoke-WebRequest -Uri $Uri -OutFile $OutFile
+}
+
+function Get-TesseractLanguages {
+  return @($TesseractLang -split '\+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+}
+
+function Install-TesseractLanguages {
+  [System.IO.Directory]::CreateDirectory($TessdataRoot) | Out-Null
+  foreach ($Language in Get-TesseractLanguages) {
+    $TrainedData = Join-Path $TessdataRoot "$Language.traineddata"
+    if ((Test-Path -LiteralPath $TrainedData -PathType Leaf) -and ((Get-Item -LiteralPath $TrainedData).Length -gt 0)) {
+      Write-Step "Tesseract language data already exists at $TrainedData"
+      continue
+    }
+
+    Write-Step "Downloading Tesseract language data $Language into $TessdataRoot"
+    Download-File "https://raw.githubusercontent.com/tesseract-ocr/tessdata/main/$Language.traineddata" $TrainedData
+  }
+}
+
+function Set-EnvValue($Key, $Value) {
+  $Line = "$Key=$Value"
+  $Pattern = "^{0}=" -f [regex]::Escape($Key)
+  $Lines = @()
+  if (Test-Path -LiteralPath $EnvPath -PathType Leaf) {
+    $Lines = @(Get-Content -LiteralPath $EnvPath)
+  }
+
+  $NextLines = New-Object System.Collections.Generic.List[string]
+  $Wrote = $false
+  foreach ($ExistingLine in $Lines) {
+    if ($ExistingLine -match $Pattern) {
+      if (-not $Wrote) {
+        $NextLines.Add($Line)
+        $Wrote = $true
+      }
+      continue
+    }
+    $NextLines.Add($ExistingLine)
+  }
+
+  if (-not $Wrote) {
+    $NextLines.Add($Line)
+  }
+
+  Set-Content -LiteralPath $EnvPath -Encoding UTF8 -Value $NextLines
+}
+
+function Install-Ffmpeg {
+  $Existing = Find-FirstFile $FfmpegRoot "ffmpeg.exe"
+  if ($Existing) {
+    Write-Step "FFmpeg already installed at $($Existing.FullName)"
+    return $Existing.FullName
+  }
+
+  Write-Step "Downloading FFmpeg into $FfmpegRoot"
+  [System.IO.Directory]::CreateDirectory($FfmpegRoot) | Out-Null
+  $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest"
+  $Asset = $Release.assets | Where-Object { $_.name -match "win64-gpl\.zip$" -and $_.name -notmatch "shared" } | Select-Object -First 1
+  if (-not $Asset) { throw "Could not find a Windows x64 GPL FFmpeg zip in the latest BtbN release." }
+
+  $ZipPath = Join-Path $ToolsRoot "ffmpeg-win64-gpl.zip"
+  Download-File $Asset.browser_download_url $ZipPath
+  Expand-Archive -LiteralPath $ZipPath -DestinationPath $FfmpegRoot -Force
+
+  $Installed = Find-FirstFile $FfmpegRoot "ffmpeg.exe"
+  if (-not $Installed) { throw "ffmpeg.exe not found under $FfmpegRoot after extraction." }
+  return $Installed.FullName
+}
+
+function Install-Tesseract {
+  $TesseractExe = Join-Path $TesseractRoot "tesseract.exe"
+  if (Test-Path -LiteralPath $TesseractExe -PathType Leaf) {
+    Write-Step "Tesseract already installed at $TesseractExe"
+    return $TesseractExe
+  }
+
+  Write-Step "Installing Tesseract into $TesseractRoot"
+  [System.IO.Directory]::CreateDirectory($TesseractRoot) | Out-Null
+  $InstallerPath = Join-Path $ToolsRoot "tesseract-ocr-w64-setup-5.5.0.20241111.exe"
+  Download-File $TesseractInstallerUrl $InstallerPath
+  & $InstallerPath /S "/D=$TesseractRoot"
+  if ($LASTEXITCODE -ne 0) { throw "Tesseract installer failed with exit code $LASTEXITCODE" }
+  if (-not (Test-Path -LiteralPath $TesseractExe -PathType Leaf)) { throw "tesseract.exe not found under $TesseractRoot after install." }
+  return $TesseractExe
+}
+
+function Install-WhisperCpp {
+  $Existing = Find-FirstFile $WhisperRoot "whisper-cli.exe"
+  if ($Existing) {
+    Write-Step "whisper.cpp already installed at $($Existing.FullName)"
+    return $Existing.FullName
+  }
+
+  Write-Step "Downloading whisper.cpp CLI into $WhisperRoot"
+  [System.IO.Directory]::CreateDirectory($WhisperRoot) | Out-Null
+  $ZipPath = Join-Path $ToolsRoot "whisper-bin-x64.zip"
+  Download-File $WhisperZipUrl $ZipPath
+  Expand-Archive -LiteralPath $ZipPath -DestinationPath $WhisperRoot -Force
+
+  $Installed = Find-FirstFile $WhisperRoot "whisper-cli.exe"
+  if (-not $Installed) { throw "whisper-cli.exe not found under $WhisperRoot after extraction." }
+  return $Installed.FullName
+}
+
+function Install-Model {
+  if ((Test-Path -LiteralPath $ModelPath -PathType Leaf) -and ((Get-Item -LiteralPath $ModelPath).Length -gt 0)) {
+    Write-Step "Whisper model already exists at $ModelPath"
+    return
+  }
+
+  Write-Step "Downloading Whisper model into $ModelPath"
+  Download-File $ModelUrl $ModelPath
+}
+
+function Write-RecognitionEnv($FfmpegExe, $TesseractExe, $WhisperExe) {
+  Write-Step "Writing recognition settings to .env"
+  Set-EnvValue "CVN_FFMPEG_PATH" $FfmpegExe
+  Set-EnvValue "CVN_OCR_PROVIDER" "tesseract"
+  Set-EnvValue "CVN_TESSERACT_PATH" $TesseractExe
+  Set-EnvValue "CVN_TESSERACT_LANG" $TesseractLang
+  Set-EnvValue "CVN_TESSERACT_TIMEOUT_MS" "30000"
+  Set-EnvValue "CVN_STT_PROVIDER" "whisper.cpp"
+  Set-EnvValue "CVN_WHISPER_CPP_PATH" $WhisperExe
+  Set-EnvValue "CVN_WHISPER_CPP_MODEL" $ModelPath
+  Set-EnvValue "CVN_WHISPER_CPP_TIMEOUT_MS" "120000"
+}
+
+function Write-Verification($FfmpegExe, $TesseractExe, $WhisperExe) {
+  Write-Step "Verification"
+  & $FfmpegExe -version | Select-Object -First 1
+  & $TesseractExe --version | Select-Object -First 1
+  & $WhisperExe --help | Select-Object -First 1
+  if (-not (Test-Path -LiteralPath $ModelPath -PathType Leaf)) { throw "Whisper model not found at $ModelPath" }
+
+  Write-Host "FFmpeg: $FfmpegExe"
+  Write-Host "Tesseract: $TesseractExe"
+  Write-Host "whisper.cpp: $WhisperExe"
+  Write-Host "Whisper model: $ModelPath"
+  Write-Host "`nRestart the vocabulary notebook app, then click the local recognition check again."
+}
+
+if (-not (Test-ProjectDir $AppRoot)) {
+  throw "Run this installer from the context-vocabulary-notebook project directory; package.json must have name context-vocabulary-notebook."
+}
+Assert-TesseractLang $TesseractLang
+
+[System.IO.Directory]::CreateDirectory($ToolsRoot) | Out-Null
+[System.IO.Directory]::CreateDirectory($ModelsRoot) | Out-Null
+
+$FfmpegExe = Install-Ffmpeg
+$TesseractExe = Install-Tesseract
+Install-TesseractLanguages
+$WhisperExe = Install-WhisperCpp
+Install-Model
+Write-RecognitionEnv $FfmpegExe $TesseractExe $WhisperExe
+Write-Verification $FfmpegExe $TesseractExe $WhisperExe
