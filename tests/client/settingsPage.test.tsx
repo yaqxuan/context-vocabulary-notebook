@@ -150,6 +150,12 @@ describe('SettingsPage', () => {
       const linuxButton = screen.getByRole('button', { name: 'Linux / WSL' });
       expect(linuxButton).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'macOS' })).toBeInTheDocument();
+      expect(screen.getByText(`$env:CVN_TESSERACT_LANG='eng'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex`)).toBeInTheDocument();
+      expect(screen.queryByText('步骤 1 · 安装基础工具')).not.toBeInTheDocument();
+      expect(screen.queryByText(/whisper-bin-x64\.zip/)).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '显示高级手动命令' }));
+
       expect(screen.getByText('步骤 1 · 安装基础工具')).toBeInTheDocument();
       expect(screen.getByText(/api.github.com\/repos\/BtbN\/FFmpeg-Builds\/releases\/latest/)).toBeInTheDocument();
       expect(screen.getByText(/tesseract-ocr-w64-setup/)).toBeInTheDocument();
@@ -165,6 +171,7 @@ describe('SettingsPage', () => {
       fireEvent.click(linuxButton);
 
       expect(linuxButton).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText(`curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition.sh | CVN_TESSERACT_LANG='eng' bash`)).toBeInTheDocument();
       expect(screen.getByText(/sudo apt-get install -y ffmpeg/)).toBeInTheDocument();
       expect(screen.getAllByText(/tools\/whisper\.cpp/).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/models\/ggml-small\.bin/).length).toBeGreaterThan(0);

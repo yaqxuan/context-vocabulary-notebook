@@ -8,6 +8,8 @@ import { describe, expect, it } from 'vitest';
 const repoRoot = path.resolve(__dirname, '../..');
 const installScript = path.join(repoRoot, 'scripts/install.sh');
 const powerShellInstallScript = path.join(repoRoot, 'scripts/install.ps1');
+const recognitionInstallScript = path.join(repoRoot, 'scripts/install-recognition.sh');
+const powerShellRecognitionInstallScript = path.join(repoRoot, 'scripts/install-recognition-windows.ps1');
 const repoUrl = 'https://github.com/yaqxuan/context-vocabulary-notebook.git';
 
 function writeExecutable(filePath: string, content: string) {
@@ -38,6 +40,42 @@ exit 0
   return { binDir, logPath };
 }
 
+function createRecognitionTooling(tempRoot: string) {
+  const binDir = path.join(tempRoot, 'bin');
+  const logPath = path.join(tempRoot, 'recognition-commands.log');
+  fs.mkdirSync(binDir);
+
+  writeExecutable(path.join(binDir, 'git'), `#!/usr/bin/env bash
+printf 'git %s\\n' "$*" >> ${JSON.stringify(logPath)}
+if [ "$1" = "clone" ]; then target="$3"; mkdir -p "$target/.git"; exit 0; fi
+if [ "$1" = "-C" ] && [ "$3" = "pull" ]; then exit 0; fi
+exit 0
+`);
+  writeExecutable(path.join(binDir, 'cmake'), `#!/usr/bin/env bash
+printf 'cmake %s\\n' "$*" >> ${JSON.stringify(logPath)}
+if [ "$1" = "--build" ]; then mkdir -p "$2/bin"; printf '#!/usr/bin/env bash\\necho whisper.cpp help\\n' > "$2/bin/whisper-cli"; chmod +x "$2/bin/whisper-cli"; fi
+exit 0
+`);
+  writeExecutable(path.join(binDir, 'curl'), `#!/usr/bin/env bash
+printf 'curl %s\\n' "$*" >> ${JSON.stringify(logPath)}
+out=''
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "-o" ]; then shift; out="$1"; fi
+  shift || true
+done
+if [ -n "$out" ]; then mkdir -p "$(dirname "$out")"; printf 'model' > "$out"; fi
+exit 0
+`);
+  writeExecutable(path.join(binDir, 'ffmpeg'), `#!/usr/bin/env bash
+echo 'ffmpeg version stub'
+`);
+  writeExecutable(path.join(binDir, 'tesseract'), `#!/usr/bin/env bash
+echo 'tesseract 5.5.0'
+`);
+
+  return { binDir, logPath };
+}
+
 function runInstall(cwd: string, binDir: string, extraEnv: Record<string, string> = {}) {
   return execFileSync('bash', [installScript], {
     cwd,
@@ -51,8 +89,25 @@ function runInstall(cwd: string, binDir: string, extraEnv: Record<string, string
   }).toString();
 }
 
+function runRecognitionInstall(cwd: string, binDir: string, extraEnv: Record<string, string> = {}) {
+  return execFileSync('bash', [recognitionInstallScript], {
+    cwd,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH ?? ''}`,
+      CVN_SKIP_SYSTEM_PACKAGES: '1',
+      ...extraEnv,
+    },
+    stdio: 'pipe',
+  }).toString();
+}
+
 function readPowerShellInstallScript() {
   return fs.readFileSync(powerShellInstallScript, 'utf8');
+}
+
+function readPowerShellRecognitionInstallScript() {
+  return fs.readFileSync(powerShellRecognitionInstallScript, 'utf8');
 }
 
 function functionBody(script: string, name: string) {
@@ -117,6 +172,87 @@ describe('install.sh path selection', () => {
   });
 });
 
+describe('install-recognition.sh installer', () => {
+  it('refuses to install recognition tooling outside this project', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-recognition-'));
+    fs.writeFileSync(path.join(tempRoot, 'package.json'), '{"name":"other-project"}\n');
+    const { binDir } = createRecognitionTooling(tempRoot);
+
+    let output = '';
+    try {
+      runRecognitionInstall(tempRoot, binDir);
+    } catch (error) {
+      output = Buffer.concat([
+        (error as { stdout?: Buffer }).stdout ?? Buffer.from(''),
+        (error as { stderr?: Buffer }).stderr ?? Buffer.from(''),
+      ]).toString();
+    }
+
+    expect(output).toContain('context-vocabulary-notebook');
+    expect(output).toContain('package.json');
+  });
+
+  it('updates existing CVN recognition keys in .env instead of duplicating them', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-recognition-'));
+    fs.writeFileSync(path.join(tempRoot, 'package.json'), '{"name":"context-vocabulary-notebook"}\n');
+    fs.writeFileSync(path.join(tempRoot, '.env'), [
+      'PORT=3107',
+      'CVN_STT_PROVIDER=old',
+      'CVN_WHISPER_CPP_MODEL=/old/model.bin',
+      'OTHER_KEY=keep',
+      '',
+    ].join('\n'));
+    const { binDir } = createRecognitionTooling(tempRoot);
+
+    runRecognitionInstall(tempRoot, binDir, { CVN_TESSERACT_LANG: 'jpn' });
+    runRecognitionInstall(tempRoot, binDir, { CVN_TESSERACT_LANG: 'jpn' });
+
+    const envFile = fs.readFileSync(path.join(tempRoot, '.env'), 'utf8');
+    expect(envFile.match(/^CVN_STT_PROVIDER=/gm)).toHaveLength(1);
+    expect(envFile.match(/^CVN_TESSERACT_LANG=/gm)).toHaveLength(1);
+    expect(envFile.match(/^CVN_WHISPER_CPP_MODEL=/gm)).toHaveLength(1);
+    expect(envFile.match(/^CVN_WHISPER_CPP_PATH=/gm)).toHaveLength(1);
+    expect(envFile).toContain('PORT=3107');
+    expect(envFile).toContain('OTHER_KEY=keep');
+    expect(envFile).toContain('CVN_STT_PROVIDER=whisper.cpp');
+    expect(envFile).toContain('CVN_TESSERACT_LANG=jpn');
+    expect(envFile).toContain(`CVN_WHISPER_CPP_MODEL=${path.join(tempRoot, 'models', 'ggml-small.bin')}`);
+  });
+
+  it('rejects unsafe Tesseract language codes before installing recognition tools', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-recognition-'));
+    fs.writeFileSync(path.join(tempRoot, 'package.json'), '{"name":"context-vocabulary-notebook"}\n');
+    const { binDir, logPath } = createRecognitionTooling(tempRoot);
+
+    let output = '';
+    try {
+      runRecognitionInstall(tempRoot, binDir, { CVN_TESSERACT_LANG: 'jpn;rm -rf /' });
+    } catch (error) {
+      output = Buffer.concat([
+        (error as { stdout?: Buffer }).stdout ?? Buffer.from(''),
+        (error as { stderr?: Buffer }).stderr ?? Buffer.from(''),
+      ]).toString();
+    }
+
+    expect(output).toContain('Invalid CVN_TESSERACT_LANG');
+    expect(fs.existsSync(logPath)).toBe(false);
+  });
+
+  it('uses project-local tools and models paths for Unix recognition dependencies', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-recognition-'));
+    fs.writeFileSync(path.join(tempRoot, 'package.json'), '{"name":"context-vocabulary-notebook"}\n');
+    const { binDir, logPath } = createRecognitionTooling(tempRoot);
+
+    runRecognitionInstall(tempRoot, binDir);
+
+    const commands = fs.readFileSync(logPath, 'utf8');
+    expect(commands).toContain(`git clone https://github.com/ggerganov/whisper.cpp.git ${path.join(tempRoot, 'tools', 'whisper.cpp')}`);
+    expect(commands).toContain(`curl -L -o ${path.join(tempRoot, 'models', 'ggml-small.bin')}`);
+    expect(fs.existsSync(path.join(tempRoot, 'tools'))).toBe(true);
+    expect(fs.existsSync(path.join(tempRoot, 'models'))).toBe(true);
+  });
+});
+
 describe('README current behavior docs', () => {
   it('documents current local OCR/STT and AI suggestion behavior', () => {
     const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
@@ -136,6 +272,52 @@ describe('README current behavior docs', () => {
     expect(englishReadme).not.toContain('TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES');
     expect(envExample).toContain('CVN_WHISPER_CPP_MODEL');
     expect(envExample).toContain('CVN_TESSERACT_LANG');
+  });
+});
+
+describe('install-recognition-windows.ps1 safeguards', () => {
+  it('guards execution to this project directory', () => {
+    const script = readPowerShellRecognitionInstallScript();
+
+    expect(script).toContain('Test-ProjectDir');
+    expect(script).toContain('package.json');
+    expect(script).toContain('"name"\\s*:\\s*"context-vocabulary-notebook"');
+    expect(script).toContain('throw');
+  });
+
+  it('uses project-local tools and models paths', () => {
+    const script = readPowerShellRecognitionInstallScript();
+
+    expect(script).toContain('Join-Path $AppRoot "tools"');
+    expect(script).toContain('Join-Path $AppRoot "models"');
+    expect(script).toContain('ffmpeg');
+    expect(script).toContain('tesseract');
+    expect(script).toContain('whisper.cpp');
+    expect(script).toContain('ggml-small.bin');
+    expect(script).toContain('-LiteralPath');
+  });
+
+  it('updates .env CVN keys instead of blindly appending duplicates', () => {
+    const script = readPowerShellRecognitionInstallScript();
+
+    expect(script).toContain('Assert-TesseractLang');
+    expect(script).toContain('^[A-Za-z0-9_]+(\\+[A-Za-z0-9_]+)*$');
+    expect(script).toContain('Set-EnvValue');
+    expect(script).toContain('CVN_STT_PROVIDER');
+    expect(script).toContain('CVN_TESSERACT_LANG');
+    expect(script).toContain('traineddata');
+    expect(script).toContain('CVN_WHISPER_CPP_PATH');
+    expect(script).toContain('CVN_WHISPER_CPP_MODEL');
+    expect(script).not.toContain('Add-Content -Encoding UTF8 .env');
+  });
+
+  it('downloads recognition assets idempotently before verification', () => {
+    const script = readPowerShellRecognitionInstallScript();
+
+    expect(script).toContain('Test-Path');
+    expect(script).toContain('Invoke-WebRequest');
+    expect(script).toContain('Expand-Archive');
+    expect(script).toContain('Write-Verification');
   });
 });
 

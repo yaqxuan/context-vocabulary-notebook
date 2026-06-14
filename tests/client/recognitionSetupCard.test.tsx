@@ -66,6 +66,11 @@ describe('RecognitionSetupCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
     fireEvent.click(screen.getByRole('button', { name: 'Linux / WSL' }));
 
+    expect(screen.getByText(`curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition.sh | CVN_TESSERACT_LANG='jpn' bash`)).toBeInTheDocument();
+    expect(screen.queryByText(/sudo apt-get install -y ffmpeg tesseract-ocr tesseract-ocr-jpn/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show advanced manual commands' }));
+
     expect(screen.getByText(/sudo apt-get install -y ffmpeg tesseract-ocr tesseract-ocr-jpn/)).toBeInTheDocument();
     expect(screen.getByText(/cat >> \.env <<EOF/)).toBeInTheDocument();
     expect(screen.getByText(/CVN_WHISPER_CPP_PATH=\$WHISPER_ROOT\/build\/bin\/whisper-cli/)).toBeInTheDocument();
@@ -81,6 +86,9 @@ describe('RecognitionSetupCard', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+    expect(screen.queryByText(/Add-Content -Encoding UTF8 \.env/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show advanced manual commands' }));
 
     const windowsBlock = screen.getByText(/Add-Content -Encoding UTF8 \.env/).closest('.recognition-setup-command-block');
 
@@ -91,6 +99,49 @@ describe('RecognitionSetupCard', () => {
     expect(windowsBlock?.textContent).not.toContain('cat >> .env');
     expect(windowsBlock?.textContent).not.toContain('C:\\tools\\whisper.cpp');
     expect(windowsBlock?.textContent).not.toContain('C:\\models\\ggml-small.bin');
+  });
+
+  it('defaults each platform to a one-line recognition installer command', () => {
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={readiness()} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+
+    expect(screen.getByText(`$env:CVN_TESSERACT_LANG='jpn'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex`)).toBeInTheDocument();
+    expect(screen.queryByText(/whisper-bin-x64\.zip/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Linux / WSL' }));
+    expect(screen.getByText(`curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition.sh | CVN_TESSERACT_LANG='jpn' bash`)).toBeInTheDocument();
+    expect(screen.queryByText(/sudo apt-get install -y ffmpeg/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'macOS' }));
+    expect(screen.getByText(`curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition.sh | CVN_TESSERACT_LANG='jpn' bash`)).toBeInTheDocument();
+    expect(screen.queryByText(/brew install ffmpeg tesseract git cmake/)).not.toBeInTheDocument();
+  });
+
+  it('falls back to a safe OCR language code before rendering shell commands', () => {
+    const baseReadiness = readiness();
+    const unsafeReadiness = {
+      ...baseReadiness,
+      ocr: {
+        ...baseReadiness.ocr,
+        requiredLanguage: 'jpn"; Write-Host pwned; #',
+      },
+    };
+
+    render(
+      <I18nProvider>
+        <RecognitionSetupCard targetLanguage="英语" readiness={unsafeReadiness} loading={false} error="" onRefresh={() => undefined} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+
+    expect(screen.getByText(/CVN_TESSERACT_LANG='eng'/)).toBeInTheDocument();
+    expect(screen.queryByText(/pwned/)).not.toBeInTheDocument();
   });
 
   it('uses the localized auto package fallback before Chinese readiness loads', async () => {
@@ -153,12 +204,17 @@ describe('RecognitionSetupCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
 
     expect(screen.getByRole('button', { name: 'Windows native PowerShell' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/install-recognition-windows\.ps1/)).toBeInTheDocument();
+    expect(screen.queryByText(/api.github.com\/repos\/BtbN\/FFmpeg-Builds\/releases\/latest/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sudo apt-get install -y ffmpeg/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/brew install ffmpeg tesseract git cmake/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show advanced manual commands' }));
+
     expect(screen.getByText('Step 1 · Install base tools')).toBeInTheDocument();
     expect(screen.getByText(/api.github.com\/repos\/BtbN\/FFmpeg-Builds\/releases\/latest/)).toBeInTheDocument();
     expect(screen.getByText(/tesseract-ocr-w64-setup/)).toBeInTheDocument();
     expect(screen.queryByText(/Microsoft\.VisualStudio\.2022\.BuildTools/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/sudo apt-get install -y ffmpeg/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/brew install ffmpeg tesseract git cmake/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Linux / WSL' }));
 
@@ -186,6 +242,9 @@ describe('RecognitionSetupCard', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+    expect(screen.queryByText(/CVN_WHISPER_CPP_MODEL=/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show advanced manual commands' }));
 
     const commands = screen.getByText(/CVN_WHISPER_CPP_MODEL=/).closest('.recognition-setup-commands');
 
@@ -214,14 +273,20 @@ describe('RecognitionSetupCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
 
-    const commands = screen.getByText(/CVN_WHISPER_CPP_MODEL=/).closest('.recognition-setup-commands');
+    const commands = screen.getByText(/install-recognition-windows\.ps1/).closest('.recognition-setup-commands');
 
     expect(commands).not.toBeNull();
+    expect(commands).toHaveTextContent(/install-recognition-windows\.ps1/);
+    expect(commands).not.toHaveTextContent(/Microsoft\.VisualStudio\.2022\.BuildTools/);
+    expect(commands).not.toHaveTextContent(/cmake --build/);
+    expect(commands).not.toHaveTextContent(/whisper-bin-x64\.zip/);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show advanced manual commands' }));
+
     expect(commands).toHaveTextContent(/whisper-bin-x64\.zip/);
     expect(commands).toHaveTextContent(/api.github.com\/repos\/BtbN\/FFmpeg-Builds\/releases\/latest/);
     expect(commands).toHaveTextContent(/tesseract-ocr-w64-setup/);
     expect(commands).not.toHaveTextContent(/Microsoft\.VisualStudio\.2022\.BuildTools/);
-    expect(commands).not.toHaveTextContent(/cmake --build/);
   });
 
   it('keeps each Windows step title matched to its command', () => {
@@ -232,6 +297,7 @@ describe('RecognitionSetupCard', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'View installation commands' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show advanced manual commands' }));
 
     const step2 = screen.getByRole('heading', { name: 'Step 2 · Install whisper.cpp CLI' }).closest('.recognition-setup-guide-step');
     const step4 = screen.getByRole('heading', { name: 'Step 4 · Write absolute paths to .env' }).closest('.recognition-setup-guide-step');
