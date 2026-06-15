@@ -122,20 +122,22 @@ function Install-Ffmpeg {
 }
 
 function Install-Tesseract {
-  $TesseractExe = Join-Path $TesseractRoot "tesseract.exe"
-  if (Test-Path -LiteralPath $TesseractExe -PathType Leaf) {
-    Write-Step "Tesseract already installed at $TesseractExe"
-    return $TesseractExe
+  $Existing = Find-FirstFile $TesseractRoot "tesseract.exe"
+  if ($Existing) {
+    Write-Step "Tesseract already installed at $($Existing.FullName)"
+    return $Existing.FullName
   }
 
   Write-Step "Installing Tesseract into $TesseractRoot"
   [System.IO.Directory]::CreateDirectory($TesseractRoot) | Out-Null
   $InstallerPath = Join-Path $ToolsRoot "tesseract-ocr-w64-setup-5.5.0.20241111.exe"
+  $TesseractInstallDirArg = "/D=$TesseractRoot"
   Download-File $TesseractInstallerUrl $InstallerPath
-  & $InstallerPath /S "/D=$TesseractRoot"
+  & $InstallerPath /S $TesseractInstallDirArg
   if ($LASTEXITCODE -ne 0) { throw "Tesseract installer failed with exit code $LASTEXITCODE" }
-  if (-not (Test-Path -LiteralPath $TesseractExe -PathType Leaf)) { throw "tesseract.exe not found under $TesseractRoot after install." }
-  return $TesseractExe
+  $Installed = Find-FirstFile $TesseractRoot "tesseract.exe"
+  if (-not $Installed) { throw "tesseract.exe not found under $TesseractRoot after install." }
+  return $Installed.FullName
 }
 
 function Install-WhisperCpp {
