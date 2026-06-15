@@ -3,6 +3,8 @@ $ErrorActionPreference = "Stop"
 $ProjectName = "context-vocabulary-notebook"
 $ModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
 $TesseractInstallerUrl = "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe"
+$FfmpegZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-06-14-13-33/ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip"
+$FfmpegZipSha256 = "9bf9423be2096818d950b05748b50538a9013913ee8e26813b66172eea9b4015"
 $WhisperZipUrl = "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip"
 
 $AppRoot = (Get-Location).Path
@@ -45,6 +47,13 @@ function Download-File($Uri, $OutFile) {
   $OutDir = Split-Path -Parent $OutFile
   [System.IO.Directory]::CreateDirectory($OutDir) | Out-Null
   Invoke-WebRequest -Uri $Uri -OutFile $OutFile
+}
+
+function Assert-FileSha256($Path, $ExpectedHash) {
+  $ActualHash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($ActualHash -ne $ExpectedHash.ToLowerInvariant()) {
+    throw "SHA-256 mismatch for $Path. Expected $ExpectedHash, got $ActualHash."
+  }
 }
 
 function Get-TesseractLanguages {
@@ -102,12 +111,9 @@ function Install-Ffmpeg {
 
   Write-Step "Downloading FFmpeg into $FfmpegRoot"
   [System.IO.Directory]::CreateDirectory($FfmpegRoot) | Out-Null
-  $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest"
-  $Asset = $Release.assets | Where-Object { $_.name -match "win64-gpl\.zip$" -and $_.name -notmatch "shared" } | Select-Object -First 1
-  if (-not $Asset) { throw "Could not find a Windows x64 GPL FFmpeg zip in the latest BtbN release." }
-
-  $ZipPath = Join-Path $ToolsRoot "ffmpeg-win64-gpl.zip"
-  Download-File $Asset.browser_download_url $ZipPath
+  $ZipPath = Join-Path $ToolsRoot "ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip"
+  Download-File $FfmpegZipUrl $ZipPath
+  Assert-FileSha256 $ZipPath $FfmpegZipSha256
   Expand-Archive -LiteralPath $ZipPath -DestinationPath $FfmpegRoot -Force
 
   $Installed = Find-FirstFile $FfmpegRoot "ffmpeg.exe"

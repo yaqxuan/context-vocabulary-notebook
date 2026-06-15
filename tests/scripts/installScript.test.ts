@@ -311,6 +311,20 @@ describe('install-recognition-windows.ps1 safeguards', () => {
     expect(script).not.toContain('Add-Content -Encoding UTF8 .env');
   });
 
+  it('downloads FFmpeg from a pinned direct release asset and verifies its hash', () => {
+    const script = readPowerShellRecognitionInstallScript();
+
+    expect(script).not.toContain('api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest');
+    expect(script).not.toContain('Invoke-RestMethod');
+    expect(script).not.toContain('releases/download/latest');
+    expect(script).toContain('$FfmpegZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-06-14-13-33/ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip"');
+    expect(script).toContain('$FfmpegZipSha256 = "9bf9423be2096818d950b05748b50538a9013913ee8e26813b66172eea9b4015"');
+    expect(script).toContain('Download-File $FfmpegZipUrl $ZipPath');
+    expect(script).toContain('Assert-FileSha256 $ZipPath $FfmpegZipSha256');
+    expect(script).toContain('Get-FileHash -LiteralPath $Path -Algorithm SHA256');
+    expect(script).toContain('ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip');
+  });
+
   it('downloads recognition assets idempotently before verification', () => {
     const script = readPowerShellRecognitionInstallScript();
 
