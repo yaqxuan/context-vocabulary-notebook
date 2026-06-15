@@ -325,6 +325,20 @@ describe('install-recognition-windows.ps1 safeguards', () => {
     expect(script).toContain('ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip');
   });
 
+  it('runs the Tesseract silent installer with an unquoted final /D argument and discovers the installed exe', () => {
+    const script = readPowerShellRecognitionInstallScript();
+    const start = script.indexOf('function Install-Tesseract {');
+    const nextFunction = script.indexOf('\nfunction ', start + 1);
+    const installTesseract = script.slice(start, nextFunction);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(installTesseract).toContain('$TesseractInstallDirArg = "/D=$TesseractRoot"');
+    expect(installTesseract).toContain('& $InstallerPath /S $TesseractInstallDirArg');
+    expect(installTesseract).not.toContain('& $InstallerPath /S "/D=$TesseractRoot"');
+    expect(installTesseract).toContain('$Installed = Find-FirstFile $TesseractRoot "tesseract.exe"');
+    expect(installTesseract).toContain('return $Installed.FullName');
+  });
+
   it('downloads recognition assets idempotently before verification', () => {
     const script = readPowerShellRecognitionInstallScript();
 
