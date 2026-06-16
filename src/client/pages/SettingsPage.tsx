@@ -803,10 +803,10 @@ function SettingsReady({ initial }: { initial: SettingsDto }) {
 
   return (
     <div className="phase7-settings-shell">
-      <SettingsForm initial={current} onSaved={setCurrent} />
-      <AiConfigSection />
-      <ExportSection />
-      <ImportSection />
+        <SettingsForm initial={current} onSaved={setCurrent} />
+        <AiConfigSection />
+        <ExportSection />
+        <ImportSection />
     </div>
   );
 }

@@ -20,6 +20,6 @@ test('keeps the desktop sidebar contained and scrollable on short screens', asyn
     element.scrollTop = element.scrollHeight;
   });
 
-  const statsLink = page.getByRole('link', { name: /统计/ });
+  const statsLink = page.getByRole('link', { name: /统计|Statistics/ });
   await expect(statsLink).toBeInViewport();
 });
