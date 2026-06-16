@@ -127,9 +127,9 @@ export function CardDetailPage() {
 
   return (
     <section className="phase6-detail">
-        <div className="phase6-detail-summary">
-          <div className="phase6-detail-title-stack" data-testid="detail-title-stack">
-            <h2>{card.target_word}</h2>
+      <div className="phase6-detail-summary">
+        <div className="phase6-detail-title-stack" data-testid="detail-title-stack">
+          <h2>{card.target_word}</h2>
           {editingMeaning ? (
             <div className="phase6-inline-editor">
               <label htmlFor="detail-meaning-edit">{t('create.meaning')}</label>
@@ -231,7 +231,7 @@ export function CardDetailPage() {
           setError(err instanceof Error ? err.message : t('detail.deleteCardFailed'));
         }
       }} /> : null}
-        {confirmDelete && confirmDelete !== 'card' ? <ConfirmDialog title={t('detail.deleteContextTitle')} message={t('detail.deleteContextMessage')} confirmLabel={t('common.delete')} onCancel={() => setConfirmDelete(null)} onConfirm={() => runAndReload(() => deleteContext(confirmDelete.id)).then(() => setConfirmDelete(null))} /> : null}
+      {confirmDelete && confirmDelete !== 'card' ? <ConfirmDialog title={t('detail.deleteContextTitle')} message={t('detail.deleteContextMessage')} confirmLabel={t('common.delete')} onCancel={() => setConfirmDelete(null)} onConfirm={() => runAndReload(() => deleteContext(confirmDelete.id)).then(() => setConfirmDelete(null))} /> : null}
     </section>
   );
 }

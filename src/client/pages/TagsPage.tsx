@@ -47,10 +47,10 @@ export function TagsPage() {
   if (loading) return <LoadingState message={t('tags.loading')} />;
 
   return (
-    <section className="phase6-tags" aria-label={t('nav.tags.title')}>
-        {error ? <ErrorState message={error} onRetry={load} /> : null}
+    <section className="phase6-tags">
+      {error ? <ErrorState message={error} onRetry={load} /> : null}
 
-        <div className="phase6-tags-board">
+      <div className="phase6-tags-board">
         <div className="phase6-tag-editor">
           <div className="phase6-tag-editor-copy">
             <strong>{editing ? t('tags.editTag') : t('tags.newTag')}</strong>
@@ -86,16 +86,16 @@ export function TagsPage() {
         </div>
       </div>
 
-        {deleteTarget ? <ConfirmDialog title={t('tags.deleteTitle')} message={t('tags.deleteMessage', { name: deleteTarget.name })} confirmLabel={t('common.delete')} onCancel={() => setDeleteTarget(null)} onConfirm={async () => {
-          try {
-            await deleteTag(deleteTarget.id);
-            setDeleteTarget(null);
-            load();
-          } catch (err) {
-            setDeleteTarget(null);
-            setError(err instanceof Error ? err.message : t('tags.deleteFailed'));
-          }
-        }} /> : null}
+      {deleteTarget ? <ConfirmDialog title={t('tags.deleteTitle')} message={t('tags.deleteMessage', { name: deleteTarget.name })} confirmLabel={t('common.delete')} onCancel={() => setDeleteTarget(null)} onConfirm={async () => {
+        try {
+          await deleteTag(deleteTarget.id);
+          setDeleteTarget(null);
+          load();
+        } catch (err) {
+          setDeleteTarget(null);
+          setError(err instanceof Error ? err.message : t('tags.deleteFailed'));
+        }
+      }} /> : null}
     </section>
   );
 }

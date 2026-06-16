@@ -87,7 +87,7 @@ describe('BatchClipImportPage', () => {
   it('queues only MP4 files and reports non-MP4 files', async () => {
     renderPage();
 
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), {
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), {
       target: { files: [file('one.mp4', 'video/mp4'), file('bad.mov', 'video/quicktime')] },
     });
 
@@ -124,10 +124,10 @@ describe('BatchClipImportPage', () => {
     });
 
     renderPage();
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), {
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), {
       target: { files: [file('ok.mp4', 'video/mp4'), file('bad.mp4', 'video/mp4')] },
     });
-    fireEvent.click(await screen.findByRole('button', { name: '全部分析' }));
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
 
     await waitFor(() => expect(analysisBodies).toHaveLength(2));
     expect((analysisBodies[0].get('file') as File).name).toBe('ok.mp4');
@@ -168,8 +168,8 @@ describe('BatchClipImportPage', () => {
     });
 
     renderPage();
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '全部分析' }));
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
 
     fireEvent.click(await screen.findByRole('button', { name: 'charge · B1' }));
     fireEvent.click(screen.getByRole('button', { name: 'extra · A2' }));
@@ -217,8 +217,8 @@ describe('BatchClipImportPage', () => {
     });
 
     renderPage();
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '全部分析' }));
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
 
     fireEvent.click(await screen.findByRole('button', { name: 'presented · B1' }));
     await waitFor(() => expect(lemmaResolvers).toHaveLength(1));
@@ -256,8 +256,8 @@ describe('BatchClipImportPage', () => {
     });
 
     renderPage();
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), { target: { files: [file('one.mp4', 'video/mp4'), file('two.mp4', 'video/mp4')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '全部分析' }));
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('one.mp4', 'video/mp4'), file('two.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
 
     await waitFor(() => expect(analysisCalls).toEqual(['one.mp4']));
     fireEvent.click(screen.getByRole('button', { name: '移除 two.mp4' }));
@@ -302,8 +302,8 @@ describe('BatchClipImportPage', () => {
     });
 
     renderPage();
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), { target: { files: [file('one.mp4', 'video/mp4'), file('two.mp4', 'video/mp4')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '全部分析' }));
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('one.mp4', 'video/mp4'), file('two.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
 
     await waitFor(() => expect(analysisBodies).toHaveLength(2));
     expect(await screen.findByDisplayValue('one.mp4 sentence.')).toBeInTheDocument();
@@ -327,8 +327,8 @@ describe('BatchClipImportPage', () => {
     });
 
     renderPage();
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '全部分析' }));
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
 
     expect(await screen.findByDisplayValue('They charge extra.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'charge · B1' }));
@@ -360,8 +360,8 @@ describe('BatchClipImportPage', () => {
     });
 
     renderPage();
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '全部分析' }));
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
     fireEvent.click(await screen.findByRole('button', { name: 'presented · B1' }));
 
     expect(await screen.findByDisplayValue('present')).toBeInTheDocument();
@@ -414,8 +414,8 @@ describe('BatchClipImportPage', () => {
 
     renderPage();
     await screen.findByLabelText('本地识别状态');
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '全部分析' }));
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
     expect(await screen.findByRole('button', { name: /charge/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /AI 建议释义/ })).not.toBeInTheDocument();
 
@@ -445,7 +445,7 @@ describe('BatchClipImportPage', () => {
   it('removes a queued clip from the local batch list when remove is clicked', async () => {
     renderPage();
 
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
 
     expect(await screen.findByText('clip.mp4')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '移除 clip.mp4' }));
@@ -488,8 +488,8 @@ describe('BatchClipImportPage', () => {
     });
 
     renderPage();
-    fireEvent.change(await screen.findByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
-    fireEvent.click(await screen.findByRole('button', { name: '全部分析' }));
+    fireEvent.change(screen.getByLabelText('批量选择 MP4 视频'), { target: { files: [file('clip.mp4', 'video/mp4')] } });
+    fireEvent.click(screen.getByRole('button', { name: '全部分析' }));
     fireEvent.click(await screen.findByRole('button', { name: 'charge · B1' }));
     await screen.findByDisplayValue('charge');
     fireEvent.change(screen.getByLabelText('当前语境释义 clip.mp4'), { target: { value: '收费' } });

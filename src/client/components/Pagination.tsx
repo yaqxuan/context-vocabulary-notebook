@@ -19,14 +19,14 @@ export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChan
   const summary = t('pagination.summary', { page, totalPages, total });
 
   return (
-    <div className="vn-pagination flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
       <span>{summary}</span>
       <div className="flex items-center gap-2">
         <label className="flex items-center gap-2">
           <span>{t('pagination.pageSize')}</span>
           <select
             aria-label={t('pagination.pageSize')}
-            className="vn-pagination-select rounded-md px-2 py-1"
+            className="rounded-md border border-slate-300 bg-white px-2 py-1"
             value={pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value) as PageSize)}
           >

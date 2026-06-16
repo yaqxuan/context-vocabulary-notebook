@@ -487,16 +487,16 @@ export function ReviewPage() {
   if (state.kind === 'error') return <ErrorState message={state.message} onRetry={load} />;
   if (state.kind === 'empty') return (
     <div className="phase7-review-shell">
-        {lastRating ? (
-          <p className="phase7-review-success">{t('review.recorded', { rating: lastRating === 'good' ? 'Good' : 'Again' })}</p>
-        ) : null}
-        <EmptyState message={t('review.empty')} action={
-          <>
-            <a href="#/">{t('review.backHome')}</a>
-            <a href="#/cards">{t('review.viewAllCards')}</a>
-          </>
-        } />
-        <ProgressLabel progress={state.progress} />
+      {lastRating ? (
+        <p className="phase7-review-success">{t('review.recorded', { rating: lastRating === 'good' ? 'Good' : 'Again' })}</p>
+      ) : null}
+      <EmptyState message={t('review.empty')} action={
+        <>
+          <a href="#/">{t('review.backHome')}</a>
+          <a href="#/cards">{t('review.viewAllCards')}</a>
+        </>
+      } />
+      <ProgressLabel progress={state.progress} />
     </div>
   );
 
@@ -504,26 +504,26 @@ export function ReviewPage() {
 
   return (
     <div className="phase7-review-shell">
-        {showLimitBanner ? (
-          <LimitReminder
-            onEnd={() => setLimitDismissed(true)}
-            onContinue={() => setLimitDismissed(true)}
-          />
-        ) : null}
-        <ReviewCard
-          card={state.card}
-          progress={state.progress}
-          submitting={submitting}
-          submitError={submitError}
-          pendingRating={pendingRating}
-          pendingRequiresConfirm={pendingRequiresConfirm}
-          lastRating={lastRating}
-          onChooseRating={handleChooseRating}
-          onConfirmRating={handleConfirmRating}
-          onToggleFavorite={handleToggleFavorite}
-          onMarkMastered={handleMarkMastered}
-          onNext={handleNext}
+      {showLimitBanner ? (
+        <LimitReminder
+          onEnd={() => setLimitDismissed(true)}
+          onContinue={() => setLimitDismissed(true)}
         />
+      ) : null}
+      <ReviewCard
+        card={state.card}
+        progress={state.progress}
+        submitting={submitting}
+        submitError={submitError}
+        pendingRating={pendingRating}
+        pendingRequiresConfirm={pendingRequiresConfirm}
+        lastRating={lastRating}
+        onChooseRating={handleChooseRating}
+        onConfirmRating={handleConfirmRating}
+        onToggleFavorite={handleToggleFavorite}
+        onMarkMastered={handleMarkMastered}
+        onNext={handleNext}
+      />
     </div>
   );
 }

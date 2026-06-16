@@ -90,7 +90,7 @@ export function CardCatalogue(props: CardCatalogueProps) {
 
   return (
     <section className="phase6-catalogue" aria-label={title}>
-        <div className="phase6-filter-desk">
+      <div className="phase6-filter-desk">
         <label>
           <span>{t('catalogue.search')}</span>
           <input
