@@ -52,6 +52,7 @@ function getHomeLanguages(settings: SettingsDto | null): HomeLanguageSettings {
 function StatCard({ label, value }: StatCardProps) {
   return (
     <div className="home-metric">
+      <i className="home-metric-gem" aria-hidden="true" />
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
@@ -130,19 +131,36 @@ function HomeGreetingLine({ greeting, language }: { greeting: GreetingSelection;
 }
 
 function HomeHero({ greeting, languages }: { greeting: GreetingSelection; languages: HomeLanguageSettings }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
+  const singleLineTitle = ['中文', '英语', '日语', '韩语', '法语'].includes(language);
   return (
     <section className="home-hero" aria-label={t('home.heroAria')}>
-      <div>
-        <h2 className="home-welcome">{t('home.welcome')}</h2>
+      <div className="home-hero-copy">
+        <h2 className={`home-welcome${singleLineTitle ? ' home-welcome--single-line' : ''}`}>{t('home.welcome')}</h2>
         <div className="home-greeting-stack">
           <div className="home-greeting-languages" aria-label={`${t('create.targetLanguage')}: ${getNativeLanguageLabel(languages.target)}; ${t('create.definitionLanguage')}: ${getNativeLanguageLabel(languages.definition)}`}>
             <HomeLanguageBadge label={t('create.targetLanguage')} language={languages.target} />
             <HomeLanguageBadge label={t('create.definitionLanguage')} language={languages.definition} />
           </div>
-          <HomeGreetingLine greeting={greeting} language={languages.target} />
-          <HomeGreetingLine greeting={greeting} language={languages.definition} />
+          <div className="home-greeting-scroll">
+            <HomeGreetingLine greeting={greeting} language={languages.target} />
+            <HomeGreetingLine greeting={greeting} language={languages.definition} />
+          </div>
         </div>
+      </div>
+      <div className="home-lexicon-stage" aria-hidden="true">
+        <span className="home-lexicon-ring home-lexicon-ring--outer" />
+        <span className="home-lexicon-ring home-lexicon-ring--inner" />
+        <span className="home-lexicon-light" />
+        <span className="home-lexicon-book">
+          <span className="home-lexicon-cover" />
+          <span className="home-lexicon-page home-lexicon-page--one" />
+          <span className="home-lexicon-page home-lexicon-page--two" />
+        </span>
+        <span className="home-lexicon-feather" />
+        <span className="home-lexicon-spark home-lexicon-spark--one" />
+        <span className="home-lexicon-spark home-lexicon-spark--two" />
+        <span className="home-lexicon-spark home-lexicon-spark--three" />
       </div>
     </section>
   );
@@ -186,6 +204,11 @@ export function HomePage() {
 
   return (
     <div className="home-desk">
+      <div className="home-crystal-orbit" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
       <HomeInterfaceLanguageSwitcher />
       <HomeHero greeting={greeting} languages={languages} />
 

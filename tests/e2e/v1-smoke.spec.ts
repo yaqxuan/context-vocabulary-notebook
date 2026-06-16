@@ -11,6 +11,15 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
     return response.ok();
   }).toBe(true);
 
+  await page.goto('/#/');
+  const interfaceLanguageSelect = page.locator('#home-interface-language-select');
+  if ((await interfaceLanguageSelect.inputValue()) !== '中文') {
+    await Promise.all([
+      page.waitForResponse(response => response.url().includes('/api/settings') && response.request().method() === 'PATCH'),
+      interfaceLanguageSelect.selectOption('中文'),
+    ]);
+  }
+
   await page.goto('/#/create');
   await expect(page.getByRole('button', { name: '保存词义条目' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '捕捉一个真实语境' })).toHaveCount(0);

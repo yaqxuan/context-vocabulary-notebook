@@ -114,8 +114,8 @@ describe('Phase 6 pages', () => {
 
     expect(await screen.findByRole('heading', { name: 'charge' })).toBeInTheDocument();
     const titleStack = screen.getByTestId('detail-title-stack');
-    expect(titleStack).toContainElement(screen.getByRole('heading', { name: 'charge' }));
-    expect(titleStack).toContainElement(screen.getByText('收费'));
+    expect(titleStack).toHaveTextContent('charge');
+    expect(titleStack).toHaveTextContent('收费');
     expect(screen.getByTestId('detail-meaning-actions')).toContainElement(screen.getByRole('button', { name: '编辑释义' }));
     expect(screen.getByText('S01E01 03:12')).toBeInTheDocument();
     expect(screen.getByText('正在复习中：已进入复习队列，可以现在复习。')).toBeInTheDocument();
