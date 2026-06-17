@@ -323,6 +323,11 @@ describe('install-recognition-windows.ps1 safeguards', () => {
     expect(script).toContain('$FfmpegZipSha256 = "9bf9423be2096818d950b05748b50538a9013913ee8e26813b66172eea9b4015"');
     expect(script).toContain('$TesseractInstallerSha256 = "f3fc4236425b690c8be756f35793f77394ee004be0a6460a440c754d892f68bc"');
     expect(script).toContain('Download-File $FfmpegZipUrl $ZipPath');
+    expect(script).toContain('$ProgressPreference = "SilentlyContinue"');
+    expect(script).toContain('Get-Command "curl.exe" -ErrorAction SilentlyContinue');
+    expect(script).toContain('--location --fail --retry 3 --retry-delay 2 --output $OutFile $Uri');
+    expect(script).toContain('Download failed with curl.exe exit code $LASTEXITCODE for $Uri');
+    expect(script).toContain('Invoke-WebRequest -Uri $Uri -OutFile $OutFile');
     expect(script).toContain('Assert-FileSha256 $ZipPath $FfmpegZipSha256');
     expect(script).toContain('Get-FileHash -LiteralPath $Path -Algorithm SHA256');
     expect(script).toContain('ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip');
