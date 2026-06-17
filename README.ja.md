@@ -1,38 +1,40 @@
 [中文](./README.md) | [English](./README.en.md) | [日本語](./README.ja.md) | [Español](./README.es.md) | [العربية](./README.ar.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md) | [Italiano](./README.it.md) | [Latina](./README.la.md)
 
-# Context Vocabulary Notebook（文脈単語帳）
+# Context Vocabulary Notebook (文脈単語帳)
 
-実際の動画、音声、字幕、教材から語彙を集めるための、ローカルファーストな文脈単語帳です。
+動画を見たり、講座を聞いたり、字幕を読んだりして新しい語に出会ったとき、「単語そのもの」だけでなく、原文、前後の文脈、スクリーンショット、音声/動画クリップ、メモ、タグも一緒に保存します。
 
-単語だけを切り離して保存するのではなく、その単語に出会ったときの文、文脈上の意味、スクリーンショット、動画・音声クリップ、メモ、タグを一緒に残します。復習するときも、単語と訳だけでなく、実際に出会った文脈をもう一度確認できます。
+復習するときに見るのは孤立した単語ではなく、その語に実際に出会った場面です。
 
-こんな学習者に向いています：
+こんな人に向いています:
 
-- 外国語の動画、講座、映画、リスニング教材を見ながら未知語を記録したい人。
-- Ankiのような間隔反復を使いたいが、カードにもっと豊かな文脈を持たせたい人。
-- 単語帳のためにクラウドアカウントを作らず、データを手元に置きたい人。
+- 外国語の動画、講座、映画、ポッドキャスト、リスニング教材をよく見る／聞く。
+- Anki のような間隔反復を使いたいが、元の文、スクリーンショット、メディアクリップもカードに残したい。
+- 語彙ノートのためだけにクラウドアカウントを作らず、学習データを自分のコンピューターに置きたい。
+- ローカルの動画、音声、画像から文を認識し、手作業で整えてカードにする前の助けがほしい。
 
-> このプロジェクトはローカルのWebアプリケーションです。データはデフォルトでコンピューター上のSQLiteデータベースと `uploads/` フォルダーに保存され、クラウドアカウントは必要ありません。
+> このプロジェクトはローカル Web アプリです。既定では、データはコンピューター上の SQLite データベースと `uploads/` フォルダーに保存され、クラウドアカウントは不要です。
 
 ## Demo
 
-![Context Vocabulary Notebook カード作成デモ](./docs/demo/01-create-card.png)
+![Context Vocabulary Notebook のカード作成例](./docs/demo/01-create-card-ja.png)
 
-## 主な機能
+## これでできること
 
-- 実際の文脈に基づいたカード作成：ターゲット単語、文脈上の定義、元の文、メモ、タグ。
-- ローカルメディアの添付：動画 `mp4`、音声 `mp3`、画像 `jpg / png / webp`。
-- 1つの意味エントリに複数の文脈インスタンスを関連付け、異なる教材での同じ意味の用法を記録できます。
-- FSRS間隔反復で、単語を出会った文脈に戻しながら復習できます。
-- 意味エントリのリスト、検索、タグによるフィルタリング、お気に入り、統計。
-- ZIPインポート・エクスポート：完全な個人バックアップとカードのみの共有をサポート。
-- V2カード作成ページのAI提案：OpenAI互換のAPIを設定して、文脈上の定義や用法メモを提案できます。APIキーはローカルにのみ保存されます。
+- 実際の文脈を中心にカードを作成できます: 対象語、元の文、文脈上の意味、メモ、タグ。
+- ローカルのメディア添付を保存できます: 動画 `mp4`、音声 `mp3`、画像 `jpg / png / webp`。
+- クリップを一括インポートできます: 複数の動画、音声、画像クリップをまとめて取り込み、認識結果を一つずつ確認してカードを作成します。
+- 任意のローカル OCR/STT 補助を使えます: ffmpeg、Tesseract、whisper.cpp を設定して、画像、動画フレーム、音声から文を認識します。
+- 同じ語義に複数の文脈例を付けられるため、一つの意味が異なる教材でどう現れるかを確認できます。
+- FSRS 間隔反復で復習し、各単語を見つけた文脈に戻して思い出せます。
+- 検索、タグでの絞り込み、お気に入り、統計表示、ZIP バックアップのインポート／エクスポートができます。
+- 任意の AI 提案: OpenAI-compatible API を設定すると、文脈上の意味、用法メモ、全文翻訳、見出し語化、スペルチェックの支援を受けられます。
 
-## データの保存場所とディスク容量の警告
+## データ保存場所とディスク使用量の注意
 
-アプリケーションはデフォルトで実行ディレクトリにデータを保存します。動画、スクリーンショット、音声をアップロードした後、`uploads/` ディレクトリは継続的に大きくなり、多くのディスク容量を占有する可能性があります。
+まずインストール先ディレクトリを選んでください。既定では、アプリは実行元ディレクトリの下にデータベース、アップロード済みファイル、設定を保存します。
 
-デフォルトのローカルデータ：
+既定のローカルデータ:
 
 ```text
 data/context-vocabulary-notebook.sqlite
@@ -40,153 +42,182 @@ uploads/
 .env
 ```
 
-以下の場所で実行することはお勧めしません：
+注: 動画、音声、スクリーンショットをアップロードすると、`uploads/` は増え続けることがあります。Whisper モデルも数百 MB から数 GB を使用する場合があります。
 
-- `/usr/local`、`/opt` などの通常 `sudo` やroot権限が必要なディレクトリ。
-- `C:\Program Files` などのシステム保護ディレクトリ。
-- 一時ディレクトリ、ダウンロードキャッシュディレクトリ、またはシステムやクリーンアップツールによって自動的に削除される場所。
-- 空き容量が非常に少ない場所、同期ルールが不明確な場所、またはクラウドドライブによってファイルが自動的にクリーンアップされたり容量制限を受けたりする可能性のある場所。
+次の場所では実行しないでください:
 
-## 実行環境
+- `/usr/local`、`/opt`、または通常 `sudo` や root 権限が必要なその他のディレクトリ。
+- `C:\Program Files` またはその他のシステム保護ディレクトリ。
+- 一時フォルダー、ダウンロードキャッシュ、システムやクリーンアップツールが自動削除する可能性のある場所。
+- 空き容量が少ない場所、同期ルールが不明な場所、クラウドドライブのクリーンアップや容量制限の影響を受ける場所。
 
-| 環境 | 要件 | 説明 |
-|------|------|------|
-| Node.js | 推奨 Node.js 22 LTS。少なくとも現在のViteの要件を満たすNodeバージョン | フロントエンドのビルド、開発サーバー、バックエンドサーバーはすべてNode.jsに依存しています。インストールスクリプトが条件を満たそうとします。 |
-| npm | Node.jsと一緒にインストールされる | リポジトリには `package-lock.json` が含まれており、依存関係のインストールには `npm ci` を使用します。 |
-| Git | GitHubリポジトリをクローンする際に必要 | インストールスクリプトがチェックし、条件を満たそうとします。 |
-| ブラウザ | Chrome / Edge / Firefox / Safari などのモダンブラウザ | アプリケーションはローカルWebページを介して使用されます。 |
-| C/C++ ビルドツール | 必要になる場合があります | `better-sqlite3` はネイティブモジュールです。現在のシステムとNodeバージョンで利用可能なコンパイル済みパッケージがない場合、`npm ci` はローカルでのコンパイルを試みます。 |
+長期的に保持できる場所を推奨します。例:
 
-インストールスクリプトは、最初にローカルマシンの既存の環境をチェックします。Linux / WSLでは、GitまたはNode.js/npmが見つからない場合にのみ、`apt-get` を介して依存関係を満たそうとします。基本環境が満たされている場合は、システム内の無関係なサードパーティソフトウェアソースの問題を引き起こすのを避けるため、`apt-get` をスキップします。macOSスクリプトは、依存関係が欠落している場合にHomebrewの使用を試みます。Windowsネイティブスクリプトは、依存関係が欠落している場合に `winget` の使用を試みます。これらのパッケージマネージャーが利用できない場合、または現在のユーザーにインストール権限がない場合は、不足している環境を手動でインストールしてから再試行する必要があります。
-
-## インストール前の注意事項と免責事項
-
-作者の現在の認識の限りでは、このプロジェクトのソースコード自体に悪意のあるコードは含まれていません。インストールスクリプトはローカル環境をチェックし、サポートされているプラットフォームでGit、Node.js、npm、ネイティブビルドツールなどの欠落している依存関係をインストールしようとします。
-
-プロジェクトのインストールでは、システムパッケージマネージャーとnpmを介してサードパーティのソフトウェアと依存関係を取得します。インストールおよび使用プロセスは、システム権限、ネットワークの状況、パッケージマネージャーの可用性、ウイルス対策ソフトウェア、企業デバイスのポリシー、ディスク容量、サードパーティの依存関係のサプライチェーン、Nodeネイティブモジュールのコンパイル結果などの要因の影響を受ける可能性があります。ユーザーは、インストールスクリプトの実行、依存関係のインストール、システム環境の変更、ローカルファイルのアップロードと保存から生じるあらゆる問題と結果について単独で責任を負うものとします。
-
-スクリプトが自動的に環境を満たすことができない場合は、不足しているツールと推奨される処理方法を出力します。この時点で、ユーザーは再試行する前に、自身のシステムに従って手動でインストールする必要があります。
+```text
+D:\study\context-vocabulary-notebook
+E:\study\context
+$HOME/context-vocabulary-notebook
+```
 
 ## ワンクリックインストール
 
-### Linux / macOS / WSL
+プロジェクトファイルを置きたい空のディレクトリに入り、使用しているシステム用のコマンドを実行してください。スクリプトは現在のディレクトリにプロジェクトをインストールします。そのディレクトリに既にこのプロジェクトがある場合は自動的に更新します。
 
-以下のコマンドをコピーして実行します。スクリプトはプロジェクトを現在のディレクトリにインストールします：
+| システム | コマンド |
+|------|------|
+| Linux / macOS / WSL | 下の Linux / macOS / WSL コマンドを参照 |
+| Windows PowerShell | 下の Windows PowerShell コマンドを参照 |
+
+### Linux / macOS / WSL
 
 ```bash
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-スクリプトはGit、Node.js/npmなどの依存関係を自動的にチェックします。インストール済みの依存関係は直接再利用されます。Linux / WSLの場合、基本的な依存関係が満たされている場合は `apt-get` をスキップします。
+### Windows PowerShell
 
-スクリプトの内容を事前に確認するには、以下にアクセスしてください：
-https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
+```powershell
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
 
-高度な使い方：インストールディレクトリを指定する
+インストール後、次で起動します:
+
+```bash
+npm run dev
+```
+
+ブラウザーで開きます:
+
+```text
+http://localhost:5173
+```
+
+backend ヘルスチェック:
+
+```text
+http://localhost:3107/api/health
+```
+
+## 最新版への更新
+
+プロジェクトをインストールしたディレクトリに入り、次を実行します:
+
+Linux / macOS / WSL / Git Bash:
+
+```bash
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+Windows PowerShell:
+
+```powershell
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+ワンクリックインストールコマンドをもう一度実行することもできます。スクリプトが現在のディレクトリを既存のプロジェクトとして検出すると、自動的に更新し、依存関係をインストールし、ビルドします。
+
+## ローカル OCR / 音声認識（任意）
+
+中核のノートブックに OCR/STT は不要です。まず手動でカード作成と復習ができます。動画、音声、画像から元の文を自動認識したい場合にだけ、これらのツールを設定してください。
+
+ローカル認識で使用するもの:
+
+- ffmpeg: 動画から音声を抽出します。
+- Tesseract: 画像または動画フレーム内の文字を認識します。
+- whisper.cpp + Whisper モデル: 音声または動画内の発話を認識します。
+
+### ローカル認識を自動設定する（まず試すのがおすすめ）
+
+プロジェクトディレクトリでこれを実行します:
+
+Linux / macOS / WSL:
+
+```bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition.sh | bash
+```
+
+Windows PowerShell:
+
+```powershell
+$env:CVN_TESSERACT_LANG='eng'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
+```
+
+中国語と英語の字幕を認識するには、言語を次に変更します:
+
+```powershell
+$env:CVN_TESSERACT_LANG='eng+chi_sim'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
+```
+
+スクリプト完了後、アプリ設定ページのローカル認識カードで **I installed it, check again** をクリックしてください。新しいバージョンでは `.env` を再読み込みするため、通常 backend を手動で再起動する必要はありません。
+
+### モデルとディスク使用量
+
+Whisper モデルは大きく、ダウンロード時間はネットワークによって変わります:
+
+- `tiny` / `base`: 小さく高速で、試用に向いていますが精度は低めです。
+- `small` / `medium`: 精度は高くなりますが、ディスクと CPU の使用量も増えます。
+- `large`: 非常に大きく、一般的なコンピューターでは遅い場合があります。既定の選択肢としては推奨しません。
+
+Windows 認識インストーラーは既定で `ggml-small.bin` をダウンロードします。サイズはおよそ数百 MB です。
+
+### ローカル認識を手動設定する
+
+ワンクリック設定に失敗した場合、またはツールのパスを自分で管理したい場合は、ツールを手動でインストールし、これらの値を `.env` に書き込んでください:
+
+```env
+CVN_FFMPEG_PATH=/absolute/path/to/ffmpeg
+
+CVN_STT_PROVIDER=whisper.cpp
+CVN_WHISPER_CPP_PATH=/absolute/path/to/whisper-cli
+CVN_WHISPER_CPP_MODEL=/absolute/path/to/ggml-small.bin
+CVN_WHISPER_CPP_TIMEOUT_MS=120000
+
+CVN_OCR_PROVIDER=tesseract
+CVN_TESSERACT_PATH=/absolute/path/to/tesseract
+CVN_TESSERACT_LANG=eng
+CVN_TESSERACT_TIMEOUT_MS=30000
+```
+
+Windows パスの例:
+
+```env
+CVN_FFMPEG_PATH=E:\study\context\tools\ffmpeg\bin\ffmpeg.exe
+CVN_WHISPER_CPP_PATH=E:\study\context\tools\whisper.cpp\Release\whisper-cli.exe
+CVN_WHISPER_CPP_MODEL=E:\study\context\models\ggml-small.bin
+CVN_TESSERACT_PATH=E:\study\context\tools\tesseract\tesseract.exe
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+
+## 高度なインストールオプション
+
+### インストール先ディレクトリを指定する
+
+Linux / macOS / WSL:
 
 ```bash
 export CVN_HOME="$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-### Windows PowerShell
-
-まず、プロジェクトファイルをインストールしたい空のディレクトリに入り、以下のコマンドをコピーして実行します。スクリプトはプロジェクトファイルをネストしたディレクトリを作成せずに現在のディレクトリに直接インストールします：
-
-```powershell
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
-```
-
-スクリプトはGit、Node.js/npmなどの依存関係を自動的にチェックします。インストール済みの依存関係は直接再利用されます。
-
-スクリプトの内容を事前に確認するには、以下にアクセスしてください：
-https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
-
-高度な使い方：インストールディレクトリを指定する
+Windows PowerShell:
 
 ```powershell
 $env:CVN_HOME = "C:\path\to\empty-folder"
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
-### 問題のトラブルシューティング
+### コアインストーラーに任意ツールの追加を試させる
 
-- コマンドが存在しないというメッセージが表示された場合は、ターミナルを閉じて再度開き、インストールコマンドをもう一度実行してください。
-- Linux / WSLの場合、`apt-get update` がDocker、Chromium、Snap、GPGキーなどのエラーを報告した場合、通常はシステム内の既存のaptソースまたは不完全なパッケージ設定が原因であり、このプロジェクトがこれらのソフトウェアに依存しているためではありません。まず対応するaptソースを修正/無効化するか、手動でGit、Node.js 20+、npmをインストールしてから再試行してください。
-- macOSの場合、Xcode Command Line Toolsのインストールウィンドウがポップアップしたら、「インストール」をクリックし、完了後にインストールコマンドを再実行してください。
-- Windowsの場合、コンパイル環境のインストールが必要であるというプロンプトが表示された場合は、プロンプトに従って続行してください。これは一部の依存関係のコンパイル時に必要になる可能性がある環境です。
+通常の初回インストールには不要です。必要な場合だけ使用してください。
 
-## 最新バージョンへのアップデート
-
-すでにインストールしている場合は、プロジェクトディレクトリに入り、以下を実行します：
-
-Linux / macOS / WSL / Git Bash：
-
-```bash
-cd context-vocabulary-notebook
-git pull --ff-only
-npm ci
-npm run build
-npm run dev
-```
-
-Windows ネイティブ PowerShell：
-
-```powershell
-Set-Location context-vocabulary-notebook
-git pull --ff-only
-npm ci
-npm run build
-npm run dev
-```
-
-ワンクリックインストールコマンドを再実行することもできます。スクリプトがインストールディレクトリに既存のGitリポジトリを見つけると、自動的に `git pull --ff-only`、`npm ci`、`npm run build` を実行します。
-
-プロジェクトディレクトリ内でワンクリックインストールコマンドを再実行した場合、スクリプトは現在のプロジェクトディレクトリを更新し、同じ名前のネストしたディレクトリを作成しません。プロジェクト外で実行する場合は、まず空のディレクトリに入るか、同じ `CVN_HOME` を明示的に設定してください。スクリプトはプロジェクトファイルを空でない通常のディレクトリに混在させることはありません。
-
-## 手動インストール
-
-ワンクリックスクリプトで環境を満たすことができない場合は、Node.js 22 LTS、npm、Git、および必要になる可能性のあるネイティブビルドツールを手動でインストールしてから、以下のコマンドを実行してください。
-
-Linux / macOS / WSL / Git Bash：
-
-```bash
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
-cd context-vocabulary-notebook
-cp .env.example .env
-npm ci
-npm run dev
-```
-
-Windows ネイティブ PowerShell：
-
-```powershell
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
-Set-Location context-vocabulary-notebook
-Copy-Item .env.example .env
-npm ci
-npm run dev
-```
-
-ブラウザで開く：
-
-```text
-http://localhost:5173
-```
-
-デフォルトのバックエンドアドレス：
-
-```text
-http://localhost:3107
-```
-
-## 環境変数
-
-## Local Clip Recognition (OCR / STT) addendum
-
-Clip analysis now uses local tools by default: `whisper.cpp` for speech recognition, `Tesseract` for image/video-frame OCR, and `ffmpeg` for video audio extraction. Missing tools do not block core install, manual card creation, review, or normal media upload; the readiness endpoint / UI reports what is missing.
-
-Opt in to installer-managed optional tools before running the installer:
+Linux / macOS / WSL:
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
@@ -194,46 +225,123 @@ export CVN_INSTALL_TESSERACT=1
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
+Windows PowerShell:
+
 ```powershell
 $env:CVN_INSTALL_FFMPEG = "1"
 $env:CVN_INSTALL_TESSERACT = "1"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
-If clip analysis shows `Audio extraction failed`, install ffmpeg or make sure ffmpeg is on PATH, then reopen the terminal and retry.
+インストーラーのソース:
 
-The installer does not install `whisper.cpp` or download Whisper models. Configure `CVN_WHISPER_CPP_PATH` and `CVN_WHISPER_CPP_MODEL` manually. Tesseract language data can be configured with `CVN_TESSERACT_LANG`, for example `eng`, `chi_sim`, or `eng+chi_sim`.
+- Linux / macOS / WSL: https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
+- Windows PowerShell: https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
 
-DeepSeek and other OpenAI-compatible text models can help with contextual definitions, usage notes, sentence translation, lemmatization, and spelling checks. They do not replace local OCR/STT. `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1` only allows configured cloud fallback when local recognition fails, and is disabled by default.
+## 手動インストール
 
-<!-- AUTO-GENERATED:ENV -->
-| 変数 | 必須 | デフォルト値 | 説明 |
-|------|------|--------|------|
-| `PORT` | いいえ | `3107` | バックエンドExpressサーバーのポート。Vite開発サーバーは `/api` をこのポートにプロキシします。 |
-| `DATABASE_PATH` | いいえ | `./data/context-vocabulary-notebook.sqlite` | SQLiteデータベースのパス。相対パスはプロジェクトのルートに対して解決されます。 |
-| `UPLOADS_DIR` | いいえ | `./uploads` | アップロードされたメディアファイルの保存ディレクトリ。相対パスはプロジェクトのルートに対して解決されます。 |
-<!-- /AUTO-GENERATED:ENV -->
+ワンクリックスクリプトで環境を準備できない場合は、まず Node.js 22 LTS、npm、Git、および必要なネイティブビルドツールを手動でインストールしてから、次を実行してください:
 
-開発中にフロントエンドのポートを変更するには、コマンド実行時に `CLIENT_PORT` を設定できます（デフォルトは `5173`）。この変数は `.env.example` には含まれておらず、通常は設定する必要はありません。
+Linux / macOS / WSL / Git Bash:
 
-## よく使うコマンド
+```bash
+cd "$HOME"
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
+cd context-vocabulary-notebook
+cp .env.example .env
+npm ci
+npm run dev
+```
 
-<!-- AUTO-GENERATED:SCRIPTS -->
-| コマンド | 説明 |
-|------|------|
-| `npm run dev` | バックエンド開発サーバーとViteフロントエンド開発サーバーの両方を起動します。 |
-| `npm run dev:client` | Viteフロントエンド開発サーバーのみを起動し、デフォルトで `0.0.0.0:5173` をリッスンします。 |
-| `npm run dev:server` | バックエンドExpress開発サーバーのみを起動し、デフォルトで `localhost:3107` をリッスンします。 |
-| `npm run build` | 最初にタイプチェックを実行し、その後フロントエンドとバックエンドをビルドします。 |
-| `npm test` | Vitestのユニット/統合テストを実行します。 |
-| `npm run test:e2e` | Playwright E2Eテストを実行します。テストファイルがない場合でもパスします。 |
-| `npm run typecheck` | フロントエンドとNode側のTypeScriptタイプチェックを実行します。 |
-| `npm run lint` | 現在は `npm run typecheck` と同等です。 |
-<!-- /AUTO-GENERATED:SCRIPTS -->
+Windows PowerShell:
+
+```powershell
+Set-Location $HOME
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
+Set-Location context-vocabulary-notebook
+Copy-Item .env.example .env
+npm ci
+npm run dev
+```
+
+ブラウザーで開きます:
+
+```text
+http://localhost:5173
+```
+
+## よくある質問
+
+### ワンクリックインストールに失敗した場合
+
+- If the message says a command is missing, close and reopen the terminal, then run the installer again.
+- Linux / WSL: if `apt-get update` reports Docker, Chromium, Snap, GPG key, or similar errors, it is usually an existing apt-source or unfinished package-configuration issue, not because this project depends on those packages. Fix/disable the affected apt source first, or manually install Git, Node.js 22 LTS, and npm before retrying.
+- macOS: if the Xcode Command Line Tools prompt appears, click Install, then rerun the installer after it completes.
+- Windows: if `npm ci` fails at `better-sqlite3`, you usually need Python and Visual Studio Build Tools / MSVC; if you are not familiar with these tools, WSL is recommended.
+
+### ページは開くが、ローカル認識が未設定のままの場合
+
+First make sure the recognition installer has completed and the corresponding `CVN_*` paths exist in `.env`. Then click **I installed it, check again** on the settings page.
+
+If it still does not work:
+
+- Make sure the app was started from the same project directory.
+- Make sure no old `3107` backend process is occupying the port.
+- Run `npm run dev` again and refresh the page.
+
+### ポートがすでに使用されている場合
+
+Change the backend port:
+
+```env
+PORT=3108
+```
+
+Linux / macOS / WSL / Git Bash change the frontend port:
+
+```bash
+CLIENT_PORT=5174 npm run dev
+```
+
+Windows PowerShell change the frontend port:
+
+```powershell
+$env:CLIENT_PORT = "5174"
+npm run dev
+```
+
+### クリップに見える字幕がなく、原文が認識されない場合
+
+動画フレームに字幕がない、または字幕が小さすぎる/ぼやけている場合、OCR は文を見つけられないことがあります。その場合は音声認識が必要です。ffmpeg、whisper.cpp、`CVN_WHISPER_CPP_MODEL` が利用可能であることを確認してください。音声にも明瞭な発話がない場合は、元の文を手入力してください。
+
+`Audio extraction failed` が表示される場合、通常は ffmpeg が使えない、パスが正しくない、または元の動画/音声ファイルを ffmpeg が読めないことを意味します。
+
+### Tesseract 言語データが不足している場合
+
+If OCR reports missing language data, Tesseract was found but the matching traineddata is not installed. Common language codes:
+
+- English: `eng`
+- Simplified Chinese: `chi_sim`
+- Japanese: `jpn`
+- Korean: `kor`
+- French: `fra`
+- German: `deu`
+- Spanish: `spa`
+- Russian: `rus`
+
+For multiple languages:
+
+```env
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+### Whisper モデルパスが未設定の場合
+
+`CVN_WHISPER_CPP_MODEL` には既定モデルがありません。whisper.cpp が対応する ggml モデルをダウンロードし、その絶対パスを `.env` に書き込んでください。
 
 ## データとバックアップ
 
-デフォルトのデータはプロジェクトディレクトリ内にあります：
+By default, all data is under the project directory:
 
 ```text
 data/context-vocabulary-notebook.sqlite
@@ -241,101 +349,104 @@ uploads/
 .env
 ```
 
-バックアップする際は、一緒に保存することをお勧めします：
+For backup, save them together:
 
 ```bash
 tar -czf vocabulary-notebook-backup.tar.gz data uploads .env
 ```
 
-復元するには、これらのファイルを同じプロジェクトディレクトリに戻し、アプリケーションを起動します。
+To restore, put these files back into the same project directory and start the app.
 
-アプリ内ZIPインポート/エクスポートも提供されています：
+The app also provides ZIP import/export:
 
-- 完全なバックアップ：カード、文脈、メディア、タグ、お気に入り、復習ステータス、FSRSステータス、復習ログ、およびユーザー設定が含まれます。
-- 純粋なカードの共有：個人の復習の進捗、お気に入りステータス、またはユーザー設定は含まれません。
+- Full backup: includes cards, contexts, media, tags, favorites, review state, FSRS state, review logs, and user settings.
+- Card-only sharing: excludes personal review progress, favorite state, and user settings.
 
-AI APIキーはローカルの機密設定であり、エクスポートされたファイルには含まれません。デバイスを変更した後に再度入力する必要があります。
+AI API Keys are local sensitive configuration and are not included in exports; you need to enter them again on another device.
 
-## メディアファイルの推奨事項
+## メディアファイルの目安
 
-| タイプ | サポートされる形式 | 推奨サイズ |
+| Type | Supported formats | Recommended size |
 |------|----------|----------|
-| 動画 | `mp4` | 1ファイルあたり300MB未満 |
-| 音声 | `mp3` | 1ファイルあたり50MB未満 |
-| 画像 | `jpg` / `png` / `webp` | 1ファイルあたり10MB未満 |
+| Video | `mp4` | within 300MB per file |
+| Audio | `mp3` | within 50MB per file |
+| Image | `jpg` / `png` / `webp` | within 10MB per file |
 
-## AI提案の設定
+## AI 提案の設定
 
-カード作成ページはオプションのAI提案をサポートしています。設定ページでOpenAI互換のAPI設定を追加する必要があります：
+The card creation page supports optional AI suggestions. Add an OpenAI-compatible API configuration on the settings page:
 
-- 表示名
+- Display name
 - Base URL
 - API Key
 - Model
 
-注意：
+Notes:
 
-- AIを設定しなくても、手動でのカード作成と復習は完全に機能します。
-- APIキーはローカルデータベースに保存され、UIではマスクされます。
-- APIキーはエクスポートされるファイルには含まれません。
-- AIはカード作成時に文脈上の定義や用法のメモを提案するためにのみ使用されます。組み込みの辞書ではなく、カードを自動的に作成することもありません。
+- Without AI configuration, manual card creation and review still work normally.
+- The API Key is stored in the local database and masked in the UI.
+- The API Key is not included in export files.
+- AI can suggest contextual meanings, usage notes, full-sentence translations, lemmatization, and spell checks during card creation.
+- OpenAI-compatible text models such as DeepSeek do not perform local OCR/STT; image text recognition depends on Tesseract, and speech recognition depends on whisper.cpp.
 
-## よくある質問 (FAQ)
+## 環境要件
 
-### ポートが使用中
+| Environment | Requirement | Notes |
+|------|------|------|
+| Node.js | Node.js 22 LTS recommended | Frontend build, development servers, and backend service all depend on Node.js. The installer tries to provide it. |
+| npm | Installed with Node.js | The repository includes `package-lock.json`; dependencies are installed with `npm ci`. |
+| Git | Required when cloning from GitHub | The installer checks for it and tries to provide it. |
+| Browser | Chrome / Edge / Firefox / Safari or another modern browser | The app is used through a local web page. |
+| C/C++ build tools | May be required | `better-sqlite3` is a native module; if no prebuilt package is available, `npm ci` tries to compile it locally. |
+| ffmpeg | Optional | Required for video/audio clip analysis. |
+| Tesseract OCR | Optional | Required for OCR on images or video frames. |
+| whisper.cpp + Whisper model | Optional | Required for speech recognition on audio/video. |
 
-`.env` を変更します：
+### WSL / Windows ネイティブの選び方
 
-```env
-PORT=3108
-```
+- WSL is usually the most stable: Node, Git, ffmpeg, Tesseract, and native build tools are closer to Linux paths.
+- Native Windows PowerShell is supported: the script reuses existing Git / Node.js / npm and tries `winget` only when something is missing.
+- If native Windows `npm ci` fails at `better-sqlite3`, install Python and Visual Studio Build Tools / MSVC as prompted, or use WSL.
 
-フロントエンドポート `5173` が使用中の場合：
+## 環境変数
 
-```bash
-CLIENT_PORT=5174 npm run dev
-```
+<!-- AUTO-GENERATED:ENV -->
+| Variable | Required | Default | Description |
+|------|------|--------|------|
+| `PORT` | いいえ | `3107` | Express バックエンドサービスのポート。Vite 開発サーバーは `/api` をこのポートへプロキシします。 |
+| `DATABASE_PATH` | いいえ | `./data/context-vocabulary-notebook.sqlite` | SQLite データベースのパス。相対パスはプロジェクトルートから解決されます。 |
+| `UPLOADS_DIR` | いいえ | `./uploads` | アップロードされたメディアファイルのディレクトリ。相対パスはプロジェクトルートから解決されます。 |
+| `CVN_FFMPEG_PATH` | いいえ | `ffmpeg` | ffmpeg 実行ファイルへのパス。Windows ネイティブツールのインストールでは、必要に応じて絶対パスを使ってください。 |
+| `CVN_STT_PROVIDER` | いいえ | `whisper.cpp` | ローカル音声認識プロバイダー。`whisper.cpp` または `disabled` を指定できます。 |
+| `CVN_WHISPER_CPP_PATH` | いいえ | `whisper-cli` | whisper.cpp 実行ファイルへのパス。システムに古い `main` しかない場合は、`main` または絶対パスを設定してください。 |
+| `CVN_WHISPER_CPP_MODEL` | ローカル STT に必須 | 空 | Whisper モデルファイルのパス。インストーラーはモデルを自動ダウンロードしません。 |
+| `CVN_WHISPER_CPP_TIMEOUT_MS` | いいえ | `120000` | whisper.cpp の 1 回の認識実行のタイムアウト。 |
+| `CVN_OCR_PROVIDER` | いいえ | `tesseract` | ローカル OCR プロバイダー。`tesseract` または `disabled` を指定できます。 |
+| `CVN_TESSERACT_PATH` | いいえ | `tesseract` | Tesseract 実行ファイルへのパス。 |
+| `CVN_TESSERACT_LANG` | いいえ | 対象言語により自動選択 | `eng`、`chi_sim`、`eng+chi_sim` などの Tesseract 言語コード。 |
+| `CVN_TESSERACT_TIMEOUT_MS` | いいえ | `30000` | Tesseract OCR の 1 回の実行のタイムアウト。 |
+| `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK` | いいえ | `0` | ローカルのクリップ認識が失敗したとき、クラウド文字起こしへのフォールバックを許可するか。既定では無効です。 |
+| `CVN_LOCAL_READINESS_TIMEOUT_MS` | いいえ | サーバーが決定 | ローカル認識の準備状況チェックのタイムアウト。 |
+<!-- /AUTO-GENERATED:ENV -->
 
-### better-sqlite3 で npm ci が失敗する
+## よく使うコマンド
 
-Node.js 22 LTSの使用を推奨します。`better-sqlite3` はネイティブモジュールです。現在のシステムとNodeバージョンで利用可能なコンパイル済みパッケージがない場合、インストール中にローカルでのコンパイルを試みます。
+<!-- AUTO-GENERATED:SCRIPTS -->
+| Command | Description |
+|------|------|
+| `npm run dev` | Start both the backend development server and the Vite frontend development server. |
+| `npm run dev:client` | Start only the Vite frontend development server, listening on `0.0.0.0:5173` by default. |
+| `npm run dev:server` | Start only the backend Express development server, listening on `localhost:3107` by default. |
+| `npm run build` | Run type checks, then build the frontend and backend. |
+| `npm test` | Run Vitest unit / integration tests. |
+| `npm run test:e2e` | Run Playwright E2E tests; passes even when there are no test files. |
+| `npm run typecheck` | Run TypeScript type checks for the frontend and Node side. |
+| `npm run lint` | Currently equivalent to `npm run typecheck`. |
+<!-- /AUTO-GENERATED:SCRIPTS -->
 
-Linux / WSL：
+## 開発メモ
 
-```bash
-sudo apt update
-sudo apt install -y build-essential python3 make g++
-```
-
-macOS：
-
-```bash
-xcode-select --install
-```
-
-Windowsネイティブ環境では、利用可能なPythonとVisual Studio Build Tools / MSVCネイティブビルド環境が必要です。これらのツールの設定に慣れていない場合は、代わりにWSLを使用するか、まず不足している環境を手動でインストールしてから再試行することをお勧めします。
-
-### ページは開くが、APIリクエストが失敗する
-
-バックエンドが実行されていることを確認します：
-
-```text
-http://localhost:3107/api/health
-```
-
-正常な応答：
-
-```json
-{"ok":true}
-```
-
-### インストールディレクトリを変更したい
-
-プロジェクトディレクトリ全体を移動するだけです。`.env` が相対パスを使用している場合、データベースとアップロードディレクトリは新しいディレクトリに対して引き続き相対的に解決されます。`.env` が絶対パスを使用している場合は、同期して更新する必要があります。
-
-## 開発ノート
-
-このプロジェクトの技術スタック：
+Project stack:
 
 - React + Vite
 - Node.js + Express
@@ -345,8 +456,16 @@ http://localhost:3107/api/health
 - Vitest
 - Playwright
 
-最初のバージョンは、ローカルファースト、組み込み辞書なし、辞書接続なし、Webサイト動画リンクなし、同期なしを堅持しています。現在のV2では、カード作成時のAI提案機能のみを追加しています。
+バージョン 1 はローカルファーストのままです。内蔵辞書、辞書連携、Web サイト動画リンク、同期機能はありません。現在の V2 では、カード作成時の AI 提案とローカルのクリップ認識補助が追加されています。
+
+## インストール前の注意と免責
+
+著者の現時点での認識では、このプロジェクト自身のソースコードに悪意のあるコードは含まれていません。インストーラーはローカル環境を確認し、対応プラットフォームでは Git、Node.js、npm など不足している依存関係のインストールを試みます。ネイティブビルドツールが不足している場合は案内を表示し、一部のプラットフォームでは手動インストールが必要です。
+
+インストールでは、システムのパッケージマネージャーと npm を通じてサードパーティ製ソフトウェアおよび依存関係をダウンロードします。インストールと使用は、システム権限、ネットワーク状態、パッケージマネージャーの利用可否、ウイルス対策ソフト、企業デバイスポリシー、ディスク容量、サードパーティ依存関係のサプライチェーン、Node ネイティブモジュールのコンパイル結果などの要因に影響される場合があります。インストーラーの実行、依存関係のインストール、システム環境の変更、ローカルファイルのアップロード/保存によって生じる問題と結果は、ユーザーの責任です。
+
+スクリプトが環境を自動的に準備できない場合、不足しているツールと推奨される次の手順を表示します。その後、ご利用のシステムに合わせて手動でインストールし、再試行してください。
 
 ## ライセンス
 
-このプロジェクトは MIT License を使用しています。詳細は [`LICENSE`](./LICENSE) をご覧ください。
+このプロジェクトは MIT License を使用しています。詳細は [`LICENSE`](./LICENSE) を参照してください。

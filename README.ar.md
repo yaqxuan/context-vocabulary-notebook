@@ -2,35 +2,37 @@
 
 # Context Vocabulary Notebook (دفتر مفردات السياق)
 
-دفتر مفردات محلي أولًا لتعلّم الكلمات من مقاطع الفيديو والصوت والترجمات والدروس الحقيقية.
+عندما تصادف كلمة جديدة أثناء مشاهدة فيديو أو الاستماع إلى درس أو قراءة ترجمات، يحفظ التطبيق ليس “الكلمة نفسها” فقط، بل الجملة الأصلية والسياق ولقطة الشاشة ومقطع الصوت/الفيديو والملاحظات والوسوم.
 
-بدلًا من حفظ كلمات معزولة، يحتفظ بالجملة، والمعنى في السياق، ولقطة الشاشة، ومقطع الفيديو/الصوت، والملاحظات، والعلامات من اللحظة التي وجدت فيها الكلمة. عند المراجعة لاحقًا، ترى السياق الحقيقي مرة أخرى، وليس كلمة وتعريفًا فقط.
+عند المراجعة ترى المشهد الحقيقي الذي قابلت فيه الكلمة، لا مفردة معزولة.
 
-مناسب لـ:
+يناسبك إذا كنت:
 
-- تسجيل الكلمات الجديدة أثناء مشاهدة مقاطع فيديو أو دروس أو أفلام أو مواد استماع بلغة أجنبية.
-- المتعلمين الذين يريدون تكرارًا متباعدًا شبيهًا بـ Anki، لكن مع سياق أغنى في كل بطاقة.
-- من يفضلون بقاء البيانات محليًا ولا يريدون حسابًا سحابيًا لدفتر المفردات.
+- تشاهد أو تستمع كثيرًا إلى فيديوهات أو دورات أو أفلام أو بودكاست أو مواد استماع بلغات أجنبية.
+- تريد مراجعة متباعدة شبيهة بـ Anki، لكن مع بطاقات تحتفظ بالجملة الأصلية ولقطات الشاشة ومقاطع الوسائط.
+- تريد إبقاء بيانات تعلمك على حاسوبك، من دون إنشاء حساب سحابي لمجرد دفتر مفردات.
+- تحتاج إلى مساعدة في التعرف على الجمل من فيديوهات أو صوتيات أو صور محلية قبل تهذيبها يدويًا إلى بطاقات.
 
-> المشروع الحالي عبارة عن تطبيق ويب محلي. يتم حفظ البيانات افتراضيًا في قاعدة بيانات SQLite ومجلد `uploads/` على جهاز الكمبيوتر الخاص بك. لا يلزم وجود حساب سحابي.
+> هذا المشروع تطبيق ويب محلي. افتراضيًا تُخزَّن البيانات في قاعدة بيانات SQLite ومجلد `uploads/` على حاسوبك؛ ولا يلزم أي حساب سحابي.
 
 ## Demo
 
-![عرض توضيحي لإنشاء بطاقة في Context Vocabulary Notebook](./docs/demo/01-create-card.png)
+![مثال إنشاء بطاقة في Context Vocabulary Notebook](./docs/demo/01-create-card-ar.png)
 
-## الميزات الرئيسية
+## ما الذي يمكنك فعله به
 
-- إنشاء بطاقات حول سياقات حقيقية: الكلمة الهدف، التعريف السياقي، الجملة الأصلية، الملاحظات، العلامات.
-- حفظ مرفقات وسائط محلية: فيديو `mp4`، صوت `mp3`، صورة `jpg / png / webp`.
-- ربط إدخال معنى واحد بعدة أمثلة سياقية، وهو مفيد لتسجيل نفس المعنى في مواد مختلفة.
-- المراجعة باستخدام التكرار المتباعد FSRS مع إعادة كل كلمة إلى السياق الذي ظهرت فيه.
-- قائمة إدخالات المعنى، البحث، التصفية حسب العلامة، المفضلة، الإحصائيات.
-- استيراد وتصدير ZIP للنسخ الاحتياطي الشخصي الكامل ومشاركة البطاقات فقط.
-- اقتراحات الذكاء الاصطناعي في صفحة إنشاء البطاقات V2: يمكن تكوين واجهة برمجة تطبيقات متوافقة مع OpenAI لاقتراح التعريفات السياقية وملاحظات الاستخدام؛ يتم حفظ مفتاح API محليًا فقط.
+- أنشئ بطاقات حول سياق حقيقي: الكلمة المستهدفة، الجملة الأصلية، المعنى السياقي، الملاحظات والوسوم.
+- احفظ مرفقات وسائط محلية: فيديو `mp4`، صوت `mp3`، صور `jpg / png / webp`.
+- استورد المقاطع دفعة واحدة: أدخل عدة مقاطع فيديو أو صوت أو صور معًا، راجع نتائج التعرف واحدًا واحدًا، ثم أنشئ البطاقات.
+- استخدم مساعدات OCR/STT محلية اختيارية: اضبط ffmpeg و Tesseract و whisper.cpp للتعرف على الجمل من الصور أو إطارات الفيديو أو الصوت.
+- أرفق عدة أمثلة سياقية بالمعنى نفسه للكلمة، لتعرف كيف يظهر المعنى في مواد مختلفة.
+- راجع باستخدام التكرار المتباعد FSRS، مع إعادة كل كلمة إلى السياق الذي وجدتها فيه.
+- ابحث، رشّح بالوسوم، أضف إلى المفضلة، اعرض الإحصاءات، واستورد/صدّر نسخ ZIP احتياطية.
+- اقتراحات AI اختيارية: بعد إعداد API OpenAI-compatible، احصل على مساعدة في المعاني السياقية وملاحظات الاستخدام وترجمة الجملة كاملة والاشتقاق المعجمي والتدقيق الإملائي.
 
-## موقع البيانات وتحذير مساحة القرص
+## مكان البيانات وتنبيه مساحة القرص
 
-يحفظ التطبيق البيانات في دليل التشغيل افتراضيًا. بعد تحميل مقاطع الفيديو ولقطات الشاشة والصوت، قد ينمو دليل `uploads/` باستمرار ويشغل مساحة كبيرة على القرص.
+اختر مجلد التثبيت أولًا. افتراضيًا يحتفظ التطبيق بقاعدة البيانات والملفات المرفوعة والإعدادات تحت المجلد الذي يعمل منه.
 
 البيانات المحلية الافتراضية:
 
@@ -40,153 +42,182 @@ uploads/
 .env
 ```
 
-لا يُنصح بتشغيل التطبيق في هذه المواقع:
+ملاحظة: بعد رفع الفيديوهات والصوت ولقطات الشاشة، قد يستمر `uploads/` في النمو. وقد تستهلك نماذج Whisper أيضًا من مئات MB إلى عدة GB.
 
-- الدلائل التي تتطلب عادةً أذونات `sudo` أو الجذر، مثل `/usr/local`، `/opt`.
-- الدلائل المحمية بواسطة النظام مثل `C:\Program Files`.
-- الدلائل المؤقتة، ودلائل ذاكرة التخزين المؤقت للتنزيل، أو المواقع التي سيتم حذفها تلقائيًا بواسطة النظام أو أدوات التنظيف.
-- المواقع ذات المساحة القليلة جدًا، أو قواعد المزامنة غير الواضحة، أو حيث قد يتم تنظيف الملفات تلقائيًا أو تقييد حصتها بواسطة محركات الأقراص السحابية.
+تجنّب تشغيله في هذه المواقع:
 
-## بيئة التشغيل
+- `/usr/local` أو `/opt` أو أي مجلدات أخرى تتطلب عادةً أذونات `sudo` أو root.
+- `C:\Program Files` أو أي مجلدات أخرى محمية من النظام.
+- المجلدات المؤقتة أو ذاكرات تنزيل مؤقتة أو مواقع قد يحذفها النظام أو أدوات التنظيف تلقائيًا.
+- مواقع ذات مساحة حرة قليلة، أو قواعد مزامنة غير واضحة، أو سلوك تنظيف/حصة خاص بمحركات سحابية.
 
-| البيئة | المتطلبات | الوصف |
-|------|------|------|
-| Node.js | يوصى بإصدار Node.js 22 LTS؛ على الأقل إصدار Node يلبي متطلبات Vite الحالية | يعتمد كل من بناء الواجهة الأمامية وخادم التطوير وخادم الواجهة الخلفية على Node.js. سيحاول برنامج التثبيت النصي توفير ذلك. |
-| npm | مثبت مع Node.js | يحتوي المستودع على `package-lock.json`، استخدم `npm ci` لتثبيت التبعيات. |
-| Git | مطلوب لاستنساخ مستودع GitHub | سيتحقق برنامج التثبيت النصي ويحاول توفير ذلك. |
-| المتصفح | المتصفحات الحديثة مثل Chrome / Edge / Firefox / Safari | يتم استخدام التطبيق عبر صفحات ويب محلية. |
-| أدوات بناء C/C++ | قد تكون مطلوبة | `better-sqlite3` عبارة عن وحدة أصلية؛ إذا لم تتوفر حزمة مجمعة مسبقًا للنظام الحالي وإصدار Node، فسيحاول `npm ci` التجميع المحلي. |
+يفضَّل مكان يمكنك الاحتفاظ به على المدى الطويل، مثل:
 
-سيتحقق برنامج التثبيت النصي أولاً من البيئة الموجودة على الجهاز المحلي. في Linux / WSL، سيحاول تلبية التبعيات عبر `apt-get` فقط إذا كان Git أو Node.js/npm مفقودًا؛ إذا تم استيفاء البيئات الأساسية، فسيتم تخطي `apt-get` لتجنب إثارة مشكلات مصادر برامج الجهات الخارجية غير ذات الصلة في النظام. سيحاول البرنامج النصي لنظام macOS استخدام Homebrew عند فقدان التبعيات. سيحاول البرنامج النصي الأصلي لنظام Windows استخدام `winget` عند فقدان التبعيات. إذا لم تكن مديري الحزم هذه متوفرة، أو إذا لم يكن لدى المستخدم الحالي أذونات التثبيت، فستحتاج إلى تثبيت البيئات المفقودة يدويًا والمحاولة مرة أخرى.
+```text
+D:\study\context-vocabulary-notebook
+E:\study\context
+$HOME/context-vocabulary-notebook
+```
 
-## ملاحظات ما قبل التثبيت وإخلاء المسؤولية
+## تثبيت بخطوة واحدة
 
-وفقًا لأفضل معلومات المؤلف الحالية، لا يحتوي الكود المصدري الخاص بهذا المشروع على أي تعليمات برمجية ضارة. سيتحقق برنامج التثبيت النصي من البيئة المحلية ويحاول تثبيت التبعيات المفقودة مثل Git و Node.js و npm وأدوات البناء الأصلية على الأنظمة الأساسية المدعومة.
+ادخل إلى مجلد فارغ تريد وضع ملفات المشروع فيه، ثم شغّل الأمر المناسب لنظامك. يثبّت السكربت المشروع في المجلد الحالي؛ وإذا كان المجلد يحتوي هذا المشروع بالفعل فسيحدّثه تلقائيًا.
 
-سيجلب تثبيت المشروع برامج وتبعيات الجهات الخارجية عبر مديري حزم النظام و npm. قد تظل عملية التثبيت والاستخدام متأثرة بعوامل مثل أذونات النظام، وحالة الشبكة، وتوافر مدير الحزم، وبرامج مكافحة الفيروسات، وسياسات أجهزة الشركات، ومساحة القرص، وسلاسل التوريد لتبعيات الجهات الخارجية، ونتائج تجميع وحدة Node الأصلية. يتحمل المستخدمون وحدهم المسؤولية عن أي مشكلات وعواقب تنشأ عن تشغيل برنامج التثبيت النصي، وتثبيت التبعيات، وتعديل بيئة النظام، وتحميل الملفات المحلية وحفظها.
-
-إذا لم يتمكن البرنامج النصي من تلبية البيئة تلقائيًا، فسيخرج الأدوات المفقودة وطرق المعالجة المقترحة؛ في هذه المرحلة، يحتاج المستخدمون إلى تثبيتها يدويًا وفقًا لأنظمتهم الخاصة قبل إعادة المحاولة.
-
-## تثبيت بنقرة واحدة
+| النظام | الأمر |
+|------|------|
+| Linux / macOS / WSL | انظر أمر Linux / macOS / WSL أدناه |
+| Windows PowerShell | انظر أمر Windows PowerShell أدناه |
 
 ### Linux / macOS / WSL
-
-انسخ الأمر التالي وقم بتشغيله. سيقوم البرنامج النصي بتثبيت المشروع في الدليل الحالي:
 
 ```bash
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-سيتحقق البرنامج النصي تلقائيًا من التبعيات مثل Git، Node.js/npm؛ سيتم إعادة استخدام التبعيات المثبتة مباشرة. بالنسبة لنظامي Linux / WSL، إذا تم استيفاء التبعيات الأساسية، فسيتم تخطي `apt-get`.
+### Windows PowerShell
 
-لعرض محتوى البرنامج النصي أولاً، قم بزيارة:
-https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
+```powershell
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
 
-الاستخدام المتقدم: تحديد دليل التثبيت
+بعد التثبيت، شغّله باستخدام:
+
+```bash
+npm run dev
+```
+
+افتحه في المتصفح:
+
+```text
+http://localhost:5173
+```
+
+فحص صحة backend:
+
+```text
+http://localhost:3107/api/health
+```
+
+## التحديث إلى أحدث إصدار
+
+ادخل إلى المجلد الذي ثبّت فيه المشروع، ثم شغّل:
+
+Linux / macOS / WSL / Git Bash:
+
+```bash
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+Windows PowerShell:
+
+```powershell
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+يمكنك أيضًا تشغيل أمر التثبيت بخطوة واحدة مرة أخرى. عندما يكتشف السكربت أن المجلد الحالي مشروع موجود، فسيحدّثه تلقائيًا ويثبّت الاعتماديات ويبنيه.
+
+## OCR / تعرف صوتي محلي (اختياري)
+
+لا يحتاج دفتر المفردات الأساسي إلى OCR/STT. يمكنك أولًا إنشاء البطاقات ومراجعتها يدويًا. لا تُعدّ هذه الأدوات إلا إذا أردت التعرف تلقائيًا على الجملة الأصلية من الفيديو أو الصوت أو الصور.
+
+يستخدم التعرف المحلي:
+
+- ffmpeg: يستخرج الصوت من الفيديو.
+- Tesseract: يتعرف على النص في الصور أو إطارات الفيديو.
+- whisper.cpp + نموذج Whisper: يتعرف على الكلام في الصوت أو الفيديو.
+
+### تكوين التعرف المحلي تلقائيًا (جرّبه أولًا)
+
+شغّل هذا داخل مجلد المشروع:
+
+Linux / macOS / WSL:
+
+```bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition.sh | bash
+```
+
+Windows PowerShell:
+
+```powershell
+$env:CVN_TESSERACT_LANG='eng'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
+```
+
+للتعرف على ترجمات صينية وإنجليزية، غيّر اللغة إلى:
+
+```powershell
+$env:CVN_TESSERACT_LANG='eng+chi_sim'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
+```
+
+بعد انتهاء السكربت، انقر **I installed it, check again** في بطاقة التعرف المحلي في صفحة إعدادات التطبيق. تعيد الإصدارات الجديدة تحميل `.env`، لذلك لا تحتاج عادةً إلى إعادة تشغيل backend يدويًا.
+
+### النماذج واستخدام القرص
+
+نماذج Whisper كبيرة، ويختلف وقت التنزيل حسب الشبكة:
+
+- `tiny` / `base`: صغيرة وسريعة ومناسبة للتجربة، لكنها أقل دقة.
+- `small` / `medium`: أدق، لكنها تستهلك مساحة قرص و CPU أكثر.
+- `large`: كبيرة جدًا وقد تكون بطيئة على الحواسيب العادية. لا يُنصح بها كخيار افتراضي.
+
+ينزّل مثبت التعرف على Windows افتراضيًا `ggml-small.bin`. حجمه يقارب بضع مئات من MB.
+
+### تكوين التعرف المحلي يدويًا
+
+إذا فشل الإعداد بخطوة واحدة، أو إذا أردت إدارة مسارات الأدوات بنفسك، فثبّت الأدوات يدويًا واكتب هذه القيم في `.env`:
+
+```env
+CVN_FFMPEG_PATH=/absolute/path/to/ffmpeg
+
+CVN_STT_PROVIDER=whisper.cpp
+CVN_WHISPER_CPP_PATH=/absolute/path/to/whisper-cli
+CVN_WHISPER_CPP_MODEL=/absolute/path/to/ggml-small.bin
+CVN_WHISPER_CPP_TIMEOUT_MS=120000
+
+CVN_OCR_PROVIDER=tesseract
+CVN_TESSERACT_PATH=/absolute/path/to/tesseract
+CVN_TESSERACT_LANG=eng
+CVN_TESSERACT_TIMEOUT_MS=30000
+```
+
+مثال مسار Windows:
+
+```env
+CVN_FFMPEG_PATH=E:\study\context\tools\ffmpeg\bin\ffmpeg.exe
+CVN_WHISPER_CPP_PATH=E:\study\context\tools\whisper.cpp\Release\whisper-cli.exe
+CVN_WHISPER_CPP_MODEL=E:\study\context\models\ggml-small.bin
+CVN_TESSERACT_PATH=E:\study\context\tools\tesseract\tesseract.exe
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+
+## خيارات تثبيت متقدمة
+
+### تحديد مجلد التثبيت
+
+Linux / macOS / WSL:
 
 ```bash
 export CVN_HOME="$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-### Windows PowerShell
-
-أولاً، أدخل دليلًا فارغًا حيث تريد تثبيت ملفات المشروع، ثم انسخ الأمر التالي وقم بتشغيله. سيقوم البرنامج النصي بتثبيت ملفات المشروع مباشرة في الدليل الحالي دون إنشاء دليل متداخل آخر:
-
-```powershell
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
-```
-
-سيتحقق البرنامج النصي تلقائيًا من التبعيات مثل Git، Node.js/npm؛ سيتم إعادة استخدام التبعيات المثبتة مباشرة.
-
-لعرض محتوى البرنامج النصي أولاً، قم بزيارة:
-https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
-
-الاستخدام المتقدم: تحديد دليل التثبيت
+Windows PowerShell:
 
 ```powershell
 $env:CVN_HOME = "C:\path\to\empty-folder"
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
-### استكشاف الأخطاء وإصلاحها
+### السماح لمثبت التطبيق الأساسي بمحاولة إضافة الأدوات الاختيارية
 
-- إذا قيل إن الأمر غير موجود، فأغلق المحطة، وأعد فتحها، وقم بتشغيل أمر التثبيت مرة أخرى.
-- بالنسبة لنظامي Linux / WSL، إذا أبلغ `apt-get update` عن أخطاء مثل Docker، Chromium، Snap، مفاتيح GPG، إلخ، فعادة ما يكون ذلك بسبب مصادر apt الحالية أو تكوينات الحزم غير المكتملة في النظام، وليس لأن هذا المشروع يعتمد على هذه البرامج. يمكنك إصلاح / تعطيل مصادر apt المقابلة أولاً، أو تثبيت Git و Node.js 20+ و npm يدويًا، ثم إعادة المحاولة.
-- بالنسبة لنظام macOS، إذا انبثقت نافذة تثبيت أدوات سطر أوامر Xcode، فانقر فوق "تثبيت"، وبعد اكتمالها، أعد تشغيل أمر التثبيت.
-- بالنسبة لنظام Windows، إذا طُلب منك تثبيت بيئة تجميع، فيرجى المتابعة كما هو مطلوب؛ هذه بيئة قد تكون مطلوبة أثناء تجميع بعض التبعيات.
+هذا غير مطلوب في التثبيت الأول العادي. استخدمه فقط عند الحاجة.
 
-## التحديث إلى أحدث إصدار
-
-إذا كنت قد قمت بتثبيته بالفعل، فادخل إلى دليل المشروع وقم بتشغيل:
-
-Linux / macOS / WSL / Git Bash:
-
-```bash
-cd context-vocabulary-notebook
-git pull --ff-only
-npm ci
-npm run build
-npm run dev
-```
-
-Windows native PowerShell:
-
-```powershell
-Set-Location context-vocabulary-notebook
-git pull --ff-only
-npm ci
-npm run build
-npm run dev
-```
-
-يمكنك أيضًا إعادة تشغيل أمر التثبيت بنقرة واحدة. عندما يجد البرنامج النصي مستودع Git موجودًا في دليل التثبيت، فسيقوم تلقائيًا بتنفيذ `git pull --ff-only` و `npm ci` و `npm run build`.
-
-إذا أعدت تشغيل أمر التثبيت بنقرة واحدة داخل دليل المشروع، فسيقوم البرنامج النصي بتحديث دليل المشروع الحالي ولن يقوم بإنشاء دليل متداخل آخر بنفس الاسم. إذا كنت تعمل خارج المشروع، فيرجى إدخال دليل فارغ أولاً، أو تعيين نفس `CVN_HOME` بشكل صريح؛ لن يمزج البرنامج النصي ملفات المشروع في دليل عادي غير فارغ.
-
-## التثبيت اليدوي
-
-إذا تعذر على البرنامج النصي بنقرة واحدة تلبية البيئة، فيمكنك تثبيت Node.js 22 LTS و npm و Git وأدوات البناء الأصلية المطلوبة يدويًا أولاً، ثم تنفيذ الأوامر التالية.
-
-Linux / macOS / WSL / Git Bash:
-
-```bash
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
-cd context-vocabulary-notebook
-cp .env.example .env
-npm ci
-npm run dev
-```
-
-Windows native PowerShell:
-
-```powershell
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
-Set-Location context-vocabulary-notebook
-Copy-Item .env.example .env
-npm ci
-npm run dev
-```
-
-افتح في المتصفح:
-
-```text
-http://localhost:5173
-```
-
-عنوان الواجهة الخلفية الافتراضي:
-
-```text
-http://localhost:3107
-```
-
-## متغيرات البيئة
-
-## Local Clip Recognition (OCR / STT) addendum
-
-Clip analysis now uses local tools by default: `whisper.cpp` for speech recognition, `Tesseract` for image/video-frame OCR, and `ffmpeg` for video audio extraction. Missing tools do not block core install, manual card creation, review, or normal media upload; the readiness endpoint / UI reports what is missing.
-
-Opt in to installer-managed optional tools before running the installer:
+Linux / macOS / WSL:
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
@@ -194,46 +225,123 @@ export CVN_INSTALL_TESSERACT=1
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
+Windows PowerShell:
+
 ```powershell
 $env:CVN_INSTALL_FFMPEG = "1"
 $env:CVN_INSTALL_TESSERACT = "1"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
-If clip analysis shows `Audio extraction failed`, install ffmpeg or make sure ffmpeg is on PATH, then reopen the terminal and retry.
+مصدر المثبّت:
 
-The installer does not install `whisper.cpp` or download Whisper models. Configure `CVN_WHISPER_CPP_PATH` and `CVN_WHISPER_CPP_MODEL` manually. Tesseract language data can be configured with `CVN_TESSERACT_LANG`, for example `eng`, `chi_sim`, or `eng+chi_sim`.
+- Linux / macOS / WSL: https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
+- Windows PowerShell: https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
 
-DeepSeek and other OpenAI-compatible text models can help with contextual definitions, usage notes, sentence translation, lemmatization, and spelling checks. They do not replace local OCR/STT. `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1` only allows configured cloud fallback when local recognition fails, and is disabled by default.
+## التثبيت اليدوي
 
-<!-- AUTO-GENERATED:ENV -->
-| المتغير | مطلوب | الافتراضي | الوصف |
-|------|------|--------|------|
-| `PORT` | لا | `3107` | منفذ خادم Express للواجهة الخلفية. يقوم خادم تطوير Vite بتوكيل `/api` إلى هذا المنفذ. |
-| `DATABASE_PATH` | لا | `./data/context-vocabulary-notebook.sqlite` | مسار قاعدة بيانات SQLite. يتم حل المسارات النسبية مقابل جذر المشروع. |
-| `UPLOADS_DIR` | لا | `./uploads` | دليل حفظ ملفات الوسائط المحملة. يتم حل المسارات النسبية مقابل جذر المشروع. |
-<!-- /AUTO-GENERATED:ENV -->
+إذا لم يستطع سكربت الخطوة الواحدة تجهيز البيئة، فثبّت أولًا Node.js 22 LTS و npm و Git وأدوات البناء الأصلية المطلوبة يدويًا، ثم شغّل:
 
-لتغيير منفذ الواجهة الأمامية أثناء التطوير، يمكنك تعيين `CLIENT_PORT` عند تشغيل الأمر، والافتراضي هو `5173`. هذا المتغير غير موجود في `.env.example` وعادة لا يحتاج إلى تكوين.
+Linux / macOS / WSL / Git Bash:
 
-## الأوامر الشائعة
+```bash
+cd "$HOME"
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
+cd context-vocabulary-notebook
+cp .env.example .env
+npm ci
+npm run dev
+```
 
-<!-- AUTO-GENERATED:SCRIPTS -->
-| الأمر | الوصف |
-|------|------|
-| `npm run dev` | يبدأ كلاً من خادم تطوير الواجهة الخلفية وخادم تطوير الواجهة الأمامية Vite. |
-| `npm run dev:client` | يبدأ خادم تطوير الواجهة الأمامية Vite فقط، ويستمع إلى `0.0.0.0:5173` افتراضيًا. |
-| `npm run dev:server` | يبدأ خادم تطوير Express للواجهة الخلفية فقط، ويستمع إلى `localhost:3107` افتراضيًا. |
-| `npm run build` | يقوم بتشغيل التحقق من النوع أولاً، ثم يبني الواجهة الأمامية والواجهة الخلفية. |
-| `npm test` | يقوم بتشغيل اختبارات الوحدة / التكامل Vitest. |
-| `npm run test:e2e` | يقوم بتشغيل اختبارات Playwright E2E؛ يمر حتى مع عدم وجود ملفات اختبار. |
-| `npm run typecheck` | يقوم بتشغيل التحقق من نوع TypeScript لجانبي الواجهة الأمامية و Node. |
-| `npm run lint` | يعادل حاليًا `npm run typecheck`. |
-<!-- /AUTO-GENERATED:SCRIPTS -->
+Windows PowerShell:
+
+```powershell
+Set-Location $HOME
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
+Set-Location context-vocabulary-notebook
+Copy-Item .env.example .env
+npm ci
+npm run dev
+```
+
+افتحه في المتصفح:
+
+```text
+http://localhost:5173
+```
+
+## الأسئلة الشائعة
+
+### ماذا أفعل إذا فشل التثبيت بخطوة واحدة؟
+
+- إذا قالت الرسالة إن أمرًا مفقود، فأغلق الطرفية وافتحها من جديد، ثم شغّل المثبّت مرة أخرى.
+- Linux / WSL: إذا أبلغ `apt-get update` عن أخطاء Docker أو Chromium أو Snap أو مفتاح GPG أو ما شابه، فهي عادةً مشكلة مصدر apt موجود أو إعداد حزمة غير مكتمل، وليست لأن هذا المشروع يعتمد على تلك الحزم. أصلح/عطّل مصدر apt المتأثر أولًا، أو ثبّت Git و Node.js 22 LTS و npm يدويًا قبل إعادة المحاولة.
+- macOS: إذا ظهرت مطالبة Xcode Command Line Tools، فانقر Install، ثم أعد تشغيل المثبّت بعد اكتمالها.
+- Windows: إذا فشل `npm ci` عند `better-sqlite3`، فعادةً تحتاج إلى Python و Visual Studio Build Tools / MSVC؛ وإذا لم تكن معتادًا على هذه الأدوات، فيُوصى باستخدام WSL.
+
+### تفتح الصفحة، لكن التعرف المحلي ما زال يظهر غير مهيأ
+
+تأكد أولًا من اكتمال مثبت التعرف ومن وجود مسارات `CVN_*` المقابلة في `.env`. ثم انقر **I installed it, check again** في صفحة الإعدادات.
+
+إذا ظل لا يعمل:
+
+- تأكد من أن التطبيق شُغّل من مجلد المشروع نفسه.
+- تأكد من عدم وجود عملية backend قديمة على `3107` تشغل المنفذ.
+- شغّل `npm run dev` مرة أخرى وحدّث الصفحة.
+
+### المنفذ مستخدم بالفعل
+
+غيّر منفذ backend:
+
+```env
+PORT=3108
+```
+
+لتغيير منفذ frontend في Linux / macOS / WSL / Git Bash:
+
+```bash
+CLIENT_PORT=5174 npm run dev
+```
+
+لتغيير منفذ frontend في Windows PowerShell:
+
+```powershell
+$env:CLIENT_PORT = "5174"
+npm run dev
+```
+
+### لا توجد ترجمات مرئية في المقطع، لذلك لا يتم التعرف على الجملة الأصلية
+
+إذا لم تكن هناك ترجمات ظاهرة في إطار الفيديو، أو كانت الترجمات صغيرة أو ضبابية، فقد لا يعثر OCR على جملة؛ في هذه الحالة تحتاج إلى التعرف على الكلام. تأكد من توفر ffmpeg و whisper.cpp و `CVN_WHISPER_CPP_MODEL`. وإذا كان الصوت أيضًا لا يحتوي على كلام واضح، فأدخل الجملة الأصلية يدويًا.
+
+إذا ظهرت الرسالة `Audio extraction failed`، فعادةً يكون ffmpeg غير متاح، أو المسار غير صحيح، أو أن ffmpeg لا يستطيع قراءة ملف الفيديو/الصوت الأصلي.
+
+### بيانات لغة Tesseract مفقودة
+
+إذا أبلغ OCR عن بيانات لغة مفقودة، فهذا يعني أنه عُثر على Tesseract لكن ملف traineddata المطابق غير مثبت. رموز اللغات الشائعة:
+
+- الإنجليزية: `eng`
+- الصينية المبسطة: `chi_sim`
+- اليابانية: `jpn`
+- الكورية: `kor`
+- الفرنسية: `fra`
+- الألمانية: `deu`
+- الإسبانية: `spa`
+- الروسية: `rus`
+
+لعدة لغات:
+
+```env
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+### مسار نموذج Whisper غير مهيأ
+
+لا يملك `CVN_WHISPER_CPP_MODEL` نموذجًا افتراضيًا. نزّل نموذج ggml مدعومًا من whisper.cpp واكتب مساره المطلق في `.env`.
 
 ## البيانات والنسخ الاحتياطي
 
-البيانات الافتراضية موجودة داخل دليل المشروع:
+افتراضيًا، توجد كل البيانات داخل مجلد المشروع:
 
 ```text
 data/context-vocabulary-notebook.sqlite
@@ -241,101 +349,104 @@ uploads/
 .env
 ```
 
-يوصى بحفظها معًا عند النسخ الاحتياطي:
+للنسخ الاحتياطي، احفظها معًا:
 
 ```bash
 tar -czf vocabulary-notebook-backup.tar.gz data uploads .env
 ```
 
-للاستعادة، أعد هذه الملفات إلى نفس دليل المشروع وابدأ التطبيق.
+للاستعادة، أعد هذه الملفات إلى مجلد المشروع نفسه وشغّل التطبيق.
 
-يتوفر أيضًا استيراد / تصدير ZIP داخل التطبيق:
+يوفر التطبيق أيضًا استيراد/تصدير ZIP:
 
-- النسخ الاحتياطي الكامل: يتضمن البطاقات والسياقات والوسائط والعلامات والمفضلة وحالة المراجعة وحالة FSRS وسجلات المراجعة وإعدادات المستخدم.
-- مشاركة البطاقات فقط: لا يتضمن تقدم المراجعة الشخصية أو حالة المفضلة أو إعدادات المستخدم.
+- نسخة احتياطية كاملة: تشمل البطاقات والسياقات والوسائط والوسوم والمفضلات وحالة المراجعة وحالة FSRS وسجلات المراجعة وإعدادات المستخدم.
+- مشاركة البطاقات فقط: تستبعد تقدم المراجعة الشخصي وحالة المفضلة وإعدادات المستخدم.
 
-يعد مفتاح AI API تكوينًا حساسًا محليًا ولن يتم نقله مع الملف المصدر؛ يجب ملؤه مرة أخرى بعد تغيير الأجهزة.
+مفاتيح AI API إعدادات محلية حساسة ولا تُضمّن في ملفات التصدير؛ تحتاج إلى إدخالها مرة أخرى على جهاز آخر.
 
 ## توصيات ملفات الوسائط
 
-| النوع | التنسيقات المدعومة | الحجم الموصى به |
+| النوع | الصيغ المدعومة | الحجم الموصى به |
 |------|----------|----------|
-| فيديو | `mp4` | أقل من 300 ميغابايت لكل ملف |
-| صوت | `mp3` | أقل من 50 ميغابايت لكل ملف |
-| صورة | `jpg` / `png` / `webp` | أقل من 10 ميغابايت لكل ملف |
+| فيديو | `mp4` | ضمن 300MB لكل ملف |
+| صوت | `mp3` | ضمن 50MB لكل ملف |
+| صورة | `jpg` / `png` / `webp` | ضمن 10MB لكل ملف |
 
-## تكوين اقتراحات الذكاء الاصطناعي
+## إعداد اقتراحات الذكاء الاصطناعي
 
-تدعم صفحة إنشاء البطاقات اقتراحات الذكاء الاصطناعي الاختيارية. تحتاج إلى إضافة تكوينات API متوافقة مع OpenAI في صفحة الإعدادات:
+تدعم صفحة إنشاء البطاقات اقتراحات AI اختيارية. أضف تكوين API متوافقًا مع OpenAI في صفحة الإعدادات:
 
 - اسم العرض
-- URL الأساسي
-- مفتاح API
-- النموذج
+- Base URL
+- API Key
+- Model
 
-ملاحظة:
+ملاحظات:
 
-- يعمل إنشاء البطاقات اليدوي والمراجعة بشكل مثالي بدون تكوين الذكاء الاصطناعي.
-- يتم تخزين مفتاح API في قاعدة البيانات المحلية وسيتم إخفاؤه على واجهة المستخدم.
-- لن يتم تضمين مفتاح API في الملفات المصدرة.
-- يُستخدم الذكاء الاصطناعي فقط لاقتراح التعريفات السياقية وملاحظات الاستخدام أثناء إنشاء البطاقات. إنه ليس قاموسًا مدمجًا، ولا يقوم بإنشاء البطاقات تلقائيًا.
+- بدون تكوين AI، يظل إنشاء البطاقات يدويًا والمراجعة يعملان بشكل طبيعي.
+- يُخزّن API Key في قاعدة البيانات المحلية ويُخفى في UI.
+- لا يُضمّن API Key في ملفات التصدير.
+- يستطيع AI اقتراح معانٍ سياقية وملاحظات استخدام وترجمات للجمل الكاملة وردّ الكلمات إلى أصلها وتدقيقًا إملائيًا أثناء إنشاء البطاقة.
+- نماذج النص المتوافقة مع OpenAI مثل DeepSeek لا تنفذ OCR/STT المحلي؛ يعتمد التعرف على نص الصور على Tesseract، ويعتمد التعرف على الكلام على whisper.cpp.
 
-## أسئلة مكررة (FAQ)
+## المتطلبات
 
-### المنفذ مشغول
+| البيئة | المتطلب | ملاحظات |
+|------|------|------|
+| Node.js | يُوصى بـ Node.js 22 LTS | يعتمد بناء frontend وخوادم التطوير وخدمة backend كلها على Node.js. يحاول المثبّت توفيره. |
+| npm | يُثبّت مع Node.js | يحتوي المستودع على `package-lock.json`؛ تُثبّت الاعتماديات باستخدام `npm ci`. |
+| Git | مطلوب عند الاستنساخ من GitHub | يتحقق المثبّت من وجوده ويحاول توفيره. |
+| المتصفح | Chrome / Edge / Firefox / Safari أو متصفح حديث آخر | يُستخدم التطبيق عبر صفحة ويب محلية. |
+| أدوات بناء C/C++ | قد تكون مطلوبة | `better-sqlite3` وحدة أصلية؛ إذا لم تتوفر حزمة مبنية مسبقًا، يحاول `npm ci` ترجمتها محليًا. |
+| ffmpeg | اختياري | مطلوب لتحليل مقاطع الفيديو/الصوت. |
+| Tesseract OCR | اختياري | مطلوب لتنفيذ OCR على الصور أو إطارات الفيديو. |
+| whisper.cpp + نموذج Whisper | اختياري | مطلوب للتعرف على الكلام في الصوت/الفيديو. |
 
-تعديل `.env`:
+### توصية WSL / Windows الأصلي
 
-```env
-PORT=3108
-```
+- عادةً يكون WSL الأكثر استقرارًا: مسارات Node و Git و ffmpeg و Tesseract وأدوات البناء الأصلية أقرب إلى Linux.
+- Windows PowerShell الأصلي مدعوم: يعيد السكربت استخدام Git / Node.js / npm الموجودة ويحاول استخدام `winget` فقط عندما يكون شيء مفقودًا.
+- إذا فشل `npm ci` في Windows الأصلي عند `better-sqlite3`، فثبّت Python و Visual Studio Build Tools / MSVC كما يُطلب، أو استخدم WSL.
 
-إذا كان منفذ الواجهة الأمامية `5173` مشغولاً:
+## متغيرات البيئة
 
-```bash
-CLIENT_PORT=5174 npm run dev
-```
+<!-- AUTO-GENERATED:ENV -->
+| المتغير | مطلوب | الافتراضي | الوصف |
+|------|------|--------|------|
+| `PORT` | لا | `3107` | منفذ خدمة Express الخلفية. يوجّه خادم Vite التطويري طلبات `/api` إلى هذا المنفذ. |
+| `DATABASE_PATH` | لا | `./data/context-vocabulary-notebook.sqlite` | مسار قاعدة بيانات SQLite. تُفسَّر المسارات النسبية من جذر المشروع. |
+| `UPLOADS_DIR` | لا | `./uploads` | دليل ملفات الوسائط المرفوعة. تُفسَّر المسارات النسبية من جذر المشروع. |
+| `CVN_FFMPEG_PATH` | لا | `ffmpeg` | مسار ملف ffmpeg التنفيذي؛ عند تثبيت أدوات Windows أصلية، استخدم مسارًا مطلقًا عند الحاجة. |
+| `CVN_STT_PROVIDER` | لا | `whisper.cpp` | موفر التعرف المحلي على الكلام؛ يمكن أن يكون `whisper.cpp` أو `disabled`. |
+| `CVN_WHISPER_CPP_PATH` | لا | `whisper-cli` | مسار ملف whisper.cpp التنفيذي؛ إذا كان نظامك يحتوي فقط على `main` القديم، فاضبطه إلى `main` أو إلى مسار مطلق. |
+| `CVN_WHISPER_CPP_MODEL` | مطلوب لـ STT المحلي | فارغ | مسار ملف نموذج Whisper؛ لا يقوم المثبّت بتنزيل نموذج تلقائيًا. |
+| `CVN_WHISPER_CPP_TIMEOUT_MS` | لا | `120000` | مهلة تشغيل تعرّف واحدة بواسطة whisper.cpp. |
+| `CVN_OCR_PROVIDER` | لا | `tesseract` | موفر OCR المحلي؛ يمكن أن يكون `tesseract` أو `disabled`. |
+| `CVN_TESSERACT_PATH` | لا | `tesseract` | مسار ملف Tesseract التنفيذي. |
+| `CVN_TESSERACT_LANG` | لا | يُختار تلقائيًا حسب لغة الهدف | رموز لغات Tesseract، مثل `eng` و `chi_sim` و `eng+chi_sim`. |
+| `CVN_TESSERACT_TIMEOUT_MS` | لا | `30000` | مهلة تشغيل OCR واحدة بواسطة Tesseract. |
+| `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK` | لا | `0` | السماح بالرجوع إلى التفريغ السحابي عندما يفشل التعرف المحلي على المقاطع؛ معطّل افتراضيًا. |
+| `CVN_LOCAL_READINESS_TIMEOUT_MS` | لا | يحدده الخادم | مهلة فحوص جاهزية التعرف المحلي. |
+<!-- /AUTO-GENERATED:ENV -->
 
-### فشل npm ci في better-sqlite3
+## أوامر شائعة
 
-فضل استخدام Node.js 22 LTS. `better-sqlite3` عبارة عن وحدة أصلية؛ إذا لم تتوفر حزمة مجمعة مسبقًا للنظام الحالي وإصدار Node، فسيحاول التجميع المحلي أثناء التثبيت.
-
-Linux / WSL:
-
-```bash
-sudo apt update
-sudo apt install -y build-essential python3 make g++
-```
-
-macOS:
-
-```bash
-xcode-select --install
-```
-
-تتطلب بيئة Windows الأصلية بيئات بناء أصلية Python و Visual Studio Build Tools / MSVC متوفرة. إذا لم تكن على دراية بتكوين هذه الأدوات، فمن المستحسن استخدام WSL بدلاً من ذلك، أو تثبيت البيئات المفقودة يدويًا أولاً والمحاولة مرة أخرى.
-
-### تفتح الصفحة، لكن طلبات API تفشل
-
-تأكد من تشغيل الواجهة الخلفية:
-
-```text
-http://localhost:3107/api/health
-```
-
-استجابة طبيعية:
-
-```json
-{"ok":true}
-```
-
-### أريد تغيير دليل التثبيت
-
-فقط انقل دليل المشروع بأكمله. إذا كان `.env` يستخدم مسارات نسبية، فسيستمر حل قاعدة البيانات ودليل التحميلات بالنسبة للدليل الجديد. إذا كان `.env` يستخدم مسارات مطلقة، فيجب تحديثها بشكل متزامن.
+<!-- AUTO-GENERATED:SCRIPTS -->
+| الأمر | الوصف |
+|------|------|
+| `npm run dev` | يشغّل خادم تطوير backend وخادم تطوير Vite frontend معًا. |
+| `npm run dev:client` | يشغّل خادم تطوير Vite frontend فقط، ويستمع افتراضيًا على `0.0.0.0:5173`. |
+| `npm run dev:server` | يشغّل خادم تطوير Express backend فقط، ويستمع افتراضيًا على `localhost:3107`. |
+| `npm run build` | يشغّل فحوص الأنواع، ثم يبني frontend و backend. |
+| `npm test` | يشغّل اختبارات Vitest للوحدات/التكامل. |
+| `npm run test:e2e` | يشغّل اختبارات Playwright E2E؛ ينجح حتى عندما لا توجد ملفات اختبار. |
+| `npm run typecheck` | يشغّل فحوص أنواع TypeScript للـ frontend وجانب Node. |
+| `npm run lint` | يعادل حاليًا `npm run typecheck`. |
+<!-- /AUTO-GENERATED:SCRIPTS -->
 
 ## ملاحظات التطوير
 
-المجموعة التقنية لهذا المشروع:
+حزمة المشروع:
 
 - React + Vite
 - Node.js + Express
@@ -345,8 +456,17 @@ http://localhost:3107/api/health
 - Vitest
 - Playwright
 
-يلتزم الإصدار الأول بالأولوية المحلية، ولا قواميس مدمجة، ولا اتصالات قواميس، ولا روابط فيديو لمواقع الويب، ولا مزامنة. يضيف V2 الحالي إمكانيات اقتراح الذكاء الاصطناعي أثناء إنشاء البطاقات فقط.
+يبقى الإصدار 1 محليًا أولًا: لا قاموس مدمج، ولا تكامل مع قاموس، ولا روابط لفيديوهات مواقع الويب، ولا مزامنة. يضيف V2 الحالي اقتراحات AI أثناء إنشاء البطاقات ومساعدات التعرف المحلي على المقاطع.
 
-## الترخيص
+## ملاحظات قبل التثبيت وإخلاء مسؤولية
 
-يستخدم هذا المشروع ترخيص MIT. انظر [`LICENSE`](./LICENSE) للحصول على التفاصيل.
+بحسب معرفة المؤلف الحالية، لا يحتوي كود المصدر الخاص بهذا المشروع على أي كود خبيث. يتحقق المثبّت من البيئة المحلية، ويحاول على المنصات المدعومة تثبيت الاعتماديات المفقودة مثل Git و Node.js و npm؛ وعندما تكون أدوات البناء الأصلية مفقودة، يطبع إرشادات، وتتطلب بعض المنصات تثبيتًا يدويًا.
+
+ينزّل التثبيت برامج واعتماديات من أطراف ثالثة عبر مديري حزم النظام و npm. وقد يتأثر التثبيت والاستخدام مع ذلك بأذونات النظام وحالة الشبكة وتوفر مدير الحزم وبرامج مكافحة الفيروسات وسياسات أجهزة المؤسسات ومساحة القرص وسلاسل توريد اعتماديات الطرف الثالث ونتائج ترجمة وحدات Node الأصلية وعوامل مشابهة. يتحمل المستخدم مسؤولية المشكلات والنتائج الناتجة عن تشغيل المثبّتات وتثبيت الاعتماديات وتعديل بيئة النظام ورفع/حفظ الملفات المحلية.
+
+إذا لم يستطع السكربت تجهيز البيئة تلقائيًا، فسيطبع الأدوات المفقودة والخطوات التالية المقترحة؛ عندها تحتاج إلى تثبيتها يدويًا لنظامك ثم إعادة المحاولة.
+
+## الرخصة
+
+يستخدم هذا المشروع رخصة MIT. راجع [`LICENSE`](./LICENSE).
+
