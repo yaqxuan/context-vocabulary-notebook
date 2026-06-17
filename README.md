@@ -161,12 +161,12 @@ irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/s
 
 ## 更新到最新版
 
-如果你已经安装过，进入项目目录后运行：
+如果你已经安装过，进入当初安装项目文件的目录后运行（把示例路径替换成你的实际安装目录）：
 
 Linux / macOS / WSL / Git Bash：
 
 ```bash
-cd context-vocabulary-notebook
+cd "$HOME/context-vocabulary-notebook"
 git pull --ff-only
 npm ci
 npm run build
@@ -176,7 +176,7 @@ npm run dev
 Windows 原生 PowerShell：
 
 ```powershell
-Set-Location context-vocabulary-notebook
+Set-Location "C:\path\to\context-vocabulary-notebook"
 git pull --ff-only
 npm ci
 npm run build
