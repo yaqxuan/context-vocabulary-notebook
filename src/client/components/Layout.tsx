@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useI18n } from '../i18n/I18nProvider';
+import { GlobalReviewBackdrop } from './GlobalReviewBackdrop';
 
 export interface NavItem {
   href: string;
@@ -21,6 +22,7 @@ export function Layout({ navItems, currentPath, title, subtitle, children }: Lay
 
   return (
     <div className="app-shell">
+      <GlobalReviewBackdrop currentPath={currentPath} />
       <div className="app-frame">
         <aside className="app-sidebar">
           <div className="app-brand">

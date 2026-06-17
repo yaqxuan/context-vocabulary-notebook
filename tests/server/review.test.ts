@@ -7,7 +7,7 @@ import { createTestDb, destroyTestDb } from '../../src/server/db/testDb.js';
 import type { TestDb } from '../../src/server/db/testDb.js';
 import { createCard } from '../../src/server/domain/cards.js';
 import { createContext } from '../../src/server/domain/contexts.js';
-import { getDueQueue } from '../../src/server/domain/review.js';
+import { getDueBubbleWords, getDueQueue } from '../../src/server/domain/review.js';
 import { addTagToCard, createTag } from '../../src/server/domain/tags.js';
 
 let db: TestDb;
@@ -199,6 +199,81 @@ describe('getDueQueue', () => {
   });
 });
 
+describe('getDueBubbleWords', () => {
+  it('returns at most 20 bubble words with total due count and lightweight fields', () => {
+    for (let index = 0; index < 25; index += 1) {
+      createCard(db, {
+        target_word: `word-${index}`,
+        context_meaning: `meaning-${index}`,
+        target_language: '英语',
+        definition_language: '中文',
+      });
+    }
+
+    const result = getDueBubbleWords(db, { target_language: '英语' });
+
+    expect(result.items).toHaveLength(20);
+    expect(result.total_due_count).toBe(25);
+    expect(result.limit).toBe(20);
+    expect(result.items[0]).toEqual({
+      id: expect.any(String),
+      target_word: expect.stringMatching(/^word-\d+$/),
+      context_meaning: expect.stringMatching(/^meaning-\d+$/),
+      target_language: '英语',
+      due_date: expect.any(String),
+    });
+    expect(result.items.map((item) => item.target_word)).toHaveLength(20);
+    expect(Object.keys(result.items[0]!).sort()).toEqual([
+      'context_meaning',
+      'due_date',
+      'id',
+      'target_language',
+      'target_word',
+    ]);
+  });
+
+  it('clamps requested bubble word limits to the safe 0..20 range', () => {
+    createCard(db, { target_word: 'zero', context_meaning: '零', target_language: '英语', definition_language: '中文' });
+
+    expect(getDueBubbleWords(db, { target_language: '英语' }, -1).items).toHaveLength(0);
+    expect(getDueBubbleWords(db, { target_language: '英语' }, Number.NaN).items).toHaveLength(0);
+    expect(getDueBubbleWords(db, { target_language: '英语' }, Number.POSITIVE_INFINITY).items).toHaveLength(0);
+    expect(getDueBubbleWords(db, { target_language: '英语' }, 99).items).toHaveLength(1);
+    expect(getDueBubbleWords(db, { target_language: '英语' }, 99).limit).toBe(20);
+  });
+
+  it('scopes bubble words and total due count by target_language', () => {
+    const english = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    const result = getDueBubbleWords(db, { target_language: '英语' });
+
+    expect(result.total_due_count).toBe(1);
+    expect(result.items).toEqual([
+      expect.objectContaining({ id: english.id, target_language: '英语' }),
+    ]);
+  });
+
+  it('matches due queue ordering for normal due cards before same-day retry cards', () => {
+    const retry = createCard(db, { target_word: 'retry', context_meaning: '重试', target_language: '英语', definition_language: '中文' });
+    const normal = createCard(db, { target_word: 'normal', context_meaning: '普通', target_language: '英语', definition_language: '中文' });
+    const future = createCard(db, { target_word: 'future', context_meaning: '未来', target_language: '英语', definition_language: '中文' });
+    const now = new Date();
+    const past = new Date(now.getTime() - 3600000).toISOString();
+    const tomorrow = new Date(now.getTime() + 86400000).toISOString();
+
+    db.prepare('UPDATE fsrs_states SET due_date = ?, same_day_retry_at = ? WHERE card_id = ?').run(tomorrow, now.toISOString(), retry.id);
+    db.prepare('UPDATE fsrs_states SET due_date = ?, same_day_retry_at = NULL WHERE card_id = ?').run(past, normal.id);
+    db.prepare('UPDATE fsrs_states SET due_date = ?, same_day_retry_at = NULL WHERE card_id = ?').run(tomorrow, future.id);
+
+    const queueIds = getDueQueue(db, { target_language: '英语' }).map((card) => card.id);
+    const bubbleIds = getDueBubbleWords(db, { target_language: '英语' }, 20).items.map((card) => card.id);
+
+    expect(queueIds).toEqual([normal.id, retry.id]);
+    expect(bubbleIds).toEqual(queueIds);
+  });
+});
+
 describe('review API', () => {
   it('returns next due card with full primary sentence and visible target word', async () => {
     const card = createCard(db, { target_word: 'charges', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
@@ -242,6 +317,50 @@ describe('review API', () => {
 
   it('rejects unsupported due target_language values', async () => {
     const res = await request(app).get('/api/review/due').query({ target_language: 'Klingon' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('target_language must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语');
+  });
+
+  it('returns due bubble words DTO scoped to the configured default target language', async () => {
+    db.prepare("UPDATE user_settings SET default_target_language = '日语' WHERE id = 1").run();
+    createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    const japanese = createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    const res = await request(app).get('/api/review/due-bubbles');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      items: [
+        {
+          id: japanese.id,
+          target_word: '猫',
+          context_meaning: 'cat',
+          target_language: '日语',
+          due_date: expect.any(String),
+        },
+      ],
+      total_due_count: 1,
+      limit: 20,
+    });
+  });
+
+  it('allows due bubble target_language to override the settings default', async () => {
+    db.prepare("UPDATE user_settings SET default_target_language = '日语' WHERE id = 1").run();
+    const english = createCard(db, { target_word: 'charge', context_meaning: '收费', target_language: '英语', definition_language: '中文' });
+    createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+
+    const res = await request(app).get('/api/review/due-bubbles').query({ target_language: '英语' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toEqual([
+      expect.objectContaining({ id: english.id, target_language: '英语' }),
+    ]);
+    expect(res.body.total_due_count).toBe(1);
+  });
+
+  it('rejects unsupported due bubble target_language values', async () => {
+    const res = await request(app).get('/api/review/due-bubbles').query({ target_language: 'Klingon' });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('target_language must be one of: 中文, 英语, 日语, 韩语, 法语, 德语, 西班牙语, 俄语');
@@ -361,7 +480,7 @@ describe('review API', () => {
     expect(second.body.fsrs.learning_steps).toBe(0);
   });
 
-  it('counts daily reviewed_count by distinct card instead of review attempts', async () => {
+  it('does not count Again attempts as reviewed daily progress', async () => {
     db.prepare('UPDATE user_settings SET daily_review_limit = 2 WHERE id = 1').run();
     const card = createCard(db, { target_word: 'repeat', context_meaning: '重复', target_language: '英语', definition_language: '中文' });
 
@@ -369,8 +488,9 @@ describe('review API', () => {
     const second = await request(app).post(`/api/review/${card.id}`).send({ rating: 'again' });
 
     expect(first.status).toBe(200);
+    expect(first.body.progress.reviewed_count).toBe(0);
     expect(second.status).toBe(200);
-    expect(second.body.progress.reviewed_count).toBe(1);
+    expect(second.body.progress.reviewed_count).toBe(0);
     expect(second.body.progress.again_count).toBe(2);
     expect(second.body.progress.is_limit_reached).toBe(false);
   });
@@ -457,7 +577,7 @@ describe('review API', () => {
 
     expect(progress.body.is_limit_reached).toBe(true);
     expect(secondReview.status).toBe(200);
-    expect(secondReview.body.progress.reviewed_count).toBe(2);
+    expect(secondReview.body.progress.reviewed_count).toBe(1);
     expect(secondReview.body.progress.is_limit_reached).toBe(true);
   });
 

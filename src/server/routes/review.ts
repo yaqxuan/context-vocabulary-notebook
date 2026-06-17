@@ -4,7 +4,7 @@ import { REVIEW_RATINGS, SUPPORTED_LANGUAGES, type ReviewRating } from '../../sh
 import { isNonEmptyString, isSupportedLanguage } from '../../shared/validators.js';
 import { getContextsForCard } from '../domain/contexts.js';
 import { getMediaForCard } from '../domain/media.js';
-import { getDailyReviewProgress, getNextDueCard, submitReview } from '../domain/review.js';
+import { getDailyReviewProgress, getDueBubbleWords, getNextDueCard, submitReview } from '../domain/review.js';
 import { getSettings } from '../domain/settings.js';
 import { getCardTags } from '../domain/tags.js';
 import { asyncRoute } from '../http/asyncRoute.js';
@@ -62,6 +62,11 @@ export function reviewRouter(db: Database): Router {
   router.get('/progress', asyncRoute(async (req, res) => {
     const targetLanguage = reviewTargetLanguage(db, req.query.target_language);
     res.json(getDailyReviewProgress(db, new Date(), { target_language: targetLanguage }));
+  }));
+
+  router.get('/due-bubbles', asyncRoute(async (req, res) => {
+    const targetLanguage = reviewTargetLanguage(db, req.query.target_language);
+    res.json(getDueBubbleWords(db, { target_language: targetLanguage }));
   }));
 
   router.post('/:cardId', asyncRoute(async (req, res) => {

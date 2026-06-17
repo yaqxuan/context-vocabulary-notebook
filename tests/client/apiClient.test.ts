@@ -5,6 +5,7 @@ import { getAiSuggestion } from '../../src/client/api/aiSuggestions';
 import { getCardSuggestions, listCards } from '../../src/client/api/cards';
 import { ApiError, apiBlob, apiFormData, apiRequest, buildQuery } from '../../src/client/api/client';
 import { executeImport, exportCards } from '../../src/client/api/importExport';
+import { getDueReviewBubbles, REVIEW_COMPLETED_EVENT, submitReview } from '../../src/client/api/review';
 import { getHomeStatistics } from '../../src/client/api/statistics';
 
 describe('api client', () => {
@@ -155,6 +156,88 @@ describe('endpoint modules', () => {
     await getHomeStatistics();
 
     expect(fetchMock).toHaveBeenCalledWith('/api/statistics/home', expect.any(Object));
+  });
+
+  it('requests due review bubbles with target language scope', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ items: [], total_due_count: 0, limit: 50 }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await getDueReviewBubbles({ target_language: '日语' });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/review/due-bubbles?target_language=%E6%97%A5%E8%AF%AD', expect.any(Object));
+  });
+
+  it('dispatches a review completed event after successful submitReview', async () => {
+    const reviewedAt = '2026-06-16T10:00:00.000Z';
+    const listener = vi.fn();
+    window.addEventListener(REVIEW_COMPLETED_EVENT, listener);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({
+        card_id: 'card-1',
+        rating: 'good',
+        reviewed_at: reviewedAt,
+        due_date_before: '2026-06-16',
+        due_date_after: '2026-06-20',
+        fsrs: {},
+        progress: { due_count: 0, reviewed_today_count: 1, again_today_count: 0, good_today_count: 1, daily_review_limit: 20, is_daily_target_reached: false },
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await submitReview('card-1', { rating: 'good' });
+    window.removeEventListener(REVIEW_COMPLETED_EVENT, listener);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0]?.[0]).toMatchObject({
+      detail: { cardId: 'card-1', rating: 'good', reviewedAt },
+    });
+  });
+
+  it('does not dispatch a review completed event for Again results', async () => {
+    const reviewedAt = '2026-06-16T10:00:00.000Z';
+    const listener = vi.fn();
+    window.addEventListener(REVIEW_COMPLETED_EVENT, listener);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({
+        card_id: 'card-1',
+        rating: 'again',
+        reviewed_at: reviewedAt,
+        due_date_before: '2026-06-16',
+        due_date_after: '2026-06-16',
+        fsrs: {},
+        progress: { reviewed_count: 0, again_count: 1, good_count: 0, daily_review_limit: 20, is_limit_reached: false },
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await submitReview('card-1', { rating: 'again' });
+    window.removeEventListener(REVIEW_COMPLETED_EVENT, listener);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('does not dispatch a review completed event when submitReview fails', async () => {
+    const listener = vi.fn();
+    window.addEventListener(REVIEW_COMPLETED_EVENT, listener);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ error: 'card not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await expect(submitReview('missing-card', { rating: 'again' })).rejects.toThrow('card not found');
+    window.removeEventListener(REVIEW_COMPLETED_EVENT, listener);
+
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it('calls AI config and suggestion endpoints', async () => {
