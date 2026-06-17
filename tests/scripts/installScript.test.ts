@@ -333,9 +333,15 @@ describe('install-recognition-windows.ps1 safeguards', () => {
     const installTesseract = script.slice(start, nextFunction);
 
     expect(start).toBeGreaterThanOrEqual(0);
+    expect(script).toContain('$TesseractInstallerTimeoutSeconds = 180');
+    expect(script).toContain('function Invoke-TesseractInstaller');
+    expect(script).toContain('Start-Process -FilePath $InstallerPath -ArgumentList $ArgumentList -PassThru');
+    expect(script).not.toContain('-Verb RunAs');
+    expect(script).toContain('$Process.WaitForExit($TesseractInstallerTimeoutSeconds * 1000)');
+    expect(script).toContain('Stop-Process -Id $Process.Id -Force');
+    expect(script).toContain('Tesseract installer did not finish within $TesseractInstallerTimeoutSeconds seconds');
     expect(installTesseract).toContain('Assert-FileSha256 $InstallerPath $TesseractInstallerSha256');
-    expect(installTesseract).toContain('Start-Process -FilePath $InstallerPath -ArgumentList @("/S", $TesseractInstallDirArg) -Wait -PassThru');
-    expect(installTesseract).toContain('$InstallExitCode = $Process.ExitCode');
+    expect(installTesseract).toContain('$InstallExitCode = Invoke-TesseractInstaller $InstallerPath @("/S", $TesseractInstallDirArg)');
     expect(installTesseract).toContain('Tesseract installer failed with exit code $InstallExitCode');
     expect(installTesseract).toContain('Assert-TesseractVersion $DefaultTesseract');
     expect(installTesseract).not.toContain('if ($LASTEXITCODE -ne 0) { throw "Tesseract installer failed with exit code $LASTEXITCODE" }');
