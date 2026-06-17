@@ -3,6 +3,8 @@ $ErrorActionPreference = "Stop"
 $ProjectName = "context-vocabulary-notebook"
 $ModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
 $TesseractInstallerUrl = "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe"
+$TesseractInstallerSha256 = "f3fc4236425b690c8be756f35793f77394ee004be0a6460a440c754d892f68bc"
+$ExpectedTesseractVersion = "5.5.0.20241111"
 $FfmpegZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-06-14-13-33/ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip"
 $FfmpegZipSha256 = "9bf9423be2096818d950b05748b50538a9013913ee8e26813b66172eea9b4015"
 $WhisperZipUrl = "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip"
@@ -53,6 +55,13 @@ function Assert-FileSha256($Path, $ExpectedHash) {
   $ActualHash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
   if ($ActualHash -ne $ExpectedHash.ToLowerInvariant()) {
     throw "SHA-256 mismatch for $Path. Expected $ExpectedHash, got $ActualHash."
+  }
+}
+
+function Assert-TesseractVersion($TesseractExe) {
+  $VersionLine = try { (& $TesseractExe --version 2>&1 | Select-Object -First 1) } catch { "" }
+  if ($VersionLine -notmatch [regex]::Escape($ExpectedTesseractVersion)) {
+    throw "Unexpected Tesseract version at $TesseractExe. Expected $ExpectedTesseractVersion, got: $VersionLine"
   }
 }
 
@@ -124,6 +133,7 @@ function Install-Ffmpeg {
 function Install-Tesseract {
   $Existing = Find-FirstFile $TesseractRoot "tesseract.exe"
   if ($Existing) {
+    Assert-TesseractVersion $Existing.FullName
     Write-Step "Tesseract already installed at $($Existing.FullName)"
     return $Existing.FullName
   }
@@ -133,10 +143,28 @@ function Install-Tesseract {
   $InstallerPath = Join-Path $ToolsRoot "tesseract-ocr-w64-setup-5.5.0.20241111.exe"
   $TesseractInstallDirArg = "/D=$TesseractRoot"
   Download-File $TesseractInstallerUrl $InstallerPath
-  & $InstallerPath /S $TesseractInstallDirArg
-  if ($LASTEXITCODE -ne 0) { throw "Tesseract installer failed with exit code $LASTEXITCODE" }
+  Assert-FileSha256 $InstallerPath $TesseractInstallerSha256
+  $Process = Start-Process -FilePath $InstallerPath -ArgumentList @("/S", $TesseractInstallDirArg) -Wait -PassThru
+  $InstallExitCode = $Process.ExitCode
+  if (($null -eq $InstallExitCode) -or ($InstallExitCode -ne 0)) { throw "Tesseract installer failed with exit code $InstallExitCode" }
+
   $Installed = Find-FirstFile $TesseractRoot "tesseract.exe"
-  if (-not $Installed) { throw "tesseract.exe not found under $TesseractRoot after install." }
+  if (-not $Installed) {
+    $DefaultInstall = "C:\Program Files\Tesseract-OCR"
+    $DefaultTesseract = Join-Path $DefaultInstall "tesseract.exe"
+    if (Test-Path -LiteralPath $DefaultTesseract -PathType Leaf) {
+      Assert-TesseractVersion $DefaultTesseract
+      Write-Step "Tesseract installer used default location; copying executable and DLLs into $TesseractRoot"
+      Copy-Item -LiteralPath $DefaultTesseract -Destination (Join-Path $TesseractRoot "tesseract.exe") -Force
+      Get-ChildItem -LiteralPath $DefaultInstall -Filter "*.dll" -File | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination $TesseractRoot -Force
+      }
+      $Installed = Find-FirstFile $TesseractRoot "tesseract.exe"
+    }
+  }
+
+  if (-not $Installed) { throw "tesseract.exe not found under $TesseractRoot after install. Installer exit code: $InstallExitCode" }
+  Assert-TesseractVersion $Installed.FullName
   return $Installed.FullName
 }
 
