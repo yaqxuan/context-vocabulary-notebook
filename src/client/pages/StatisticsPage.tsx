@@ -234,12 +234,12 @@ function StatisticsReady({ data }: { data: StatisticsPageDto }) {
 
   return (
     <div className="phase7-statistics-shell">
-      <div className="phase7-statistics-metrics">
-        <MetricCard label={t('statistics.totalCards')} value={data.totals.total_cards} />
-        <MetricCard label={t('statistics.reviewingCards')} value={data.totals.reviewing_cards} />
-        <MetricCard label={t('statistics.masteredCards')} value={data.totals.mastered_cards} />
-        <MetricCard label={t('statistics.favoriteCards')} value={data.totals.favorite_cards} />
-      </div>
+        <div className="phase7-statistics-metrics">
+          <MetricCard label={t('statistics.totalCards')} value={data.totals.total_cards} />
+          <MetricCard label={t('statistics.reviewingCards')} value={data.totals.reviewing_cards} />
+          <MetricCard label={t('statistics.masteredCards')} value={data.totals.mastered_cards} />
+          <MetricCard label={t('statistics.favoriteCards')} value={data.totals.favorite_cards} />
+        </div>
 
       {isEmpty ? (
         <EmptyState message={t('statistics.empty')} />

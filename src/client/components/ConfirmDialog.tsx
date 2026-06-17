@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Button } from './Button';
 import { useI18n } from '../i18n/I18nProvider';
@@ -16,7 +17,7 @@ export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, onCon
   const headingId = useId();
   const { t } = useI18n();
 
-  return (
+  const dialogMarkup = (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
       <div
         className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
@@ -33,4 +34,8 @@ export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, onCon
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') return dialogMarkup;
+
+  return createPortal(dialogMarkup, document.body);
 }

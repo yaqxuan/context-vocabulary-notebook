@@ -82,6 +82,15 @@ function findExactMatch(suggestions: Array<{ id: string; target_word: string; co
 }
 
 type ReadinessCopy = {
+  pageAriaLabel: string;
+  pageTitle: string;
+  pageDescription: string;
+  targetLanguageLabel: string;
+  definitionLanguageLabel: string;
+  fileLabel: string;
+  processing: string;
+  processAll: string;
+  empty: string;
   title: string;
   loading: string;
   unavailable: string;
@@ -94,9 +103,18 @@ type ReadinessCopy = {
   privacy: string;
 };
 
-function readinessCopy(language: SupportedLanguage): ReadinessCopy {
+function readinessCopy(language: ReturnType<typeof useI18n>['language']): ReadinessCopy {
   if (language === '中文') {
     return {
+      pageAriaLabel: '批量视频导入',
+      pageTitle: '批量导入视频片段',
+      pageDescription: '选择多个 MP4，先分析例句和本地候选词；选中目标词后生成 AI 释义建议，再保存为卡片。',
+      targetLanguageLabel: '学习语言',
+      definitionLanguageLabel: '释义语言',
+      fileLabel: '批量选择 MP4 视频',
+      processing: '分析中…',
+      processAll: '全部分析',
+      empty: '还没有待处理视频。',
       title: '本地识别状态',
       loading: '正在检查本地 OCR/STT 环境…',
       unavailable: '暂时无法读取本地识别状态',
@@ -111,6 +129,15 @@ function readinessCopy(language: SupportedLanguage): ReadinessCopy {
   }
 
   return {
+    pageAriaLabel: 'Batch video import',
+    pageTitle: 'Batch import video clips',
+    pageDescription: 'Choose multiple MP4 files, analyze example sentences and local candidates first, then generate AI meaning suggestions for selected target words and save them as cards.',
+    targetLanguageLabel: 'Learning language',
+    definitionLanguageLabel: 'Meaning language',
+    fileLabel: 'Choose MP4 videos',
+    processing: 'Analyzing…',
+    processAll: 'Analyze all',
+    empty: 'No videos queued yet.',
     title: 'Local recognition status',
     loading: 'Checking local OCR/STT readiness…',
     unavailable: 'Local recognition readiness is unavailable right now',
@@ -461,31 +488,31 @@ export function BatchClipImportPage() {
   };
 
   return (
-    <section className="batch-import-page" aria-label="批量视频导入">
+    <section className="batch-import-page" aria-label={copy.pageAriaLabel}>
       <div className="batch-import-toolbar">
         <div>
-          <h2>批量导入视频片段</h2>
-          <p>选择多个 MP4，先分析例句和本地候选词；选中目标词后生成 AI 释义建议，再保存为卡片。</p>
+          <h2>{copy.pageTitle}</h2>
+          <p>{copy.pageDescription}</p>
           <p className="batch-import-privacy">{copy.privacy}</p>
         </div>
         <div className="batch-import-controls">
           <label>
-            学习语言
-            <select aria-label="学习语言" value={targetLanguage} onChange={(event) => handleTargetLanguageChange(event.target.value)}>
+            {copy.targetLanguageLabel}
+            <select aria-label={copy.targetLanguageLabel} value={targetLanguage} onChange={(event) => handleTargetLanguageChange(event.target.value)}>
               {SUPPORTED_LANGUAGES.map((language) => <option key={language} value={language}>{getNativeLanguageLabel(language)}</option>)}
             </select>
           </label>
           <label>
-            释义语言
-            <select aria-label="释义语言" value={definitionLanguage} onChange={(event) => handleDefinitionLanguageChange(event.target.value)}>
+            {copy.definitionLanguageLabel}
+            <select aria-label={copy.definitionLanguageLabel} value={definitionLanguage} onChange={(event) => handleDefinitionLanguageChange(event.target.value)}>
               {SUPPORTED_LANGUAGES.map((language) => <option key={language} value={language}>{getNativeLanguageLabel(language)}</option>)}
             </select>
           </label>
           <label className="batch-import-file-label">
-            批量选择 MP4 视频
-            <input aria-label="批量选择 MP4 视频" type="file" accept="video/mp4" multiple onChange={handleFiles} />
+            {copy.fileLabel}
+            <input aria-label={copy.fileLabel} type="file" accept="video/mp4" multiple onChange={handleFiles} />
           </label>
-          <button type="button" onClick={processAll} disabled={processing || !hasProcessableItems}>{processing ? '分析中…' : '全部分析'}</button>
+          <button type="button" onClick={processAll} disabled={processing || !hasProcessableItems}>{processing ? copy.processing : copy.processAll}</button>
         </div>
       </div>
 
@@ -514,7 +541,7 @@ export function BatchClipImportPage() {
       />
 
       {fileError ? <p className="batch-import-error">{fileError}</p> : null}
-      {items.length === 0 ? <p className="batch-import-empty">还没有待处理视频。</p> : null}
+      {items.length === 0 ? <p className="batch-import-empty">{copy.empty}</p> : null}
 
       <div className="batch-import-list">
         {items.map((item) => (

@@ -155,6 +155,20 @@ export type ReviewDueResponseDto =
   | { status: 'due'; card: DueReviewCardDto; progress: ReviewProgressDto }
   | { status: 'empty'; message: string; card: null; progress: ReviewProgressDto };
 
+export interface ReviewBubbleWordDto {
+  id: string;
+  target_word: string;
+  context_meaning: string;
+  target_language: string;
+  due_date: string;
+}
+
+export interface ReviewBubbleWordsResponseDto {
+  items: ReviewBubbleWordDto[];
+  total_due_count: number;
+  limit: number;
+}
+
 export interface SubmitReviewBody {
   rating: 'again' | 'good';
 }

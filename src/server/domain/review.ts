@@ -4,6 +4,8 @@ import { Rating, fsrs, type CardInput } from 'ts-fsrs';
 import type { ReviewRating } from '../../shared/constants.js';
 import { getSettings } from './settings.js';
 
+export const REVIEW_BUBBLE_WORD_LIMIT = 20;
+
 export interface DueCardRow {
   id: string;
   target_word: string;
@@ -44,6 +46,20 @@ export interface DailyReviewProgress {
   is_limit_reached: boolean;
 }
 
+export interface ReviewBubbleWord {
+  id: string;
+  target_word: string;
+  context_meaning: string;
+  target_language: string;
+  due_date: string;
+}
+
+export interface ReviewBubbleWordsResult {
+  items: ReviewBubbleWord[];
+  total_due_count: number;
+  limit: number;
+}
+
 export interface ReviewScopeOptions {
   target_language?: string;
 }
@@ -58,13 +74,20 @@ export interface SubmitReviewResult {
   progress: DailyReviewProgress;
 }
 
+interface DueQueryParts {
+  whereClause: string;
+  whereParams: unknown[];
+  orderByClause: string;
+  orderByParams: unknown[];
+}
+
 function startOfLocalDayIso(now: Date): string {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
   return start.toISOString();
 }
 
-export function getDueQueue(db: Database, options: ReviewScopeOptions = {}): DueCardRow[] {
+function buildDueQueryParts(options: ReviewScopeOptions = {}): DueQueryParts {
   const nowDate = new Date();
   const now = nowDate.toISOString();
   const todayStart = startOfLocalDayIso(nowDate);
@@ -76,12 +99,28 @@ export function getDueQueue(db: Database, options: ReviewScopeOptions = {}): Due
         OR (fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ?)
       )`,
   ];
-  const params: unknown[] = [now, todayStart];
+  const whereParams: unknown[] = [now, todayStart];
 
   if (options.target_language) {
     conditions.push('wsc.target_language = ?');
-    params.push(options.target_language);
+    whereParams.push(options.target_language);
   }
+
+  return {
+    whereClause: conditions.join(' AND '),
+    whereParams,
+    orderByClause: `
+      CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN 1 ELSE 0 END ASC,
+      CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN fs.same_day_retry_at ELSE fs.due_date END ASC,
+      wsc.created_at ASC,
+      wsc.id ASC
+    `,
+    orderByParams: [todayStart, todayStart],
+  };
+}
+
+export function getDueQueue(db: Database, options: ReviewScopeOptions = {}): DueCardRow[] {
+  const dueQuery = buildDueQueryParts(options);
 
   return db.prepare(`
     SELECT
@@ -116,13 +155,44 @@ export function getDueQueue(db: Database, options: ReviewScopeOptions = {}): Due
       ) AS primary_sentence
     FROM word_sense_cards wsc
     JOIN fsrs_states fs ON fs.card_id = wsc.id
-    WHERE ${conditions.join(' AND ')}
-    ORDER BY
-      CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN 1 ELSE 0 END ASC,
-      CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN fs.same_day_retry_at ELSE fs.due_date END ASC,
-      wsc.created_at ASC,
-      wsc.id ASC
-  `).all(...params, todayStart, todayStart) as DueCardRow[];
+    WHERE ${dueQuery.whereClause}
+    ORDER BY ${dueQuery.orderByClause}
+  `).all(...dueQuery.whereParams, ...dueQuery.orderByParams) as DueCardRow[];
+}
+
+export function getDueBubbleWords(
+  db: Database,
+  options: ReviewScopeOptions = {},
+  limit = REVIEW_BUBBLE_WORD_LIMIT,
+): ReviewBubbleWordsResult {
+  const normalizedLimit = Number.isFinite(limit) ? limit : 0;
+  const safeLimit = Math.max(0, Math.min(REVIEW_BUBBLE_WORD_LIMIT, Math.floor(normalizedLimit)));
+  const dueQuery = buildDueQueryParts(options);
+  const countRow = db.prepare(`
+    SELECT COUNT(*) AS total_due_count
+    FROM word_sense_cards wsc
+    JOIN fsrs_states fs ON fs.card_id = wsc.id
+    WHERE ${dueQuery.whereClause}
+  `).get(...dueQuery.whereParams) as { total_due_count: number };
+  const items = db.prepare(`
+    SELECT
+      wsc.id,
+      wsc.target_word,
+      wsc.context_meaning,
+      wsc.target_language,
+      fs.due_date
+    FROM word_sense_cards wsc
+    JOIN fsrs_states fs ON fs.card_id = wsc.id
+    WHERE ${dueQuery.whereClause}
+    ORDER BY ${dueQuery.orderByClause}
+    LIMIT ?
+  `).all(...dueQuery.whereParams, ...dueQuery.orderByParams, safeLimit) as ReviewBubbleWord[];
+
+  return {
+    items,
+    total_due_count: countRow.total_due_count,
+    limit: safeLimit,
+  };
 }
 
 export function getNextDueCard(db: Database, options: ReviewScopeOptions = {}): DueCardRow | null {
@@ -148,7 +218,7 @@ export function getDailyReviewProgress(db: Database, now = new Date(), options: 
 
   const counts = db.prepare(`
     SELECT
-      COUNT(DISTINCT rl.card_id) AS reviewed_count,
+      COUNT(DISTINCT CASE WHEN rl.rating = 'good' THEN rl.card_id END) AS reviewed_count,
       SUM(CASE WHEN rl.rating = 'again' THEN 1 ELSE 0 END) AS again_count,
       SUM(CASE WHEN rl.rating = 'good' THEN 1 ELSE 0 END) AS good_count
     FROM review_logs rl
