@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 
 $ProjectName = "context-vocabulary-notebook"
 $ModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
@@ -49,6 +50,14 @@ function Find-FirstFile($Root, $Filter) {
 function Download-File($Uri, $OutFile) {
   $OutDir = Split-Path -Parent $OutFile
   [System.IO.Directory]::CreateDirectory($OutDir) | Out-Null
+
+  $Curl = Get-Command "curl.exe" -ErrorAction SilentlyContinue
+  if ($Curl) {
+    & $Curl.Source --location --fail --retry 3 --retry-delay 2 --output $OutFile $Uri
+    if ($LASTEXITCODE -ne 0) { throw "Download failed with curl.exe exit code $LASTEXITCODE for $Uri" }
+    return
+  }
+
   Invoke-WebRequest -Uri $Uri -OutFile $OutFile
 }
 
