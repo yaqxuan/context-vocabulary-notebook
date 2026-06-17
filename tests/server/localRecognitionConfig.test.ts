@@ -1,8 +1,13 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   getTesseractLanguageCode,
   getWhisperLanguageCode,
+  reloadLocalRecognitionEnv,
   resolveLocalRecognitionConfig,
 } from '../../src/server/domain/localRecognitionConfig.js';
 
@@ -100,5 +105,91 @@ describe('local recognition config', () => {
       },
       cloudFallback: { enabled: true },
     });
+  });
+
+  it('reloads allowlisted project-local recognition keys from a changed .env file', async () => {
+    process.env.CVN_FFMPEG_PATH = '/old/ffmpeg';
+    process.env.CVN_WHISPER_CPP_MODEL = '';
+    process.env.UNRELATED_SECRET = 'keep';
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-env-reload-'));
+    const envPath = path.join(tempRoot, '.env');
+    const ffmpegPath = path.join(tempRoot, 'tools', 'ffmpeg.exe');
+    const whisperPath = path.join(tempRoot, 'tools', 'whisper-cli.exe');
+    const modelPath = path.join(tempRoot, 'models', 'ggml.bin');
+    const tesseractPath = path.join(tempRoot, 'tools', 'tesseract.exe');
+    fs.mkdirSync(path.dirname(ffmpegPath), { recursive: true });
+    fs.mkdirSync(path.dirname(modelPath), { recursive: true });
+    for (const filePath of [ffmpegPath, whisperPath, modelPath, tesseractPath]) fs.writeFileSync(filePath, 'ok');
+    fs.writeFileSync(envPath, [
+      `CVN_FFMPEG_PATH=${ffmpegPath}`,
+      `CVN_WHISPER_CPP_PATH="${whisperPath}"`,
+      `CVN_WHISPER_CPP_MODEL=${modelPath}`,
+      `CVN_TESSERACT_PATH=${tesseractPath}`,
+      'CVN_TESSERACT_LANG=eng',
+      'UNRELATED_SECRET=changed',
+      '',
+    ].join('\n'));
+
+    await reloadLocalRecognitionEnv(envPath, tempRoot);
+
+    expect(resolveLocalRecognitionConfig('英语')).toMatchObject({
+      ffmpeg: { executablePath: ffmpegPath },
+      stt: { executablePath: whisperPath, modelPath },
+      ocr: { executablePath: tesseractPath, language: 'eng' },
+    });
+    expect(process.env.UNRELATED_SECRET).toBe('keep');
+  });
+
+  it('does not hot-reload executable paths outside the project root', async () => {
+    process.env.CVN_FFMPEG_PATH = '/old/ffmpeg';
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-env-reload-'));
+    const envPath = path.join(tempRoot, '.env');
+    fs.writeFileSync(envPath, 'CVN_FFMPEG_PATH=/tmp/other/ffmpeg\nCVN_TESSERACT_LANG=eng\n');
+
+    await reloadLocalRecognitionEnv(envPath, tempRoot);
+
+    expect(resolveLocalRecognitionConfig('英语').ffmpeg.executablePath).toBe('/old/ffmpeg');
+    expect(resolveLocalRecognitionConfig('英语').ocr.language).toBe('eng');
+  });
+
+  it('hot-reloads missing project-local paths so readiness can report missing files', async () => {
+    process.env.CVN_WHISPER_CPP_MODEL = '/old/model.bin';
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-env-reload-'));
+    const envPath = path.join(tempRoot, '.env');
+    const missingModelPath = path.join(tempRoot, 'models', 'missing.bin');
+    fs.mkdirSync(path.dirname(missingModelPath), { recursive: true });
+    fs.writeFileSync(envPath, `CVN_WHISPER_CPP_MODEL=${missingModelPath}\n`);
+
+    await reloadLocalRecognitionEnv(envPath, tempRoot);
+
+    expect(resolveLocalRecognitionConfig('英语').stt.modelPath).toBe(missingModelPath);
+  });
+
+  it('does not hot-reload project paths that resolve outside the project root', async () => {
+    process.env.CVN_FFMPEG_PATH = '/old/ffmpeg';
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-env-reload-'));
+    const outsideRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-outside-'));
+    const outsideFfmpeg = path.join(outsideRoot, 'ffmpeg.exe');
+    const linkedFfmpeg = path.join(tempRoot, 'tools', 'ffmpeg.exe');
+    const envPath = path.join(tempRoot, '.env');
+    fs.writeFileSync(outsideFfmpeg, 'ok');
+    fs.mkdirSync(path.dirname(linkedFfmpeg), { recursive: true });
+    fs.symlinkSync(outsideFfmpeg, linkedFfmpeg);
+    fs.writeFileSync(envPath, `CVN_FFMPEG_PATH=${linkedFfmpeg}\n`);
+
+    await reloadLocalRecognitionEnv(envPath, tempRoot);
+
+    expect(resolveLocalRecognitionConfig('英语').ffmpeg.executablePath).toBe('/old/ffmpeg');
+  });
+
+  it('hot-reloads empty paths so cleared .env keys do not keep stale values', async () => {
+    process.env.CVN_WHISPER_CPP_MODEL = '/old/model.bin';
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-env-reload-'));
+    const envPath = path.join(tempRoot, '.env');
+    fs.writeFileSync(envPath, 'CVN_WHISPER_CPP_MODEL=\n');
+
+    await reloadLocalRecognitionEnv(envPath, tempRoot);
+
+    expect(resolveLocalRecognitionConfig('英语').stt.modelPath).toBe('');
   });
 });
