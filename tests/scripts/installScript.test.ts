@@ -319,22 +319,30 @@ describe('install-recognition-windows.ps1 safeguards', () => {
     expect(script).not.toContain('releases/download/latest');
     expect(script).toContain('$FfmpegZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-06-14-13-33/ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip"');
     expect(script).toContain('$FfmpegZipSha256 = "9bf9423be2096818d950b05748b50538a9013913ee8e26813b66172eea9b4015"');
+    expect(script).toContain('$TesseractInstallerSha256 = "f3fc4236425b690c8be756f35793f77394ee004be0a6460a440c754d892f68bc"');
     expect(script).toContain('Download-File $FfmpegZipUrl $ZipPath');
     expect(script).toContain('Assert-FileSha256 $ZipPath $FfmpegZipSha256');
     expect(script).toContain('Get-FileHash -LiteralPath $Path -Algorithm SHA256');
     expect(script).toContain('ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip');
   });
 
-  it('runs the Tesseract silent installer with an unquoted final /D argument and discovers the installed exe', () => {
+  it('captures Tesseract installer exit code and falls back to default install location', () => {
     const script = readPowerShellRecognitionInstallScript();
     const start = script.indexOf('function Install-Tesseract {');
     const nextFunction = script.indexOf('\nfunction ', start + 1);
     const installTesseract = script.slice(start, nextFunction);
 
     expect(start).toBeGreaterThanOrEqual(0);
-    expect(installTesseract).toContain('$TesseractInstallDirArg = "/D=$TesseractRoot"');
-    expect(installTesseract).toContain('& $InstallerPath /S $TesseractInstallDirArg');
-    expect(installTesseract).not.toContain('& $InstallerPath /S "/D=$TesseractRoot"');
+    expect(installTesseract).toContain('Assert-FileSha256 $InstallerPath $TesseractInstallerSha256');
+    expect(installTesseract).toContain('Start-Process -FilePath $InstallerPath -ArgumentList @("/S", $TesseractInstallDirArg) -Wait -PassThru');
+    expect(installTesseract).toContain('$InstallExitCode = $Process.ExitCode');
+    expect(installTesseract).toContain('Tesseract installer failed with exit code $InstallExitCode');
+    expect(installTesseract).toContain('Assert-TesseractVersion $DefaultTesseract');
+    expect(installTesseract).not.toContain('if ($LASTEXITCODE -ne 0) { throw "Tesseract installer failed with exit code $LASTEXITCODE" }');
+    expect(installTesseract).toContain('$DefaultInstall = "C:\\Program Files\\Tesseract-OCR"');
+    expect(installTesseract).toContain('Copy-Item -LiteralPath $DefaultTesseract -Destination (Join-Path $TesseractRoot "tesseract.exe") -Force');
+    expect(installTesseract).toContain('Get-ChildItem -LiteralPath $DefaultInstall -Filter "*.dll" -File');
+    expect(installTesseract).not.toContain('Copy-Item -Path (Join-Path $DefaultInstall "*") -Destination $TesseractRoot -Recurse -Force');
     expect(installTesseract).toContain('$Installed = Find-FirstFile $TesseractRoot "tesseract.exe"');
     expect(installTesseract).toContain('return $Installed.FullName');
   });
