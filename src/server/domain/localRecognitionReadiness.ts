@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 
 import type { SupportedLanguage } from '../../shared/constants.js';
 import type { LocalRecognitionReadinessDto } from '../../shared/types.js';
-import { resolveLocalRecognitionConfig, type LocalRecognitionConfig } from './localRecognitionConfig.js';
+import { reloadLocalRecognitionEnv, resolveLocalRecognitionConfig, type LocalRecognitionConfig } from './localRecognitionConfig.js';
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_READINESS_TIMEOUT_MS = 5_000;
@@ -35,6 +35,7 @@ export interface LocalRecognitionReadinessOptions {
   runner?: ReadinessExecFileRunner;
   fsAccess?: ReadinessFsAccess;
   resolveConfig?: (targetLanguage?: SupportedLanguage) => LocalRecognitionConfig;
+  reloadEnv?: () => void | Promise<void>;
 }
 
 const defaultRunner: ReadinessExecFileRunner = async (file, args, options) => {
@@ -119,6 +120,8 @@ export async function getLocalRecognitionReadiness(
 ): Promise<LocalRecognitionReadinessDto> {
   const runner = options.runner ?? defaultRunner;
   const fsAccess = options.fsAccess ?? defaultFsAccess;
+  if (options.reloadEnv) await options.reloadEnv();
+  else if (!options.resolveConfig) await reloadLocalRecognitionEnv();
   const config = (options.resolveConfig ?? resolveLocalRecognitionConfig)(targetLanguage);
 
   const ffmpeg = await checkCommand('ffmpeg', config.ffmpeg.executablePath, ['-version'], runner);

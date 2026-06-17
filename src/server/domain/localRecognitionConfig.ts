@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 import { DEFAULT_TARGET_LANGUAGE, getLanguageIso6391Code } from '../../shared/constants.js';
 import type { SupportedLanguage } from '../../shared/constants.js';
 
@@ -28,6 +31,34 @@ export interface LocalRecognitionConfig {
 
 const DEFAULT_WHISPER_TIMEOUT_MS = 120_000;
 const DEFAULT_TESSERACT_TIMEOUT_MS = 30_000;
+const MAX_RELOAD_ENV_FILE_BYTES = 64 * 1024;
+
+const RELOADABLE_LOCAL_RECOGNITION_ENV_KEYS = new Set([
+  'CVN_FFMPEG_PATH',
+  'CVN_FFMPEG_EXECUTABLE',
+  'CVN_STT_PROVIDER',
+  'CVN_WHISPER_CPP_PATH',
+  'CVN_WHISPER_CPP_EXECUTABLE',
+  'CVN_WHISPER_CPP_MODEL',
+  'CVN_WHISPER_CPP_TIMEOUT_MS',
+  'CVN_OCR_PROVIDER',
+  'CVN_TESSERACT_PATH',
+  'CVN_TESSERACT_EXECUTABLE',
+  'CVN_TESSERACT_LANG',
+  'CVN_TESSERACT_LANGUAGE',
+  'CVN_TESSERACT_TIMEOUT_MS',
+  'CVN_CLIP_ANALYSIS_CLOUD_FALLBACK',
+]);
+
+const RELOADABLE_LOCAL_RECOGNITION_PATH_KEYS = new Set([
+  'CVN_FFMPEG_PATH',
+  'CVN_FFMPEG_EXECUTABLE',
+  'CVN_WHISPER_CPP_PATH',
+  'CVN_WHISPER_CPP_EXECUTABLE',
+  'CVN_WHISPER_CPP_MODEL',
+  'CVN_TESSERACT_PATH',
+  'CVN_TESSERACT_EXECUTABLE',
+]);
 
 const TESSERACT_LANGUAGE_CODES: Record<SupportedLanguage, string> = {
   中文: 'chi_sim',
@@ -61,6 +92,57 @@ function readEnv(...keys: string[]): string | undefined {
     if (value) return value;
   }
   return undefined;
+}
+
+function parseEnvLine(line: string): { key: string; value: string } | undefined {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith('#')) return undefined;
+  const separator = trimmed.indexOf('=');
+  if (separator <= 0) return undefined;
+  const key = trimmed.slice(0, separator).trim();
+  const value = trimmed.slice(separator + 1).trim().replace(/^(?:(['"])(.*)\1)$/u, '$2');
+  return { key, value };
+}
+
+function isWithinDirectory(childPath: string, parentPath: string): boolean {
+  const normalizedChild = process.platform === 'win32' ? childPath.toLowerCase() : childPath;
+  const normalizedParent = process.platform === 'win32' ? parentPath.toLowerCase() : parentPath;
+  const relative = path.relative(normalizedParent, normalizedChild);
+  return relative === '' || (!!relative && !relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+async function isProjectLocalPath(value: string, projectRoot: string): Promise<boolean> {
+  if (!path.isAbsolute(value)) return false;
+  if (!isWithinDirectory(path.resolve(value), path.resolve(projectRoot))) return false;
+
+  const realProjectRoot = await fs.realpath(projectRoot).catch(() => undefined);
+  if (!realProjectRoot) return false;
+
+  let existingPath = value;
+  while (true) {
+    const realExistingPath = await fs.realpath(existingPath).catch(() => undefined);
+    if (realExistingPath) return isWithinDirectory(realExistingPath, realProjectRoot);
+
+    const parentPath = path.dirname(existingPath);
+    if (parentPath === existingPath) return false;
+    existingPath = parentPath;
+  }
+}
+
+export async function reloadLocalRecognitionEnv(
+  envPath = path.join(process.cwd(), '.env'),
+  projectRoot = process.cwd(),
+): Promise<void> {
+  const stats = await fs.stat(envPath).catch(() => undefined);
+  if (!stats?.isFile() || stats.size > MAX_RELOAD_ENV_FILE_BYTES) return;
+
+  const lines = (await fs.readFile(envPath, 'utf8')).split(/\r?\n/u);
+  for (const line of lines) {
+    const parsed = parseEnvLine(line);
+    if (!parsed || !RELOADABLE_LOCAL_RECOGNITION_ENV_KEYS.has(parsed.key)) continue;
+    if (RELOADABLE_LOCAL_RECOGNITION_PATH_KEYS.has(parsed.key) && parsed.value && !(await isProjectLocalPath(parsed.value, projectRoot))) continue;
+    process.env[parsed.key] = parsed.value;
+  }
 }
 
 export function getWhisperLanguageCode(language?: SupportedLanguage): string | undefined {

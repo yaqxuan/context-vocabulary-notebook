@@ -67,6 +67,32 @@ describe('local recognition readiness domain', () => {
     expect(fsAccess.access).toHaveBeenCalledWith('/models/ggml.bin');
   });
 
+  it('reloads environment before resolving default config', async () => {
+    const runner = vi.fn(async (_file: string, args: string[]) => {
+      if (args[0] === '--list-langs') return { stdout: 'List of available languages\neng\n', stderr: '' };
+      return { stdout: 'ok', stderr: '' };
+    }) satisfies ReadinessExecFileRunner;
+    const fsAccess = { access: vi.fn(async () => undefined) };
+    const reloadEnv = vi.fn(() => {
+      process.env.CVN_FFMPEG_PATH = '/fresh/ffmpeg';
+      process.env.CVN_WHISPER_CPP_PATH = '/fresh/whisper-cli';
+      process.env.CVN_WHISPER_CPP_MODEL = '/fresh/model.bin';
+      process.env.CVN_TESSERACT_PATH = '/fresh/tesseract';
+      process.env.CVN_TESSERACT_LANG = 'eng';
+    });
+
+    const result = await getLocalRecognitionReadiness('英语', { runner, fsAccess, reloadEnv });
+
+    expect(result.ffmpeg.ready).toBe(true);
+    expect(result.stt.ready).toBe(true);
+    expect(result.ocr.ready).toBe(true);
+    expect(reloadEnv).toHaveBeenCalledOnce();
+    expect(runner).toHaveBeenCalledWith('/fresh/ffmpeg', ['-version'], { timeout: 5000 });
+    expect(runner).toHaveBeenCalledWith('/fresh/whisper-cli', ['--help'], { timeout: 5000 });
+    expect(runner).toHaveBeenCalledWith('/fresh/tesseract', ['--version'], { timeout: 5000 });
+    expect(fsAccess.access).toHaveBeenCalledWith('/fresh/model.bin');
+  });
+
   it('uses configured readiness timeout when CVN_LOCAL_READINESS_TIMEOUT_MS is valid', async () => {
     const previous = process.env.CVN_LOCAL_READINESS_TIMEOUT_MS;
     process.env.CVN_LOCAL_READINESS_TIMEOUT_MS = '7500';
