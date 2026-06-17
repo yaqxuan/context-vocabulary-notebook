@@ -1,36 +1,38 @@
 [中文](./README.md) | [English](./README.en.md) | [日本語](./README.ja.md) | [Español](./README.es.md) | [العربية](./README.ar.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md) | [Italiano](./README.it.md) | [Latina](./README.la.md)
 
-# Context Vocabulary Notebook
+# Context Vocabulary Notebook (quaderno di vocaboli contestuali)
 
-Un quaderno di vocaboli local-first per imparare parole da video, audio, sottotitoli e corsi reali.
+Quando incontri una parola nuova guardando video, ascoltando corsi o leggendo sottotitoli, l’app salva non solo “la parola”, ma anche la frase originale, il contesto, lo screenshot, il clip audio/video, note e tag.
 
-Invece di salvare parole isolate, conserva la frase, il significato nel contesto, lo screenshot, il clip video/audio, le note e i tag del momento in cui hai incontrato la parola. Quando ripassi, rivedi il contesto reale, non solo una parola e una definizione.
+Durante il ripasso vedi la scena reale in cui hai incontrato la parola, non un termine isolato.
 
-Ideale per:
+Fa per te se:
 
-- Registrare nuove parole mentre guardi video, corsi, film o materiali di ascolto in lingua straniera.
-- Studenti che vogliono una ripetizione spaziata simile ad Anki, ma con più contesto in ogni scheda.
-- Persone che preferiscono dati locali e non vogliono un account cloud per un quaderno di vocaboli.
+- Guardi spesso video, corsi, film, podcast o materiali di ascolto in lingua straniera.
+- Vuoi una ripetizione dilazionata simile ad Anki, ma con schede che conservano la frase originale, gli screenshot e i clip multimediali.
+- Vuoi mantenere i dati di studio sul tuo computer, senza registrare un account cloud solo per un quaderno di vocaboli.
+- Hai bisogno di aiuto per riconoscere frasi da video, audio o immagini locali prima di rifinirle manualmente in schede.
 
-> Il progetto attuale è un'applicazione Web locale. I dati vengono salvati per impostazione predefinita in un database SQLite e nella cartella `uploads/` sul tuo computer. Non è richiesto alcun account cloud.
+> Questo progetto è una web app locale. Per impostazione predefinita, i dati sono salvati in un database SQLite e nella cartella `uploads/` sul tuo computer; non è richiesto alcun account cloud.
 
 ## Demo
 
-![Demo di creazione scheda in Context Vocabulary Notebook](./docs/demo/01-create-card.png)
+![Esempio di creazione scheda in Context Vocabulary Notebook](./docs/demo/01-create-card-it.png)
 
-## Caratteristiche principali
+## Cosa puoi farci
 
-- Crea schede attorno a contesti reali: parola di destinazione, definizione contestuale, frase originale, note, tag.
-- Salva allegati multimediali locali: video `mp4`, audio `mp3`, immagine `jpg / png / webp`.
-- Associa una singola voce di significato a più istanze di contesto, utile per registrare lo stesso significato in materiali diversi.
-- Ripassa con la ripetizione spaziata FSRS, riportando ogni parola nel contesto in cui l'hai incontrata.
-- Elenco delle voci di significato, ricerca, filtro per tag, preferiti, statistiche.
-- Importazione ed esportazione ZIP per backup personale completo e condivisione solo delle schede.
-- Suggerimenti IA nella pagina di creazione della scheda V2: configura un'API compatibile con OpenAI per definizioni contestuali e note di utilizzo; la chiave API viene salvata solo localmente.
+- Crea schede attorno a un contesto reale: parola target, frase originale, significato contestuale, note e tag.
+- Salva allegati multimediali locali: video `mp4`, audio `mp3`, immagini `jpg / png / webp`.
+- Importa clip in batch: importa più clip video, audio o immagine insieme, controlla i risultati di riconoscimento uno per uno e crea schede.
+- Usa assistenti locali opzionali OCR/STT: configura ffmpeg, Tesseract e whisper.cpp per riconoscere frasi da immagini, fotogrammi video o audio.
+- Collega più esempi di contesto allo stesso significato di una parola, utile per vedere come un significato appare in materiali diversi.
+- Ripassa con ripetizione dilazionata FSRS, riportando ogni parola nel contesto in cui l’hai trovata.
+- Cerca, filtra per tag, aggiungi ai preferiti, visualizza statistiche e importa/esporta backup ZIP.
+- Suggerimenti IA opzionali: dopo aver configurato una API OpenAI-compatible, ricevi aiuto per significati contestuali, note d’uso, traduzione di frasi intere, lemmatizzazione e controllo ortografico.
 
-## Posizione dei dati e avviso sullo spazio su disco
+## Posizione dei dati e spazio su disco
 
-L'applicazione salva i dati nella directory di esecuzione per impostazione predefinita. Dopo aver caricato video, screenshot e audio, la directory `uploads/` potrebbe crescere continuamente e occupare molto spazio su disco.
+Scegli prima la directory di installazione. Per impostazione predefinita, l’app conserva database, file caricati e configurazione nella directory da cui viene eseguita.
 
 Dati locali predefiniti:
 
@@ -40,153 +42,182 @@ uploads/
 .env
 ```
 
-Non è consigliabile eseguire l'app in queste posizioni:
+Nota: dopo aver caricato video, audio e screenshot, `uploads/` può continuare a crescere. Anche i modelli Whisper possono occupare da centinaia di MB a diversi GB.
 
-- Directory che in genere richiedono autorizzazioni `sudo` o di root, come `/usr/local`, `/opt`.
-- Directory protette dal sistema come `C:\Program Files`.
-- Directory temporanee, directory della cache di download o percorsi che verranno eliminati automaticamente dal sistema o da strumenti di pulizia.
-- Posizioni con pochissimo spazio, regole di sincronizzazione poco chiare o in cui i file potrebbero essere puliti automaticamente o limitati in quota dai cloud drive.
+Evita di eseguirla in queste posizioni:
 
-## Ambiente di esecuzione
+- `/usr/local`, `/opt` o altre directory che di solito richiedono permessi `sudo` o root.
+- `C:\Program Files` o altre directory protette dal sistema.
+- Cartelle temporanee, cache dei download o posizioni che il sistema o strumenti di pulizia potrebbero eliminare automaticamente.
+- Posizioni con poco spazio libero, regole di sincronizzazione poco chiare o comportamento di pulizia/quota di unità cloud.
 
-| Ambiente | Requisito | Descrizione |
-|------|------|------|
-| Node.js | Consigliato Node.js 22 LTS; almeno una versione di Node che soddisfi i requisiti attuali di Vite | La compilazione frontend, il server di sviluppo e il server backend dipendono tutti da Node.js. Lo script di installazione cercherà di soddisfare questo requisito. |
-| npm | Installato insieme a Node.js | Il repository contiene `package-lock.json`, usa `npm ci` per installare le dipendenze. |
-| Git | Necessario per clonare il repository GitHub | Lo script di installazione controllerà e cercherà di soddisfare questo requisito. |
-| Browser | Browser moderni come Chrome / Edge / Firefox / Safari | L'applicazione viene utilizzata tramite pagine Web locali. |
-| Strumenti di compilazione C/C++ | Potrebbero essere richiesti | `better-sqlite3` è un modulo nativo; se non è disponibile un pacchetto precompilato per il sistema corrente e la versione di Node, `npm ci` tenterà la compilazione locale. |
+Preferisci un luogo che puoi mantenere a lungo termine, ad esempio:
 
-Lo script di installazione controllerà prima l'ambiente esistente sul computer locale. Su Linux / WSL, tenterà di soddisfare le dipendenze tramite `apt-get` solo se mancano Git o Node.js/npm; se gli ambienti di base sono soddisfatti, salterà `apt-get` per evitare di innescare problemi irrilevanti con origini software di terze parti nel sistema. Lo script per macOS proverà a utilizzare Homebrew quando mancano le dipendenze. Lo script nativo per Windows proverà a utilizzare `winget` quando mancano le dipendenze. Se questi gestori di pacchetti non sono disponibili o l'utente corrente non ha le autorizzazioni di installazione, è necessario installare manualmente gli ambienti mancanti e riprovare.
+```text
+D:\study\context-vocabulary-notebook
+E:\study\context
+$HOME/context-vocabulary-notebook
+```
 
-## Note pre-installazione e dichiarazione di non responsabilità
+## Installazione con un comando
 
-Per quanto a conoscenza dell'autore, il codice sorgente di questo progetto non contiene alcun codice dannoso. Lo script di installazione controllerà l'ambiente locale e tenterà di installare le dipendenze mancanti come Git, Node.js, npm e strumenti di compilazione nativi sulle piattaforme supportate.
+Entra in una directory vuota in cui vuoi conservare i file del progetto, poi esegui il comando per il tuo sistema. Lo script installa il progetto nella directory corrente; se la directory contiene già questo progetto, lo aggiorna automaticamente.
 
-L'installazione del progetto recupererà software e dipendenze di terze parti tramite gestori di pacchetti di sistema e npm. Il processo di installazione e utilizzo potrebbe ancora essere influenzato da fattori quali autorizzazioni di sistema, stato della rete, disponibilità del gestore pacchetti, software antivirus, criteri dei dispositivi aziendali, spazio su disco, catene di fornitura di dipendenze di terze parti e risultati di compilazione dei moduli nativi di Node. Gli utenti sono gli unici responsabili di eventuali problemi e conseguenze derivanti dall'esecuzione dello script di installazione, dall'installazione delle dipendenze, dalla modifica dell'ambiente di sistema e dal caricamento e salvataggio dei file locali.
-
-Se lo script non riesce a soddisfare automaticamente l'ambiente, restituirà gli strumenti mancanti e i metodi di gestione suggeriti; a questo punto, gli utenti devono installarli manualmente in base ai propri sistemi prima di riprovare.
-
-## Installazione con un clic
+| Sistema | Comando |
+|------|------|
+| Linux / macOS / WSL | Vedi il comando Linux / macOS / WSL qui sotto |
+| Windows PowerShell | Vedi il comando Windows PowerShell qui sotto |
 
 ### Linux / macOS / WSL
-
-Copia ed esegui il seguente comando. Lo script installerà il progetto nella directory corrente:
 
 ```bash
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-Lo script verificherà automaticamente la presenza di dipendenze come Git, Node.js/npm; le dipendenze installate verranno riutilizzate direttamente. Per Linux / WSL, se le dipendenze di base sono soddisfatte, salterà `apt-get`.
+### Windows PowerShell
 
-Per visualizzare prima il contenuto dello script, visita:
-https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
+```powershell
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
 
-Uso avanzato: specifica la directory di installazione
+Dopo l’installazione, avvialo con:
+
+```bash
+npm run dev
+```
+
+Aprilo nel browser:
+
+```text
+http://localhost:5173
+```
+
+Controllo di integrità del backend:
+
+```text
+http://localhost:3107/api/health
+```
+
+## Aggiornare all’ultima versione
+
+Entra nella directory in cui hai installato il progetto, poi esegui:
+
+Linux / macOS / WSL / Git Bash:
+
+```bash
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+Windows PowerShell:
+
+```powershell
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+Puoi anche rieseguire il comando di installazione con un clic. Se lo script rileva che la directory corrente è già questo progetto, aggiorna, installa le dipendenze e compila automaticamente.
+
+## OCR / riconoscimento vocale locale (opzionale)
+
+Il quaderno principale non richiede OCR/STT. Puoi prima creare schede e ripassare manualmente; configura questi strumenti solo quando devi riconoscere automaticamente frasi originali da video, audio o immagini.
+
+Il riconoscimento locale usa:
+
+- ffmpeg: estrae audio dai video.
+- Tesseract: riconosce testo in immagini o fotogrammi video.
+- whisper.cpp + modello Whisper: riconosce il parlato in audio o video.
+
+### Configurare automaticamente il riconoscimento locale (primo tentativo consigliato)
+
+Esegui questo nella directory del progetto:
+
+Linux / macOS / WSL:
+
+```bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition.sh | bash
+```
+
+Windows PowerShell:
+
+```powershell
+$env:CVN_TESSERACT_LANG='eng'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
+```
+
+Per riconoscere sottotitoli in cinese e inglese, cambia la lingua in:
+
+```powershell
+$env:CVN_TESSERACT_LANG='eng+chi_sim'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
+```
+
+Al termine dello script, fai clic su **I installed it, check again** nella scheda di riconoscimento locale nella pagina delle impostazioni dell’app. Le versioni recenti ricaricano `.env`, quindi di solito non serve riavviare manualmente il backend.
+
+### Modelli e uso del disco
+
+I modelli Whisper sono grandi e il tempo di download dipende dalla rete:
+
+- `tiny` / `base`: piccoli e veloci, adatti per provare, con precisione inferiore.
+- `small` / `medium`: precisione migliore, con maggiore uso di disco e CPU.
+- `large`: molto grande e può essere lento su computer comuni; non è consigliato come scelta predefinita.
+
+L’installer di riconoscimento per Windows scarica `ggml-small.bin` per impostazione predefinita, circa diverse centinaia di MB.
+
+### Configurare manualmente il riconoscimento locale
+
+Se la configurazione con un clic fallisce, o se vuoi gestire tu i percorsi degli strumenti, installa manualmente gli strumenti e scrivi questi valori in `.env`:
+
+```env
+CVN_FFMPEG_PATH=/absolute/path/to/ffmpeg
+
+CVN_STT_PROVIDER=whisper.cpp
+CVN_WHISPER_CPP_PATH=/absolute/path/to/whisper-cli
+CVN_WHISPER_CPP_MODEL=/absolute/path/to/ggml-small.bin
+CVN_WHISPER_CPP_TIMEOUT_MS=120000
+
+CVN_OCR_PROVIDER=tesseract
+CVN_TESSERACT_PATH=/absolute/path/to/tesseract
+CVN_TESSERACT_LANG=eng
+CVN_TESSERACT_TIMEOUT_MS=30000
+```
+
+Esempio di percorso Windows:
+
+```env
+CVN_FFMPEG_PATH=E:\study\context\tools\ffmpeg\bin\ffmpeg.exe
+CVN_WHISPER_CPP_PATH=E:\study\context\tools\whisper.cpp\Release\whisper-cli.exe
+CVN_WHISPER_CPP_MODEL=E:\study\context\models\ggml-small.bin
+CVN_TESSERACT_PATH=E:\study\context\tools\tesseract\tesseract.exe
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+
+## Opzioni di installazione avanzate
+
+### Specificare la directory di installazione
+
+Linux / macOS / WSL:
 
 ```bash
 export CVN_HOME="$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-### Windows PowerShell
-
-Innanzitutto, entra in una directory vuota in cui desideri installare i file del progetto, quindi copia ed esegui il comando seguente. Lo script installerà i file del progetto direttamente nella directory corrente senza creare un'altra directory nidificata:
-
-```powershell
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
-```
-
-Lo script verificherà automaticamente la presenza di dipendenze come Git, Node.js/npm; le dipendenze installate verranno riutilizzate direttamente.
-
-Per visualizzare prima il contenuto dello script, visita:
-https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
-
-Uso avanzato: specifica la directory di installazione
+Windows PowerShell:
 
 ```powershell
 $env:CVN_HOME = "C:\path\to\empty-folder"
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
-### Risoluzione dei problemi
+### Lasciare che l’installer principale aggiunga strumenti opzionali
 
-- Se viene visualizzato il messaggio che il comando non esiste, chiudi il terminale, riaprilo ed esegui nuovamente il comando di installazione.
-- Per Linux / WSL, se `apt-get update` segnala errori come Docker, Chromium, Snap, chiavi GPG, ecc., di solito è dovuto a fonti apt esistenti o configurazioni di pacchetti incomplete nel sistema, non perché questo progetto dipende da questi software. Puoi prima riparare/disabilitare le corrispondenti origini apt, oppure installare manualmente Git, Node.js 20+ e npm, quindi riprovare.
-- Per macOS, se viene visualizzata la finestra di installazione di Xcode Command Line Tools, fai clic su "Installa" e, una volta completata, esegui nuovamente il comando di installazione.
-- Per Windows, se viene richiesto che è necessario installare un ambiente di compilazione, continua come richiesto; questo è un ambiente che potrebbe essere necessario durante la compilazione di alcune dipendenze.
+Non sono necessari per una normale prima installazione. Usali solo quando servono.
 
-## Aggiornamento all'ultima versione
-
-Se lo hai già installato, entra nella directory del progetto ed esegui:
-
-Linux / macOS / WSL / Git Bash:
-
-```bash
-cd context-vocabulary-notebook
-git pull --ff-only
-npm ci
-npm run build
-npm run dev
-```
-
-Windows PowerShell nativo:
-
-```powershell
-Set-Location context-vocabulary-notebook
-git pull --ff-only
-npm ci
-npm run build
-npm run dev
-```
-
-Puoi anche ri-eseguire il comando di installazione con un clic. Quando lo script trova un repository Git esistente nella directory di installazione, eseguirà automaticamente `git pull --ff-only`, `npm ci` e `npm run build`.
-
-Se ri-esegui il comando di installazione con un clic all'interno della directory del progetto, lo script aggiornerà la directory del progetto corrente e non creerà un'altra directory nidificata con lo stesso nome. Se viene eseguito all'esterno del progetto, entra prima in una directory vuota o imposta esplicitamente lo stesso `CVN_HOME`; lo script non mescolerà i file del progetto in una normale directory non vuota.
-
-## Installazione manuale
-
-Se lo script con un clic non riesce a soddisfare l'ambiente, puoi prima installare manualmente Node.js 22 LTS, npm, Git e gli strumenti di compilazione nativi potenzialmente necessari, quindi eseguire i comandi seguenti.
-
-Linux / macOS / WSL / Git Bash:
-
-```bash
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
-cd context-vocabulary-notebook
-cp .env.example .env
-npm ci
-npm run dev
-```
-
-Windows PowerShell nativo:
-
-```powershell
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
-Set-Location context-vocabulary-notebook
-Copy-Item .env.example .env
-npm ci
-npm run dev
-```
-
-Apri nel browser:
-
-```text
-http://localhost:5173
-```
-
-Indirizzo backend predefinito:
-
-```text
-http://localhost:3107
-```
-
-## Variabili d'ambiente
-
-## Local Clip Recognition (OCR / STT) addendum
-
-Clip analysis now uses local tools by default: `whisper.cpp` for speech recognition, `Tesseract` for image/video-frame OCR, and `ffmpeg` for video audio extraction. Missing tools do not block core install, manual card creation, review, or normal media upload; the readiness endpoint / UI reports what is missing.
-
-Opt in to installer-managed optional tools before running the installer:
+Linux / macOS / WSL:
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
@@ -194,46 +225,123 @@ export CVN_INSTALL_TESSERACT=1
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
+Windows PowerShell:
+
 ```powershell
 $env:CVN_INSTALL_FFMPEG = "1"
 $env:CVN_INSTALL_TESSERACT = "1"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
-If clip analysis shows `Audio extraction failed`, install ffmpeg or make sure ffmpeg is on PATH, then reopen the terminal and retry.
+Sorgente dell’installer:
 
-The installer does not install `whisper.cpp` or download Whisper models. Configure `CVN_WHISPER_CPP_PATH` and `CVN_WHISPER_CPP_MODEL` manually. Tesseract language data can be configured with `CVN_TESSERACT_LANG`, for example `eng`, `chi_sim`, or `eng+chi_sim`.
+- Linux / macOS / WSL: https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
+- Windows PowerShell: https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
 
-DeepSeek and other OpenAI-compatible text models can help with contextual definitions, usage notes, sentence translation, lemmatization, and spelling checks. They do not replace local OCR/STT. `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1` only allows configured cloud fallback when local recognition fails, and is disabled by default.
+## Installazione manuale
 
-<!-- AUTO-GENERATED:ENV -->
-| Variabile | Richiesto | Predefinito | Descrizione |
-|------|------|--------|------|
-| `PORT` | No | `3107` | Porta del server Express backend. Il server di sviluppo Vite reindirizza `/api` a questa porta. |
-| `DATABASE_PATH` | No | `./data/context-vocabulary-notebook.sqlite` | Percorso del database SQLite. I percorsi relativi vengono risolti rispetto alla radice del progetto. |
-| `UPLOADS_DIR` | No | `./uploads` | Directory di salvataggio dei file multimediali caricati. I percorsi relativi vengono risolti rispetto alla radice del progetto. |
-<!-- /AUTO-GENERATED:ENV -->
+Se gli script con un clic non riescono a preparare l’ambiente, installa prima manualmente Node.js 22 LTS, npm, Git e gli strumenti nativi di compilazione necessari, poi esegui:
 
-Per cambiare la porta frontend durante lo sviluppo, puoi impostare `CLIENT_PORT` durante l'esecuzione del comando, il valore predefinito è `5173`. Questa variabile non è in `.env.example` e di solito non ha bisogno di essere configurata.
+Linux / macOS / WSL / Git Bash:
 
-## Comandi comuni
+```bash
+cd "$HOME"
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
+cd context-vocabulary-notebook
+cp .env.example .env
+npm ci
+npm run dev
+```
 
-<!-- AUTO-GENERATED:SCRIPTS -->
-| Comando | Descrizione |
-|------|------|
-| `npm run dev` | Avvia sia il server di sviluppo backend che il server di sviluppo frontend Vite. |
-| `npm run dev:client` | Avvia solo il server di sviluppo frontend Vite, ascolta su `0.0.0.0:5173` per impostazione predefinita. |
-| `npm run dev:server` | Avvia solo il server di sviluppo Express backend, ascolta su `localhost:3107` per impostazione predefinita. |
-| `npm run build` | Esegue prima il controllo del tipo, quindi compila frontend e backend. |
-| `npm test` | Esegue i test unitari / di integrazione Vitest. |
-| `npm run test:e2e` | Esegue i test E2E Playwright; passa anche senza file di test. |
-| `npm run typecheck` | Esegue il controllo del tipo TypeScript per le parti frontend e Node. |
-| `npm run lint` | Attualmente equivalente a `npm run typecheck`. |
-<!-- /AUTO-GENERATED:SCRIPTS -->
+Windows PowerShell:
+
+```powershell
+Set-Location $HOME
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
+Set-Location context-vocabulary-notebook
+Copy-Item .env.example .env
+npm ci
+npm run dev
+```
+
+Aprilo nel browser:
+
+```text
+http://localhost:5173
+```
+
+## Domande frequenti
+
+### Cosa fare se l’installazione con un comando fallisce?
+
+- If the message says a command is missing, close and reopen the terminal, then run the installer again.
+- Linux / WSL: if `apt-get update` reports Docker, Chromium, Snap, GPG key, or similar errors, it is usually an existing apt-source or unfinished package-configuration issue, not because this project depends on those packages. Fix/disable the affected apt source first, or manually install Git, Node.js 22 LTS, and npm before retrying.
+- macOS: if the Xcode Command Line Tools prompt appears, click Install, then rerun the installer after it completes.
+- Windows: if `npm ci` fails at `better-sqlite3`, you usually need Python and Visual Studio Build Tools / MSVC; if you are not familiar with these tools, WSL is recommended.
+
+### La pagina si apre, ma il riconoscimento locale risulta ancora non configurato
+
+First make sure the recognition installer has completed and the corresponding `CVN_*` paths exist in `.env`. Then click **I installed it, check again** on the settings page.
+
+If it still does not work:
+
+- Make sure the app was started from the same project directory.
+- Make sure no old `3107` backend process is occupying the port.
+- Run `npm run dev` again and refresh the page.
+
+### La porta è già in uso
+
+Change the backend port:
+
+```env
+PORT=3108
+```
+
+Linux / macOS / WSL / Git Bash change the frontend port:
+
+```bash
+CLIENT_PORT=5174 npm run dev
+```
+
+Windows PowerShell change the frontend port:
+
+```powershell
+$env:CLIENT_PORT = "5174"
+npm run dev
+```
+
+### La clip non ha sottotitoli visibili, quindi non viene riconosciuta la frase originale
+
+Se il fotogramma del video non contiene sottotitoli, o se i sottotitoli sono minuscoli/sfocati, OCR potrebbe non trovare una frase; in quel caso serve il riconoscimento vocale. Verifica che ffmpeg, whisper.cpp e `CVN_WHISPER_CPP_MODEL` siano disponibili. Se anche l’audio non contiene parlato chiaro, inserisci manualmente la frase originale.
+
+Se compare `Audio extraction failed`, di solito ffmpeg non è disponibile, il percorso è errato oppure ffmpeg non riesce a leggere il file video/audio di origine.
+
+### Dati lingua Tesseract mancanti
+
+If OCR reports missing language data, Tesseract was found but the matching traineddata is not installed. Common language codes:
+
+- English: `eng`
+- Simplified Chinese: `chi_sim`
+- Japanese: `jpn`
+- Korean: `kor`
+- French: `fra`
+- German: `deu`
+- Spanish: `spa`
+- Russian: `rus`
+
+For multiple languages:
+
+```env
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+### Il percorso del modello Whisper non è configurato
+
+`CVN_WHISPER_CPP_MODEL` non ha un modello predefinito. Scarica un modello ggml supportato da whisper.cpp e scrivi il suo percorso assoluto in `.env`.
 
 ## Dati e backup
 
-I dati predefiniti si trovano all'interno della directory del progetto:
+By default, all data is under the project directory:
 
 ```text
 data/context-vocabulary-notebook.sqlite
@@ -241,101 +349,104 @@ uploads/
 .env
 ```
 
-Si consiglia di salvarli insieme durante il backup:
+For backup, save them together:
 
 ```bash
 tar -czf vocabulary-notebook-backup.tar.gz data uploads .env
 ```
 
-Per ripristinare, rimetti questi file nella stessa directory del progetto e avvia l'applicazione.
+To restore, put these files back into the same project directory and start the app.
 
-Viene fornita anche l'importazione/esportazione ZIP in-app:
+The app also provides ZIP import/export:
 
-- Backup completo: include schede, contesti, file multimediali, tag, preferiti, stato della revisione, stato FSRS, registri delle revisioni e impostazioni utente.
-- Condivisione pura delle schede: non include l'avanzamento della revisione personale, lo stato dei preferiti o le impostazioni utente.
+- Full backup: includes cards, contexts, media, tags, favorites, review state, FSRS state, review logs, and user settings.
+- Card-only sharing: excludes personal review progress, favorite state, and user settings.
 
-L'API Key IA è una configurazione locale sensibile e non verrà trasportata con il file esportato; deve essere compilata nuovamente dopo aver cambiato dispositivo.
+AI API Keys are local sensitive configuration and are not included in exports; you need to enter them again on another device.
 
-## Raccomandazioni per i file multimediali
+## Consigli per i file multimediali
 
-| Tipo | Formati supportati | Dimensioni consigliate |
+| Type | Supported formats | Recommended size |
 |------|----------|----------|
-| Video | `mp4` | Sotto i 300 MB per file |
-| Audio | `mp3` | Sotto i 50 MB per file |
-| Immagine | `jpg` / `png` / `webp` | Sotto i 10 MB per file |
+| Video | `mp4` | within 300MB per file |
+| Audio | `mp3` | within 50MB per file |
+| Image | `jpg` / `png` / `webp` | within 10MB per file |
 
-## Configurazione dei suggerimenti IA
+## Configurazione dei suggerimenti AI
 
-La pagina di creazione della scheda supporta suggerimenti IA opzionali. È necessario aggiungere configurazioni API compatibili con OpenAI nella pagina delle impostazioni:
+The card creation page supports optional AI suggestions. Add an OpenAI-compatible API configuration on the settings page:
 
-- Nome visualizzato
-- URL di base
-- Chiave API
-- Modello
+- Display name
+- Base URL
+- API Key
+- Model
 
-Nota:
+Notes:
 
-- La creazione manuale delle schede e la revisione funzionano perfettamente senza configurare l'IA.
-- La chiave API è archiviata nel database locale e verrà mascherata nell'interfaccia utente.
-- La chiave API non verrà inclusa nei file esportati.
-- L'IA viene utilizzata solo per suggerire definizioni contestuali e note di utilizzo durante la creazione della scheda. Non è un dizionario integrato, né crea schede automaticamente.
+- Without AI configuration, manual card creation and review still work normally.
+- The API Key is stored in the local database and masked in the UI.
+- The API Key is not included in export files.
+- AI can suggest contextual meanings, usage notes, full-sentence translations, lemmatization, and spell checks during card creation.
+- OpenAI-compatible text models such as DeepSeek do not perform local OCR/STT; image text recognition depends on Tesseract, and speech recognition depends on whisper.cpp.
 
-## Domande frequenti (FAQ)
+## Requisiti
 
-### La porta è occupata
+| Environment | Requirement | Notes |
+|------|------|------|
+| Node.js | Node.js 22 LTS recommended | Frontend build, development servers, and backend service all depend on Node.js. The installer tries to provide it. |
+| npm | Installed with Node.js | The repository includes `package-lock.json`; dependencies are installed with `npm ci`. |
+| Git | Required when cloning from GitHub | The installer checks for it and tries to provide it. |
+| Browser | Chrome / Edge / Firefox / Safari or another modern browser | The app is used through a local web page. |
+| C/C++ build tools | May be required | `better-sqlite3` is a native module; if no prebuilt package is available, `npm ci` tries to compile it locally. |
+| ffmpeg | Optional | Required for video/audio clip analysis. |
+| Tesseract OCR | Optional | Required for OCR on images or video frames. |
+| whisper.cpp + Whisper model | Optional | Required for speech recognition on audio/video. |
 
-Modifica `.env`:
+### Raccomandazione WSL / Windows nativo
 
-```env
-PORT=3108
-```
+- WSL is usually the most stable: Node, Git, ffmpeg, Tesseract, and native build tools are closer to Linux paths.
+- Native Windows PowerShell is supported: the script reuses existing Git / Node.js / npm and tries `winget` only when something is missing.
+- If native Windows `npm ci` fails at `better-sqlite3`, install Python and Visual Studio Build Tools / MSVC as prompted, or use WSL.
 
-Se la porta frontend `5173` è occupata:
+## Variabili d’ambiente
 
-```bash
-CLIENT_PORT=5174 npm run dev
-```
+<!-- AUTO-GENERATED:ENV -->
+| Variable | Required | Default | Description |
+|------|------|--------|------|
+| `PORT` | Non richiesto | `3107` | Porta del servizio backend Express. Il server di sviluppo Vite inoltra `/api` a questa porta. |
+| `DATABASE_PATH` | Non richiesto | `./data/context-vocabulary-notebook.sqlite` | Percorso del database SQLite. I percorsi relativi sono risolti dalla radice del progetto. |
+| `UPLOADS_DIR` | Non richiesto | `./uploads` | Directory per i file multimediali caricati. I percorsi relativi sono risolti dalla radice del progetto. |
+| `CVN_FFMPEG_PATH` | Non richiesto | `ffmpeg` | Percorso dell’eseguibile ffmpeg; nelle installazioni di strumenti Windows nativi, usa un percorso assoluto se necessario. |
+| `CVN_STT_PROVIDER` | Non richiesto | `whisper.cpp` | Provider locale di riconoscimento vocale; può essere `whisper.cpp` o `disabled`. |
+| `CVN_WHISPER_CPP_PATH` | Non richiesto | `whisper-cli` | Percorso dell’eseguibile whisper.cpp; se il sistema ha solo il vecchio `main`, imposta `main` o un percorso assoluto. |
+| `CVN_WHISPER_CPP_MODEL` | Richiesto per STT locale | Vuoto | Percorso del file modello Whisper; l’installer non scarica automaticamente un modello. |
+| `CVN_WHISPER_CPP_TIMEOUT_MS` | Non richiesto | `120000` | Timeout per una singola esecuzione di riconoscimento whisper.cpp. |
+| `CVN_OCR_PROVIDER` | Non richiesto | `tesseract` | Provider OCR locale; può essere `tesseract` o `disabled`. |
+| `CVN_TESSERACT_PATH` | Non richiesto | `tesseract` | Percorso dell’eseguibile Tesseract. |
+| `CVN_TESSERACT_LANG` | Non richiesto | Scelto automaticamente in base alla lingua target | Codici lingua Tesseract, come `eng`, `chi_sim`, `eng+chi_sim`. |
+| `CVN_TESSERACT_TIMEOUT_MS` | Non richiesto | `30000` | Timeout per una singola esecuzione OCR Tesseract. |
+| `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK` | Non richiesto | `0` | Consente la trascrizione cloud di fallback quando il riconoscimento locale dei clip fallisce; disattivato per impostazione predefinita. |
+| `CVN_LOCAL_READINESS_TIMEOUT_MS` | Non richiesto | Deciso dal server | Timeout per i controlli di disponibilità del riconoscimento locale. |
+<!-- /AUTO-GENERATED:ENV -->
 
-### npm ci fallisce su better-sqlite3
+## Comandi comuni
 
-Preferisci usare Node.js 22 LTS. `better-sqlite3` è un modulo nativo; se non è disponibile un pacchetto precompilato per il sistema e la versione Node correnti, tenterà la compilazione locale durante l'installazione.
-
-Linux / WSL:
-
-```bash
-sudo apt update
-sudo apt install -y build-essential python3 make g++
-```
-
-macOS:
-
-```bash
-xcode-select --install
-```
-
-L'ambiente nativo Windows richiede ambienti di compilazione nativi Python e Visual Studio Build Tools / MSVC disponibili. Se non hai familiarità con la configurazione di questi strumenti, ti consigliamo di utilizzare invece WSL, oppure di installare prima manualmente gli ambienti mancanti e riprovare.
-
-### La pagina si apre, ma le richieste API falliscono
-
-Conferma che il backend sia in esecuzione:
-
-```text
-http://localhost:3107/api/health
-```
-
-Risposta normale:
-
-```json
-{"ok":true}
-```
-
-### Voglio cambiare la directory di installazione
-
-Basta spostare l'intera directory del progetto. Se `.env` utilizza percorsi relativi, il database e la directory di caricamento continueranno a essere risolti rispetto alla nuova directory. Se `.env` utilizza percorsi assoluti, devono essere aggiornati in modo sincrono.
+<!-- AUTO-GENERATED:SCRIPTS -->
+| Command | Description |
+|------|------|
+| `npm run dev` | Start both the backend development server and the Vite frontend development server. |
+| `npm run dev:client` | Start only the Vite frontend development server, listening on `0.0.0.0:5173` by default. |
+| `npm run dev:server` | Start only the backend Express development server, listening on `localhost:3107` by default. |
+| `npm run build` | Run type checks, then build the frontend and backend. |
+| `npm test` | Run Vitest unit / integration tests. |
+| `npm run test:e2e` | Run Playwright E2E tests; passes even when there are no test files. |
+| `npm run typecheck` | Run TypeScript type checks for the frontend and Node side. |
+| `npm run lint` | Currently equivalent to `npm run typecheck`. |
+<!-- /AUTO-GENERATED:SCRIPTS -->
 
 ## Note di sviluppo
 
-Stack tecnologico per questo progetto:
+Project stack:
 
 - React + Vite
 - Node.js + Express
@@ -345,8 +456,16 @@ Stack tecnologico per questo progetto:
 - Vitest
 - Playwright
 
-La prima versione aderisce al principio local-first, niente dizionari integrati, niente connessioni a dizionari, niente collegamenti video a siti Web e niente sincronizzazione. L'attuale V2 aggiunge solo funzionalità di suggerimento IA durante la creazione della scheda.
+La versione 1 resta local-first: nessun dizionario integrato, nessuna integrazione con dizionari, nessun link a video di siti web e nessuna sincronizzazione. L’attuale V2 aggiunge suggerimenti AI durante la creazione delle schede e strumenti locali di riconoscimento dei clip.
+
+## Note prima dell’installazione e disclaimer
+
+Per quanto l’autore ne sappia attualmente, il codice sorgente proprio di questo progetto non contiene codice dannoso. L’installer controlla l’ambiente locale e, sulle piattaforme supportate, tenta di installare dipendenze mancanti come Git, Node.js e npm; quando mancano strumenti di build nativi, stampa indicazioni, e alcune piattaforme richiedono l’installazione manuale.
+
+L’installazione scarica software e dipendenze di terze parti tramite i gestori di pacchetti del sistema e npm. Installazione e uso possono comunque essere influenzati da permessi di sistema, condizioni di rete, disponibilità del gestore di pacchetti, software antivirus, policy dei dispositivi aziendali, spazio su disco, catene di fornitura delle dipendenze di terze parti, risultati della compilazione dei moduli nativi Node e fattori simili. Problemi e conseguenze causati dall’esecuzione degli installer, dall’installazione delle dipendenze, dalla modifica dell’ambiente di sistema e dal caricamento/salvataggio di file locali sono responsabilità dell’utente.
+
+Se lo script non riesce a preparare automaticamente l’ambiente, stampa gli strumenti mancanti e i passaggi successivi suggeriti; quindi devi installarli manualmente per il tuo sistema e riprovare.
 
 ## Licenza
 
-Questo progetto utilizza la Licenza MIT. Vedi [`LICENSE`](./LICENSE) per i dettagli.
+Questo progetto usa la MIT License. Vedi [`LICENSE`](./LICENSE).

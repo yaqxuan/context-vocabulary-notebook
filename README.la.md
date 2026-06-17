@@ -1,38 +1,40 @@
 [中文](./README.md) | [English](./README.en.md) | [日本語](./README.ja.md) | [Español](./README.es.md) | [العربية](./README.ar.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md) | [Italiano](./README.it.md) | [Latina](./README.la.md)
 
-# Context Vocabulary Notebook
+# Context Vocabulary Notebook (commentarius vocabulorum contextualium)
 
-Commentarius vocabularii localis ad verba discenda ex veris pelliculis, sonis, subtitulis, et cursibus.
+Cum novum verbum in pelliculis, lectionibus auditis, aut titulis subtitulatis inveneris, haec applicatio non solum “ipsum verbum” servat, sed etiam sententiam originalem, contextum, imaginem captam, segmentum audio/video, notas et pittacia.
 
-Non verba solitaria tantum servat. Servat sententiam, significationem in contextu, capturam ekrani, partem pelliculae vel soni, notas, et pittacia ex tempore quo verbum invenisti. Cum postea recognoscis, verum contextum iterum vides, non solum verbum et definitionem.
+In repetitione non vocabulum solum vides, sed ipsum locum ubi verbum primum invenisti.
 
-Aptus est ad:
+Tibi convenit si:
 
-- Nova verba annotanda dum pelliculas, cursus, cinematographica, vel materias audiendi in lingua peregrina spectas.
-- Discentes qui repetitionem spatiatam similem Anki volunt, sed cum contextu pleniore in unaquaque chartula.
-- Eos qui data localia praeferunt nec rationem nubis pro commentario vocabularii desiderant.
+- Saepe videos, cursus, pelliculas, podcasts vel materias audiendi linguis externis spectas aut audis.
+- Vis repetitionem intervallis distributam sicut Anki, sed chartis quae sententiam primam, screenshots et segmenta mediorum servant.
+- Vis data studii in computatro tuo servare, sine ratione nubis creanda solum pro libello vocabulorum.
+- Opus habes auxilio ad sententias ex videos, audio vel imaginibus localibus agnoscendas antequam eas manu in chartas expolias.
 
-> Praesens propositum est applicatio telae localis. Data per defaltam in base datorum SQLite et in palliolo `uploads/` in computatro tuo salvantur. Ratio nubis non requiritur.
+> Hoc projectum est app interretialis localis. Ex more, data in basi SQLite et in fasciculo `uploads/` in computatro tuo servantur; ratio nubis non requiritur.
 
 ## Demo
 
-![Demonstratio creationis chartulae in Context Vocabulary Notebook](./docs/demo/01-create-card.png)
+![Exemplum chartae creandae in Context Vocabulary Notebook](./docs/demo/01-create-card-la.png)
 
-## Lineamenta Praecipua
+## Quid hoc instrumento facere possis
 
-- Creare chartulas circa contextus reales: verbum scopi, definitio contextualis, sententia originalis, notae, pittacia.
-- Servare appendices mediorum localium: pellicula `mp4`, sonus `mp3`, imago `jpg / png / webp`.
-- Unum introitum significationis cum pluribus exemplis contextus coniungere, utile ad eandem significationem in diversis materiis annotandam.
-- Recognoscere per repetitionem spatiatam FSRS, ut unumquodque verbum ad contextum ubi inventum est redeat.
-- Index introituum significationis, quaesitio, percolatio per pittacia, dilecta, statistica.
-- Importatio et exportatio ZIP ad tergum personale integrum et communicationem chartularum tantum.
-- Suggestiones IA in pagina creationis chartularum V2: API compatibilis OpenAI configurari potest ad definitiones contextuales et notas usus suggerendas; Clavis API tantum localiter salvatur.
+- Crea chartas circa contextum verum: verbum destinatum, sententiam primam, significationem contextualem, notas et tags.
+- Serva adiuncta mediorum localia: video `mp4`, audio `mp3`, imagines `jpg / png / webp`.
+- Importa segmenta gregatim: plura segmenta video, audio vel imaginum simul importa, eventus agnitionis singillatim inspice et chartas crea.
+- Utere adiutoribus localibus OCR/STT optionalibus: configura ffmpeg, Tesseract et whisper.cpp ut sententias ex imaginibus, tabulis video vel audio agnoscas.
+- Adiunge plura exempla contextus eidem significationi verbi, utile ut videas quomodo una significatio in diversis materiis appareat.
+- Repete cum repetitione intervallata FSRS, quodque verbum ad contextum in quo inventum est reducens.
+- Quaere, per tags cola, favorita nota, statistica vide, et subsidia ZIP importa/exporta.
+- Consilia AI optionalia: post API OpenAI-compatible configuratam, auxilium accipe de significationibus contextualibus, notis usus, translatione sententiae plenae, lemmatizatione et orthographiae probatione.
 
-## Monitio de Loco Datorum et Spatio Disci
+## Locus datorum et monitum de spatio disci
 
-Applicatio data in directorio exsecutionis per defaltam salvat. Postquam pelliculas, capturas ekranorum, et sonos oneraveris, directorium `uploads/` continue crescere et spatium disci insigne occupare potest.
+Elige primum directorium institutionis. Ex more, app basim datorum, fasciculos impositos et configurationem sub directorio unde currit servat.
 
-Data localia per defaltam:
+Data localia praedefinita:
 
 ```text
 data/context-vocabulary-notebook.sqlite
@@ -40,153 +42,182 @@ uploads/
 .env
 ```
 
-Non commendatur applicationem in his locis exsequi:
+Nota: post videos, audio et screenshots impositos, `uploads/` crescere pergere potest. Exemplaria Whisper quoque centenas MB usque ad plures GB occupare possunt.
 
-- Directoria quae plerumque permissiones `sudo` vel radicis requirunt, sicut `/usr/local`, `/opt`.
-- Directoria a systemate protecta sicut `C:\Program Files`.
-- Directoria temporaria, directoria celationis detractionis, vel loca quae a systemate vel instrumentis purgationis automatice delebuntur.
-- Loca cum spatio minimo, regulis synchronisationis obscuris, vel ubi fasciculi ab unitatibus nubis automatice purgari vel in quota limitari possunt.
+Vita hos locos:
 
-## Ambitus Exsecutionis
+- `/usr/local`, `/opt` vel alia directoria quae plerumque permissiones `sudo` vel root requirunt.
+- `C:\Program Files` vel alia directoria a systemate protecta.
+- Fasciculi temporarii, receptacula download, vel loci quos systema aut instrumenta purgationis automatice delere possunt.
+- Loci cum parvo spatio libero, regulis synchronizationis incertis, vel moribus purgationis/quotae in disco nubis.
 
-| Ambitus | Requiritur | Descriptio |
-|------|------|------|
-| Node.js | Commendatur Node.js 22 LTS; saltem versio Node praesentibus requisitis Vite satisfaciens | Aedificatio partis anterioris, servitor evolutionis, et servitor partis posterioris omnes a Node.js dependent. Scriptum installationis hoc implere conabitur. |
-| npm | Cum Node.js installatur | Receptaculum `package-lock.json` continet, utere `npm ci` ad dependentias installandas. |
-| Git | Requisitum ad receptaculum GitHub clonandum | Scriptum installationis hoc verificabit et implere conabitur. |
-| Navigatorium | Navigatoria moderna sicut Chrome / Edge / Firefox / Safari | Applicatio per paginas telae locales adhibetur. |
-| Instrumenta Aedificationis C/C++ | Requiruntur forsitan | `better-sqlite3` est modulum nativum; si nullum fasciculum praecompilatum pro praesenti systemate et versione Node praesto est, `npm ci` compilationem localem tentabit. |
+Praefer locum quem diu servare potes, exempli gratia:
 
-Scriptum installationis primum ambitum exsistentem in machina locali verificabit. In Linux / WSL, dependentias per `apt-get` implere tentabit solum si Git vel Node.js/npm desunt; si ambitus fundamentales satisfacti sunt, `apt-get` transiliet ne quaestiones fontium programmatum extraneorum in systemate provocet. Scriptum macOS Homebrew adhibere conabitur cum dependentiae desunt. Scriptum nativum Windows `winget` adhibere conabitur cum dependentiae desunt. Si hi dispensatores fasciculorum non praesto sunt, vel usor praesens permissiones installationis non habet, oportet ut ambitus deficientes manualiter installes et iterum tentes.
+```text
+D:\study\context-vocabulary-notebook
+E:\study\context
+$HOME/context-vocabulary-notebook
+```
 
-## Notae Prae-installationis et Declinatio Responsabilitatis
+## Institutio uno mandato
 
-Ad optimam auctoris cognitionem praesentem, codex fontis proprius huius propositi nullum codicem malignum continet. Scriptum installationis ambitum localem verificabit et dependentias deficientes sicut Git, Node.js, npm, et instrumenta aedificationis nativa in suggestis sustentatis installare tentabit.
+Intra directorium vacuum ubi fasciculi projecti manere debent, deinde mandatum systemati tuo aptum exsequere. Scriptum projectum in directorio praesenti instituit; si directorium hoc projectum iam continet, id automatice renovat.
 
-Installatio propositi programmata extranea et dependentias per dispensatores fasciculorum systematis et npm acquiret. Processus installationis et usus adhuc affici potest a factoribus sicut permissiones systematis, status retis, disponibilitas dispensatoris fasciculorum, programmata antivirorum, consilia machinarum corporatarum, spatium disci, catenae suppeditationis dependentiarum extranearum, et exitus compilationis modulorum nativorum Node. Usores soli responsabiles sunt pro ullis quaestionibus et consecutionibus ex exsecutione scripti installationis, installatione dependentiarum, modificatione ambitus systematis, ac onere et salvatione fasciculorum localium surgentibus.
-
-Si scriptum ambitum automatice implere nequit, instrumenta deficientia et methodos tractationis suggestas proferet; hoc in puncto, usores ea manualiter secundum propria systemata installare debent antequam iterum tentent.
-
-## Installatio Unico Ictu
+| Systema | Mandatum |
+|------|------|
+| Linux / macOS / WSL | Vide mandatum Linux / macOS / WSL infra |
+| Windows PowerShell | Vide mandatum Windows PowerShell infra |
 
 ### Linux / macOS / WSL
-
-Copia et exsequere praeceptum sequens. Scriptum propositum in directorio praesenti installabit:
 
 ```bash
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-Scriptum automatice dependentias sicut Git, Node.js/npm verificabit; dependentiae installatae directe iterum adhibebuntur. Pro Linux / WSL, si dependentiae fundamentales satisfactae sunt, `apt-get` transiliet.
+### Windows PowerShell
 
-Ad contentum scripti prius videndum, visita:
-https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
+```powershell
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
 
-Usus provectus: Specificare directorium installationis
+Post institutionem, hoc modo incipe:
+
+```bash
+npm run dev
+```
+
+Aperi in navigatro:
+
+```text
+http://localhost:5173
+```
+
+Probatio salutis backend:
+
+```text
+http://localhost:3107/api/health
+```
+
+## Ad novissimam versionem renovare
+
+Intra directorium ubi projectum instituisti, deinde exsequere:
+
+Linux / macOS / WSL / Git Bash:
+
+```bash
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+Windows PowerShell:
+
+```powershell
+git pull --ff-only
+npm ci
+npm run build
+npm run dev
+```
+
+Potes etiam mandatum institutionis uno clicco iterum exsequi. Si scriptum agnoscit directorium praesens iam hoc projectum esse, renovat, dependentias instituit et automatice aedificat.
+
+## OCR / agnitio vocis localis (libitum)
+
+Libellus principalis OCR/STT non requirit. Primum chartas creare et manu repetere potes; haec instrumenta configura tantum cum sententias primas ex videos, audio vel imaginibus automatice agnoscere debes.
+
+Agnitio localis utitur:
+
+- ffmpeg: audio ex videos extrahit.
+- Tesseract: textum in imaginibus vel tabulis video agnoscit.
+- whisper.cpp + exemplar Whisper: sermonem in audio vel video agnoscit.
+
+### Agnitionem localem automatice configurare (primum suadetur)
+
+Hoc in directorio projecti exsequere:
+
+Linux / macOS / WSL:
+
+```bash
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition.sh | bash
+```
+
+Windows PowerShell:
+
+```powershell
+$env:CVN_TESSERACT_LANG='eng'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
+```
+
+Ut subscripta Sinica et Anglica agnoscas, linguam muta in:
+
+```powershell
+$env:CVN_TESSERACT_LANG='eng+chi_sim'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
+```
+
+Postquam scriptum finitum est, preme **I installed it, check again** in charta agnitionis localis paginae optionum app. Versiones recentiores `.env` denuo onerant, itaque backend plerumque manu restituere non debes.
+
+### Exemplaria et usus disci
+
+Exemplaria Whisper magna sunt, et tempus download a rete tuo pendet:
+
+- `tiny` / `base`: parva et celeria, bona ad experiendum, cum minore accuratione.
+- `small` / `medium`: accuratio melior, cum maiore usu disci et CPU.
+- `large`: valde magnum et in computatris communibus fortasse tardum; non commendatur ut electio praedefinita.
+
+Institutor agnitionis Windows ex more `ggml-small.bin` deponit, circiter plures centenos MB.
+
+### Agnitionem localem manu configurare
+
+Si configuratio uno clicco deficit, aut si vias instrumentorum ipse administrare vis, instrumenta manu institue et hos valores in `.env` scribe:
+
+```env
+CVN_FFMPEG_PATH=/absolute/path/to/ffmpeg
+
+CVN_STT_PROVIDER=whisper.cpp
+CVN_WHISPER_CPP_PATH=/absolute/path/to/whisper-cli
+CVN_WHISPER_CPP_MODEL=/absolute/path/to/ggml-small.bin
+CVN_WHISPER_CPP_TIMEOUT_MS=120000
+
+CVN_OCR_PROVIDER=tesseract
+CVN_TESSERACT_PATH=/absolute/path/to/tesseract
+CVN_TESSERACT_LANG=eng
+CVN_TESSERACT_TIMEOUT_MS=30000
+```
+
+Exemplum viae Windows:
+
+```env
+CVN_FFMPEG_PATH=E:\study\context\tools\ffmpeg\bin\ffmpeg.exe
+CVN_WHISPER_CPP_PATH=E:\study\context\tools\whisper.cpp\Release\whisper-cli.exe
+CVN_WHISPER_CPP_MODEL=E:\study\context\models\ggml-small.bin
+CVN_TESSERACT_PATH=E:\study\context\tools\tesseract\tesseract.exe
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+
+## Optiones institutionis provectae
+
+### Directorium institutionis definire
+
+Linux / macOS / WSL:
 
 ```bash
 export CVN_HOME="$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
-### Windows PowerShell
-
-Primum, intra directorium vacuum ubi vis fasciculos propositi installare, deinde copia et exsequere praeceptum sequens. Scriptum fasciculos propositi directe in directorio praesenti installabit sine alio directorio nidificato creando:
-
-```powershell
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
-```
-
-Scriptum automatice dependentias sicut Git, Node.js/npm verificabit; dependentiae installatae directe iterum adhibebuntur.
-
-Ad contentum scripti prius videndum, visita:
-https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
-
-Usus provectus: Specificare directorium installationis
+Windows PowerShell:
 
 ```powershell
 $env:CVN_HOME = "C:\path\to\empty-folder"
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
-### Solutio Problematum
+### Institutorem principalem instrumenta libita addere sinere
 
-- Si dicit praeceptum non exsistere, claude terminalem, eam iterum aperi, et praeceptum installationis iterum exsequere.
-- Pro Linux / WSL, si `apt-get update` errores nuntiat sicut Docker, Chromium, Snap, claves GPG, etc., plerumque est propter fontes apt exsistentes vel configurationes fasciculorum imperfectas in systemate, non quia hoc propositum a his programmatibus dependet. Potes primum fontes apt respondentes reparare/debilitare, vel manualiter Git, Node.js 20+ et npm installare, deinde iterum tentare.
-- Pro macOS, si fenestra installationis Instrumentorum Lineae Praecepti Xcode prosilit, preme "Install", et postquam completa est, praeceptum installationis iterum exsequere.
-- Pro Windows, si te admonet ambitum compilationis installari debere, quaeso perge ut admonitus; hic est ambitus qui forsitan requiratur in compilatione quarundam dependentiarum.
+Ad primam institutionem ordinariam non requiruntur. Utere eis tantum cum opus est.
 
-## Renovatio ad Versionem Recentissimam
-
-Si eam iam installasti, intra directorium propositi et exsequere:
-
-Linux / macOS / WSL / Git Bash:
-
-```bash
-cd context-vocabulary-notebook
-git pull --ff-only
-npm ci
-npm run build
-npm run dev
-```
-
-Windows native PowerShell:
-
-```powershell
-Set-Location context-vocabulary-notebook
-git pull --ff-only
-npm ci
-npm run build
-npm run dev
-```
-
-Potes etiam iterum exsequi praeceptum installationis unico ictu. Cum scriptum receptaculum Git exsistens in directorio installationis invenit, automatice `git pull --ff-only`, `npm ci`, et `npm run build` exsequetur.
-
-Si iterum exsequeris praeceptum installationis unico ictu intra directorium propositi, scriptum directorium propositi praesens renovabit et aliud directorium nidificatum eiusdem nominis non creabit. Si extra propositum exsequitur, quaeso primum intra directorium vacuum, vel expresse eundem `CVN_HOME` statue; scriptum fasciculos propositi in directorium ordinarium non vacuum non miscebit.
-
-## Installatio Manualis
-
-Si scriptum unico ictu ambitum implere nequit, potes manualiter Node.js 22 LTS, npm, Git, et instrumenta aedificationis nativa potentialiter requisita primum installare, deinde praecepta sequentia exsequi.
-
-Linux / macOS / WSL / Git Bash:
-
-```bash
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
-cd context-vocabulary-notebook
-cp .env.example .env
-npm ci
-npm run dev
-```
-
-Windows native PowerShell:
-
-```powershell
-git clone https://github.com/yaqxuan/context-vocabulary-notebook.git
-Set-Location context-vocabulary-notebook
-Copy-Item .env.example .env
-npm ci
-npm run dev
-```
-
-Aperi in navigatorio:
-
-```text
-http://localhost:5173
-```
-
-Inscriptio partis posterioris per defaltam:
-
-```text
-http://localhost:3107
-```
-
-## Variabiles Ambitus
-
-## Local Clip Recognition (OCR / STT) addendum
-
-Clip analysis now uses local tools by default: `whisper.cpp` for speech recognition, `Tesseract` for image/video-frame OCR, and `ffmpeg` for video audio extraction. Missing tools do not block core install, manual card creation, review, or normal media upload; the readiness endpoint / UI reports what is missing.
-
-Opt in to installer-managed optional tools before running the installer:
+Linux / macOS / WSL:
 
 ```bash
 export CVN_INSTALL_FFMPEG=1
@@ -194,46 +225,123 @@ export CVN_INSTALL_TESSERACT=1
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
+Windows PowerShell:
+
 ```powershell
 $env:CVN_INSTALL_FFMPEG = "1"
 $env:CVN_INSTALL_TESSERACT = "1"
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
-If clip analysis shows `Audio extraction failed`, install ffmpeg or make sure ffmpeg is on PATH, then reopen the terminal and retry.
+Fons institutoris:
 
-The installer does not install `whisper.cpp` or download Whisper models. Configure `CVN_WHISPER_CPP_PATH` and `CVN_WHISPER_CPP_MODEL` manually. Tesseract language data can be configured with `CVN_TESSERACT_LANG`, for example `eng`, `chi_sim`, or `eng+chi_sim`.
+- Linux / macOS / WSL: https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.sh
+- Windows PowerShell: https://github.com/yaqxuan/context-vocabulary-notebook/blob/main/scripts/install.ps1
 
-DeepSeek and other OpenAI-compatible text models can help with contextual definitions, usage notes, sentence translation, lemmatization, and spelling checks. They do not replace local OCR/STT. `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1` only allows configured cloud fallback when local recognition fails, and is disabled by default.
+## Institutio manualis
 
-<!-- AUTO-GENERATED:ENV -->
-| Variabilis | Requiritur | Defalta | Descriptio |
-|------|------|--------|------|
-| `PORT` | Non | `3107` | Portus servitoris Express partis posterioris. Servitor evolutionis Vite `/api` ad hunc portum delegat. |
-| `DATABASE_PATH` | Non | `./data/context-vocabulary-notebook.sqlite` | Semita basis datorum SQLite. Semitae relativae contra radicem propositi resolvuntur. |
-| `UPLOADS_DIR` | Non | `./uploads` | Directorium salvationis fasciculorum mediorum oneratorum. Semitae relativae contra radicem propositi resolvuntur. |
-<!-- /AUTO-GENERATED:ENV -->
+Si scripta uno clicco ambitum parare non possunt, primum Node.js 22 LTS, npm, Git et instrumenta nativa aedificationis necessaria manu institue, deinde exsequere:
 
-Ad portum partis anterioris mutandum in evolutione, potes `CLIENT_PORT` statuere cum praeceptum exsequeris, defalta est `5173`. Haec variabilis non est in `.env.example` et plerumque non indiget configurari.
+Linux / macOS / WSL / Git Bash:
 
-## Praecepta Communia
+```bash
+cd "$HOME"
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
+cd context-vocabulary-notebook
+cp .env.example .env
+npm ci
+npm run dev
+```
 
-<!-- AUTO-GENERATED:SCRIPTS -->
-| Praeceptum | Descriptio |
-|------|------|
-| `npm run dev` | Incipit et servitorem evolutionis partis posterioris et servitorem evolutionis partis anterioris Vite. |
-| `npm run dev:client` | Incipit tantum servitorem evolutionis partis anterioris Vite, auscultat ad `0.0.0.0:5173` per defaltam. |
-| `npm run dev:server` | Incipit tantum servitorem evolutionis Express partis posterioris, auscultat ad `localhost:3107` per defaltam. |
-| `npm run build` | Exsequitur verificationem typi primum, deinde aedificat partem anteriorem et partem posteriorem. |
-| `npm test` | Exsequitur probationes unitatis / integrationis Vitest. |
-| `npm run test:e2e` | Exsequitur probationes E2E Playwright; transit etiam nullo fasciculo probationis praesenti. |
-| `npm run typecheck` | Exsequitur verificationem typi TypeScript pro partibus anteriori et Node. |
-| `npm run lint` | Nunc aequivalet `npm run typecheck`. |
-<!-- /AUTO-GENERATED:SCRIPTS -->
+Windows PowerShell:
 
-## Data et Tergum
+```powershell
+Set-Location $HOME
+git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
+Set-Location context-vocabulary-notebook
+Copy-Item .env.example .env
+npm ci
+npm run dev
+```
 
-Data per defaltam sunt intra directorium propositi:
+Aperi in navigatro:
+
+```text
+http://localhost:5173
+```
+
+## Quaestiones frequentes
+
+### Quid si institutio uno mandato deficit?
+
+- If the message says a command is missing, close and reopen the terminal, then run the installer again.
+- Linux / WSL: if `apt-get update` reports Docker, Chromium, Snap, GPG key, or similar errors, it is usually an existing apt-source or unfinished package-configuration issue, not because this project depends on those packages. Fix/disable the affected apt source first, or manually install Git, Node.js 22 LTS, and npm before retrying.
+- macOS: if the Xcode Command Line Tools prompt appears, click Install, then rerun the installer after it completes.
+- Windows: if `npm ci` fails at `better-sqlite3`, you usually need Python and Visual Studio Build Tools / MSVC; if you are not familiar with these tools, WSL is recommended.
+
+### Pagina aperitur, sed agnitio localis adhuc non configurata dicitur
+
+First make sure the recognition installer has completed and the corresponding `CVN_*` paths exist in `.env`. Then click **I installed it, check again** on the settings page.
+
+If it still does not work:
+
+- Make sure the app was started from the same project directory.
+- Make sure no old `3107` backend process is occupying the port.
+- Run `npm run dev` again and refresh the page.
+
+### Portus iam in usu est
+
+Change the backend port:
+
+```env
+PORT=3108
+```
+
+Linux / macOS / WSL / Git Bash change the frontend port:
+
+```bash
+CLIENT_PORT=5174 npm run dev
+```
+
+Windows PowerShell change the frontend port:
+
+```powershell
+$env:CLIENT_PORT = "5174"
+npm run dev
+```
+
+### Segmentum subtitulos visibiles non habet, ergo sententia originalis non agnoscitur
+
+Si imago videi titulos non habet, aut tituli nimis parvi vel confusi sunt, OCR sententiam invenire non potest; tum agnitio vocis opus est. Confirma ffmpeg, whisper.cpp et `CVN_WHISPER_CPP_MODEL` praesto esse. Si etiam sonus vocem claram non habet, sententiam originalem manu inscribe.
+
+Si `Audio extraction failed` apparet, plerumque ffmpeg deest, semita falsa est, aut fasciculus video/audio a ffmpeg legi non potest.
+
+### Data linguae Tesseract desunt
+
+If OCR reports missing language data, Tesseract was found but the matching traineddata is not installed. Common language codes:
+
+- English: `eng`
+- Simplified Chinese: `chi_sim`
+- Japanese: `jpn`
+- Korean: `kor`
+- French: `fra`
+- German: `deu`
+- Spanish: `spa`
+- Russian: `rus`
+
+For multiple languages:
+
+```env
+CVN_TESSERACT_LANG=eng+chi_sim
+```
+
+### Semita exemplaris Whisper non configurata est
+
+`CVN_WHISPER_CPP_MODEL` exemplar praedefinitum non habet. Exemplar ggml a whisper.cpp sustentatum depone et viam absolutam eius in `.env` scribe.
+
+## Data et exemplum securitatis
+
+By default, all data is under the project directory:
 
 ```text
 data/context-vocabulary-notebook.sqlite
@@ -241,101 +349,104 @@ uploads/
 .env
 ```
 
-Commendatur ea una salvare cum tergum facis:
+For backup, save them together:
 
 ```bash
 tar -czf vocabulary-notebook-backup.tar.gz data uploads .env
 ```
 
-Ad restituendum, repone hos fasciculos in eodem directorio propositi et incipe applicationem.
+To restore, put these files back into the same project directory and start the app.
 
-Importatio/exportatio ZIP intra-applicationem etiam providetur:
+The app also provides ZIP import/export:
 
-- Tergum integrum: includit chartulas, contextus, media, pittacia, dilecta, statum recognitionis, statum FSRS, diurna recognitionis, et configurationes usoris.
-- Pura communicatio chartularum: non includit progressum recognitionis personalem, statum dilectorum, vel configurationes usoris.
+- Full backup: includes cards, contexts, media, tags, favorites, review state, FSRS state, review logs, and user settings.
+- Card-only sharing: excludes personal review progress, favorite state, and user settings.
 
-Clavis API IA est configuratio localis sensitiva et non portabitur cum fasciculo exportato; eam oportet iterum implere post mutationem machinarum.
+AI API Keys are local sensitive configuration and are not included in exports; you need to enter them again on another device.
 
-## Commendationes Fasciculorum Mediorum
+## Consilia de fasciculis mediaticis
 
-| Typus | Formae Sustentatae | Magnitudo Commendata |
+| Type | Supported formats | Recommended size |
 |------|----------|----------|
-| Pellicula | `mp4` | Infra 300MB pro fasciculo |
-| Sonus | `mp3` | Infra 50MB pro fasciculo |
-| Imago | `jpg` / `png` / `webp` | Infra 10MB pro fasciculo |
+| Video | `mp4` | within 300MB per file |
+| Audio | `mp3` | within 50MB per file |
+| Image | `jpg` / `png` / `webp` | within 10MB per file |
 
-## Configuratio Suggestionum IA
+## Configuratio suggestionum AI
 
-Pagina creationis chartularum suggestiones IA optionales sustinet. Oportet configurationes API compatibiles OpenAI addere in pagina configurationum:
+The card creation page supports optional AI suggestions. Add an OpenAI-compatible API configuration on the settings page:
 
-- Nomen Proponendum
-- URL Fundamentale
-- Clavis API
-- Exemplar
+- Display name
+- Base URL
+- API Key
+- Model
 
-Nota:
+Notes:
 
-- Creatio manualis chartularum et recognitio perfecte bene operantur sine IA configurata.
-- Clavis API in base datorum locali reconditur et in interfacie usoris larvabitur.
-- Clavis API in fasciculis exportatis non includetur.
-- IA tantum adhibetur ad definitiones contextuales et notas usus suggerendas in creatione chartularum. Non est dictionarium insitum, nec chartulas automatice creat.
+- Without AI configuration, manual card creation and review still work normally.
+- The API Key is stored in the local database and masked in the UI.
+- The API Key is not included in export files.
+- AI can suggest contextual meanings, usage notes, full-sentence translations, lemmatization, and spell checks during card creation.
+- OpenAI-compatible text models such as DeepSeek do not perform local OCR/STT; image text recognition depends on Tesseract, and speech recognition depends on whisper.cpp.
 
-## Quaestiones Frequentes (FAQ)
+## Requisita
 
-### Portus occupatus est
+| Environment | Requirement | Notes |
+|------|------|------|
+| Node.js | Node.js 22 LTS recommended | Frontend build, development servers, and backend service all depend on Node.js. The installer tries to provide it. |
+| npm | Installed with Node.js | The repository includes `package-lock.json`; dependencies are installed with `npm ci`. |
+| Git | Required when cloning from GitHub | The installer checks for it and tries to provide it. |
+| Browser | Chrome / Edge / Firefox / Safari or another modern browser | The app is used through a local web page. |
+| C/C++ build tools | May be required | `better-sqlite3` is a native module; if no prebuilt package is available, `npm ci` tries to compile it locally. |
+| ffmpeg | Optional | Required for video/audio clip analysis. |
+| Tesseract OCR | Optional | Required for OCR on images or video frames. |
+| whisper.cpp + Whisper model | Optional | Required for speech recognition on audio/video. |
 
-Modifica `.env`:
+### Commendatio WSL / Windows nativi
 
-```env
-PORT=3108
-```
+- WSL is usually the most stable: Node, Git, ffmpeg, Tesseract, and native build tools are closer to Linux paths.
+- Native Windows PowerShell is supported: the script reuses existing Git / Node.js / npm and tries `winget` only when something is missing.
+- If native Windows `npm ci` fails at `better-sqlite3`, install Python and Visual Studio Build Tools / MSVC as prompted, or use WSL.
 
-Si portus partis anterioris `5173` occupatus est:
+## Variabiles ambitus
 
-```bash
-CLIENT_PORT=5174 npm run dev
-```
+<!-- AUTO-GENERATED:ENV -->
+| Variable | Required | Default | Description |
+|------|------|--------|------|
+| `PORT` | Non | `3107` | Porta servitii backend Express. Minister evolutionis Vite `/api` ad hanc portam transmittit. |
+| `DATABASE_PATH` | Non | `./data/context-vocabulary-notebook.sqlite` | Via basis datorum SQLite. Viae relativae a radice propositi resolvuntur. |
+| `UPLOADS_DIR` | Non | `./uploads` | Directorium fasciculorum mediorum impositorum. Viae relativae a radice propositi resolvuntur. |
+| `CVN_FFMPEG_PATH` | Non | `ffmpeg` | Via ad exsecutabile ffmpeg; in institutionibus instrumentorum nativorum Windows, viam absolutam adhibe si opus est. |
+| `CVN_STT_PROVIDER` | Non | `whisper.cpp` | Praebitor localis agnitionis vocis; potest esse `whisper.cpp` aut `disabled`. |
+| `CVN_WHISPER_CPP_PATH` | Non | `whisper-cli` | Via ad exsecutabile whisper.cpp; si systema tuum solum vetus `main` habet, pone `main` aut viam absolutam. |
+| `CVN_WHISPER_CPP_MODEL` | Necessarium pro STT locali | Vacuum | Via fasciculi exemplaris Whisper; institutor exemplar automatice non deponit. |
+| `CVN_WHISPER_CPP_TIMEOUT_MS` | Non | `120000` | Tempus maximum unius cursus agnitionis whisper.cpp. |
+| `CVN_OCR_PROVIDER` | Non | `tesseract` | Praebitor localis OCR; potest esse `tesseract` aut `disabled`. |
+| `CVN_TESSERACT_PATH` | Non | `tesseract` | Via ad exsecutabile Tesseract. |
+| `CVN_TESSERACT_LANG` | Non | Automate secundum linguam destinatam eligitur | Codices linguarum Tesseract, ut `eng`, `chi_sim`, `eng+chi_sim`. |
+| `CVN_TESSERACT_TIMEOUT_MS` | Non | `30000` | Tempus maximum unius cursus OCR Tesseract. |
+| `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK` | Non | `0` | Utrum transcriptio nubis tamquam subsidium liceat cum agnitio localis segmenti deficit; per defaltam inhibitum. |
+| `CVN_LOCAL_READINESS_TIMEOUT_MS` | Non | A servo decernitur | Tempus maximum probationum promptitudinis agnitionis localis. |
+<!-- /AUTO-GENERATED:ENV -->
 
-### npm ci deficit apud better-sqlite3
+## Mandata usitata
 
-Praefer adhibere Node.js 22 LTS. `better-sqlite3` est modulum nativum; si nullum fasciculum praecompilatum pro praesenti systemate et versione Node praesto est, compilationem localem tentabit in installatione.
+<!-- AUTO-GENERATED:SCRIPTS -->
+| Command | Description |
+|------|------|
+| `npm run dev` | Start both the backend development server and the Vite frontend development server. |
+| `npm run dev:client` | Start only the Vite frontend development server, listening on `0.0.0.0:5173` by default. |
+| `npm run dev:server` | Start only the backend Express development server, listening on `localhost:3107` by default. |
+| `npm run build` | Run type checks, then build the frontend and backend. |
+| `npm test` | Run Vitest unit / integration tests. |
+| `npm run test:e2e` | Run Playwright E2E tests; passes even when there are no test files. |
+| `npm run typecheck` | Run TypeScript type checks for the frontend and Node side. |
+| `npm run lint` | Currently equivalent to `npm run typecheck`. |
+<!-- /AUTO-GENERATED:SCRIPTS -->
 
-Linux / WSL:
+## Notae evolutionis
 
-```bash
-sudo apt update
-sudo apt install -y build-essential python3 make g++
-```
-
-macOS:
-
-```bash
-xcode-select --install
-```
-
-Ambitus nativus Windows requirit ambitus aedificationis nativos Python et Visual Studio Build Tools / MSVC praesto. Si non es familiaris cum his instrumentis configurandis, commendatur WSL potius adhibere, vel manualiter ambitus deficientes primum installare et iterum tentare.
-
-### Pagina aperitur, sed petitiones API deficiunt
-
-Confirma partem posteriorem exsequi:
-
-```text
-http://localhost:3107/api/health
-```
-
-Responsum normale:
-
-```json
-{"ok":true}
-```
-
-### Volo mutare directorium installationis
-
-Tantum move integrum directorium propositi. Si `.env` semitis relativis utitur, basis datorum et directorium onerum continue resolventur relate ad novum directorium. Si `.env` semitis absolutis utitur, ea synchrone renovari debent.
-
-## Notae Evolutionis
-
-Cumulus technicus huius propositi:
+Project stack:
 
 - React + Vite
 - Node.js + Express
@@ -345,8 +456,17 @@ Cumulus technicus huius propositi:
 - Vitest
 - Playwright
 
-Prima versio adhaeret principio primi localis, nullis dictionariis insitis, nullis conexionibus dictionarii, nullis nexibus pellicularum ad situs telae, et nullae synchronisationi. Praesens V2 tantum facultates suggestionis IA in creatione chartularum addit.
+Versio 1 localis-prima manet: nullum lexicon inclusum, nulla integratio lexici, nulli nexus ad videos paginarum interretialium, neque synchronisatio. V2 hodierna addit suggestiones AI dum chartae creantur et auxilia localia ad fragmenta recognoscenda.
+
+## Monita ante institutionem et recusatio responsabilitatis
+
+Quantum auctor nunc scit, codex fontis ipsius huius propositi nullum codicem malitiosum continet. Installer ambitum localem inspicit et, in suggestis sustentatis, conatur dependentias absentes sicut Git, Node.js et npm instituere; cum instrumenta aedificationis nativa desunt, consilia imprimit, et quaedam suggesta institutionem manualem requirunt.
+
+Institutio programmata et dependentias tertiarum partium per administratores fasciculorum systematis et npm demittit. Institutio et usus tamen affici possunt permissionibus systematis, condicionibus retis, disponibilitate administratoris fasciculorum, programmate antivirali, consiliis machinarum corporatarum, spatio disci, catenis commeatus dependentiarum tertiarum partium, eventibus compilationis modulorum nativorum Node, et similibus rebus. Problemata et consequentiae ex currendis installeribus, instituendis dependentiis, mutando ambitu systematis, atque onerandis/servandis fasciculis localibus orta responsabilitas usoris sunt.
+
+Si scriptum ambitum automatice parare non potest, instrumenta absentia et proximos gradus commendatos imprimit; deinde ea pro tuo systemate manualiter instituere debes et iterum conari.
 
 ## Licentia
 
-Hoc propositum Licentia MIT utitur. Vide [`LICENSE`](./LICENSE) pro singularibus.
+Hoc propositum MIT License utitur. Vide [`LICENSE`](./LICENSE).
+
