@@ -5,6 +5,7 @@ $ModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-smal
 $TesseractInstallerUrl = "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe"
 $TesseractInstallerSha256 = "f3fc4236425b690c8be756f35793f77394ee004be0a6460a440c754d892f68bc"
 $ExpectedTesseractVersion = "5.5.0.20241111"
+$TesseractInstallerTimeoutSeconds = 180
 $FfmpegZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-06-14-13-33/ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip"
 $FfmpegZipSha256 = "9bf9423be2096818d950b05748b50538a9013913ee8e26813b66172eea9b4015"
 $WhisperZipUrl = "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip"
@@ -63,6 +64,17 @@ function Assert-TesseractVersion($TesseractExe) {
   if ($VersionLine -notmatch [regex]::Escape($ExpectedTesseractVersion)) {
     throw "Unexpected Tesseract version at $TesseractExe. Expected $ExpectedTesseractVersion, got: $VersionLine"
   }
+}
+
+function Invoke-TesseractInstaller($InstallerPath, $ArgumentList) {
+  Write-Step "Starting Tesseract installer; this step times out after $TesseractInstallerTimeoutSeconds seconds."
+  $Process = Start-Process -FilePath $InstallerPath -ArgumentList $ArgumentList -PassThru
+  if (-not $Process.WaitForExit($TesseractInstallerTimeoutSeconds * 1000)) {
+    try { Stop-Process -Id $Process.Id -Force -ErrorAction SilentlyContinue } catch {}
+    throw "Tesseract installer did not finish within $TesseractInstallerTimeoutSeconds seconds. Close any Tesseract setup window, then rerun this command."
+  }
+  $Process.Refresh()
+  return $Process.ExitCode
 }
 
 function Get-TesseractLanguages {
@@ -144,8 +156,7 @@ function Install-Tesseract {
   $TesseractInstallDirArg = "/D=$TesseractRoot"
   Download-File $TesseractInstallerUrl $InstallerPath
   Assert-FileSha256 $InstallerPath $TesseractInstallerSha256
-  $Process = Start-Process -FilePath $InstallerPath -ArgumentList @("/S", $TesseractInstallDirArg) -Wait -PassThru
-  $InstallExitCode = $Process.ExitCode
+  $InstallExitCode = Invoke-TesseractInstaller $InstallerPath @("/S", $TesseractInstallDirArg)
   if (($null -eq $InstallExitCode) -or ($InstallExitCode -ne 0)) { throw "Tesseract installer failed with exit code $InstallExitCode" }
 
   $Installed = Find-FirstFile $TesseractRoot "tesseract.exe"
