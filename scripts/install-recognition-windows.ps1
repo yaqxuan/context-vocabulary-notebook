@@ -142,6 +142,24 @@ function Install-Ffmpeg {
   return $Installed.FullName
 }
 
+function Copy-DefaultTesseractInstall {
+  $DefaultInstall = "C:\Program Files\Tesseract-OCR"
+  $DefaultTesseract = Join-Path $DefaultInstall "tesseract.exe"
+  if (-not (Test-Path -LiteralPath $DefaultTesseract -PathType Leaf)) { return $null }
+
+  Assert-TesseractVersion $DefaultTesseract
+  Write-Step "Using existing Tesseract from $DefaultInstall; copying executable and DLLs into $TesseractRoot"
+  [System.IO.Directory]::CreateDirectory($TesseractRoot) | Out-Null
+  Copy-Item -LiteralPath $DefaultTesseract -Destination (Join-Path $TesseractRoot "tesseract.exe") -Force
+  Get-ChildItem -LiteralPath $DefaultInstall -Filter "*.dll" -File | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination $TesseractRoot -Force
+  }
+
+  $Installed = Find-FirstFile $TesseractRoot "tesseract.exe"
+  if (-not $Installed) { throw "tesseract.exe not found under $TesseractRoot after copying from $DefaultInstall." }
+  return $Installed.FullName
+}
+
 function Install-Tesseract {
   $Existing = Find-FirstFile $TesseractRoot "tesseract.exe"
   if ($Existing) {
@@ -149,6 +167,9 @@ function Install-Tesseract {
     Write-Step "Tesseract already installed at $($Existing.FullName)"
     return $Existing.FullName
   }
+
+  $DefaultCopy = Copy-DefaultTesseractInstall
+  if ($DefaultCopy) { return $DefaultCopy }
 
   Write-Step "Installing Tesseract into $TesseractRoot"
   [System.IO.Directory]::CreateDirectory($TesseractRoot) | Out-Null
@@ -161,17 +182,8 @@ function Install-Tesseract {
 
   $Installed = Find-FirstFile $TesseractRoot "tesseract.exe"
   if (-not $Installed) {
-    $DefaultInstall = "C:\Program Files\Tesseract-OCR"
-    $DefaultTesseract = Join-Path $DefaultInstall "tesseract.exe"
-    if (Test-Path -LiteralPath $DefaultTesseract -PathType Leaf) {
-      Assert-TesseractVersion $DefaultTesseract
-      Write-Step "Tesseract installer used default location; copying executable and DLLs into $TesseractRoot"
-      Copy-Item -LiteralPath $DefaultTesseract -Destination (Join-Path $TesseractRoot "tesseract.exe") -Force
-      Get-ChildItem -LiteralPath $DefaultInstall -Filter "*.dll" -File | ForEach-Object {
-        Copy-Item -LiteralPath $_.FullName -Destination $TesseractRoot -Force
-      }
-      $Installed = Find-FirstFile $TesseractRoot "tesseract.exe"
-    }
+    $DefaultCopy = Copy-DefaultTesseractInstall
+    if ($DefaultCopy) { return $DefaultCopy }
   }
 
   if (-not $Installed) { throw "tesseract.exe not found under $TesseractRoot after install. Installer exit code: $InstallExitCode" }
