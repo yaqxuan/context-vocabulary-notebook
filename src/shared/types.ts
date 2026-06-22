@@ -152,8 +152,8 @@ export interface DueReviewCardDto extends CardSummaryDto {
 }
 
 export type ReviewDueResponseDto =
-  | { status: 'due'; card: DueReviewCardDto; progress: ReviewProgressDto }
-  | { status: 'empty'; message: string; card: null; progress: ReviewProgressDto };
+  | { status: 'due'; card: DueReviewCardDto; progress: ReviewProgressDto; next_due_at: string | null }
+  | { status: 'empty'; message: string; card: null; progress: ReviewProgressDto; next_due_at: string | null };
 
 export interface ReviewBubbleWordDto {
   id: string;
@@ -167,6 +167,7 @@ export interface ReviewBubbleWordsResponseDto {
   items: ReviewBubbleWordDto[];
   total_due_count: number;
   limit: number;
+  next_due_at: string | null;
 }
 
 export interface SubmitReviewBody {

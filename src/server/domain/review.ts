@@ -199,6 +199,31 @@ export function getNextDueCard(db: Database, options: ReviewScopeOptions = {}): 
   return getDueQueue(db, options)[0] ?? null;
 }
 
+export function getNextDueAt(db: Database, options: ReviewScopeOptions = {}, now = new Date()): string | null {
+  const conditions = [
+    "wsc.status = 'reviewing'",
+    'wsc.deleted_at IS NULL',
+    'fs.due_date > ?',
+  ];
+  const params: unknown[] = [now.toISOString()];
+
+  if (options.target_language) {
+    conditions.push('wsc.target_language = ?');
+    params.push(options.target_language);
+  }
+
+  const row = db.prepare(`
+    SELECT fs.due_date AS next_due_at
+    FROM word_sense_cards wsc
+    JOIN fsrs_states fs ON fs.card_id = wsc.id
+    WHERE ${conditions.join(' AND ')}
+    ORDER BY fs.due_date ASC, wsc.created_at ASC, wsc.id ASC
+    LIMIT 1
+  `).get(...params) as { next_due_at: string } | undefined;
+
+  return row?.next_due_at ?? null;
+}
+
 export function getDailyReviewProgress(db: Database, now = new Date(), options: ReviewScopeOptions = {}): DailyReviewProgress {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);

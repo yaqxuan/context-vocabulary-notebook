@@ -503,6 +503,63 @@ describe('SettingsPage', () => {
       expect(card.querySelector('.ai-config-meta')).toHaveTextContent('deepseek-v4-flash');
       expect(card.querySelector('.ai-config-meta')).toHaveTextContent('https://api.deepseek.com');
       expect(screen.getByText('当前启用')).toHaveClass('ai-config-active');
+      expect(screen.getByRole('button', { name: '取消启用 deepseek' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '编辑 deepseek' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '删除 deepseek' })).toBeInTheDocument();
+    });
+
+    it('allows deactivating the active AI config', async () => {
+      const calls: Array<{ url: string; method: string; body: unknown }> = [];
+      let active = true;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        const method = init?.method ?? 'GET';
+        calls.push({ url, method, body: init?.body ?? null });
+
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(settings));
+        if (url === '/api/ai-configs' && method === 'GET') {
+          return Promise.resolve(jsonResponse([{
+            id: 'cfg-1',
+            name: 'DeepSeek',
+            base_url: 'https://api.deepseek.com/v1',
+            model: 'deepseek-chat',
+            is_active: active ? 1 : 0,
+            has_api_key: true,
+            created_at: 'now',
+            updated_at: 'now',
+          }]));
+        }
+        if (url === '/api/ai-configs/cfg-1' && method === 'PATCH') {
+          active = false;
+          return Promise.resolve(jsonResponse({
+            id: 'cfg-1',
+            name: 'DeepSeek',
+            base_url: 'https://api.deepseek.com/v1',
+            model: 'deepseek-chat',
+            is_active: 0,
+            has_api_key: true,
+            created_at: 'now',
+            updated_at: 'later',
+          }));
+        }
+        return Promise.resolve(jsonResponse({ ok: true }));
+      });
+
+      render(<SettingsPage />);
+
+      expect(await screen.findByText('DeepSeek')).toBeInTheDocument();
+      expect(screen.getByText('当前启用')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '取消启用 DeepSeek' }));
+
+      await waitFor(() =>
+        expect(calls.some((call) => call.url === '/api/ai-configs/cfg-1' && call.method === 'PATCH')).toBe(true),
+      );
+
+      const patch = calls.find((call) => call.url === '/api/ai-configs/cfg-1' && call.method === 'PATCH');
+      expect(patch?.body).toBe(JSON.stringify({ is_active: false }));
+      expect(await screen.findByRole('button', { name: '启用 DeepSeek' })).toBeInTheDocument();
     });
 
     it('fetches model list from entered Base URL and API Key', async () => {

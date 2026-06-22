@@ -7,7 +7,7 @@ import { createTestDb, destroyTestDb } from '../../src/server/db/testDb.js';
 import type { TestDb } from '../../src/server/db/testDb.js';
 import { createCard } from '../../src/server/domain/cards.js';
 import { createContext } from '../../src/server/domain/contexts.js';
-import { getDueBubbleWords, getDueQueue } from '../../src/server/domain/review.js';
+import { getDueBubbleWords, getDueQueue, getNextDueAt } from '../../src/server/domain/review.js';
 import { addTagToCard, createTag } from '../../src/server/domain/tags.js';
 
 let db: TestDb;
@@ -126,6 +126,41 @@ describe('getDueQueue', () => {
     const queue = getDueQueue(db);
     const ids = queue.map(c => c.id);
     expect(ids).toContain(card.id);
+  });
+
+  it('reports the earliest future due time when no card is due yet', () => {
+    const now = new Date();
+    const firstFuture = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
+    const secondFuture = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
+
+    const first = createCard(db, { target_word: 'soon', context_meaning: '快到期', target_language: '英语', definition_language: '中文' });
+    const second = createCard(db, { target_word: 'later', context_meaning: '稍后', target_language: '英语', definition_language: '中文' });
+    db.prepare('UPDATE fsrs_states SET due_date = ? WHERE card_id = ?').run(firstFuture, first.id);
+    db.prepare('UPDATE fsrs_states SET due_date = ? WHERE card_id = ?').run(secondFuture, second.id);
+
+    expect(getDueQueue(db, { target_language: '英语' })).toEqual([]);
+    expect(getNextDueAt(db, { target_language: '英语' }, now)).toBe(firstFuture);
+  });
+
+  it('scopes next due time by target_language', () => {
+    const now = new Date();
+    const englishFuture = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
+    const japaneseFuture = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
+
+    const english = createCard(db, { target_word: 'soon', context_meaning: '快到期', target_language: '英语', definition_language: '中文' });
+    const japanese = createCard(db, { target_word: '猫', context_meaning: 'cat', target_language: '日语', definition_language: '中文' });
+    db.prepare('UPDATE fsrs_states SET due_date = ? WHERE card_id = ?').run(englishFuture, english.id);
+    db.prepare('UPDATE fsrs_states SET due_date = ? WHERE card_id = ?').run(japaneseFuture, japanese.id);
+
+    expect(getNextDueAt(db, { target_language: '日语' }, now)).toBe(japaneseFuture);
+  });
+
+  it('returns null when there is no future reviewing card', () => {
+    const now = new Date();
+    const card = createCard(db, { target_word: 'old', context_meaning: '旧', target_language: '英语', definition_language: '中文' });
+    db.prepare('UPDATE fsrs_states SET due_date = ? WHERE card_id = ?').run(new Date(now.getTime() - 60 * 1000).toISOString(), card.id);
+
+    expect(getNextDueAt(db, { target_language: '英语' }, now)).toBeNull();
   });
 
   it('returns context summary for due cards', () => {
@@ -342,6 +377,7 @@ describe('review API', () => {
       ],
       total_due_count: 1,
       limit: 20,
+      next_due_at: null,
     });
   });
 
@@ -434,6 +470,36 @@ describe('review API', () => {
     expect(res.body.status).toBe('empty');
     expect(res.body.message).toBe('今天没有待复习内容');
     expect(res.body.card).toBeNull();
+  });
+
+  it('includes next_due_at in empty due responses', async () => {
+    const futureDue = new Date(Date.now() + 86400000).toISOString();
+    const card = createCard(db, { target_word: 'future', context_meaning: '未来', target_language: '英语', definition_language: '中文' });
+    db.prepare('UPDATE fsrs_states SET due_date = ? WHERE card_id = ?').run(futureDue, card.id);
+
+    const res = await request(app).get('/api/review/due?target_language=英语');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      status: 'empty',
+      card: null,
+      next_due_at: futureDue,
+    });
+  });
+
+  it('includes next_due_at in due bubble responses', async () => {
+    const futureDue = new Date(Date.now() + 86400000).toISOString();
+    const card = createCard(db, { target_word: 'future', context_meaning: '未来', target_language: '英语', definition_language: '中文' });
+    db.prepare('UPDATE fsrs_states SET due_date = ? WHERE card_id = ?').run(futureDue, card.id);
+
+    const res = await request(app).get('/api/review/due-bubbles?target_language=英语');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      items: [],
+      total_due_count: 0,
+      next_due_at: futureDue,
+    });
   });
 
   it('rejects ratings other than Again and Good', async () => {

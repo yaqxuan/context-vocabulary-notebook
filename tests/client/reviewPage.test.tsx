@@ -157,6 +157,7 @@ const dueResponse: ReviewDueResponseDto = {
   status: 'due',
   card: dueCard,
   progress,
+  next_due_at: null,
 };
 
 const emptyResponse: ReviewDueResponseDto = {
@@ -164,6 +165,7 @@ const emptyResponse: ReviewDueResponseDto = {
   message: '今天没有待复习内容',
   card: null,
   progress,
+  next_due_at: null,
 };
 
 const submitResponse: SubmitReviewResponseDto = {
@@ -186,6 +188,7 @@ describe('ReviewPage', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   describe('due card state', () => {
@@ -302,7 +305,7 @@ describe('ReviewPage', () => {
         contexts: [],
         media: [],
       };
-      const nextResponse: ReviewDueResponseDto = { status: 'due', card: nextCard, progress: submitResponse.progress };
+      const nextResponse: ReviewDueResponseDto = { status: 'due', card: nextCard, progress: submitResponse.progress, next_due_at: null };
 
       let dueCallCount = 0;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
@@ -349,6 +352,7 @@ describe('ReviewPage', () => {
         status: 'due',
         card: cardWithoutTags as DueReviewCardDto,
         progress,
+        next_due_at: null,
       };
 
       vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
@@ -377,7 +381,7 @@ describe('ReviewPage', () => {
         contexts: [],
         media: [],
       };
-      const nextResponse: ReviewDueResponseDto = { status: 'due', card: nextCard, progress: submitResponse.progress };
+      const nextResponse: ReviewDueResponseDto = { status: 'due', card: nextCard, progress: submitResponse.progress, next_due_at: null };
       const play = vi.mocked(HTMLMediaElement.prototype.play);
 
       let dueCallCount = 0;
@@ -687,6 +691,55 @@ describe('ReviewPage', () => {
       expect(cardsLink).toBeInTheDocument();
       expect(cardsLink).toHaveAttribute('href', '#/cards');
     });
+
+    it('reloads automatically when an empty queue reaches next_due_at', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+      let dueCalls = 0;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        if (url === '/api/settings') return Promise.resolve(jsonResponse(zhSettings));
+        if (url === '/api/review/due') {
+          dueCalls += 1;
+          if (dueCalls === 1) {
+            return Promise.resolve(jsonResponse({
+              status: 'empty',
+              message: '今天没有待复习内容',
+              card: null,
+              progress: { ...progress, reviewed_count: 0, good_count: 0, again_count: 0 },
+              next_due_at: '2026-01-01T12:05:00.000Z',
+            } satisfies ReviewDueResponseDto));
+          }
+          return Promise.resolve(jsonResponse(dueResponse));
+        }
+        return Promise.resolve(jsonResponse({ ok: true }));
+      });
+
+      render(<I18nProvider><ReviewPage /></I18nProvider>);
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.getByText('今天没有待复习内容')).toBeInTheDocument();
+      expect(dueCalls).toBe(1);
+
+      await act(async () => {
+        vi.advanceTimersByTime(5 * 60 * 1000 - 1);
+        await Promise.resolve();
+      });
+      expect(dueCalls).toBe(1);
+
+      await act(async () => {
+        vi.advanceTimersByTime(1);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(screen.getByRole('heading', { name: dueCard.target_word })).toBeInTheDocument();
+      expect(dueCalls).toBe(2);
+    });
   });
 
   describe('daily target reached', () => {
@@ -695,6 +748,7 @@ describe('ReviewPage', () => {
         status: 'due',
         card: dueCard,
         progress: limitReachedProgress,
+        next_due_at: null,
       };
 
       mockFetchWithSettings(limitResponse);
@@ -720,6 +774,7 @@ describe('ReviewPage', () => {
         status: 'due',
         card: dueCard,
         progress: limitReachedProgress,
+        next_due_at: null,
       };
 
       mockFetchWithSettings(limitResponse);
@@ -740,6 +795,7 @@ describe('ReviewPage', () => {
         status: 'due',
         card: dueCard,
         progress: limitReachedProgress,
+        next_due_at: null,
       };
 
       mockFetchWithSettings(limitResponse);
@@ -760,6 +816,7 @@ describe('ReviewPage', () => {
         status: 'due',
         card: dueCard,
         progress: limitReachedProgress,
+        next_due_at: null,
       };
       const nextCard: DueReviewCardDto = {
         ...dueCard,
@@ -773,6 +830,7 @@ describe('ReviewPage', () => {
         status: 'due',
         card: nextCard,
         progress: limitReachedProgress,
+        next_due_at: null,
       };
       const limitSubmitResponse: SubmitReviewResponseDto = {
         ...submitResponse,
@@ -858,6 +916,7 @@ describe('ReviewPage', () => {
         status: 'due',
         card: dueCard,
         progress: limitReachedProgress,
+        next_due_at: null,
       }));
       return Promise.resolve(jsonResponse({}));
     });

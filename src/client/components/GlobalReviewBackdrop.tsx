@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import { getDueReviewBubbles, REVIEW_COMPLETED_EVENT, type ReviewCompletedEventDetail } from '../api/review';
 import type { ReviewBubbleWordDto } from '../../shared/types';
+import { scheduleReviewRefreshAt } from '../utils/scheduleReviewRefresh';
 
 const MAX_BUBBLES = 20;
 const MAX_BUBBLES_PER_SIDE = 10;
@@ -86,68 +87,110 @@ export function splitBubbleWords(words: ReviewBubbleWordDto[]): BubbleViewModel[
 export function GlobalReviewBackdrop({ currentPath }: GlobalReviewBackdropProps) {
   const [items, setItems] = useState<BubbleViewModel[]>([]);
   const [poppingIds, setPoppingIds] = useState<Set<string>>(() => new Set());
+  const [nextDueAt, setNextDueAt] = useState<string | null>(null);
+  const itemsRef = useRef<BubbleViewModel[]>([]);
+  const loadSeqRef = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
   const mountedRef = useRef(false);
   const isOnReviewPath = isReviewPath(currentPath);
 
   useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  const loadBubbles = useCallback(() => {
     let cancelled = false;
-    mountedRef.current = true;
+    const requestSeq = loadSeqRef.current + 1;
+    loadSeqRef.current = requestSeq;
 
     getDueReviewBubbles()
       .then((response) => {
-        if (cancelled) return;
-        setItems(splitBubbleWords(response.items));
+        if (cancelled || requestSeq !== loadSeqRef.current) return;
+        const nextItems = splitBubbleWords(response.items);
+        itemsRef.current = nextItems;
+        setItems(nextItems);
         setPoppingIds(new Set());
+        setNextDueAt(response.next_due_at);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (cancelled || requestSeq !== loadSeqRef.current) return;
+        itemsRef.current = [];
         setItems([]);
         setPoppingIds(new Set());
+        setNextDueAt(null);
       });
 
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    const cancelLoad = loadBubbles();
+
+    return () => {
+      cancelLoad();
       mountedRef.current = false;
       timeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
       timeoutsRef.current = [];
     };
-  }, []);
+  }, [loadBubbles]);
+
+  useEffect(() => {
+    return scheduleReviewRefreshAt(nextDueAt, loadBubbles);
+  }, [loadBubbles, nextDueAt]);
 
   useEffect(() => {
     const handleReviewCompleted = (event: Event) => {
       const { cardId, rating } = (event as CustomEvent<ReviewCompletedEventDetail>).detail ?? {};
       if (!cardId || rating !== 'good') return;
+      loadSeqRef.current += 1;
 
-      setItems((currentItems) => {
-        if (!currentItems.some((item) => item.id === cardId)) {
-          return currentItems;
-        }
+      const refreshAfterCompletion = () => {
+        if (!mountedRef.current) return;
+        loadBubbles();
+      };
 
-        if (!isOnReviewPath) {
-          return currentItems.filter((item) => item.id !== cardId);
-        }
+      if (!itemsRef.current.some((item) => item.id === cardId)) {
+        refreshAfterCompletion();
+        return;
+      }
 
-        setPoppingIds((currentPoppingIds) => new Set(currentPoppingIds).add(cardId));
-        const timeoutId = window.setTimeout(() => {
-          if (!mountedRef.current) return;
-          setItems((latestItems) => latestItems.filter((item) => item.id !== cardId));
-          setPoppingIds((latestPoppingIds) => {
-            const nextPoppingIds = new Set(latestPoppingIds);
-            nextPoppingIds.delete(cardId);
-            return nextPoppingIds;
-          });
-        }, POP_DURATION_MS);
-        timeoutsRef.current.push(timeoutId);
-        return currentItems;
-      });
+      if (!isOnReviewPath) {
+        setItems((currentItems) => {
+          const nextItems = currentItems.filter((item) => item.id !== cardId);
+          itemsRef.current = nextItems;
+          return nextItems;
+        });
+        refreshAfterCompletion();
+        return;
+      }
+
+      setNextDueAt(null);
+      setPoppingIds((currentPoppingIds) => new Set(currentPoppingIds).add(cardId));
+      const timeoutId = window.setTimeout(() => {
+        if (!mountedRef.current) return;
+        setItems((latestItems) => {
+          const nextItems = latestItems.filter((item) => item.id !== cardId);
+          itemsRef.current = nextItems;
+          return nextItems;
+        });
+        setPoppingIds((latestPoppingIds) => {
+          const nextPoppingIds = new Set(latestPoppingIds);
+          nextPoppingIds.delete(cardId);
+          return nextPoppingIds;
+        });
+        refreshAfterCompletion();
+      }, POP_DURATION_MS);
+      timeoutsRef.current.push(timeoutId);
     };
 
     window.addEventListener(REVIEW_COMPLETED_EVENT, handleReviewCompleted);
     return () => {
       window.removeEventListener(REVIEW_COMPLETED_EVENT, handleReviewCompleted);
     };
-  }, [isOnReviewPath]);
+  }, [isOnReviewPath, loadBubbles]);
 
   const lanes = useMemo(() => ({
     left: items.filter((item) => item.side === 'left'),
