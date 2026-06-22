@@ -23,11 +23,12 @@ function bubbleWord(index: number): ReviewBubbleWordDto {
   };
 }
 
-function response(items: ReviewBubbleWordDto[]): ReviewBubbleWordsResponseDto {
+function response(items: ReviewBubbleWordDto[], nextDueAt: string | null = null): ReviewBubbleWordsResponseDto {
   return {
     items,
     total_due_count: items.length,
     limit: 20,
+    next_due_at: nextDueAt,
   };
 }
 
@@ -119,6 +120,36 @@ describe('GlobalReviewBackdrop', () => {
     expect(document.querySelector('.global-review-backdrop__lanes')).not.toBeInTheDocument();
   });
 
+  it('refreshes bubbles automatically when next_due_at arrives', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+
+    let calls = 0;
+    vi.mocked(getDueReviewBubbles).mockImplementation(() => {
+      calls += 1;
+      if (calls === 1) return Promise.resolve(response([], '2026-01-01T12:05:00.000Z'));
+      return Promise.resolve(response([{ ...bubbleWord(0), target_word: 'disoriented', context_meaning: '迷失方向的' }], null));
+    });
+
+    render(<GlobalReviewBackdrop currentPath="/" />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('disoriented')).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(5 * 60 * 1000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('disoriented')).toBeInTheDocument();
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(2);
+  });
+
   it('pops and removes a matching completed card on the review path', async () => {
     await renderBackdrop('/review', [bubbleWord(0), bubbleWord(1)]);
     vi.useFakeTimers();
@@ -144,6 +175,192 @@ describe('GlobalReviewBackdrop', () => {
     expect(screen.getByText('word-0')).toBeInTheDocument();
     expect(document.querySelector('.review-bubble--popping')).not.toBeInTheDocument();
     expect(screen.getByText('word-1')).toBeInTheDocument();
+  });
+
+  it('ignores stale initial bubble responses after a card is completed before render', async () => {
+    const staleInitialRefresh = deferredResponse();
+    vi.mocked(getDueReviewBubbles)
+      .mockReturnValueOnce(staleInitialRefresh.promise)
+      .mockResolvedValueOnce(response([], null));
+
+    render(<GlobalReviewBackdrop currentPath="/" />);
+    await waitFor(() => expect(getDueReviewBubbles).toHaveBeenCalledTimes(1));
+
+    act(() => dispatchCompleted('card-0', 'good'));
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      staleInitialRefresh.resolve(response([bubbleWord(0)], null));
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText('word-0')).not.toBeInTheDocument();
+  });
+
+  it('ignores stale bubble refresh responses after a newer refresh completes', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+
+    const staleTimerRefresh = deferredResponse();
+    const freshCompletionRefresh = deferredResponse();
+    vi.mocked(getDueReviewBubbles)
+      .mockResolvedValueOnce(response([bubbleWord(0)], '2026-01-01T12:05:00.000Z'))
+      .mockReturnValueOnce(staleTimerRefresh.promise)
+      .mockReturnValueOnce(freshCompletionRefresh.promise);
+
+    render(<GlobalReviewBackdrop currentPath="/" />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('word-0')).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(5 * 60 * 1000);
+    });
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(2);
+
+    act(() => dispatchCompleted('card-0', 'good'));
+    expect(screen.queryByText('word-0')).not.toBeInTheDocument();
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(3);
+
+    await act(async () => {
+      freshCompletionRefresh.resolve(response([], null));
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      staleTimerRefresh.resolve(response([bubbleWord(0)], null));
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText('word-0')).not.toBeInTheDocument();
+  });
+
+  it('suppresses scheduled refreshes while a review bubble is popping', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+
+    vi.mocked(getDueReviewBubbles)
+      .mockResolvedValueOnce(response([bubbleWord(0)], '2026-01-01T12:00:00.300Z'))
+      .mockResolvedValueOnce(response([], null));
+
+    render(<GlobalReviewBackdrop currentPath="/review" />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('word-0')).toBeInTheDocument();
+
+    act(() => dispatchCompleted('card-0', 'good'));
+    const poppingBubble = screen.getByText('word-0').closest('.review-bubble');
+    expect(poppingBubble).toHaveClass('review-bubble--popping');
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(1);
+    expect(poppingBubble).toHaveClass('review-bubble--popping');
+
+    await act(async () => {
+      vi.advanceTimersByTime(320);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText('word-0')).not.toBeInTheDocument();
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores stale refresh responses while a review bubble is popping', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+
+    const staleTimerRefresh = deferredResponse();
+    vi.mocked(getDueReviewBubbles)
+      .mockResolvedValueOnce(response([bubbleWord(0)], '2026-01-01T12:05:00.000Z'))
+      .mockReturnValueOnce(staleTimerRefresh.promise)
+      .mockResolvedValueOnce(response([], null));
+
+    render(<GlobalReviewBackdrop currentPath="/review" />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('word-0')).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(5 * 60 * 1000);
+    });
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(2);
+
+    act(() => dispatchCompleted('card-0', 'good'));
+    const poppingBubble = screen.getByText('word-0').closest('.review-bubble');
+    expect(poppingBubble).toHaveClass('review-bubble--popping');
+
+    await act(async () => {
+      staleTimerRefresh.resolve(response([bubbleWord(0)], null));
+      await Promise.resolve();
+    });
+
+    expect(poppingBubble).toHaveClass('review-bubble--popping');
+
+    await act(async () => {
+      vi.advanceTimersByTime(620);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText('word-0')).not.toBeInTheDocument();
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(3);
+  });
+
+  it('refreshes next_due_at after the last visible bubble is completed', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+
+    let calls = 0;
+    vi.mocked(getDueReviewBubbles).mockImplementation(() => {
+      calls += 1;
+      if (calls === 1) return Promise.resolve(response([bubbleWord(0)], null));
+      if (calls === 2) return Promise.resolve(response([], '2026-01-01T12:05:00.000Z'));
+      return Promise.resolve(response([{ ...bubbleWord(0), target_word: 'word-returned' }], null));
+    });
+
+    render(<GlobalReviewBackdrop currentPath="/review" />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('word-0')).toBeInTheDocument();
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(1);
+
+    act(() => dispatchCompleted('card-0', 'good'));
+
+    await act(async () => {
+      vi.advanceTimersByTime(620);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText('word-0')).not.toBeInTheDocument();
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      vi.advanceTimersByTime(5 * 60 * 1000 - 620);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('word-returned')).toBeInTheDocument();
+    expect(getDueReviewBubbles).toHaveBeenCalledTimes(3);
   });
 
   it('removes a matching completed Good card without popping outside the review path', async () => {

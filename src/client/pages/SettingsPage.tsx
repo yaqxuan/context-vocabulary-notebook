@@ -329,6 +329,17 @@ function AiConfigSection() {
     }
   }
 
+  async function handleDeactivate(id: string) {
+    setSaved(false);
+    setError(null);
+    try {
+      await patchAiConfig(id, { is_active: false });
+      await loadConfigs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('settings.ai.saveFailed'));
+    }
+  }
+
   async function handleDelete(id: string) {
     setSaved(false);
     setError(null);
@@ -363,7 +374,16 @@ function AiConfigSection() {
             </div>
             <div className="ai-config-actions">
               {config.is_active ? (
-                <span className="ai-config-active">{t('settings.ai.active')}</span>
+                <>
+                  <span className="ai-config-active">{t('settings.ai.active')}</span>
+                  <Button
+                    aria-label={`${t('settings.ai.deactivate')} ${config.name}`}
+                    variant="secondary"
+                    onClick={() => handleDeactivate(config.id)}
+                  >
+                    {t('settings.ai.deactivate')}
+                  </Button>
+                </>
               ) : (
                 <Button aria-label={`${t('settings.ai.activate')} ${config.name}`} onClick={() => handleActivate(config.id)}>{t('settings.ai.activate')}</Button>
               )}

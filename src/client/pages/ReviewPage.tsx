@@ -6,6 +6,7 @@ import { getDueReview, submitReview } from '../api/review';
 import { Button } from '../components/Button';
 import { EmptyState, ErrorState, LoadingState } from '../components/UiStates';
 import { useI18n } from '../i18n/I18nProvider';
+import { scheduleReviewRefreshAt } from '../utils/scheduleReviewRefresh';
 
 // --- Sentence highlighter ---
 
@@ -283,8 +284,8 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
 type PageState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'empty'; progress: ReviewProgressDto }
-  | { kind: 'due'; card: DueReviewCardDto; progress: ReviewProgressDto };
+  | { kind: 'empty'; progress: ReviewProgressDto; nextDueAt: string | null }
+  | { kind: 'due'; card: DueReviewCardDto; progress: ReviewProgressDto; nextDueAt: string | null };
 
 export function ReviewPage() {
   const { t } = useI18n();
@@ -301,6 +302,18 @@ export function ReviewPage() {
     tRef.current = t;
   }, [t]);
 
+  const applyDueResponse = useCallback((res: ReviewDueResponseDto) => {
+    if (res.status === 'due') {
+      setState({ kind: 'due', card: res.card, progress: res.progress, nextDueAt: res.next_due_at });
+      if (!res.progress.is_limit_reached) {
+        setLimitDismissed(false);
+      }
+      return;
+    }
+
+    setState({ kind: 'empty', progress: res.progress, nextDueAt: res.next_due_at });
+  }, []);
+
   const load = useCallback(() => {
     setState({ kind: 'loading' });
     setSubmitError(null);
@@ -308,25 +321,20 @@ export function ReviewPage() {
     setPendingRequiresConfirm(false);
     setLastRating(null);
     getDueReview()
-      .then((res: ReviewDueResponseDto) => {
-        if (res.status === 'due') {
-          setState({ kind: 'due', card: res.card, progress: res.progress });
-          // Reset limit banner when a new card loads and limit wasn't already dismissed
-          if (!res.progress.is_limit_reached) {
-            setLimitDismissed(false);
-          }
-        } else {
-          setState({ kind: 'empty', progress: res.progress });
-        }
-      })
+      .then(applyDueResponse)
       .catch((err: unknown) => {
         setState({ kind: 'error', message: err instanceof Error ? err.message : tRef.current('review.loadFailed') });
       });
-  }, []);
+  }, [applyDueResponse]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (state.kind !== 'empty') return undefined;
+    return scheduleReviewRefreshAt(state.nextDueAt, load);
+  }, [load, state]);
 
   const handleChooseRating = (rating: 'again' | 'good') => {
     setSubmitError(null);
@@ -356,18 +364,11 @@ export function ReviewPage() {
         setPendingRating(null);
         setPendingRequiresConfirm(false);
         setLastRating(null);
-        if (res.status === 'due') {
-          setState({ kind: 'due', card: res.card, progress: res.progress });
-          if (!res.progress.is_limit_reached) {
-            setLimitDismissed(false);
-          }
-        } else {
-          setState({ kind: 'empty', progress: res.progress });
-        }
+        applyDueResponse(res);
         return;
       }
 
-      setState({ kind: 'due', card: state.card, progress: result.progress });
+      setState({ kind: 'due', card: state.card, progress: result.progress, nextDueAt: state.nextDueAt });
       setPendingRating(null);
       setPendingRequiresConfirm(false);
       setLastRating(rating);
@@ -403,14 +404,7 @@ export function ReviewPage() {
       setPendingRating(null);
       setPendingRequiresConfirm(false);
       setLastRating(null);
-      if (res.status === 'due') {
-        setState({ kind: 'due', card: res.card, progress: res.progress });
-        if (!res.progress.is_limit_reached) {
-          setLimitDismissed(false);
-        }
-      } else {
-        setState({ kind: 'empty', progress: res.progress });
-      }
+      applyDueResponse(res);
     } catch (err) {
       if (rating && !ratingSubmitted) {
         setSubmitError(err instanceof Error ? err.message : tRef.current('review.submitFailed'));
@@ -429,7 +423,7 @@ export function ReviewPage() {
     setSubmitError(null);
     try {
       const updated = await patchCard(state.card.id, { is_favorite: !state.card.is_favorite });
-      setState({ kind: 'due', card: { ...state.card, is_favorite: updated.is_favorite, updated_at: updated.updated_at }, progress: state.progress });
+      setState({ kind: 'due', card: { ...state.card, is_favorite: updated.is_favorite, updated_at: updated.updated_at }, progress: state.progress, nextDueAt: state.nextDueAt });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : t('review.favoriteFailed'));
     } finally {
@@ -462,14 +456,7 @@ export function ReviewPage() {
       setPendingRating(null);
       setPendingRequiresConfirm(false);
       setLastRating(null);
-      if (res.status === 'due') {
-        setState({ kind: 'due', card: res.card, progress: res.progress });
-        if (!res.progress.is_limit_reached) {
-          setLimitDismissed(false);
-        }
-      } else {
-        setState({ kind: 'empty', progress: res.progress });
-      }
+      applyDueResponse(res);
     } catch (err) {
       if (mastered) {
         setState({ kind: 'error', message: err instanceof Error ? err.message : tRef.current('review.loadFailed') });
