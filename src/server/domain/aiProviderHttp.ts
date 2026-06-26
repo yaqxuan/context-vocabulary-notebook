@@ -1,7 +1,7 @@
 import { lookup } from 'node:dns/promises';
 import net from 'node:net';
 
-import { Agent, type Dispatcher } from 'undici';
+import { Agent, EnvHttpProxyAgent, type Dispatcher } from 'undici';
 
 export const AI_FETCH_TIMEOUT_MS = 15_000;
 
@@ -28,11 +28,44 @@ function isPrivateAiProviderAllowed(): boolean {
   return process.env.ALLOW_PRIVATE_AI_PROVIDER_URLS === 'true';
 }
 
+function hasProxyEnv(): boolean {
+  return Boolean(
+    process.env.HTTPS_PROXY
+      || process.env.HTTP_PROXY
+      || process.env.https_proxy
+      || process.env.http_proxy,
+  );
+}
+
+function isNoProxyHost(hostname: string, port: string): boolean {
+  const noProxy = process.env.no_proxy ?? process.env.NO_PROXY;
+  if (!noProxy) return false;
+
+  const normalized = hostname.toLowerCase().replace(/\.$/, '');
+  return noProxy.split(/[,\s]+/u)
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+    .some((entry) => {
+      if (entry === '*') return true;
+      const [rawHost, entryPort] = entry.split(':');
+      if (entryPort && entryPort !== port) return false;
+      const host = rawHost!.replace(/^\*?\./u, '');
+      return normalized === host || normalized.endsWith(`.${host}`);
+    });
+}
+
 function parseIpv4(address: string): number[] | null {
   const parts = address.split('.').map((part) => Number.parseInt(part, 10));
   if (parts.length !== 4) return null;
   if (parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return null;
   return parts;
+}
+
+function isBenchmarkFakeIpv4(address: string): boolean {
+  const parts = parseIpv4(address);
+  if (!parts) return false;
+  const [a, b] = parts;
+  return a === 198 && (b === 18 || b === 19);
 }
 
 function isNonPublicIpv4(address: string): boolean {
@@ -44,7 +77,7 @@ function isNonPublicIpv4(address: string): boolean {
   if (a === 169 && b === 254) return true;
   if (a === 172 && b >= 16 && b <= 31) return true;
   if (a === 192 && b === 168) return true;
-  if (a === 198 && (b === 18 || b === 19)) return true;
+  if (isBenchmarkFakeIpv4(address)) return true;
   return a >= 224;
 }
 
@@ -85,6 +118,11 @@ export interface SafeAiRequest {
   close: () => Promise<void>;
 }
 
+function isProxySafeDnsAddress(address: string): boolean {
+  const normalized = ipv4MappedToIpv4(address) ?? stripIpv6Brackets(address);
+  return isBenchmarkFakeIpv4(normalized) || !isBlockedAiAddress(address);
+}
+
 function createPinnedDnsDispatcher(dnsName: string, address: string, family: 4 | 6): Dispatcher {
   return new Agent({
     connect: {
@@ -110,17 +148,38 @@ export async function prepareSafeAiRequest(baseUrl: string): Promise<SafeAiReque
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
 
-  if (isPrivateAiProviderAllowed()) {
-    return { baseUrl: normalizeAiBaseUrl(baseUrl), close: async () => {} };
-  }
-
   const hostname = url.hostname.toLowerCase();
   const dnsName = hostname.endsWith('.') ? hostname.slice(0, -1) : hostname;
-  if (isBlockedAiHostname(dnsName)) return null;
+  const privateAllowed = isPrivateAiProviderAllowed();
+  const effectivePort = url.port || (url.protocol === 'https:' ? '443' : '80');
+  const proxyConfigured = hasProxyEnv() && !isNoProxyHost(dnsName, effectivePort);
+
+  if (!privateAllowed && isBlockedAiHostname(dnsName)) return null;
 
   const ipHostname = stripIpv6Brackets(hostname);
   if (net.isIP(ipHostname) !== 0) {
-    if (isBlockedAiAddress(ipHostname)) return null;
+    if (!privateAllowed && isBlockedAiAddress(ipHostname)) return null;
+    if (proxyConfigured) {
+      const dispatcher = new EnvHttpProxyAgent();
+      return { baseUrl: normalizeAiBaseUrl(baseUrl), dispatcher, close: () => dispatcher.close() };
+    }
+    return { baseUrl: normalizeAiBaseUrl(baseUrl), close: async () => {} };
+  }
+
+  if (proxyConfigured) {
+    if (!privateAllowed) {
+      try {
+        const results = await lookup(dnsName, { all: true, verbatim: true });
+        if (results.length === 0 || results.some((result) => !isProxySafeDnsAddress(result.address))) return null;
+      } catch {
+        return null;
+      }
+    }
+    const dispatcher = new EnvHttpProxyAgent();
+    return { baseUrl: normalizeAiBaseUrl(baseUrl), dispatcher, close: () => dispatcher.close() };
+  }
+
+  if (privateAllowed) {
     return { baseUrl: normalizeAiBaseUrl(baseUrl), close: async () => {} };
   }
 
