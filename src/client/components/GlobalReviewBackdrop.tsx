@@ -4,8 +4,8 @@ import { getDueReviewBubbles, REVIEW_COMPLETED_EVENT, type ReviewCompletedEventD
 import type { ReviewBubbleWordDto } from '../../shared/types';
 import { scheduleReviewRefreshAt } from '../utils/scheduleReviewRefresh';
 
-const MAX_BUBBLES = 20;
-const MAX_BUBBLES_PER_SIDE = 10;
+const MAX_BUBBLES = 16;
+const MAX_BUBBLES_PER_SIDE = 8;
 const POP_DURATION_MS = 620;
 const TAG_X_PATTERN = [4, 16, 7, 25, 12, 30, 5, 22, 9, 18];
 const TAG_TOP_PATTERN = [7.4, 16.3, 26.2, 36.8, 47.6, 57.2, 67.4, 76.6, 85.4, 91.2];
@@ -245,11 +245,10 @@ export function GlobalReviewBackdrop({ currentPath }: GlobalReviewBackdropProps)
         <span className="global-review-backdrop__dust global-review-backdrop__dust--one" />
         <span className="global-review-backdrop__dust global-review-backdrop__dust--two" />
       </div>
-      {items.length > 0 ? (
-        <div className="global-review-backdrop__lanes">
-          {(['left', 'right'] as const).map((side) => (
-            <div key={side} className={`global-review-backdrop__lane global-review-backdrop__lane--${side}`}>
-              {lanes[side].map((item) => (
+      <div className="global-review-backdrop__lanes">
+        {(['left', 'right'] as const).map((side) => (
+          <div key={side} className={`global-review-backdrop__lane global-review-backdrop__lane--${side}`}>
+            {lanes[side].map((item) => (
                 <div
                   key={item.id}
                   className={`review-bubble${poppingIds.has(item.id) ? ' review-bubble--popping' : ''}`}
@@ -271,11 +270,10 @@ export function GlobalReviewBackdrop({ currentPath }: GlobalReviewBackdropProps)
                   <span className="review-bubble__word">{item.word}</span>
                   <span className="review-bubble__fragments" />
                 </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      ) : null}
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -57,17 +57,17 @@ function dispatchCompleted(cardId: string, rating: 'again' | 'good' = 'good'): v
 }
 
 describe('splitBubbleWords', () => {
-  it('caps at 20 words and splits evenly into left and right lanes', () => {
+  it('caps at 16 words and splits evenly into left and right lanes', () => {
     const viewModels = splitBubbleWords(Array.from({ length: 25 }, (_, index) => bubbleWord(index)));
 
-    expect(viewModels).toHaveLength(20);
-    expect(viewModels.filter((item) => item.side === 'left')).toHaveLength(10);
-    expect(viewModels.filter((item) => item.side === 'right')).toHaveLength(10);
+    expect(viewModels).toHaveLength(16);
+    expect(viewModels.filter((item) => item.side === 'left')).toHaveLength(8);
+    expect(viewModels.filter((item) => item.side === 'right')).toHaveLength(8);
     expect(viewModels[0]).toMatchObject({ id: 'card-0', side: 'left', slot: 0, xPercent: 4, topPercent: 7.4, tagWidthRem: 5.05, tiltDegrees: -18, swimDurationSeconds: 6.1, arriveDelaySeconds: 0, swimDelaySeconds: -0, glowDelaySeconds: -0, scale: 0.92, opacity: 0.60, blurPixels: 0 });
     expect(viewModels[1]).toMatchObject({ id: 'card-1', side: 'right', slot: 0, xPercent: 4, topPercent: 7.4, tagWidthRem: 5.05, tiltDegrees: 18, swimDurationSeconds: 6.1, arriveDelaySeconds: 0.054, swimDelaySeconds: -0, glowDelaySeconds: -0, scale: 0.92, opacity: 0.60, blurPixels: 0 });
     expect(viewModels[4]).toMatchObject({ id: 'card-4', side: 'left', slot: 2, xPercent: 7, topPercent: 26.2, tagWidthRem: 5.65, tiltDegrees: -11, swimDurationSeconds: 7, arriveDelaySeconds: 0.216, swimDelaySeconds: -0.48, glowDelaySeconds: -0.32, scale: 0.88, opacity: 0.56, blurPixels: 0 });
-    expect(viewModels[18]).toMatchObject({ id: 'card-18', side: 'left', slot: 9, xPercent: 18, topPercent: 91.2, tagWidthRem: 5.25, tiltDegrees: 12 });
-    expect(viewModels[19]).toMatchObject({ id: 'card-19', side: 'right', slot: 9, xPercent: 18, topPercent: 91.2, tagWidthRem: 5.25, tiltDegrees: -12 });
+    expect(viewModels[14]).toMatchObject({ id: 'card-14', side: 'left', slot: 7, xPercent: 22, topPercent: 76.6, tagWidthRem: 5, tiltDegrees: 9 });
+    expect(viewModels[15]).toMatchObject({ id: 'card-15', side: 'right', slot: 7, xPercent: 22, topPercent: 76.6, tagWidthRem: 5, tiltDegrees: -9 });
   });
 });
 
@@ -117,7 +117,7 @@ describe('GlobalReviewBackdrop', () => {
     expect(document.querySelector('.global-review-backdrop__crystal-card')).toBeInTheDocument();
     expect(document.querySelector('.global-review-backdrop__glow-orb')).toBeInTheDocument();
     expect(document.querySelector('.review-bubble')).not.toBeInTheDocument();
-    expect(document.querySelector('.global-review-backdrop__lanes')).not.toBeInTheDocument();
+    expect(document.querySelector('.global-review-backdrop__lanes')).toBeInTheDocument();
   });
 
   it('refreshes bubbles automatically when next_due_at arrives', async () => {
