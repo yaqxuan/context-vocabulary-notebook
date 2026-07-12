@@ -82,6 +82,10 @@ function findExactMatch(suggestions: Array<{ id: string; target_word: string; co
 }
 
 type ReadinessCopy = {
+  workflowAriaLabel: string;
+  workflowTitle: string;
+  workflowDescription: string;
+  workflowSteps: Array<{ title: string; detail: string }>;
   pageAriaLabel: string;
   pageTitle: string;
   pageDescription: string;
@@ -106,6 +110,14 @@ type ReadinessCopy = {
 function readinessCopy(language: ReturnType<typeof useI18n>['language']): ReadinessCopy {
   if (language === '中文') {
     return {
+      workflowAriaLabel: '批量导入流程',
+      workflowTitle: '如何工作',
+      workflowDescription: '本地识别，保护隐私。从视频中提取语音与字幕，发现有价值的词语。',
+      workflowSteps: [
+        { title: '选择视频', detail: '导入 MP4 视频片段' },
+        { title: '本地识别', detail: 'OCR / STT 本机完成' },
+        { title: '确认保存', detail: '检查识别结果并制卡' },
+      ],
       pageAriaLabel: '批量视频导入',
       pageTitle: '批量导入视频片段',
       pageDescription: '选择多个 MP4，先分析例句和本地候选词；选中目标词后生成 AI 释义建议，再保存为卡片。',
@@ -129,6 +141,14 @@ function readinessCopy(language: ReturnType<typeof useI18n>['language']): Readin
   }
 
   return {
+    workflowAriaLabel: 'Batch import workflow',
+    workflowTitle: 'How it works',
+    workflowDescription: 'Recognition stays local for privacy. Extract speech and subtitles from video to find useful words.',
+    workflowSteps: [
+      { title: 'Choose video', detail: 'Import MP4 video clips' },
+      { title: 'Recognize locally', detail: 'OCR / STT stays on device' },
+      { title: 'Review and save', detail: 'Check results and create cards' },
+    ],
     pageAriaLabel: 'Batch video import',
     pageTitle: 'Batch import video clips',
     pageDescription: 'Choose multiple MP4 files, analyze example sentences and local candidates first, then generate AI meaning suggestions for selected target words and save them as cards.',
@@ -489,6 +509,22 @@ export function BatchClipImportPage() {
 
   return (
     <section className="batch-import-page" aria-label={copy.pageAriaLabel}>
+      <section className="batch-import-workflow" aria-label={copy.workflowAriaLabel}>
+        <div className="batch-import-workflow-copy">
+          <h2>{copy.workflowTitle}</h2>
+          <p>{copy.workflowDescription}</p>
+        </div>
+        <ol>
+          {copy.workflowSteps.map((step, index) => (
+            <li key={step.title}>
+              <span aria-hidden="true">{index === 0 ? '▣' : index === 1 ? '◆' : '◇'}</span>
+              <strong>{step.title}</strong>
+              <small>{step.detail}</small>
+            </li>
+          ))}
+        </ol>
+      </section>
+
       <div className="batch-import-toolbar">
         <div>
           <h2>{copy.pageTitle}</h2>

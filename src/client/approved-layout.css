@@ -1020,3 +1020,522 @@ body::after {
   .phase7-statistics-metrics { grid-template-columns: 1fr !important; }
   .phase7-review-word { font-size: 3rem !important; }
 }
+
+/* -------------------------------------------------------------------------
+ * Reference-parity polish
+ *
+ * These rules tune the desktop composition against the approved native-size
+ * screenshots.  They intentionally sit last so the old theme cannot leak
+ * through (the pale alternating metrics and the square brand ornament were
+ * the most visible examples).
+ * ---------------------------------------------------------------------- */
+
+@media (min-width: 921px) {
+  .app-frame {
+    grid-template-columns: 19.25rem minmax(0, 1fr) !important;
+    gap: 1rem !important;
+    padding: 1.05rem !important;
+  }
+
+  .app-sidebar {
+    padding: 1.55rem 1.45rem 9rem !important;
+    border-radius: .7rem !important;
+  }
+
+  .app-sidebar::before {
+    background:
+      radial-gradient(circle at 11% 12%, rgba(255,238,181,.95) 0 1px, transparent 1.7px),
+      radial-gradient(circle at 78% 72%, rgba(68,191,255,.85) 0 1px, transparent 1.8px),
+      linear-gradient(var(--approved-gold),var(--approved-gold)) left top/2.2rem 1px no-repeat,
+      linear-gradient(var(--approved-gold),var(--approved-gold)) left top/1px 2.2rem no-repeat,
+      linear-gradient(var(--approved-gold),var(--approved-gold)) right bottom/2.2rem 1px no-repeat,
+      linear-gradient(var(--approved-gold),var(--approved-gold)) right bottom/1px 2.2rem no-repeat !important;
+    background-size: 91px 91px, 127px 127px, 2.2rem 1px, 1px 2.2rem, 2.2rem 1px, 1px 2.2rem !important;
+  }
+
+  /* The explicit crystal nodes make a clustered silhouette instead of the
+     old rectangular shard that appeared at the lower-left corner. */
+  .app-sidebar::after { display: none !important; }
+  .app-sidebar-crystals {
+    display: block !important;
+    position: absolute !important;
+    inset: auto .7rem .4rem .7rem !important;
+    height: 9.5rem !important;
+    overflow: hidden !important;
+    opacity: .98 !important;
+    background:
+      radial-gradient(ellipse at 50% 100%, rgba(41,92,255,.5), transparent 63%),
+      radial-gradient(circle at 15% 75%, rgba(93,222,255,.45) 0 2px, transparent 3px),
+      radial-gradient(circle at 78% 53%, rgba(144,110,255,.55) 0 2px, transparent 3px) !important;
+    filter: drop-shadow(0 0 12px rgba(52,143,255,.68)) !important;
+    pointer-events: none !important;
+  }
+
+  .app-sidebar-crystals i,
+  .app-sidebar-crystals span {
+    display: block !important;
+    position: absolute !important;
+    bottom: -.7rem !important;
+    width: 3.6rem !important;
+    height: 8.4rem !important;
+    clip-path: polygon(50% 0, 91% 31%, 73% 100%, 24% 100%, 7% 32%) !important;
+    background:
+      linear-gradient(113deg, transparent 48%, rgba(255,255,255,.65) 49% 50%, transparent 51%),
+      linear-gradient(75deg, #40e6ff 0 24%, #216cff 25% 52%, #6743e8 53% 77%, #172f99 78%) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    transform-origin: 50% 100% !important;
+  }
+
+  .app-sidebar-crystals i:nth-child(1) { left: .2rem !important; transform: rotate(-13deg) scale(.78) !important; }
+  .app-sidebar-crystals i:nth-child(2) { left: 3.1rem !important; transform: rotate(8deg) scale(.58) !important; }
+  .app-sidebar-crystals i:nth-child(3) { right: 1rem !important; transform: rotate(18deg) scale(.88) !important; }
+  .app-sidebar-crystals span { right: 4.2rem !important; transform: rotate(-5deg) scale(.48) !important; }
+
+  .app-brand-mark::before,
+  .app-brand-mark::after { display: none !important; content: none !important; }
+
+  .app-brand {
+    grid-template-columns: 3.5rem minmax(0, 1fr) !important;
+    padding-bottom: 1.45rem !important;
+  }
+
+  .app-brand-mark {
+    width: 3.25rem !important;
+    height: 4rem !important;
+    filter: drop-shadow(0 0 10px rgba(83,192,255,.65)) !important;
+  }
+
+  .app-nav { gap: .35rem !important; }
+  .app-nav a { min-height: 3.55rem !important; }
+
+  .app-page-header {
+    margin-bottom: .55rem !important;
+    background:
+      radial-gradient(ellipse at 56% -5%, rgba(8,202,190,.24), transparent 25rem),
+      radial-gradient(ellipse at 78% 20%, rgba(39,80,227,.32), transparent 23rem),
+      linear-gradient(120deg, rgba(2,18,47,.99), rgba(3,35,82,.97) 58%, rgba(10,30,83,.99)) !important;
+  }
+
+  .app-page-header::before {
+    opacity: .72 !important;
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,.88) 0 1px, transparent 1.45px),
+      linear-gradient(24deg, transparent 49.65%, rgba(89,153,255,.24) 49.8% 50.2%, transparent 50.35%),
+      linear-gradient(-18deg, transparent 49.65%, rgba(80,122,255,.18) 49.8% 50.2%, transparent 50.35%) !important;
+    background-size: 81px 81px, 15rem 7rem, 19rem 9rem !important;
+  }
+
+  .app-page-header::after {
+    right: 1rem !important;
+    top: -1.2rem !important;
+    width: 26rem !important;
+    height: 12rem !important;
+    opacity: 1 !important;
+    filter: saturate(1.18) contrast(1.08) drop-shadow(0 0 20px rgba(48,144,255,.55)) !important;
+  }
+
+  .app-page-header h1 {
+    font-size: clamp(2.75rem, 3.35vw, 3.65rem) !important;
+  }
+
+  /* Home reference: the reading area sits farther from the left frame and the
+     metrics begin above the lower third of a 1672 x 941 desktop capture. */
+  .home-desk {
+    padding: 2rem 4.25rem 1.2rem !important;
+    background:
+      radial-gradient(ellipse at 57% 0%, rgba(0,194,185,.27), transparent 28rem),
+      radial-gradient(ellipse at 82% 28%, rgba(67,68,230,.27), transparent 25rem),
+      radial-gradient(circle at 13% 77%, rgba(26,108,221,.18), transparent 22rem),
+      linear-gradient(125deg, #02112c, #05265a 55%, #071b4d) !important;
+  }
+
+  .home-desk::before {
+    opacity: .72 !important;
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,.9) 0 1px, transparent 1.45px),
+      linear-gradient(25deg, transparent 49.7%, rgba(76,137,255,.16) 49.85% 50.15%, transparent 50.3%) !important;
+    background-size: 83px 83px, 17rem 9rem !important;
+  }
+
+  .home-hero {
+    grid-template-columns: minmax(31rem, .92fr) minmax(32rem, 1.08fr) !important;
+    min-height: 27.8rem !important;
+    height: 27.8rem !important;
+    max-height: 27.8rem !important;
+  }
+
+  .home-welcome {
+    font-size: clamp(3.75rem, 4.45vw, 4.85rem) !important;
+  }
+
+  .home-greeting-scroll {
+    max-width: 34rem !important;
+    min-height: 14.6rem !important;
+    padding: 1.2rem 2.35rem !important;
+    box-shadow: inset 0 0 30px rgba(173,129,69,.12), 0 16px 34px rgba(0,0,0,.35), 0 0 0 5px rgba(244,220,165,.1) !important;
+  }
+
+  .home-greeting { font-size: 1.36rem !important; }
+  .home-actions { margin-top: 1rem !important; }
+  .home-btn { min-height: 3.65rem !important; height: 3.65rem !important; }
+
+  .home-lexicon-stage {
+    min-height: 27.5rem !important;
+    background-position: 58% 48% !important;
+    background-size: min(116%, 46rem) auto !important;
+    filter: saturate(1.17) contrast(1.05) drop-shadow(0 0 31px rgba(43,120,255,.5)) !important;
+  }
+
+  .home-metrics { gap: .8rem !important; }
+  .home-metric,
+  .home-metric:nth-child(odd),
+  .home-metric:nth-child(even) {
+    min-height: 7.7rem !important;
+    border: 1px solid rgba(243,202,115,.78) !important;
+    background:
+      radial-gradient(circle at 82% 24%, rgba(60,110,225,.18), transparent 9rem),
+      linear-gradient(135deg, rgba(18,61,125,.98), rgba(18,43,100,.99)) !important;
+    color: #eef7ff !important;
+  }
+
+  .home-metric::before,
+  .home-metric::after {
+    border-color: rgba(243,202,115,.66) !important;
+  }
+
+  /* Cards reference: labels are represented by the inputs themselves, making
+     the filter rail one compact row rather than a tall form block. */
+  .app-shell[data-route="/cards"] .app-page-header { margin-bottom: 0 !important; }
+
+  .phase6-catalogue { gap: .55rem !important; }
+  .phase6-filter-desk {
+    min-height: 4.8rem !important;
+    padding: .8rem 1rem !important;
+    align-items: center !important;
+  }
+
+  .phase6-filter-desk label { gap: 0 !important; }
+  .phase6-filter-desk label > span { display: none !important; }
+  .phase6-filter-desk input,
+  .phase6-filter-desk select,
+  .phase6-filter-desk button { min-height: 3rem !important; }
+
+  .phase6-word-card {
+    min-height: 10.4rem !important;
+    padding-top: 1.35rem !important;
+    padding-bottom: 1.35rem !important;
+  }
+
+  .phase6-word-card:nth-child(odd),
+  .phase6-word-card:nth-child(odd) :where(h2,h3,p,strong,span) {
+    color: #092653 !important;
+  }
+
+  .phase6-word-card:nth-child(even),
+  .phase6-word-card:nth-child(even) :where(h2,h3,p,strong,span) {
+    color: #eef7ff !important;
+  }
+
+  /* Batch import follows the reference's three horizontal bands. */
+  .batch-import-page {
+    grid-template-columns: minmax(28rem, .82fr) minmax(32rem, 1.18fr) !important;
+    gap: .75rem !important;
+  }
+
+  .batch-import-workflow,
+  .batch-import-toolbar,
+  .batch-import-readiness {
+    min-height: 16rem !important;
+    border: 1px solid rgba(78,157,247,.54) !important;
+    border-radius: .75rem !important;
+    background:
+      radial-gradient(circle at 86% 10%, rgba(77,81,224,.17), transparent 12rem),
+      linear-gradient(145deg,rgba(4,29,70,.98),rgba(8,43,91,.96)) !important;
+    color: #edf7ff !important;
+    box-shadow: inset 0 0 25px rgba(54,136,255,.09) !important;
+  }
+
+  .batch-import-workflow {
+    grid-column: 1 !important;
+    padding: 1.15rem !important;
+  }
+
+  .batch-import-workflow-copy h2,
+  .batch-import-workflow-copy p { margin: 0 0 .35rem !important; color: #edf7ff !important; }
+
+  .batch-import-workflow ol {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: .65rem !important;
+    margin: 1.2rem 0 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+  }
+
+  .batch-import-workflow li {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    min-height: 9rem !important;
+    padding: .8rem .5rem !important;
+    border: 1px solid rgba(87,164,255,.42) !important;
+    border-radius: .75rem !important;
+    background: rgba(8,42,91,.72) !important;
+    text-align: center !important;
+  }
+
+  .batch-import-workflow li:not(:last-child)::after {
+    content: "→" !important;
+    position: absolute !important;
+    right: -.9rem !important;
+    z-index: 2 !important;
+    color: var(--approved-gold) !important;
+    font-size: 1.4rem !important;
+  }
+
+  .batch-import-workflow li > span {
+    color: #7de7ff !important;
+    font-size: 2.35rem !important;
+    line-height: 1 !important;
+    text-shadow: 0 0 14px #3c81ff !important;
+  }
+
+  .batch-import-workflow li strong { color: #fff0c5 !important; }
+  .batch-import-workflow li small { color: rgba(226,239,255,.74) !important; }
+
+  .batch-import-toolbar {
+    grid-column: 2 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, .85fr) !important;
+    gap: 1rem !important;
+    padding: 1.15rem 1.4rem !important;
+  }
+
+  .batch-import-toolbar > div:first-child h2 {
+    margin: 0 0 .4rem !important;
+    color: #fff0c5 !important;
+    font-size: 1.55rem !important;
+  }
+
+  .batch-import-toolbar > div:first-child :where(p,strong) { color: #edf7ff !important; }
+  .batch-import-toolbar .batch-import-privacy { font-size: .88rem !important; }
+
+  .batch-import-controls {
+    display: grid !important;
+    align-content: center !important;
+    gap: .6rem !important;
+  }
+
+  .batch-import-controls label { display: grid !important; gap: .25rem !important; color: #edf7ff !important; }
+  .batch-import-controls :where(select,input,button) { min-height: 2.85rem !important; }
+
+  .batch-import-readiness {
+    grid-column: 1 / -1 !important;
+    min-height: 9.4rem !important;
+    padding: 1rem 1.2rem !important;
+  }
+
+  .batch-import-readiness > div:first-child h3,
+  .batch-import-readiness > div:first-child p { margin: 0 0 .3rem !important; color: #edf7ff !important; }
+
+  .batch-import-readiness ul {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+    margin: .75rem 0 0 !important;
+    padding: 0 !important;
+  }
+
+  .batch-import-readiness-item {
+    min-height: 4.5rem !important;
+    padding: .75rem 1rem !important;
+    border: 1px solid rgba(78,180,236,.58) !important;
+    border-radius: .75rem !important;
+    background: linear-gradient(135deg, rgba(8,55,102,.92), rgba(9,38,82,.96)) !important;
+    color: #edf7ff !important;
+  }
+
+  .batch-import-readiness-item :where(span,strong,small,p) { color: #edf7ff !important; }
+  .batch-import-page > .recognition-setup-card { display: none !important; }
+  .batch-import-empty,
+  .batch-import-list { grid-column: 1 / -1 !important; }
+
+  .batch-import-empty {
+    min-height: 13rem !important;
+    margin: 0 !important;
+    border: 1px solid rgba(78,157,247,.42) !important;
+    border-radius: .75rem !important;
+    background: rgba(7,38,83,.72) !important;
+    color: rgba(226,239,255,.75) !important;
+  }
+
+  /* Create sidebar: AI assistance, compact media tiles, live preview and the
+     primary action appear in the same order as 09-create.png. */
+  .app-shell[data-route="/create"] .app-page-header { min-height: 7.8rem !important; }
+  .app-shell[data-route="/create"] .app-page-header::after { height: 10.2rem !important; }
+
+  .card-create-studio {
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .card-create-suggestions {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: .8rem !important;
+    padding: 1.15rem 1.25rem !important;
+  }
+
+  .card-create-ai-masthead {
+    padding-bottom: .75rem !important;
+    border-bottom: 1px solid rgba(84,164,255,.34) !important;
+  }
+
+  .card-create-ai-masthead p {
+    margin: 0 0 .25rem !important;
+    color: var(--approved-cream) !important;
+    font-family: Georgia, "Noto Serif SC", serif !important;
+    font-size: 1.55rem !important;
+    font-weight: 800 !important;
+  }
+
+  .card-create-ai-masthead p span { color: #a9e8ff !important; text-shadow: 0 0 10px #4797ff !important; }
+  .card-create-ai-masthead small { color: rgba(225,239,255,.78) !important; }
+
+  .card-create-side-title {
+    margin: 0 !important;
+    font-family: inherit !important;
+    font-size: 1rem !important;
+    color: rgba(231,241,255,.9) !important;
+  }
+
+  .card-create-suggestions .card-create-media {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: .6rem !important;
+    margin-top: 0 !important;
+    padding-top: .8rem !important;
+  }
+
+  .card-create-suggestions .card-create-media > .card-create-section-heading {
+    grid-column: 1 / -1 !important;
+  }
+
+  .card-create-suggestions .card-create-media-picker {
+    min-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .card-create-media-tile {
+    display: grid !important;
+    place-items: center !important;
+    min-height: 6.1rem !important;
+    padding: .65rem .35rem !important;
+    border: 1px dashed rgba(111,184,255,.58) !important;
+    border-radius: .7rem !important;
+    background: rgba(5,30,69,.72) !important;
+    color: #edf7ff !important;
+    text-align: center !important;
+    cursor: pointer !important;
+  }
+
+  .card-create-media-tile:hover {
+    border-color: var(--approved-gold) !important;
+    box-shadow: 0 0 14px rgba(63,139,255,.24) !important;
+  }
+
+  .card-create-media-tile > span { color: #94e9ff !important; font-size: 1.75rem !important; line-height: 1 !important; }
+  .card-create-media-tile > strong { color: #edf7ff !important; font-size: .85rem !important; }
+  .card-create-media-tile > small { max-width: 100% !important; overflow: hidden !important; color: rgba(219,233,251,.68) !important; font-size: .7rem !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+  .card-create-transcription { display: block !important; margin-top: .4rem !important; }
+  .card-create-transcription-notice { display: none !important; }
+  .card-create-transcribe-button {
+    width: 100% !important;
+    min-height: 2rem !important;
+    padding: .25rem .35rem !important;
+    border: 1px solid rgba(90,175,255,.42) !important;
+    border-radius: .45rem !important;
+    background: rgba(8,48,89,.82) !important;
+    color: #dcecff !important;
+    font-size: .72rem !important;
+  }
+
+  .card-create-preview {
+    padding-top: .7rem !important;
+    border-top: 1px solid rgba(84,164,255,.34) !important;
+  }
+
+  .card-create-preview h3 {
+    margin: 0 0 .55rem !important;
+    color: #eef7ff !important;
+    font-size: 1rem !important;
+  }
+
+  .card-create-preview > div {
+    position: relative !important;
+    min-height: 7.7rem !important;
+    padding: .85rem .9rem .75rem 5.2rem !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(87,163,247,.48) !important;
+    border-radius: .55rem !important;
+    background:
+      radial-gradient(circle at 16% 70%, rgba(62,116,255,.28), transparent 5rem),
+      linear-gradient(135deg, rgba(7,39,88,.98), rgba(12,40,93,.96)) !important;
+  }
+
+  .card-create-preview-gem {
+    position: absolute !important;
+    left: 1.4rem !important;
+    top: 1.55rem !important;
+    color: #78e9ff !important;
+    font-size: 3rem !important;
+    text-shadow: 0 0 16px #4e77ff !important;
+  }
+
+  .card-create-preview p { margin: 0 0 .35rem !important; color: #edf7ff !important; }
+  .card-create-preview p strong { margin-right: .5rem !important; color: #fff0c5 !important; font-size: 1.1rem !important; }
+  .card-create-preview p small { color: rgba(225,239,255,.68) !important; }
+  .card-create-preview blockquote { margin: .6rem 0 0 !important; color: rgba(226,239,255,.82) !important; font-size: .82rem !important; }
+
+  .card-create-actions {
+    margin-top: auto !important;
+    padding-top: .2rem !important;
+  }
+
+  .card-create-save {
+    width: 100% !important;
+    min-height: 3.6rem !important;
+    border-radius: 999px !important;
+    letter-spacing: .08em !important;
+  }
+
+  .card-create-save::before {
+    content: "◆" !important;
+    margin-right: .55rem !important;
+    color: #9eeaff !important;
+    text-shadow: 0 0 10px #5880ff !important;
+  }
+}
+
+/* The approved references use a narrower desktop rail around 1500–1586px,
+   while the 1672px compositions use the full 19.25rem rail. */
+@media (min-width: 921px) and (max-width: 1600px) {
+  .app-frame { grid-template-columns: 16.5rem minmax(0, 1fr) !important; }
+  .app-sidebar { padding-inline: 1.15rem !important; }
+  .app-brand {
+    grid-template-columns: 3rem minmax(0, 1fr) !important;
+    gap: .65rem !important;
+    padding-inline: .25rem !important;
+  }
+  .app-brand-mark { width: 2.85rem !important; height: 3.55rem !important; }
+  .app-brand p { font-size: 1.42rem !important; white-space: nowrap !important; }
+  .app-brand span { font-size: .75rem !important; }
+  .app-nav a { padding-left: 3.55rem !important; }
+  .app-nav a::before { left: .45rem !important; }
+}

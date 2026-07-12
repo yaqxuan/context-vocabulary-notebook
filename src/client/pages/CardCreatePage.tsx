@@ -623,6 +623,22 @@ export function CardCreatePage() {
   const suggestionTitle = appendCard ? t('create.findExistingTitle') : t('create.findExisting');
   const isVideoTooLargeForTranscription = Boolean(video && video.size > TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES);
   const isTranscribeDisabled = !video || transcriptState === 'loading' || isVideoTooLargeForTranscription;
+  const isChineseInterface = t('create.targetWord') === '目标单词';
+  const visualCopy = isChineseInterface
+    ? {
+        aiTitle: 'AI 建议',
+        aiDescription: '根据当前语境辅助补全释义与用法',
+        previewTitle: '卡片预览',
+        meaningPlaceholder: '当前语境释义',
+        sentencePlaceholder: '完整语境会显示在这里。',
+      }
+    : {
+        aiTitle: 'AI suggestions',
+        aiDescription: 'Use the current context to refine meaning and usage.',
+        previewTitle: 'Card preview',
+        meaningPlaceholder: 'Meaning in this context',
+        sentencePlaceholder: 'The complete context will appear here.',
+      };
 
   if (appendLoadError) {
     return (
@@ -777,6 +793,10 @@ export function CardCreatePage() {
         </section>
 
         <aside className="card-create-panel card-create-suggestions" aria-label={suggestionTitle}>
+            <div className="card-create-ai-masthead">
+              <p>{visualCopy.aiTitle} <span aria-hidden="true">✦</span></p>
+              <small>{visualCopy.aiDescription}</small>
+            </div>
             {showSuggestionPanel ? (
               <>
                 <p className="card-create-side-title">{suggestionTitle}</p>
@@ -849,14 +869,21 @@ export function CardCreatePage() {
                 t={t}
               />
             </section>
+            <section className="card-create-preview" aria-label={visualCopy.previewTitle}>
+              <h3>◆ {visualCopy.previewTitle}</h3>
+              <div>
+                <span className="card-create-preview-gem" aria-hidden="true">◇</span>
+                <p><strong>{targetWord.trim() || 'word'}</strong><small>{getNativeLanguageLabel(targetLanguage)}</small></p>
+                <p>{currentMeaning || visualCopy.meaningPlaceholder}</p>
+                <blockquote>{sentence.trim() || visualCopy.sentencePlaceholder}</blockquote>
+              </div>
+            </section>
+            <div className="card-create-actions">
+              <button className="card-create-save" type="submit" disabled={isSaving}>
+                {saveLabel}
+              </button>
+            </div>
         </aside>
-      </div>
-
-      {/* Save action: keep submit below media uploads so users do not scroll back up after attaching files. */}
-      <div className="card-create-actions">
-        <button className="card-create-save" type="submit" disabled={isSaving}>
-          {saveLabel}
-        </button>
       </div>
     </form>
   );
@@ -930,14 +957,15 @@ function MediaPicker({ title, badge, label, accept, file, error, onChange, t, ch
   const inputId = `media-${label.replace(/\s+/g, '-')}`;
   return (
     <div className="card-create-media-picker">
-      <span className="card-create-media-title">
-        {title}<strong>{badge}</strong>
-      </span>
-      <span className="card-create-media-file">{fileLabel(file, t)}</span>
-      <label htmlFor={inputId} className="sr-only">{label}</label>
+      <label htmlFor={inputId} className="card-create-media-tile">
+        <span aria-hidden="true">＋</span>
+        <strong>{title}</strong>
+        <small>{file ? fileLabel(file, t) : badge}</small>
+      </label>
       <input
         id={inputId}
         aria-label={label}
+        className="sr-only"
         type="file"
         accept={accept}
         onChange={onChange}

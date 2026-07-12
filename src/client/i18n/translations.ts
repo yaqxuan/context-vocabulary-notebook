@@ -51,27 +51,27 @@ export const zh = {
     "create": {
       "label": "新建",
       "title": "新建卡片",
-      "description": "创建新卡片"
+      "description": "记录语境，收录新的词语"
     },
     "batchImport": {
       "label": "批量导入",
       "title": "批量导入",
-      "description": "从多个视频片段制卡"
+      "description": "从视频片段中发现词语"
     },
     "cards": {
       "label": "卡片",
-      "title": "所有卡片",
-      "description": "浏览卡片"
+      "title": "卡片",
+      "description": "管理你的单词、释义与语境"
     },
     "review": {
       "label": "复习",
       "title": "开始复习",
-      "description": "复习卡片"
+      "description": "今日复习"
     },
     "tags": {
       "label": "标签",
       "title": "标签管理",
-      "description": "管理标签"
+      "description": "用自己的方式组织词义"
     },
     "favorites": {
       "label": "收藏",
@@ -81,12 +81,12 @@ export const zh = {
     "statistics": {
       "label": "统计",
       "title": "学习统计",
-      "description": "查看统计"
+      "description": "看见每一次积累"
     },
     "settings": {
       "label": "设置",
       "title": "系统设置",
-      "description": "修改设置"
+      "description": "调整你的学习与工具"
     },
     "notFound": {
       "title": "未找到",
