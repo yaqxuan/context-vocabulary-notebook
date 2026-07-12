@@ -14,6 +14,12 @@ const TAG_TILT_PATTERN = [-18, 14, -11, 19, -7, 16, -20, 9, -15, 12];
 const TAG_SCALE_PATTERN = [0.92, 1.04, 0.88, 0.98, 1.08, 0.9, 1, 0.86, 0.95, 1.02];
 const TAG_OPACITY_PATTERN = [0.60, 0.50, 0.56, 0.46, 0.62, 0.52, 0.58, 0.44, 0.54, 0.48];
 const TAG_BLUR_PATTERN = [0, 0.2, 0, 0.4, 0, 0.3, 0.1, 0.55, 0.2, 0.45];
+const WANDER_X1_PATTERN = [-1.7, 2.1, -2.3, 1.8, -2, 2.4, -1.5, 2.2];
+const WANDER_Y1_PATTERN = [3.4, -4.2, 4.8, -3.2, 4.1, -4.6, 3.7, -4];
+const WANDER_X2_PATTERN = [2.4, -1.8, 1.6, -2.5, 2.2, -1.6, 2.5, -2.1];
+const WANDER_Y2_PATTERN = [-3.8, 4.7, -3.1, 4.3, -4.8, 3.6, -4.2, 4.9];
+const WANDER_X3_PATTERN = [-2.2, 1.5, -1.8, 2.3, -1.4, 2.1, -2.4, 1.7];
+const WANDER_Y3_PATTERN = [4.6, -3.5, 3.9, -4.7, 3.3, -4.1, 4.8, -3.6];
 
 const DECORATIVE_BUBBLES = [
   { side: 'left', x: 2.8, top: 6.2, size: 2.5, tilt: -18, radius: '58% 42% 54% 46%', opacity: 0.58, duration: 10.5, delay: -1.2 },
@@ -45,6 +51,12 @@ export interface BubbleViewModel {
   scale: number;
   opacity: number;
   blurPixels: number;
+  wanderX1Rem: number;
+  wanderY1Rem: number;
+  wanderX2Rem: number;
+  wanderY2Rem: number;
+  wanderX3Rem: number;
+  wanderY3Rem: number;
   index: number;
 }
 
@@ -72,13 +84,19 @@ export function splitBubbleWords(words: ReviewBubbleWordDto[]): BubbleViewModel[
       topPercent: TAG_TOP_PATTERN[slot] ?? 8,
       tagWidthRem: TAG_WIDTH_PATTERN[slot] ?? 5,
       tiltDegrees: side === 'left' ? tiltMagnitude : -tiltMagnitude,
-      swimDurationSeconds: 6.1 + slot * 0.45,
+      swimDurationSeconds: 15.4 + slot * 1.25 + (side === 'right' ? 0.7 : 0),
       arriveDelaySeconds: index * 0.054,
       swimDelaySeconds: slot * -0.24,
       glowDelaySeconds: slot * -0.16,
       scale: TAG_SCALE_PATTERN[slot] ?? 1,
       opacity: TAG_OPACITY_PATTERN[slot] ?? 0.84,
       blurPixels: TAG_BLUR_PATTERN[slot] ?? 0,
+      wanderX1Rem: (WANDER_X1_PATTERN[slot] ?? 1.8) * (side === 'left' ? 1 : -1),
+      wanderY1Rem: WANDER_Y1_PATTERN[slot] ?? 3.4,
+      wanderX2Rem: (WANDER_X2_PATTERN[slot] ?? -1.8) * (side === 'left' ? 1 : -1),
+      wanderY2Rem: WANDER_Y2_PATTERN[slot] ?? -3.8,
+      wanderX3Rem: (WANDER_X3_PATTERN[slot] ?? 2.1) * (side === 'left' ? 1 : -1),
+      wanderY3Rem: WANDER_Y3_PATTERN[slot] ?? 4.2,
       index,
     };
   }).filter((bubble) => bubble.slot < MAX_BUBBLES_PER_SIDE);
@@ -264,6 +282,12 @@ export function GlobalReviewBackdrop({ currentPath }: GlobalReviewBackdropProps)
                     '--review-bubble-scale': item.scale,
                     '--review-bubble-opacity': item.opacity,
                     '--review-bubble-blur': `${item.blurPixels}px`,
+                    '--review-bubble-wander-x1': `${item.wanderX1Rem}rem`,
+                    '--review-bubble-wander-y1': `${item.wanderY1Rem}rem`,
+                    '--review-bubble-wander-x2': `${item.wanderX2Rem}rem`,
+                    '--review-bubble-wander-y2': `${item.wanderY2Rem}rem`,
+                    '--review-bubble-wander-x3': `${item.wanderX3Rem}rem`,
+                    '--review-bubble-wander-y3': `${item.wanderY3Rem}rem`,
                   } as CSSProperties}
                 >
                   <span className="review-bubble__shine" />

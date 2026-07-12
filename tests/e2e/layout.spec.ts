@@ -81,3 +81,23 @@ test('keeps create primary actions in the first screen and advanced tools below 
   const secondaryBox = await secondary.boundingBox();
   expect((secondaryBox?.y ?? 0)).toBeGreaterThanOrEqual((gridBox?.y ?? 0) + (gridBox?.height ?? 0));
 });
+
+test('keeps the remaining desktop pages inside the shared centered archive layout', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+
+  const routes: Array<[string, string]> = [
+    ['/#/batch-import', '.batch-import-page'],
+    ['/#/settings', '.phase7-settings-shell'],
+    ['/#/tags', '.phase6-tags-board'],
+    ['/#/statistics', '.phase7-statistics-shell'],
+    ['/#/review', '.phase7-review-shell'],
+  ];
+
+  for (const [route, pageSelector] of routes) {
+    await page.goto(route);
+    await expect(page.locator(pageSelector)).toBeVisible();
+    const frameBox = await page.locator('.app-frame').boundingBox();
+    expect(frameBox?.x).toBeCloseTo(240, 0);
+    expect(frameBox?.width).toBeCloseTo(1440, 0);
+  }
+});
