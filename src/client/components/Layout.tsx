@@ -21,7 +21,7 @@ export function Layout({ navItems, currentPath, title, subtitle, children }: Lay
   const { t } = useI18n();
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-route={currentPath}>
       <GlobalReviewBackdrop currentPath={currentPath} />
       <div className="app-frame">
         <aside className="app-sidebar">
@@ -52,8 +52,24 @@ export function Layout({ navItems, currentPath, title, subtitle, children }: Lay
         </aside>
 
         <main className="app-main">
-          <h1 className="sr-only">{title}</h1>
-          <p className="sr-only">{subtitle}</p>
+          {currentPath === '/' ? (
+            <>
+              <h1 className="sr-only">{title}</h1>
+              <p className="sr-only">{subtitle}</p>
+            </>
+          ) : (
+            <header className="app-page-header">
+              <div className="app-page-header-copy">
+                <span className="app-page-kicker" aria-hidden="true">Lexicon · Archive</span>
+                <h1>{title}</h1>
+                <p>{subtitle}</p>
+              </div>
+              <span className="app-page-sigil" aria-hidden="true">
+                <i className="app-page-sigil-crystal" />
+                <i className="app-page-sigil-book" />
+              </span>
+            </header>
+          )}
           <section className="app-content-shell">
             {children}
           </section>
