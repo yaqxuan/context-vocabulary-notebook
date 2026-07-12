@@ -775,21 +775,6 @@ export function CardCreatePage() {
             {exactMatchTagLoadError ? <em>{exactMatchTagLoadError}</em> : null}
           </fieldset>
 
-          {/* AI usage suggestion */}
-          <label className="card-create-field card-create-field-wide" htmlFor="cc-note">
-            <span>{t('create.aiSuggestion')}</span>
-            <textarea
-              id="cc-note"
-              aria-label={t('create.aiSuggestion')}
-              value={note}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleNoteChange(e.target.value)}
-              placeholder={aiSuggestionState === 'loading' ? t('create.aiGenerating') : 'none'}
-              rows={7}
-            />
-            {aiSentenceTranslation ? <p className="card-create-translation">{aiSentenceTranslation}</p> : null}
-            <small>{aiUsageSuggestion ? t('create.aiNoteHelp') : 'none'}</small>
-          </label>
-
         </section>
 
         <aside className="card-create-panel card-create-suggestions" aria-label={suggestionTitle}>
@@ -826,28 +811,7 @@ export function CardCreatePage() {
                 error={errors.video}
                 onChange={(e) => handleMediaChange('video', e.target.files)}
                 t={t}
-              >
-                <div className="card-create-transcription">
-                  <p className="card-create-transcription-notice">{t('create.transcriptNotice')}</p>
-                  {isVideoTooLargeForTranscription ? <em>{TRANSCRIPTION_MESSAGES.sizeLimit}</em> : null}
-                  <button
-                    type="button"
-                    className="card-create-transcribe-button"
-                    onClick={handleTranscribeVideo}
-                    disabled={isTranscribeDisabled}
-                  >
-                    {transcriptState === 'loading' ? t('create.transcribing') : t('create.transcribe')}
-                  </button>
-                  <TranscriptPanel
-                    state={transcriptState}
-                    text={transcriptText}
-                    error={transcriptError}
-                    onTextChange={setTranscriptText}
-                    onUseAsSentence={useTranscriptAsSentence}
-                    t={t}
-                  />
-                </div>
-              </MediaPicker>
+              />
               <MediaPicker
                 title={t('create.media.screenshot')}
                 badge={t('create.media.badgeOptional')}
@@ -885,6 +849,43 @@ export function CardCreatePage() {
             </div>
         </aside>
       </div>
+
+      <section className="card-create-secondary-tools">
+        <label className="card-create-field card-create-field-wide" htmlFor="cc-note">
+          <span>{t('create.aiSuggestion')}</span>
+          <textarea
+            id="cc-note"
+            aria-label={t('create.aiSuggestion')}
+            value={note}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleNoteChange(e.target.value)}
+            placeholder={aiSuggestionState === 'loading' ? t('create.aiGenerating') : 'none'}
+            rows={5}
+          />
+          {aiSentenceTranslation ? <p className="card-create-translation">{aiSentenceTranslation}</p> : null}
+          <small>{aiUsageSuggestion ? t('create.aiNoteHelp') : 'none'}</small>
+        </label>
+
+        <div className="card-create-transcription">
+          <p className="card-create-transcription-notice">{t('create.transcriptNotice')}</p>
+          {isVideoTooLargeForTranscription ? <em>{TRANSCRIPTION_MESSAGES.sizeLimit}</em> : null}
+          <button
+            type="button"
+            className="card-create-transcribe-button"
+            onClick={handleTranscribeVideo}
+            disabled={isTranscribeDisabled}
+          >
+            {transcriptState === 'loading' ? t('create.transcribing') : t('create.transcribe')}
+          </button>
+          <TranscriptPanel
+            state={transcriptState}
+            text={transcriptText}
+            error={transcriptError}
+            onTextChange={setTranscriptText}
+            onUseAsSentence={useTranscriptAsSentence}
+            t={t}
+          />
+        </div>
+      </section>
     </form>
   );
 }
