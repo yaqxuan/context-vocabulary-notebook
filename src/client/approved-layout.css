@@ -1006,6 +1006,237 @@ body::after {
   .phase7-review-shell::after { display: none !important; }
 }
 
+/* -------------------------------------------------------------------------
+ * Remaining desktop reference layouts and wide-lane bubble motion
+ * ---------------------------------------------------------------------- */
+
+@keyframes review-bubble-wander {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(var(--review-bubble-tilt)) scale(var(--review-bubble-scale));
+  }
+  24% {
+    transform: translate3d(var(--review-bubble-wander-x1), var(--review-bubble-wander-y1), 0) rotate(calc(var(--review-bubble-tilt) + 4deg)) scale(var(--review-bubble-scale));
+  }
+  51% {
+    transform: translate3d(var(--review-bubble-wander-x2), var(--review-bubble-wander-y2), 0) rotate(calc(var(--review-bubble-tilt) - 3deg)) scale(var(--review-bubble-scale));
+  }
+  77% {
+    transform: translate3d(var(--review-bubble-wander-x3), var(--review-bubble-wander-y3), 0) rotate(calc(var(--review-bubble-tilt) + 2deg)) scale(var(--review-bubble-scale));
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--review-bubble-tilt)) scale(var(--review-bubble-scale));
+  }
+}
+
+@media (min-width: 921px) {
+  .review-bubble:not(.review-bubble--popping) {
+    animation:
+      review-bubble-arrive 680ms ease-out both,
+      review-bubble-wander var(--review-bubble-duration) cubic-bezier(.42, 0, .58, 1) infinite !important;
+    animation-delay: var(--review-bubble-arrive-delay), var(--review-bubble-swim-delay) !important;
+    will-change: transform !important;
+  }
+
+  .review-bubble--popping {
+    animation: review-bubble-pop 620ms ease-out forwards !important;
+  }
+
+  /* Batch import: two compact setup cards, readiness band, then queue. */
+  .app-shell[data-route="/batch-import"] .app-page-header {
+    min-height: 7.4rem !important;
+    margin-bottom: .65rem !important;
+  }
+
+  .batch-import-page {
+    grid-template-columns: minmax(27rem, .82fr) minmax(32rem, 1.18fr) !important;
+    gap: .65rem !important;
+  }
+
+  .batch-import-workflow,
+  .batch-import-toolbar {
+    min-height: 13.8rem !important;
+    height: 13.8rem !important;
+    padding: 1rem 1.15rem !important;
+  }
+
+  .batch-import-workflow ol {
+    gap: .45rem !important;
+    margin-top: .75rem !important;
+  }
+
+  .batch-import-workflow li {
+    min-height: 7rem !important;
+    padding: .55rem .35rem !important;
+  }
+
+  .batch-import-workflow li > span { font-size: 1.85rem !important; }
+  .batch-import-workflow li small { font-size: .72rem !important; }
+
+  .batch-import-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, .82fr) !important;
+    gap: .75rem !important;
+  }
+
+  .batch-import-controls { gap: .38rem !important; }
+  .batch-import-controls :where(select,input,button) { min-height: 2.45rem !important; }
+
+  .batch-import-readiness {
+    min-height: 8.5rem !important;
+    height: 8.5rem !important;
+    padding: .8rem 1rem !important;
+  }
+
+  .batch-import-readiness ul { gap: .7rem !important; margin-top: .45rem !important; }
+  .batch-import-readiness-item { min-height: 3.65rem !important; padding: .55rem .75rem !important; }
+  .batch-import-empty { min-height: 10.5rem !important; }
+
+  /* Tags: compact editor and reference-sized three-column archive cards. */
+  .phase6-tags-board { padding: .55rem !important; }
+  .phase6-tag-editor {
+    grid-template-columns: 17rem minmax(0, 1fr) 8.5rem !important;
+    gap: .9rem !important;
+    min-height: 5.9rem !important;
+    padding: .8rem 1.25rem !important;
+  }
+
+  .phase6-tag-editor input,
+  .phase6-tag-editor button { min-height: 3rem !important; }
+
+  .phase6-tag-grid {
+    grid-auto-rows: 15.8rem !important;
+    gap: .65rem !important;
+    padding-top: .65rem !important;
+  }
+
+  .phase6-tag-card {
+    min-height: 15.8rem !important;
+    height: 15.8rem !important;
+    padding: 1.2rem !important;
+  }
+
+  /* Statistics: 7/5 top charts and 7/3/2 lower dashboard like the reference. */
+  .app-shell[data-route="/statistics"] .app-page-header {
+    min-height: 7.3rem !important;
+    margin-bottom: .6rem !important;
+  }
+
+  .phase7-statistics-shell { gap: .55rem !important; }
+  .phase7-statistics-metrics { gap: .55rem !important; }
+  .phase7-statistics-metric {
+    min-height: 6.35rem !important;
+    height: 6.35rem !important;
+    padding: .8rem 1rem .7rem 5rem !important;
+  }
+
+  .phase7-statistics-metric-value { font-size: 2.65rem !important; }
+  .phase7-statistics-chart-card {
+    min-height: 17.5rem !important;
+    height: 17.5rem !important;
+    padding: 1rem !important;
+  }
+
+  .phase7-statistics-chart-card:nth-of-type(1),
+  .phase7-statistics-chart-card:nth-of-type(3) { grid-column: span 7 !important; }
+  .phase7-statistics-chart-card:nth-of-type(2) { grid-column: span 5 !important; }
+  .phase7-statistics-chart-card:nth-of-type(4) { grid-column: span 3 !important; }
+  .phase7-statistics-chart-card:nth-of-type(5) { grid-column: span 2 !important; }
+  .phase7-statistics-card-title { font-size: 1.35rem !important; }
+  .phase7-statistics-card-sub { font-size: .72rem !important; }
+
+  /* Settings: compress the long functional form into the reference dashboard. */
+  .app-shell[data-route="/settings"] .app-page-header {
+    min-height: 7.3rem !important;
+    margin-bottom: .6rem !important;
+  }
+
+  .phase7-settings-shell { gap: .6rem !important; }
+  .phase7-settings-section { padding: 1rem !important; }
+  .phase7-settings-section:first-child {
+    grid-template-columns: minmax(19rem, .72fr) minmax(0, 1.28fr) !important;
+    min-height: 20rem !important;
+    padding: 1rem !important;
+  }
+
+  .phase7-settings-section:first-child .phase7-settings-form { gap: .45rem !important; }
+  .phase7-settings-section:first-child .phase7-settings-field { gap: .25rem !important; }
+  .phase7-settings-section:first-child :where(select,input) { min-height: 2.55rem !important; }
+  .phase7-settings-section:first-child > .recognition-setup-card { min-height: 17rem !important; padding: 1rem !important; }
+  .phase7-settings-section:first-child .recognition-setup-grid { gap: .55rem !important; }
+
+  .phase7-settings-section.ai-settings-section {
+    display: grid !important;
+    grid-template-columns: minmax(16rem, .72fr) minmax(0, 1.28fr) !important;
+    gap: .55rem 1rem !important;
+    align-items: start !important;
+  }
+
+  .ai-settings-section > .phase7-settings-section-title,
+  .ai-settings-section > .phase7-settings-export-desc { grid-column: 1 / -1 !important; margin-block: 0 !important; }
+  .ai-settings-section > .ai-config-list { grid-column: 1 !important; }
+  .ai-settings-section > .ai-config-form { grid-column: 2 !important; grid-row: 3 / span 2 !important; }
+  .ai-config-list { gap: .4rem !important; }
+  .ai-config-card { padding: .7rem .85rem !important; }
+  .ai-config-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: .4rem .6rem !important;
+    padding: .75rem !important;
+  }
+
+  .ai-config-form .phase7-settings-field { gap: .2rem !important; }
+  .ai-config-form :where(input,select) { min-height: 2.35rem !important; }
+  .ai-config-form .phase7-settings-field:nth-child(4),
+  .ai-config-form .phase7-settings-field:nth-child(5),
+  .ai-config-form .phase7-settings-radio-label,
+  .ai-config-form .phase7-settings-actions { grid-column: 1 / -1 !important; }
+  .ai-model-options { gap: .3rem !important; }
+  .ai-model-option { min-height: 2.15rem !important; padding: .3rem .55rem !important; }
+  .phase7-settings-export-grid { gap: .5rem !important; }
+  .phase7-settings-export-card { padding: .75rem !important; }
+
+  /* Review: widen the parchment altar and keep the hourglass in its own rail. */
+  .phase7-review-shell {
+    padding: 8.2rem 9.2rem 2.6rem 4.5rem !important;
+  }
+
+  .phase7-review-shell::before { left: 2.4rem !important; top: 1.85rem !important; }
+  .phase7-review-progress { left: 2.45rem !important; top: 5.25rem !important; }
+  .phase7-review-shell::after { right: .85rem !important; width: 8.8rem !important; }
+  .phase7-review-card { max-width: 60.5rem !important; }
+  .phase7-review-card-header { min-height: 9.2rem !important; padding: 1.5rem 2rem 1.25rem !important; }
+  .phase7-review-sentence-block { min-height: 9rem !important; }
+  .phase7-review-footer { padding-block: .8rem 1rem !important; }
+
+  /* Card detail: a strong word banner over a parchment-and-rail archive. */
+  .app-shell[data-route^="/cards/"] .app-page-header {
+    min-height: 6.9rem !important;
+    margin-bottom: .55rem !important;
+  }
+
+  .phase6-detail { display: grid !important; gap: .6rem !important; }
+  .phase6-detail-summary {
+    min-height: 8.2rem !important;
+    padding: 1rem 1.4rem !important;
+    border-radius: .65rem !important;
+    background:
+      radial-gradient(circle at 72% 8%, rgba(54, 108, 231, .25), transparent 18rem),
+      linear-gradient(145deg, rgba(4, 27, 65, .98), rgba(7, 42, 90, .96)) !important;
+  }
+
+  .phase6-detail-title-stack h2 { font-size: 3.1rem !important; }
+  .phase6-detail-actions { align-self: center !important; gap: .4rem !important; }
+  .phase6-detail-actions button { min-height: 2.55rem !important; padding: .45rem .7rem !important; }
+  .phase6-detail-grid { gap: .65rem !important; }
+  .phase6-contexts { padding: .75rem !important; }
+  .phase6-context-card { padding: 1rem !important; }
+  .phase6-detail-side { padding: 1rem !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-bubble:not(.review-bubble--popping) {
+    animation: review-bubble-arrive 680ms ease-out both !important;
+  }
+}
+
 @media (max-width: 620px) {
   .app-nav { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
   .app-page-header::after { display: none !important; }
