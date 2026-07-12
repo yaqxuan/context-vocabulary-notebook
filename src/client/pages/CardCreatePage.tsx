@@ -774,83 +774,82 @@ export function CardCreatePage() {
             <small>{aiUsageSuggestion ? t('create.aiNoteHelp') : 'none'}</small>
           </label>
 
-          {/* Media section */}
-          <section className="card-create-media" aria-label={t('create.mediaSectionAria')}>
-            <div className="card-create-section-heading">
-              <p>{t('create.mediaSectionTitle')}</p>
-              <span>{t('create.mediaSectionHelp')}</span>
-            </div>
-            <MediaPicker
-              title={t('create.media.video')}
-              badge={t('create.media.badgeRecommended')}
-              label={t('create.media.uploadVideo')}
-              accept="video/mp4,.mp4"
-              file={video}
-              error={errors.video}
-              onChange={(e) => handleMediaChange('video', e.target.files)}
-              t={t}
-            >
-              <div className="card-create-transcription">
-                <p className="card-create-transcription-notice">{t('create.transcriptNotice')}</p>
-                {isVideoTooLargeForTranscription ? (
-                  <em>{TRANSCRIPTION_MESSAGES.sizeLimit}</em>
-                ) : null}
-                <button
-                  type="button"
-                  className="card-create-transcribe-button"
-                  onClick={handleTranscribeVideo}
-                  disabled={isTranscribeDisabled}
-                >
-                  {transcriptState === 'loading' ? t('create.transcribing') : t('create.transcribe')}
-                </button>
-                <TranscriptPanel
-                  state={transcriptState}
-                  text={transcriptText}
-                  error={transcriptError}
-                  onTextChange={setTranscriptText}
-                  onUseAsSentence={useTranscriptAsSentence}
-                  t={t}
-                />
-              </div>
-            </MediaPicker>
-            <MediaPicker
-              title={t('create.media.screenshot')}
-              badge={t('create.media.badgeOptional')}
-              label={t('create.media.uploadScreenshot')}
-              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-              file={screenshot}
-              error={errors.screenshot}
-              onChange={(e) => handleMediaChange('screenshot', e.target.files)}
-              t={t}
-            />
-            <MediaPicker
-              title={t('create.media.audio')}
-              badge={t('create.media.badgeOptional')}
-              label={t('create.media.uploadAudio')}
-              accept="audio/mpeg,.mp3"
-              file={audio}
-              error={errors.audio}
-              onChange={(e) => handleMediaChange('audio', e.target.files)}
-              t={t}
-            />
-          </section>
         </section>
 
-        {showSuggestionPanel ? (
-          <aside className="card-create-panel card-create-suggestions" aria-label={suggestionTitle}>
-            <p className="card-create-side-title">{suggestionTitle}</p>
-            <SuggestionPanel
-              state={suggestionState}
-              targetWord={targetWord}
-              meaning={meaning}
-              suggestions={suggestions}
-              exactMatch={exactMatch}
-              mode={mode}
-              appendCard={appendCard}
-              t={t}
-            />
-          </aside>
-        ) : null}
+        <aside className="card-create-panel card-create-suggestions" aria-label={suggestionTitle}>
+            {showSuggestionPanel ? (
+              <>
+                <p className="card-create-side-title">{suggestionTitle}</p>
+                <SuggestionPanel
+                  state={suggestionState}
+                  targetWord={targetWord}
+                  meaning={meaning}
+                  suggestions={suggestions}
+                  exactMatch={exactMatch}
+                  mode={mode}
+                  appendCard={appendCard}
+                  t={t}
+                />
+              </>
+            ) : null}
+            <section className="card-create-media" aria-label={t('create.mediaSectionAria')}>
+              <div className="card-create-section-heading">
+                <p>{t('create.mediaSectionTitle')}</p>
+                <span>{t('create.mediaSectionHelp')}</span>
+              </div>
+              <MediaPicker
+                title={t('create.media.video')}
+                badge={t('create.media.badgeRecommended')}
+                label={t('create.media.uploadVideo')}
+                accept="video/mp4,.mp4"
+                file={video}
+                error={errors.video}
+                onChange={(e) => handleMediaChange('video', e.target.files)}
+                t={t}
+              >
+                <div className="card-create-transcription">
+                  <p className="card-create-transcription-notice">{t('create.transcriptNotice')}</p>
+                  {isVideoTooLargeForTranscription ? <em>{TRANSCRIPTION_MESSAGES.sizeLimit}</em> : null}
+                  <button
+                    type="button"
+                    className="card-create-transcribe-button"
+                    onClick={handleTranscribeVideo}
+                    disabled={isTranscribeDisabled}
+                  >
+                    {transcriptState === 'loading' ? t('create.transcribing') : t('create.transcribe')}
+                  </button>
+                  <TranscriptPanel
+                    state={transcriptState}
+                    text={transcriptText}
+                    error={transcriptError}
+                    onTextChange={setTranscriptText}
+                    onUseAsSentence={useTranscriptAsSentence}
+                    t={t}
+                  />
+                </div>
+              </MediaPicker>
+              <MediaPicker
+                title={t('create.media.screenshot')}
+                badge={t('create.media.badgeOptional')}
+                label={t('create.media.uploadScreenshot')}
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                file={screenshot}
+                error={errors.screenshot}
+                onChange={(e) => handleMediaChange('screenshot', e.target.files)}
+                t={t}
+              />
+              <MediaPicker
+                title={t('create.media.audio')}
+                badge={t('create.media.badgeOptional')}
+                label={t('create.media.uploadAudio')}
+                accept="audio/mpeg,.mp3"
+                file={audio}
+                error={errors.audio}
+                onChange={(e) => handleMediaChange('audio', e.target.files)}
+                t={t}
+              />
+            </section>
+        </aside>
       </div>
 
       {/* Save action: keep submit below media uploads so users do not scroll back up after attaching files. */}
