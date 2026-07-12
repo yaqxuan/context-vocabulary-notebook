@@ -795,6 +795,452 @@ body {
   }
 }
 
+/* ---- Fidelity pass: bring the production UI closer to the approved mockups ---- */
+@keyframes archive-orbit-drift {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes archive-crystal-rise {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  50% { transform: translateY(-7px) scale(1.035); filter: brightness(1.22); }
+}
+
+@keyframes archive-light-pass {
+  0%, 72%, 100% { transform: translateX(-145%) skewX(-18deg); opacity: 0; }
+  80% { opacity: .72; }
+  94% { transform: translateX(270%) skewX(-18deg); opacity: 0; }
+}
+
+.app-sidebar {
+  overflow: hidden;
+}
+
+.app-brand,
+.app-nav {
+  position: relative;
+  z-index: 2;
+}
+
+.app-sidebar-crystals {
+  position: absolute;
+  left: .25rem;
+  right: .25rem;
+  bottom: .25rem;
+  z-index: 1;
+  height: 10.5rem;
+  pointer-events: none;
+  opacity: .92;
+  background:
+    radial-gradient(ellipse at 35% 100%, rgba(37,99,235,.42), transparent 44%),
+    radial-gradient(ellipse at 70% 100%, rgba(139,92,246,.28), transparent 42%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 30%, #000 100%);
+}
+
+.app-sidebar-crystals i {
+  position: absolute;
+  bottom: .4rem;
+  width: 2.65rem;
+  height: 7.5rem;
+  clip-path: polygon(50% 0, 91% 28%, 72% 100%, 28% 100%, 9% 28%);
+  border: 1px solid rgba(255,255,255,.62);
+  background:
+    linear-gradient(120deg, transparent 0 38%, rgba(255,255,255,.72) 39% 44%, transparent 45%),
+    linear-gradient(145deg, rgba(236,254,255,.94), rgba(34,211,238,.78) 32%, rgba(37,99,235,.74) 63%, rgba(76,29,149,.92));
+  box-shadow: inset 0 0 18px rgba(255,255,255,.26), 0 0 26px rgba(103,232,249,.44);
+  animation: archive-crystal-rise 6s ease-in-out infinite;
+}
+
+.app-sidebar-crystals i:nth-child(1) { left: 1rem; height: 6.2rem; transform: rotate(-14deg); animation-delay: -1.4s; }
+.app-sidebar-crystals i:nth-child(2) { left: 3.8rem; height: 9rem; width: 3rem; animation-delay: -3.1s; }
+.app-sidebar-crystals i:nth-child(3) { right: 1.2rem; height: 7.2rem; transform: rotate(13deg); animation-delay: -4.6s; }
+
+.app-sidebar-crystals span {
+  position: absolute;
+  left: 12%;
+  right: 10%;
+  bottom: .35rem;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #67e8f9 38%, #c4b5fd 66%, transparent);
+  box-shadow: 0 0 18px #67e8f9, 0 0 34px rgba(167,139,250,.58);
+}
+
+.app-page-header {
+  min-height: 9.2rem;
+  border-color: rgba(246,217,139,.68);
+  background:
+    radial-gradient(ellipse at 83% 82%, rgba(37,99,235,.36), transparent 25%),
+    radial-gradient(ellipse at 70% 0%, rgba(139,92,246,.24), transparent 30%),
+    linear-gradient(110deg, #03132f, #082b59 56%, #26235f);
+  box-shadow:
+    0 24px 62px rgba(2,8,30,.38),
+    inset 0 0 0 1px rgba(255,255,255,.14),
+    inset 0 0 48px rgba(103,232,249,.08);
+}
+
+.app-page-header::before {
+  border-color: rgba(246,217,139,.28);
+}
+
+.app-page-header-copy {
+  z-index: 3;
+}
+
+.app-page-header h1 {
+  font-size: clamp(2.5rem, 3.8vw, 3.8rem);
+  color: #fff1c2;
+  text-shadow: 0 2px 0 rgba(102,67,15,.68), 0 0 18px rgba(255,255,255,.38), 0 0 34px rgba(103,232,249,.38);
+}
+
+.app-page-header p {
+  font-size: .92rem;
+  color: rgba(234,249,255,.78);
+}
+
+.app-page-sigil {
+  width: 13rem;
+  height: 7rem;
+  margin-right: 1rem;
+  background:
+    radial-gradient(ellipse at 50% 78%, rgba(103,232,249,.50), transparent 58%),
+    radial-gradient(circle at 70% 20%, rgba(167,139,250,.32), transparent 34%);
+}
+
+.app-page-sigil::before,
+.app-page-sigil::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10rem;
+  height: 4rem;
+  border: 1px solid rgba(246,217,139,.36);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  animation: archive-orbit-drift 24s linear infinite;
+}
+
+.app-page-sigil::after {
+  width: 7.4rem;
+  height: 6rem;
+  border-color: rgba(103,232,249,.32);
+  animation-direction: reverse;
+  animation-duration: 18s;
+}
+
+.app-page-sigil-book {
+  bottom: .65rem;
+  width: 7.2rem;
+  height: 4.35rem;
+  border-width: 2px;
+  box-shadow: inset 0 0 25px rgba(103,232,249,.32), 0 18px 34px rgba(0,0,0,.42), 0 0 30px rgba(103,232,249,.24);
+}
+
+.app-page-sigil-book::before,
+.app-page-sigil-book::after {
+  height: 3.55rem;
+}
+
+.app-page-sigil-crystal {
+  left: 58%;
+  top: -.2rem;
+  width: 2rem;
+  height: 3rem;
+}
+
+/* The home route is the atmospheric cover of the archive. */
+.home-desk {
+  min-height: calc(100vh - 2.5rem);
+  border-color: rgba(246,217,139,.70);
+  background:
+    radial-gradient(ellipse at 76% 29%, rgba(37,99,235,.36), transparent 21rem),
+    radial-gradient(ellipse at 50% 0%, rgba(13,148,136,.22), transparent 25rem),
+    radial-gradient(circle at 18% 70%, rgba(139,92,246,.16), transparent 17rem),
+    linear-gradient(135deg, rgba(3,16,43,.97), rgba(7,36,75,.96) 55%, rgba(31,28,86,.94));
+  color: #edfaff;
+  box-shadow: 0 28px 74px rgba(2,8,30,.46), inset 0 0 55px rgba(103,232,249,.08);
+}
+
+.home-desk::before {
+  background:
+    linear-gradient(135deg, rgba(246,217,139,.82), transparent 44%) top left / 100% 2px no-repeat,
+    linear-gradient(135deg, rgba(246,217,139,.82), transparent 44%) top left / 2px 100% no-repeat;
+}
+
+.home-welcome {
+  color: #fff1c2;
+  -webkit-text-stroke: 1px rgba(101,66,13,.45);
+  text-shadow: 0 3px 0 rgba(101,66,13,.64), 0 0 18px rgba(255,255,255,.48), 0 0 38px rgba(103,232,249,.54);
+}
+
+.home-interface-language,
+.home-greeting-language {
+  border-color: rgba(246,217,139,.48);
+  background: rgba(4,20,52,.78);
+  color: rgba(234,249,255,.76);
+}
+
+.home-greeting-language strong {
+  color: var(--archive-gold);
+}
+
+.home-greeting-scroll {
+  border-color: rgba(246,217,139,.68);
+  background:
+    radial-gradient(circle at 8% 4%, rgba(255,255,255,.84), transparent 7rem),
+    linear-gradient(135deg, rgba(255,253,246,.98), rgba(239,230,214,.92));
+  box-shadow: inset 0 0 30px rgba(255,255,255,.48), 0 22px 52px rgba(0,0,0,.28);
+}
+
+.home-lexicon-stage {
+  filter: saturate(1.15) contrast(1.04);
+}
+
+.home-lexicon-light {
+  opacity: 1;
+  box-shadow: 0 0 55px rgba(103,232,249,.94), 0 0 100px rgba(167,139,250,.56);
+}
+
+.home-actions {
+  position: relative;
+  z-index: 3;
+}
+
+.home-btn {
+  min-height: 3.6rem;
+  min-width: 12.5rem;
+  border-color: rgba(246,217,139,.72);
+}
+
+.home-metric {
+  min-height: 8rem;
+  border-color: rgba(246,217,139,.54);
+}
+
+.home-metric:nth-child(odd) {
+  background: linear-gradient(145deg, rgba(247,253,255,.96), rgba(205,233,253,.88));
+}
+
+.home-metric:nth-child(even) {
+  background:
+    radial-gradient(circle at 12% 24%, rgba(103,232,249,.22), transparent 5rem),
+    linear-gradient(145deg, rgba(7,30,69,.98), rgba(41,40,112,.92));
+}
+
+.home-focus-card {
+  border-color: rgba(246,217,139,.58);
+  background:
+    radial-gradient(circle at 88% 0%, rgba(167,139,250,.14), transparent 12rem),
+    linear-gradient(135deg, rgba(4,19,48,.98), rgba(18,47,99,.94));
+}
+
+/* The creation route should read as a crafted writing desk, not a flat form. */
+.card-create-studio {
+  border-color: rgba(246,217,139,.52) !important;
+  padding: 1.2rem;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(139,92,246,.22), transparent 16rem),
+    radial-gradient(circle at 10% 72%, rgba(6,182,212,.12), transparent 18rem),
+    linear-gradient(145deg, rgba(3,17,45,.98), rgba(9,43,82,.95)) !important;
+}
+
+.card-create-panel-main {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(246,217,139,.62) !important;
+  padding: clamp(1.2rem, 2vw, 1.8rem);
+  background:
+    linear-gradient(90deg, rgba(246,217,139,.20), transparent 22%) top / 100% 1px no-repeat,
+    radial-gradient(circle at 90% 0%, rgba(196,181,253,.18), transparent 14rem),
+    linear-gradient(145deg, rgba(248,253,255,.98), rgba(211,235,251,.92)) !important;
+}
+
+.card-create-panel-main::after {
+  content: "";
+  position: absolute;
+  inset: .7rem;
+  z-index: -1;
+  border: 1px solid rgba(185,138,53,.16);
+  border-radius: 1rem;
+  pointer-events: none;
+}
+
+.card-create-field > span:first-child,
+.card-create-tags > legend,
+.card-create-section-heading > p {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  font-size: .9rem;
+}
+
+.card-create-field > span:first-child::before,
+.card-create-tags > legend::before,
+.card-create-section-heading > p::before {
+  content: "";
+  flex: 0 0 auto;
+  width: .82rem;
+  height: 1.05rem;
+  clip-path: polygon(50% 0, 94% 34%, 70% 100%, 30% 100%, 6% 34%);
+  background: linear-gradient(145deg, #fff, #22d3ee 42%, #7c3aed);
+  filter: drop-shadow(0 0 5px rgba(34,211,238,.6));
+}
+
+.card-create-field input,
+.card-create-field textarea,
+.card-create-language-row select {
+  border-color: rgba(103,232,249,.32) !important;
+  background: linear-gradient(135deg, #071a3f, #102e58) !important;
+  box-shadow: inset 0 1px 5px rgba(0,0,0,.28), 0 0 0 1px rgba(255,255,255,.05) !important;
+}
+
+.card-create-field :where(input, textarea):focus,
+.card-create-language-row select:focus {
+  border-color: rgba(103,232,249,.82) !important;
+  box-shadow: 0 0 0 4px rgba(103,232,249,.14), 0 0 24px rgba(103,232,249,.18) !important;
+}
+
+.card-create-suggestions {
+  border-color: rgba(167,139,250,.52) !important;
+}
+
+/* The review route gets a subtle hourglass/crystal altar beside the card. */
+.phase7-review-shell {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 86% 64%, rgba(139,92,246,.26), transparent 13rem),
+    radial-gradient(circle at 18% 22%, rgba(34,211,238,.16), transparent 16rem),
+    linear-gradient(145deg, #03112c, #082d59 56%, #211f58);
+}
+
+.phase7-review-shell::before,
+.phase7-review-shell::after {
+  content: "";
+  position: absolute;
+  right: 3.5%;
+  top: 50%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.phase7-review-shell::before {
+  width: 4.6rem;
+  height: 7.4rem;
+  transform: translateY(-50%);
+  clip-path: polygon(12% 0, 88% 0, 65% 45%, 88% 100%, 12% 100%, 35% 55%);
+  border: 1px solid rgba(246,217,139,.72);
+  background:
+    linear-gradient(165deg, rgba(103,232,249,.12), rgba(167,139,250,.42) 48%, rgba(103,232,249,.12));
+  filter: drop-shadow(0 0 18px rgba(103,232,249,.44));
+  animation: archive-crystal-rise 5s ease-in-out infinite;
+}
+
+.phase7-review-shell::after {
+  width: 7.5rem;
+  height: 1rem;
+  transform: translate(18%, 4.15rem);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(103,232,249,.76), transparent 68%);
+  box-shadow: 0 0 28px rgba(103,232,249,.48);
+}
+
+.phase7-review-card {
+  z-index: 1;
+  max-width: 68rem;
+}
+
+.phase7-review-card-header {
+  min-height: 9.2rem;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(103,232,249,.22), transparent 13rem),
+    linear-gradient(135deg, #06183a, #123c78 54%, #342b82) !important;
+}
+
+.phase7-review-sentence-block {
+  border-top: 1px solid rgba(246,217,139,.38);
+  border-bottom: 1px solid rgba(185,138,53,.24);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,.78), transparent 10rem),
+    linear-gradient(145deg, rgba(255,253,246,.99), rgba(230,240,252,.94)) !important;
+}
+
+/* Richer real-data cards without inventing sample content. */
+.phase6-tag-card,
+.phase7-statistics-chart-card,
+.phase7-settings-section,
+.batch-import-item,
+.phase6-context-card {
+  background-image:
+    radial-gradient(circle at 94% 8%, rgba(255,255,255,.13) 0 1px, transparent 1.6px),
+    linear-gradient(135deg, rgba(255,255,255,.05), transparent 40%) !important;
+  background-size: 46px 46px, 100% 100% !important;
+}
+
+.phase6-list-head {
+  display: flex;
+  align-items: baseline;
+  gap: .45rem;
+  color: rgba(234,249,255,.68) !important;
+}
+
+.phase6-list-head strong {
+  color: #f4fbff !important;
+  font-size: 2rem;
+}
+
+@media (max-width: 1180px) {
+  .phase7-review-shell::before,
+  .phase7-review-shell::after {
+    opacity: .35;
+    right: 1%;
+  }
+}
+
+@media (max-width: 920px) {
+  .app-sidebar-crystals {
+    display: none;
+  }
+
+  .app-page-header {
+    min-height: 7rem;
+  }
+
+  .app-page-sigil {
+    width: 8rem;
+    height: 5rem;
+  }
+
+  .app-page-sigil-book {
+    width: 5.2rem;
+    height: 3.2rem;
+  }
+
+  .phase7-review-shell::before,
+  .phase7-review-shell::after {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .app-page-header {
+    min-height: 5.6rem;
+  }
+
+  .home-desk {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar-crystals i,
+  .app-page-sigil::before,
+  .app-page-sigil::after,
+  .phase7-review-shell::before {
+    animation: none !important;
+  }
+}
+
 .home-desk {
   position: relative;
   overflow: hidden;
@@ -7409,7 +7855,7 @@ body {
   }
 }
 
-/* Final responsive/compositing safeguards must remain last in the cascade. */
+/* Final responsive/compositing safeguards. */
 .global-review-backdrop {
   display: none !important;
 }
@@ -7459,4 +7905,105 @@ body {
     overflow: visible;
     padding-right: 0;
   }
+}
+
+/* The final fidelity overrides are deliberately last in the cascade. */
+.app-page-header {
+  min-height: 9.2rem !important;
+  border-color: rgba(246, 217, 139, .68) !important;
+  background: radial-gradient(ellipse at 83% 82%, rgba(37, 99, 235, .36), transparent 25%), radial-gradient(ellipse at 70% 0%, rgba(139, 92, 246, .24), transparent 30%), linear-gradient(110deg, #03132f, #082b59 56%, #26235f) !important;
+  box-shadow: 0 24px 62px rgba(2, 8, 30, .38), inset 0 0 0 1px rgba(255, 255, 255, .14), inset 0 0 48px rgba(103, 232, 249, .08) !important;
+}
+
+.app-page-header h1 {
+  font-size: clamp(2.5rem, 3.8vw, 3.8rem) !important;
+  color: #fff1c2 !important;
+  text-shadow: 0 2px 0 rgba(102, 67, 15, .68), 0 0 18px rgba(255, 255, 255, .38), 0 0 34px rgba(103, 232, 249, .38) !important;
+}
+
+.app-page-sigil { width: 13rem !important; height: 7rem !important; }
+.app-page-sigil-book { width: 7.2rem !important; height: 4.35rem !important; }
+.app-page-sigil-book::before,
+.app-page-sigil-book::after { height: 3.55rem !important; }
+.app-page-sigil-crystal { width: 2rem !important; height: 3rem !important; }
+
+.home-desk {
+  min-height: calc(100vh - 2.5rem) !important;
+  border-color: rgba(246, 217, 139, .70) !important;
+  background: radial-gradient(ellipse at 76% 29%, rgba(37, 99, 235, .38), transparent 21rem), radial-gradient(ellipse at 50% 0%, rgba(13, 148, 136, .24), transparent 25rem), radial-gradient(circle at 18% 70%, rgba(139, 92, 246, .18), transparent 17rem), linear-gradient(135deg, rgba(3, 16, 43, .98), rgba(7, 36, 75, .97) 55%, rgba(31, 28, 86, .95)) !important;
+  color: #edfaff !important;
+  box-shadow: 0 28px 74px rgba(2, 8, 30, .46), inset 0 0 55px rgba(103, 232, 249, .08) !important;
+}
+
+.home-welcome {
+  color: #fff1c2 !important;
+  background: none !important;
+  -webkit-text-stroke: 1px rgba(101, 66, 13, .45);
+  text-shadow: 0 3px 0 rgba(101, 66, 13, .64), 0 0 18px rgba(255, 255, 255, .48), 0 0 38px rgba(103, 232, 249, .54) !important;
+}
+
+.home-interface-language,
+.home-greeting-language { border-color: rgba(246, 217, 139, .48) !important; background: rgba(4, 20, 52, .80) !important; color: rgba(234, 249, 255, .78) !important; }
+.home-greeting-language strong { color: var(--archive-gold) !important; }
+
+.home-greeting-scroll {
+  border-color: rgba(246, 217, 139, .68) !important;
+  background: radial-gradient(circle at 8% 4%, rgba(255, 255, 255, .84), transparent 7rem), linear-gradient(135deg, rgba(255, 253, 246, .98), rgba(239, 230, 214, .92)) !important;
+  box-shadow: inset 0 0 30px rgba(255, 255, 255, .48), 0 22px 52px rgba(0, 0, 0, .28) !important;
+}
+
+.home-metric:nth-child(odd) { background: linear-gradient(145deg, rgba(247, 253, 255, .96), rgba(205, 233, 253, .88)) !important; }
+.home-metric:nth-child(even) { background: radial-gradient(circle at 12% 24%, rgba(103, 232, 249, .22), transparent 5rem), linear-gradient(145deg, rgba(7, 30, 69, .98), rgba(41, 40, 112, .92)) !important; }
+.home-focus-card { border-color: rgba(246, 217, 139, .58) !important; background: radial-gradient(circle at 88% 0%, rgba(167, 139, 250, .14), transparent 12rem), linear-gradient(135deg, rgba(4, 19, 48, .98), rgba(18, 47, 99, .94)) !important; }
+
+.phase7-review-shell {
+  background: radial-gradient(circle at 88% 58%, rgba(139, 92, 246, .25), transparent 11rem), radial-gradient(circle at 18% 22%, rgba(34, 211, 238, .16), transparent 16rem), linear-gradient(145deg, #03112c, #082d59 56%, #211f58) !important;
+}
+
+.phase7-review-shell::before {
+  right: 2.1rem !important;
+  top: 50% !important;
+  width: 3.15rem !important;
+  height: 5rem !important;
+  transform: translateY(-50%) rotate(8deg) !important;
+  clip-path: polygon(50% 0, 90% 28%, 72% 88%, 50% 100%, 25% 86%, 8% 30%) !important;
+  border: 1px solid rgba(246, 217, 139, .72) !important;
+  background: linear-gradient(145deg, rgba(224, 251, 255, .78), rgba(56, 189, 248, .24) 42%, rgba(139, 92, 246, .72) 75%, rgba(30, 64, 175, .34)) !important;
+  box-shadow: inset 12px 0 18px rgba(255, 255, 255, .14), inset -10px -12px 18px rgba(42, 19, 100, .28) !important;
+  filter: drop-shadow(0 0 18px rgba(103, 232, 249, .52)) !important;
+}
+
+.phase7-review-shell::after {
+  right: .75rem !important;
+  top: 50% !important;
+  width: 6rem !important;
+  height: 6rem !important;
+  transform: translateY(-50%) rotate(-18deg) !important;
+  border: 1px solid rgba(103, 232, 249, .36) !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: 0 0 22px rgba(103, 232, 249, .12), inset 0 0 18px rgba(167, 139, 250, .10) !important;
+}
+
+.phase7-review-card { max-width: 60rem !important; }
+.phase7-review-card-header { min-height: 9.2rem !important; background: radial-gradient(circle at 50% 0%, rgba(103, 232, 249, .22), transparent 13rem), linear-gradient(135deg, #06183a, #123c78 54%, #342b82) !important; }
+
+.app-sidebar {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+@media (max-width: 920px) {
+  .app-page-header { min-height: 7rem !important; }
+  .app-page-sigil { width: 8rem !important; height: 5rem !important; }
+  .app-sidebar { overflow: visible !important; }
+  .phase7-review-shell::before,
+  .phase7-review-shell::after { display: none !important; }
+}
+
+@media (max-width: 620px) {
+  .app-page-header { min-height: 5.6rem !important; }
+  .app-page-header h1 { font-size: clamp(1.75rem, 9vw, 2.35rem) !important; }
+  .app-page-sigil { display: none !important; }
+  .home-desk { min-height: auto !important; }
 }

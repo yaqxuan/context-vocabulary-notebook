@@ -49,6 +49,13 @@ export function Layout({ navItems, currentPath, title, subtitle, children }: Lay
               );
             })}
           </nav>
+
+          <div className="app-sidebar-crystals" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <span />
+          </div>
         </aside>
 
         <main className="app-main">
