@@ -63,9 +63,16 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
     try {
       const filePath = resolveUploadPath(uploadsDir, fileName);
       res.sendFile(filePath, (err) => {
-        if (err) {
-          res.status(404).json({ error: 'File not found' });
-        }
+        if (!err) return;
+
+        // Browsers routinely cancel media requests while changing cards,
+        // seeking, or replacing a video element. sendFile reports that abort
+        // after response headers may already have been written. Attempting a
+        // second JSON response would throw ERR_HTTP_HEADERS_SENT and terminate
+        // the server process, so only create a 404 while the response is still
+        // writable and untouched.
+        if (req.aborted || res.destroyed || res.writableEnded || res.headersSent) return;
+        res.status(404).json({ error: 'File not found' });
       });
     } catch {
       res.status(400).json({ error: 'Invalid file name' });

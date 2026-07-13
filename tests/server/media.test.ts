@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import path from 'node:path';
 import fs from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 
 import { createTestDb, destroyTestDb } from '../../src/server/db/testDb.js';
@@ -241,6 +242,54 @@ describe('GET /uploads/:fileName', () => {
   it('returns 404 for a file that does not exist', async () => {
     const res = await request(app).get('/uploads/does-not-exist.jpg');
     expect(res.status).toBe(404);
+  });
+
+  it('keeps the server alive when a client aborts a streamed media response', async () => {
+    const fileName = 'abort-stream.mp4';
+    fs.writeFileSync(path.join(uploadsDir, fileName), Buffer.alloc(4 * 1024 * 1024, 7));
+    const server = http.createServer(app);
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(0, '127.0.0.1', resolve);
+      });
+      await new Promise<void>((resolve, reject) => {
+        const address = server.address();
+        if (!address || typeof address === 'string') {
+          reject(new Error('Test server did not expose a TCP port'));
+          return;
+        }
+        const timer = setTimeout(() => reject(new Error('Timed out waiting for streamed media')), 2_000);
+        const finish = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+        const mediaRequest = http.get({ hostname: '127.0.0.1', port: address.port, path: `/uploads/${fileName}` }, (response) => {
+          response.once('data', () => {
+            response.destroy();
+            mediaRequest.destroy();
+            finish();
+          });
+          response.once('error', finish);
+        });
+        mediaRequest.once('error', (error: NodeJS.ErrnoException) => {
+          if (error.code === 'ECONNRESET') finish();
+          else reject(error);
+        });
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const health = await request(server).get('/api/health');
+      expect(health.status).toBe(200);
+      expect(health.body).toEqual({ ok: true });
+    } finally {
+      if (server.listening) {
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => error ? reject(error) : resolve());
+        });
+      }
+    }
   });
 
   it('rejects path traversal in file name with 400 or 404', async () => {
