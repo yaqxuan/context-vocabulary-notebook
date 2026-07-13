@@ -266,7 +266,7 @@ describe('README current behavior docs', () => {
     expect(readme).toContain('拼写检查');
     expect(readme).toContain('WSL 通常最稳');
     expect(readme).toContain('Windows 原生 PowerShell 可以安装');
-    expect(readme).toContain('STT 需要单独安装 whisper.cpp');
+    expect(readme).toContain('本地识别一键脚本后，会自动安装 whisper.cpp');
     expect(englishReadme).toContain('Local Clip Recognition (OCR / STT)');
     expect(englishReadme).toContain('whisper.cpp');
     expect(englishReadme).toContain('Tesseract');
@@ -313,24 +313,31 @@ describe('install-recognition-windows.ps1 safeguards', () => {
     expect(script).not.toContain('Add-Content -Encoding UTF8 .env');
   });
 
-  it('downloads FFmpeg from a pinned direct release asset and verifies its hash', () => {
+  it('downloads FFmpeg from the retained latest asset and verifies the published hash', () => {
     const script = readPowerShellRecognitionInstallScript();
 
     expect(script).not.toContain('api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest');
     expect(script).not.toContain('Invoke-RestMethod');
-    expect(script).not.toContain('releases/download/latest');
-    expect(script).toContain('$FfmpegZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-06-14-13-33/ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip"');
-    expect(script).toContain('$FfmpegZipSha256 = "9bf9423be2096818d950b05748b50538a9013913ee8e26813b66172eea9b4015"');
+    expect(script).toContain('$FfmpegAssetName = "ffmpeg-master-latest-win64-gpl.zip"');
+    expect(script).toContain('$FfmpegReleaseBaseUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest"');
+    expect(script).toContain('$FfmpegChecksumsUrl = "$FfmpegReleaseBaseUrl/checksums.sha256"');
     expect(script).toContain('$TesseractInstallerSha256 = "f3fc4236425b690c8be756f35793f77394ee004be0a6460a440c754d892f68bc"');
     expect(script).toContain('Download-File $FfmpegZipUrl $ZipPath');
+    expect(script).toContain('Download-File $FfmpegChecksumsUrl $ChecksumsPath');
     expect(script).toContain('$ProgressPreference = "SilentlyContinue"');
     expect(script).toContain('Get-Command "curl.exe" -ErrorAction SilentlyContinue');
-    expect(script).toContain('--location --fail --retry 3 --retry-delay 2 --output $OutFile $Uri');
+    expect(script).toContain('--location --fail --retry 3 --retry-delay 2 --output $TemporaryOutFile $Uri');
     expect(script).toContain('Download failed with curl.exe exit code $LASTEXITCODE for $Uri');
-    expect(script).toContain('Invoke-WebRequest -Uri $Uri -OutFile $OutFile');
-    expect(script).toContain('Assert-FileSha256 $ZipPath $FfmpegZipSha256');
+    expect(script).toContain('Invoke-WebRequest -Uri $Uri -OutFile $TemporaryOutFile');
+    expect(script).toContain('Move-Item -LiteralPath $TemporaryOutFile -Destination $OutFile -Force');
+    expect(script).toContain('Get-ExpectedSha256 $ChecksumsPath $FfmpegAssetName');
+    expect(script).toContain('Assert-FileSha256 $ZipPath $ExpectedFfmpegSha256');
     expect(script).toContain('Get-FileHash -LiteralPath $Path -Algorithm SHA256');
-    expect(script).toContain('ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip');
+    expect(script).toContain('Get-Command "ffmpeg.exe" -ErrorAction SilentlyContinue');
+    expect(script).toContain('$WhisperZipSha256 = "b07ea0b1b4115a38e1a7b07debf581f0b77d999925f8acb8f39d322b0ba0a822"');
+    expect(script).toContain('$ModelSha256 = "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b"');
+    expect(script).toContain('Assert-FileSha256 $ZipPath $WhisperZipSha256');
+    expect(script).toContain('Assert-FileSha256 $ModelPath $ModelSha256');
   });
 
   it('uses existing default Tesseract before running installer and times out installer hangs', () => {
@@ -366,10 +373,20 @@ describe('install-recognition-windows.ps1 safeguards', () => {
     expect(script).toContain('Invoke-WebRequest');
     expect(script).toContain('Expand-Archive');
     expect(script).toContain('Write-Verification');
+    expect(script).toContain('Start-Process -FilePath $WhisperExe -ArgumentList "--help" -Wait -PassThru -WindowStyle Hidden');
   });
 });
 
 describe('install.ps1 installer safeguards', () => {
+  it('parses the Node version in PowerShell instead of relying on native quote forwarding', () => {
+    const nodeIsSupported = functionBody(readPowerShellInstallScript(), 'Node-IsSupported');
+
+    expect(nodeIsSupported).toContain('& node -p process.versions.node');
+    expect(nodeIsSupported).toContain('[Version]::TryParse');
+    expect(nodeIsSupported).toContain('$ParsedVersion.Major -gt 22');
+    expect(nodeIsSupported).not.toContain('& node -e');
+  });
+
   it('only requires winget when a missing dependency must be installed', () => {
     const script = readPowerShellInstallScript();
     const ensureEnvironment = functionBody(script, 'Ensure-Environment');

@@ -9,11 +9,13 @@ const powershellInstaller = readFileSync(path.join(root, 'scripts/install.ps1'),
 
 describe('one-click installers', () => {
   it('enforces the Node.js versions required by the current Vite release', () => {
-    for (const installer of [bashInstaller, powershellInstaller]) {
-      expect(installer).toContain('major === 20 && minor >= 19');
-      expect(installer).toContain('major === 22 && minor >= 12');
-      expect(installer).toContain('major > 22');
-    }
+    expect(bashInstaller).toContain('major === 20 && minor >= 19');
+    expect(bashInstaller).toContain('major === 22 && minor >= 12');
+    expect(bashInstaller).toContain('major > 22');
+
+    expect(powershellInstaller).toContain('$ParsedVersion.Major -eq 20 -and $ParsedVersion.Minor -ge 19');
+    expect(powershellInstaller).toContain('$ParsedVersion.Major -eq 22 -and $ParsedVersion.Minor -ge 12');
+    expect(powershellInstaller).toContain('$ParsedVersion.Major -gt 22');
   });
 
   it('keeps Bash installation fail-fast', () => {

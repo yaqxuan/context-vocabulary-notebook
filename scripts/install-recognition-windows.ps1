@@ -3,13 +3,17 @@ $ProgressPreference = "SilentlyContinue"
 
 $ProjectName = "context-vocabulary-notebook"
 $ModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
+$ModelSha256 = "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b"
 $TesseractInstallerUrl = "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe"
 $TesseractInstallerSha256 = "f3fc4236425b690c8be756f35793f77394ee004be0a6460a440c754d892f68bc"
 $ExpectedTesseractVersion = "5.5.0.20241111"
 $TesseractInstallerTimeoutSeconds = 180
-$FfmpegZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-06-14-13-33/ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip"
-$FfmpegZipSha256 = "9bf9423be2096818d950b05748b50538a9013913ee8e26813b66172eea9b4015"
+$FfmpegAssetName = "ffmpeg-master-latest-win64-gpl.zip"
+$FfmpegReleaseBaseUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest"
+$FfmpegZipUrl = "$FfmpegReleaseBaseUrl/$FfmpegAssetName"
+$FfmpegChecksumsUrl = "$FfmpegReleaseBaseUrl/checksums.sha256"
 $WhisperZipUrl = "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.6/whisper-bin-x64.zip"
+$WhisperZipSha256 = "b07ea0b1b4115a38e1a7b07debf581f0b77d999925f8acb8f39d322b0ba0a822"
 
 $AppRoot = (Get-Location).Path
 $ToolsRoot = Join-Path $AppRoot "tools"
@@ -50,15 +54,23 @@ function Find-FirstFile($Root, $Filter) {
 function Download-File($Uri, $OutFile) {
   $OutDir = Split-Path -Parent $OutFile
   [System.IO.Directory]::CreateDirectory($OutDir) | Out-Null
+  $TemporaryOutFile = "$OutFile.download"
+  Remove-Item -LiteralPath $TemporaryOutFile -Force -ErrorAction SilentlyContinue
 
-  $Curl = Get-Command "curl.exe" -ErrorAction SilentlyContinue
-  if ($Curl) {
-    & $Curl.Source --location --fail --retry 3 --retry-delay 2 --output $OutFile $Uri
-    if ($LASTEXITCODE -ne 0) { throw "Download failed with curl.exe exit code $LASTEXITCODE for $Uri" }
-    return
+  try {
+    $Curl = Get-Command "curl.exe" -ErrorAction SilentlyContinue
+    if ($Curl) {
+      & $Curl.Source --location --fail --retry 3 --retry-delay 2 --output $TemporaryOutFile $Uri
+      if ($LASTEXITCODE -ne 0) { throw "Download failed with curl.exe exit code $LASTEXITCODE for $Uri" }
+    } else {
+      Invoke-WebRequest -Uri $Uri -OutFile $TemporaryOutFile
+    }
+
+    Move-Item -LiteralPath $TemporaryOutFile -Destination $OutFile -Force
+  } catch {
+    Remove-Item -LiteralPath $TemporaryOutFile -Force -ErrorAction SilentlyContinue
+    throw
   }
-
-  Invoke-WebRequest -Uri $Uri -OutFile $OutFile
 }
 
 function Assert-FileSha256($Path, $ExpectedHash) {
@@ -66,6 +78,19 @@ function Assert-FileSha256($Path, $ExpectedHash) {
   if ($ActualHash -ne $ExpectedHash.ToLowerInvariant()) {
     throw "SHA-256 mismatch for $Path. Expected $ExpectedHash, got $ActualHash."
   }
+}
+
+function Get-ExpectedSha256($ChecksumPath, $FileName) {
+  foreach ($Line in Get-Content -LiteralPath $ChecksumPath) {
+    if ($Line -match '^([A-Fa-f0-9]{64})\s+\*?(.+)$') {
+      $ChecksumFileName = $Matches[2].Trim()
+      if ($ChecksumFileName -eq $FileName) {
+        return $Matches[1].ToLowerInvariant()
+      }
+    }
+  }
+
+  throw "SHA-256 entry for $FileName was not found in $ChecksumPath."
 }
 
 function Assert-TesseractVersion($TesseractExe) {
@@ -139,11 +164,20 @@ function Install-Ffmpeg {
     return $Existing.FullName
   }
 
+  $SystemFfmpeg = Get-Command "ffmpeg.exe" -ErrorAction SilentlyContinue
+  if ($SystemFfmpeg) {
+    Write-Step "Using existing FFmpeg at $($SystemFfmpeg.Source)"
+    return $SystemFfmpeg.Source
+  }
+
   Write-Step "Downloading FFmpeg into $FfmpegRoot"
   [System.IO.Directory]::CreateDirectory($FfmpegRoot) | Out-Null
-  $ZipPath = Join-Path $ToolsRoot "ffmpeg-n7.1.4-39-ga5faeca88f-win64-gpl-7.1.zip"
+  $ZipPath = Join-Path $ToolsRoot $FfmpegAssetName
+  $ChecksumsPath = Join-Path $ToolsRoot "ffmpeg-checksums.sha256"
   Download-File $FfmpegZipUrl $ZipPath
-  Assert-FileSha256 $ZipPath $FfmpegZipSha256
+  Download-File $FfmpegChecksumsUrl $ChecksumsPath
+  $ExpectedFfmpegSha256 = Get-ExpectedSha256 $ChecksumsPath $FfmpegAssetName
+  Assert-FileSha256 $ZipPath $ExpectedFfmpegSha256
   Expand-Archive -LiteralPath $ZipPath -DestinationPath $FfmpegRoot -Force
 
   $Installed = Find-FirstFile $FfmpegRoot "ffmpeg.exe"
@@ -211,6 +245,7 @@ function Install-WhisperCpp {
   [System.IO.Directory]::CreateDirectory($WhisperRoot) | Out-Null
   $ZipPath = Join-Path $ToolsRoot "whisper-bin-x64.zip"
   Download-File $WhisperZipUrl $ZipPath
+  Assert-FileSha256 $ZipPath $WhisperZipSha256
   Expand-Archive -LiteralPath $ZipPath -DestinationPath $WhisperRoot -Force
 
   $Installed = Find-FirstFile $WhisperRoot "whisper-cli.exe"
@@ -220,12 +255,18 @@ function Install-WhisperCpp {
 
 function Install-Model {
   if ((Test-Path -LiteralPath $ModelPath -PathType Leaf) -and ((Get-Item -LiteralPath $ModelPath).Length -gt 0)) {
-    Write-Step "Whisper model already exists at $ModelPath"
-    return
+    $ExistingModelHash = (Get-FileHash -LiteralPath $ModelPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($ExistingModelHash -eq $ModelSha256) {
+      Write-Step "Whisper model already exists at $ModelPath"
+      return
+    }
+
+    Write-Step "Existing Whisper model checksum does not match; downloading a clean copy"
   }
 
   Write-Step "Downloading Whisper model into $ModelPath"
   Download-File $ModelUrl $ModelPath
+  Assert-FileSha256 $ModelPath $ModelSha256
 }
 
 function Write-RecognitionEnv($FfmpegExe, $TesseractExe, $WhisperExe) {
@@ -245,8 +286,9 @@ function Write-Verification($FfmpegExe, $TesseractExe, $WhisperExe) {
   Write-Step "Verification"
   & $FfmpegExe -version | Select-Object -First 1
   & $TesseractExe --version | Select-Object -First 1
-  & $WhisperExe --help | Select-Object -First 1
-  if (-not (Test-Path -LiteralPath $ModelPath -PathType Leaf)) { throw "Whisper model not found at $ModelPath" }
+  $WhisperProcess = Start-Process -FilePath $WhisperExe -ArgumentList "--help" -Wait -PassThru -WindowStyle Hidden
+  if ($WhisperProcess.ExitCode -ne 0) { throw "whisper.cpp verification failed with exit code $($WhisperProcess.ExitCode)" }
+  if ((-not (Test-Path -LiteralPath $ModelPath -PathType Leaf)) -or ((Get-Item -LiteralPath $ModelPath).Length -eq 0)) { throw "Whisper model not found at $ModelPath" }
 
   Write-Host "FFmpeg: $FfmpegExe"
   Write-Host "Tesseract: $TesseractExe"

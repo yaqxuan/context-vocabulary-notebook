@@ -337,7 +337,7 @@ CVN_TESSERACT_LANG=eng+chi_sim
 
 ### مسار نموذج Whisper غير مهيأ
 
-لا يملك `CVN_WHISPER_CPP_MODEL` نموذجًا افتراضيًا. نزّل نموذج ggml مدعومًا من whisper.cpp واكتب مساره المطلق في `.env`.
+لا يضم التطبيق نموذج Whisper. ينزّل مثبّت التعرف المحلي النموذج الافتراضي `ggml-small.bin` ويضبطه؛ أما الإعداد اليدوي فيتطلب تنزيل نموذج ggml متوافق مع whisper.cpp وكتابة مساره المطلق في `.env`.
 
 ## البيانات والنسخ الاحتياطي
 
@@ -419,7 +419,7 @@ tar -czf vocabulary-notebook-backup.tar.gz data uploads .env
 | `CVN_FFMPEG_PATH` | لا | `ffmpeg` | مسار ملف ffmpeg التنفيذي؛ عند تثبيت أدوات Windows أصلية، استخدم مسارًا مطلقًا عند الحاجة. |
 | `CVN_STT_PROVIDER` | لا | `whisper.cpp` | موفر التعرف المحلي على الكلام؛ يمكن أن يكون `whisper.cpp` أو `disabled`. |
 | `CVN_WHISPER_CPP_PATH` | لا | `whisper-cli` | مسار ملف whisper.cpp التنفيذي؛ إذا كان نظامك يحتوي فقط على `main` القديم، فاضبطه إلى `main` أو إلى مسار مطلق. |
-| `CVN_WHISPER_CPP_MODEL` | مطلوب لـ STT المحلي | فارغ | مسار ملف نموذج Whisper؛ لا يقوم المثبّت بتنزيل نموذج تلقائيًا. |
+| `CVN_WHISPER_CPP_MODEL` | مطلوب لـ STT المحلي | فارغ | مسار نموذج Whisper؛ ينزّل مثبّت التعرف المحلي النموذج الافتراضي، بينما يتطلب الإعداد اليدوي تحديد هذا المسار. |
 | `CVN_WHISPER_CPP_TIMEOUT_MS` | لا | `120000` | مهلة تشغيل تعرّف واحدة بواسطة whisper.cpp. |
 | `CVN_OCR_PROVIDER` | لا | `tesseract` | موفر OCR المحلي؛ يمكن أن يكون `tesseract` أو `disabled`. |
 | `CVN_TESSERACT_PATH` | لا | `tesseract` | مسار ملف Tesseract التنفيذي. |
@@ -469,4 +469,3 @@ tar -czf vocabulary-notebook-backup.tar.gz data uploads .env
 ## الرخصة
 
 يستخدم هذا المشروع رخصة MIT. راجع [`LICENSE`](./LICENSE).
-

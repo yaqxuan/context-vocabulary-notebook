@@ -337,7 +337,7 @@ CVN_TESSERACT_LANG=eng+chi_sim
 
 ### Semita exemplaris Whisper non configurata est
 
-`CVN_WHISPER_CPP_MODEL` exemplar praedefinitum non habet. Exemplar ggml a whisper.cpp sustentatum depone et viam absolutam eius in `.env` scribe.
+Applicatio exemplar Whisper inclusum non habet. Institutor agnitionis localis `ggml-small.bin` deponit et configurat; in configuratione manuali tantum exemplar ggml a whisper.cpp sustentatum deponendum est atque via absoluta in `.env` scribenda.
 
 ## Data et exemplum securitatis
 
@@ -419,7 +419,7 @@ Notes:
 | `CVN_FFMPEG_PATH` | Non | `ffmpeg` | Via ad exsecutabile ffmpeg; in institutionibus instrumentorum nativorum Windows, viam absolutam adhibe si opus est. |
 | `CVN_STT_PROVIDER` | Non | `whisper.cpp` | Praebitor localis agnitionis vocis; potest esse `whisper.cpp` aut `disabled`. |
 | `CVN_WHISPER_CPP_PATH` | Non | `whisper-cli` | Via ad exsecutabile whisper.cpp; si systema tuum solum vetus `main` habet, pone `main` aut viam absolutam. |
-| `CVN_WHISPER_CPP_MODEL` | Necessarium pro STT locali | Vacuum | Via fasciculi exemplaris Whisper; institutor exemplar automatice non deponit. |
+| `CVN_WHISPER_CPP_MODEL` | Necessarium pro STT locali | Vacuum | Via exemplaris Whisper; institutor agnitionis localis exemplar praedefinitum deponit, dum configuratio manualis hanc viam requirit. |
 | `CVN_WHISPER_CPP_TIMEOUT_MS` | Non | `120000` | Tempus maximum unius cursus agnitionis whisper.cpp. |
 | `CVN_OCR_PROVIDER` | Non | `tesseract` | Praebitor localis OCR; potest esse `tesseract` aut `disabled`. |
 | `CVN_TESSERACT_PATH` | Non | `tesseract` | Via ad exsecutabile Tesseract. |
@@ -469,4 +469,3 @@ Si scriptum ambitum automatice parare non potest, instrumenta absentia et proxim
 ## Licentia
 
 Hoc propositum MIT License utitur. Vide [`LICENSE`](./LICENSE).
-

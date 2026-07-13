@@ -115,8 +115,15 @@ function Refresh-Path {
 function Node-IsSupported {
   if ((-not (Has-Command "node")) -or (-not (Has-Command "npm"))) { return $false }
   try {
-    & node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit((major === 20 && minor >= 19) || (major === 22 && minor >= 12) || major > 22 ? 0 : 1)'
-    return $LASTEXITCODE -eq 0
+    $VersionText = (& node -p process.versions.node 2>$null | Select-Object -First 1)
+    if ([string]::IsNullOrWhiteSpace($VersionText)) { return $false }
+
+    $ParsedVersion = $null
+    if (-not [Version]::TryParse($VersionText.Trim(), [ref]$ParsedVersion)) { return $false }
+
+    return (($ParsedVersion.Major -eq 20 -and $ParsedVersion.Minor -ge 19) -or
+      ($ParsedVersion.Major -eq 22 -and $ParsedVersion.Minor -ge 12) -or
+      $ParsedVersion.Major -gt 22)
   } catch {
     return $false
   }

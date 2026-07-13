@@ -337,7 +337,7 @@ CVN_TESSERACT_LANG=eng+chi_sim
 
 ### Whisper モデルパスが未設定の場合
 
-`CVN_WHISPER_CPP_MODEL` には既定モデルがありません。whisper.cpp が対応する ggml モデルをダウンロードし、その絶対パスを `.env` に書き込んでください。
+アプリ本体には Whisper モデルを同梱していません。ローカル認識インストーラーは既定の `ggml-small.bin` をダウンロードして設定します。手動設定の場合のみ、whisper.cpp 対応の ggml モデルを用意して絶対パスを `.env` に記入してください。
 
 ## データとバックアップ
 
@@ -419,7 +419,7 @@ Notes:
 | `CVN_FFMPEG_PATH` | いいえ | `ffmpeg` | ffmpeg 実行ファイルへのパス。Windows ネイティブツールのインストールでは、必要に応じて絶対パスを使ってください。 |
 | `CVN_STT_PROVIDER` | いいえ | `whisper.cpp` | ローカル音声認識プロバイダー。`whisper.cpp` または `disabled` を指定できます。 |
 | `CVN_WHISPER_CPP_PATH` | いいえ | `whisper-cli` | whisper.cpp 実行ファイルへのパス。システムに古い `main` しかない場合は、`main` または絶対パスを設定してください。 |
-| `CVN_WHISPER_CPP_MODEL` | ローカル STT に必須 | 空 | Whisper モデルファイルのパス。インストーラーはモデルを自動ダウンロードしません。 |
+| `CVN_WHISPER_CPP_MODEL` | ローカル STT に必須 | 空 | Whisper モデルのパス。ローカル認識インストーラーは既定モデルをダウンロードし、手動設定ではこのパスを指定します。 |
 | `CVN_WHISPER_CPP_TIMEOUT_MS` | いいえ | `120000` | whisper.cpp の 1 回の認識実行のタイムアウト。 |
 | `CVN_OCR_PROVIDER` | いいえ | `tesseract` | ローカル OCR プロバイダー。`tesseract` または `disabled` を指定できます。 |
 | `CVN_TESSERACT_PATH` | いいえ | `tesseract` | Tesseract 実行ファイルへのパス。 |

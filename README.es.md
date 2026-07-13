@@ -337,7 +337,7 @@ CVN_TESSERACT_LANG=eng+chi_sim
 
 ### La ruta del modelo Whisper no está configurada
 
-`CVN_WHISPER_CPP_MODEL` no tiene un modelo predeterminado. Descarga un modelo ggml compatible con whisper.cpp y escribe su ruta absoluta en `.env`.
+La aplicación no incluye un modelo Whisper. El instalador de reconocimiento local descarga y configura `ggml-small.bin`; solo las configuraciones manuales deben descargar un modelo ggml compatible con whisper.cpp y escribir su ruta absoluta en `.env`.
 
 ## Datos y copia de seguridad
 
@@ -419,7 +419,7 @@ Notes:
 | `CVN_FFMPEG_PATH` | No requerido | `ffmpeg` | Ruta al ejecutable de ffmpeg; en instalaciones de herramientas nativas de Windows, usa una ruta absoluta si hace falta. |
 | `CVN_STT_PROVIDER` | No requerido | `whisper.cpp` | Proveedor local de reconocimiento de voz; puede ser `whisper.cpp` o `disabled`. |
 | `CVN_WHISPER_CPP_PATH` | No requerido | `whisper-cli` | Ruta al ejecutable de whisper.cpp; si tu sistema solo tiene el antiguo `main`, usa `main` o una ruta absoluta. |
-| `CVN_WHISPER_CPP_MODEL` | Requerido para STT local | Vacío | Ruta del archivo de modelo Whisper; el instalador no descarga un modelo automáticamente. |
+| `CVN_WHISPER_CPP_MODEL` | Requerido para STT local | Vacío | Ruta del modelo Whisper; el instalador de reconocimiento local descarga el modelo predeterminado y las configuraciones manuales deben indicar esta ruta. |
 | `CVN_WHISPER_CPP_TIMEOUT_MS` | No requerido | `120000` | Tiempo límite para una ejecución de reconocimiento con whisper.cpp. |
 | `CVN_OCR_PROVIDER` | No requerido | `tesseract` | Proveedor local de OCR; puede ser `tesseract` o `disabled`. |
 | `CVN_TESSERACT_PATH` | No requerido | `tesseract` | Ruta al ejecutable de Tesseract. |
