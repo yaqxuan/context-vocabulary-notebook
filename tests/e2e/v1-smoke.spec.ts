@@ -74,6 +74,7 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
   });
   await expect.poll(() => detailVideo.evaluate((video: HTMLVideoElement) => video.paused)).toBe(false);
 
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/#/review');
   await expect(page.getByText(sentence)).toBeVisible();
   await page.getByRole('button', { name: 'Good' }).click();
@@ -87,6 +88,14 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
   }))).toMatchObject({ width: 160, height: 90, hasMetadata: true });
   const reviewVideoBox = await reviewVideo.boundingBox();
   expect((reviewVideoBox?.width ?? 0) / (reviewVideoBox?.height ?? 1)).toBeCloseTo(16 / 9, 1);
+  expect((reviewVideoBox?.y ?? 0) + (reviewVideoBox?.height ?? 0)).toBeLessThanOrEqual(900);
+  const reviewCardBox = await page.locator('.phase7-review-card--with-visual-media').boundingBox();
+  expect((reviewCardBox?.y ?? 0) + (reviewCardBox?.height ?? 0)).toBeLessThanOrEqual(900);
+  const sentenceBox = await page.locator('.phase7-review-sentence-block').boundingBox();
+  const contextBox = await page.locator('.phase7-review-context-panel').boundingBox();
+  expect(contextBox?.x).toBeGreaterThan((sentenceBox?.x ?? 0) + (sentenceBox?.width ?? 0) - 2);
+  const ratingBox = await page.locator('.phase7-review-rating-row').boundingBox();
+  expect((ratingBox?.y ?? 0) + (ratingBox?.height ?? 0)).toBeLessThanOrEqual(900);
   await page.getByRole('button', { name: '下一张' }).click();
   await expect(page.getByText('今天没有待复习内容')).toBeVisible();
 

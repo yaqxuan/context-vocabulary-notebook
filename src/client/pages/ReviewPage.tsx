@@ -183,6 +183,15 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
   const [contextOpen, setContextOpen] = useState(false);
   const contextOpenRef = useRef(false);
   const answerRevealed = Boolean(pendingRating || lastRating);
+  const primaryContext = card.contexts.find((context) => context.is_primary === 1) ?? card.contexts[0] ?? null;
+  const hasVisualMedia = card.media.some((media) => (
+    media.context_example_id === primaryContext?.id
+    && (media.media_type === 'video' || media.media_type === 'image')
+  ));
+  const reviewCardClassName = [
+    'phase7-review-card',
+    contextOpen && hasVisualMedia ? 'phase7-review-card--with-visual-media' : '',
+  ].filter(Boolean).join(' ');
 
   const setContextOpenNow = (open: boolean) => {
     contextOpenRef.current = open;
@@ -204,7 +213,7 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
   }, [pendingRating, lastRating]);
 
   return (
-    <div className="phase7-review-card">
+    <div className={reviewCardClassName}>
       <div className="phase7-review-card-header">
         <div className="phase7-review-card-title-block">
           <h2 className="phase7-review-word">{card.target_word}</h2>

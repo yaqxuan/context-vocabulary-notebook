@@ -2508,3 +2508,135 @@ body {
     animation: review-bubble-pop 620ms ease-out forwards !important;
   }
 }
+
+/* -------------------------------------------------------------------------
+ * Review media above the fold
+ *
+ * Once an answer reveals visual media, use the parchment as a two-column
+ * study surface instead of appending the video below every control.  The
+ * source ratio stays intact and secondary context can scroll inside its rail.
+ * ---------------------------------------------------------------------- */
+
+@media (min-width: 921px) {
+  .phase7-review-card--with-visual-media {
+    display: grid !important;
+    grid-template-columns: minmax(20rem, .9fr) minmax(23rem, 1.1fr) !important;
+    grid-template-rows: auto auto auto minmax(0, 1fr) !important;
+    width: min(100%, 66rem) !important;
+    max-width: 66rem !important;
+    overflow: hidden !important;
+  }
+
+  .phase7-review-card--with-visual-media > .phase7-review-card-header {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    min-height: 7.15rem !important;
+    padding: 1.1rem 1.6rem .9rem !important;
+    border-radius: .65rem .65rem 34% 34% / .65rem .65rem 18% 18% !important;
+  }
+
+  .phase7-review-card--with-visual-media .phase7-review-word {
+    margin-bottom: .15rem !important;
+    font-size: clamp(3rem, 4vw, 4.25rem) !important;
+  }
+
+  .phase7-review-card--with-visual-media > .phase7-review-sentence-block {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    min-height: 8rem !important;
+    margin: .8rem .65rem .45rem .8rem !important;
+    padding: 1rem 1.15rem !important;
+  }
+
+  .phase7-review-card--with-visual-media .phase7-review-sentence {
+    font-size: 1.18rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .phase7-review-card--with-visual-media > .phase7-review-controls {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    padding: .15rem .8rem .45rem !important;
+  }
+
+  .phase7-review-card--with-visual-media > .phase7-review-footer {
+    grid-column: 1 !important;
+    grid-row: 4 !important;
+    align-content: start !important;
+    padding: .35rem .8rem .8rem !important;
+    gap: .45rem !important;
+  }
+
+  .phase7-review-card--with-visual-media .phase7-review-rating-row {
+    flex-wrap: nowrap !important;
+    gap: .65rem !important;
+  }
+
+  .phase7-review-card--with-visual-media .phase7-review-rating-row button {
+    min-width: 0 !important;
+    min-height: 3.2rem !important;
+    flex: 1 1 0 !important;
+    padding-inline: .75rem !important;
+    font-size: 1.05rem !important;
+  }
+
+  .phase7-review-card--with-visual-media > .phase7-review-context-panel {
+    grid-column: 2 !important;
+    grid-row: 2 / 5 !important;
+    align-content: start !important;
+    min-width: 0 !important;
+    max-height: min(31rem, calc(100vh - 17.5rem)) !important;
+    padding: .75rem .8rem .8rem !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    border: 0 !important;
+    border-left: 1px solid rgba(69, 139, 213, .22) !important;
+    background: linear-gradient(150deg, rgba(226, 243, 251, .72), rgba(239, 245, 255, .58)) !important;
+  }
+
+  .phase7-review-card--with-visual-media .phase7-review-media-section,
+  .phase7-review-card--with-visual-media .phase7-review-media-item {
+    min-width: 0 !important;
+    gap: .3rem !important;
+  }
+
+  .phase7-review-card--with-visual-media .phase7-review-media-player--video,
+  .phase7-review-card--with-visual-media .phase7-review-media-image {
+    width: 100% !important;
+    height: auto !important;
+    max-height: min(17rem, 31vh) !important;
+    border-radius: .55rem !important;
+    object-fit: contain !important;
+  }
+
+  .phase7-review-card--with-visual-media .phase7-review-media-name {
+    font-size: .7rem !important;
+    opacity: .72 !important;
+  }
+
+  .phase7-review-card--with-visual-media .phase7-review-context-note,
+  .phase7-review-card--with-visual-media .phase7-review-context-tags,
+  .phase7-review-card--with-visual-media .phase7-review-other-contexts {
+    font-size: .8rem !important;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 950px) {
+  .phase7-review-shell {
+    padding-top: 7.1rem !important;
+    padding-bottom: 1rem !important;
+  }
+}
+
+@media (min-width: 921px) and (max-width: 1279px) {
+  .phase7-review-card--with-visual-media {
+    grid-template-columns: minmax(17rem, .9fr) minmax(19rem, 1.1fr) !important;
+  }
+}
+
+@media (max-width: 920px) {
+  .phase7-review-card--with-visual-media {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+}
