@@ -290,6 +290,7 @@ http://localhost:5173
 
 ### 一键安装失败怎么办
 
+- 如果还没看到安装器的环境检查日志，`curl` / `irm` 就提示 `SSL connection timeout`、`connection refused` 或无法访问 `raw.githubusercontent.com`，说明脚本还没有开始执行，问题在 GitHub 网络或本机代理。先用浏览器打开安装脚本链接；在 WSL 中还应检查 `HTTPS_PROXY` 是否指向当前可达的代理，不要继续使用已经变化的 WSL / Windows 临时 IP。也可以改用 Windows PowerShell 安装命令。
 - 如果提示命令不存在，请关闭终端后重新打开，再运行一次安装命令。
 - 如果提示 Node.js 版本不支持，请升级到 Node.js `20.19+` 或 `22.12+`；推荐使用 Node.js 22 LTS。
 - 如果更新阶段的 `git pull --ff-only` 失败，先运行 `git status`。脚本会保护本地修改，不会强行覆盖；请先提交、暂存或手动处理这些修改。
