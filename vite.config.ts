@@ -11,7 +11,8 @@ export default defineConfig({
     port: clientPort,
     strictPort: true,
     proxy: {
-      '/api': `http://localhost:${apiPort}`
+      '/api': `http://localhost:${apiPort}`,
+      '/uploads': `http://localhost:${apiPort}`,
     }
   },
   build: {

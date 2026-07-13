@@ -29,7 +29,12 @@ function mediaUrl(item: MediaDto): string {
 function MediaItem({ item, autoPlay = false }: { item: MediaDto; autoPlay?: boolean }) {
   const { t } = useI18n();
   const mediaRef = useRef<HTMLMediaElement | null>(null);
-  const unavailable = item.is_available === 0;
+  const [loadFailed, setLoadFailed] = useState(false);
+  const unavailable = item.is_available === 0 || loadFailed;
+
+  useEffect(() => {
+    setLoadFailed(false);
+  }, [item.id]);
 
   useEffect(() => {
     if (!autoPlay || !mediaRef.current) return;
@@ -51,13 +56,13 @@ function MediaItem({ item, autoPlay = false }: { item: MediaDto; autoPlay?: bool
   return (
     <div className="phase7-review-media-item">
       {item.media_type === 'video' ? (
-        <video ref={(element) => { mediaRef.current = element; }} className="phase7-review-media-player" src={src} controls preload="metadata" autoPlay={autoPlay} />
+        <video ref={(element) => { mediaRef.current = element; }} className="phase7-review-media-player phase7-review-media-player--video" src={src} controls preload="metadata" playsInline autoPlay={autoPlay} onError={() => setLoadFailed(true)} />
       ) : null}
       {item.media_type === 'image' ? (
-        <img className="phase7-review-media-image" src={src} alt={item.file_name} />
+        <img className="phase7-review-media-image" src={src} alt={item.file_name} onError={() => setLoadFailed(true)} />
       ) : null}
       {item.media_type === 'audio' ? (
-        <audio ref={(element) => { mediaRef.current = element; }} className="phase7-review-media-player" src={src} controls preload="metadata" autoPlay={autoPlay} />
+        <audio ref={(element) => { mediaRef.current = element; }} className="phase7-review-media-player phase7-review-media-player--audio" src={src} controls preload="metadata" autoPlay={autoPlay} onError={() => setLoadFailed(true)} />
       ) : null}
       <span className="phase7-review-media-name">{item.file_name}</span>
     </div>

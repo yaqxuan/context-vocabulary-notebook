@@ -101,3 +101,20 @@ test('keeps the remaining desktop pages inside the shared centered archive layou
     expect(frameBox?.width).toBeCloseTo(1440, 0);
   }
 });
+
+test('keeps real page content free of horizontal overflow at desktop widths', async ({ page }) => {
+  const routes = ['/#/', '/#/create', '/#/cards', '/#/batch-import', '/#/settings', '/#/tags', '/#/statistics', '/#/review'];
+
+  for (const width of [1600, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of routes) {
+      await page.goto(route);
+      await expect(page.locator('.app-main')).toBeVisible();
+      const dimensions = await page.locator('.app-main').evaluate((main) => ({
+        clientWidth: main.clientWidth,
+        scrollWidth: main.scrollWidth,
+      }));
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+    }
+  }
+});
