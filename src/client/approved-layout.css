@@ -716,7 +716,13 @@ body::after {
 
 /* Create: two-column form follows 09-create.png. */
 .card-create-studio { margin: 0 !important; }
-.card-create-batch-import-entry { position: absolute !important; z-index: 5 !important; right: 1.2rem !important; top: -9rem !important; }
+.card-create-batch-import-entry {
+  position: static !important;
+  z-index: auto !important;
+  right: auto !important;
+  top: auto !important;
+  margin: 0 0 .75rem !important;
+}
 .card-create-batch-import-entry a,
 .card-create-batch-import-entry button { border: 1px solid var(--approved-gold) !important; background: rgba(5,27,62,.9) !important; color: #fff0c6 !important; }
 
