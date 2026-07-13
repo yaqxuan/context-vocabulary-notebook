@@ -63,9 +63,9 @@ describe('splitBubbleWords', () => {
     expect(viewModels).toHaveLength(16);
     expect(viewModels.filter((item) => item.side === 'left')).toHaveLength(8);
     expect(viewModels.filter((item) => item.side === 'right')).toHaveLength(8);
-    expect(viewModels[0]).toMatchObject({ id: 'card-0', side: 'left', slot: 0, xPercent: 4, topPercent: 7.4, tagWidthRem: 4.45, tiltDegrees: -8, swimDurationSeconds: 23.5, arriveDelaySeconds: 0, swimDelaySeconds: -0, glowDelaySeconds: -0, scale: 0.94, opacity: 0.46, blurPixels: 0, wanderX1Rem: -1.7, wanderY2Rem: -3.8 });
-    expect(viewModels[1]).toMatchObject({ id: 'card-1', side: 'right', slot: 0, xPercent: 4, topPercent: 7.4, tagWidthRem: 4.45, tiltDegrees: 8, swimDurationSeconds: 24.6, arriveDelaySeconds: 0.054, swimDelaySeconds: -0, glowDelaySeconds: -0, scale: 0.94, opacity: 0.46, blurPixels: 0, wanderX1Rem: 1.7, wanderY2Rem: -3.8 });
-    expect(viewModels[4]).toMatchObject({ id: 'card-4', side: 'left', slot: 2, xPercent: 7, topPercent: 26.2, tagWidthRem: 4.3, tiltDegrees: -5, swimDurationSeconds: 27.1, arriveDelaySeconds: 0.216, swimDelaySeconds: -0.48, glowDelaySeconds: -0.32, scale: 0.9, opacity: 0.43, blurPixels: 0 });
+    expect(viewModels[0]).toMatchObject({ id: 'card-0', side: 'left', slot: 0, xPercent: 4, topPercent: 7.4, tagWidthRem: 4.45, tiltDegrees: -8, swimDurationSeconds: 23.5, arriveDelaySeconds: 0, swimDelaySeconds: -0, glowDelaySeconds: -0, scale: 0.94, opacity: 0.68, blurPixels: 0, wanderX1Rem: -1.7, wanderY2Rem: -3.8 });
+    expect(viewModels[1]).toMatchObject({ id: 'card-1', side: 'right', slot: 0, xPercent: 4, topPercent: 7.4, tagWidthRem: 4.45, tiltDegrees: 8, swimDurationSeconds: 24.6, arriveDelaySeconds: 0.054, swimDelaySeconds: -0, glowDelaySeconds: -0, scale: 0.94, opacity: 0.68, blurPixels: 0, wanderX1Rem: 1.7, wanderY2Rem: -3.8 });
+    expect(viewModels[4]).toMatchObject({ id: 'card-4', side: 'left', slot: 2, xPercent: 7, topPercent: 26.2, tagWidthRem: 4.3, tiltDegrees: -5, swimDurationSeconds: 27.1, arriveDelaySeconds: 0.216, swimDelaySeconds: -0.48, glowDelaySeconds: -0.32, scale: 0.9, opacity: 0.64, blurPixels: 0 });
     expect(viewModels[14]).toMatchObject({ id: 'card-14', side: 'left', slot: 7, xPercent: 22, topPercent: 76.6, tagWidthRem: 4.25, tiltDegrees: 4 });
     expect(viewModels[15]).toMatchObject({ id: 'card-15', side: 'right', slot: 7, xPercent: 22, topPercent: 76.6, tagWidthRem: 4.25, tiltDegrees: -4 });
   });
@@ -105,7 +105,7 @@ describe('GlobalReviewBackdrop', () => {
     expect(bubble?.style.getPropertyValue('--review-bubble-width')).toBe('4.7rem');
     expect(bubble?.style.getPropertyValue('--review-bubble-tilt')).toBe('6deg');
     expect(bubble?.style.getPropertyValue('--review-bubble-scale')).toBe('1.01');
-    expect(bubble?.style.getPropertyValue('--review-bubble-opacity')).toBe('0.4');
+    expect(bubble?.style.getPropertyValue('--review-bubble-opacity')).toBe('0.58');
     expect(bubble?.style.getPropertyValue('--review-bubble-blur')).toBe('0.1px');
     expect(bubble?.style.getPropertyValue('--review-bubble-wander-x1')).toBe('2.1rem');
     expect(bubble?.style.getPropertyValue('--review-bubble-wander-y3')).toBe('-3.5rem');

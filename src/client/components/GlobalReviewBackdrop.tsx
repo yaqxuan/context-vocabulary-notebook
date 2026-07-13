@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 
 import { getDueReviewBubbles, REVIEW_COMPLETED_EVENT, type ReviewCompletedEventDetail } from '../api/review';
 import type { ReviewBubbleWordDto } from '../../shared/types';
+import { createBubbleBody, stepBubbleBodies, type BubblePhysicsBody } from '../utils/bubblePhysics';
 import { scheduleReviewRefreshAt } from '../utils/scheduleReviewRefresh';
 
 const MAX_BUBBLES = 16;
@@ -12,7 +13,7 @@ const TAG_TOP_PATTERN = [7.4, 16.3, 26.2, 36.8, 47.6, 57.2, 67.4, 76.6, 85.4, 91
 const TAG_WIDTH_PATTERN = [4.45, 4.7, 4.3, 4.6, 4.85, 4.35, 4.65, 4.25, 4.75, 4.4];
 const TAG_TILT_PATTERN = [-8, 6, -5, 8, -4, 7, -9, 4, -6, 5];
 const TAG_SCALE_PATTERN = [0.94, 1.01, 0.9, 0.97, 1.04, 0.92, 1, 0.89, 0.96, 1.02];
-const TAG_OPACITY_PATTERN = [0.46, 0.40, 0.43, 0.36, 0.48, 0.39, 0.44, 0.34, 0.42, 0.37];
+const TAG_OPACITY_PATTERN = [0.68, 0.58, 0.64, 0.54, 0.70, 0.60, 0.66, 0.52, 0.63, 0.56];
 const TAG_BLUR_PATTERN = [0, 0.1, 0, 0.2, 0, 0.15, 0.05, 0.25, 0.1, 0.2];
 const WANDER_X1_PATTERN = [-1.7, 2.1, -2.3, 1.8, -2, 2.4, -1.5, 2.2];
 const WANDER_Y1_PATTERN = [3.4, -4.2, 4.8, -3.2, 4.1, -4.6, 3.7, -4];
@@ -100,6 +101,136 @@ export function splitBubbleWords(words: ReviewBubbleWordDto[]): BubbleViewModel[
       index,
     };
   }).filter((bubble) => bubble.slot < MAX_BUBBLES_PER_SIDE);
+}
+
+interface BubbleLaneProps {
+  side: 'left' | 'right';
+  items: BubbleViewModel[];
+  poppingIds: Set<string>;
+}
+
+function BubbleLane({ side, items, poppingIds }: BubbleLaneProps) {
+  const laneRef = useRef<HTMLDivElement>(null);
+  const anchorRefs = useRef(new Map<string, HTMLDivElement>());
+  const bodiesRef = useRef(new Map<string, BubblePhysicsBody>());
+
+  useEffect(() => {
+    const lane = laneRef.current;
+    if (!lane) return undefined;
+    let frameId = 0;
+    let lastFrame = performance.now();
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
+    const renderBodies = () => {
+      for (const [id, body] of bodiesRef.current) {
+        const anchor = anchorRefs.current.get(id);
+        if (!anchor) continue;
+        anchor.style.transform = `translate3d(${body.x - body.radius}px, ${body.y - body.radius}px, 0)`;
+        anchor.style.opacity = '1';
+      }
+    };
+
+    const synchronize = () => {
+      const width = lane.clientWidth;
+      const height = lane.clientHeight;
+      if (width <= 0 || height <= 0) return;
+      const activeIds = new Set(items.map((item) => item.id));
+      for (const id of bodiesRef.current.keys()) {
+        if (!activeIds.has(id)) bodiesRef.current.delete(id);
+      }
+
+      for (const item of items) {
+        const anchor = anchorRefs.current.get(item.id);
+        if (!anchor) continue;
+        const radius = Math.max(24, anchor.offsetWidth / 2);
+        const current = bodiesRef.current.get(item.id);
+        if (current) {
+          current.radius = radius;
+        } else {
+          bodiesRef.current.set(item.id, createBubbleBody(
+            item.id,
+            radius,
+            width,
+            height,
+            [...bodiesRef.current.values()],
+          ));
+        }
+      }
+      stepBubbleBodies([...bodiesRef.current.values()], width, height, 0);
+      renderBodies();
+    };
+
+    const animate = (now: number) => {
+      const width = lane.clientWidth;
+      const height = lane.clientHeight;
+      if (width > 0 && height > 0) {
+        stepBubbleBodies(
+          [...bodiesRef.current.values()],
+          width,
+          height,
+          (now - lastFrame) / 1000,
+        );
+        renderBodies();
+      }
+      lastFrame = now;
+      frameId = window.requestAnimationFrame(animate);
+    };
+
+    frameId = window.requestAnimationFrame(() => {
+      synchronize();
+      if (!reduceMotion) frameId = window.requestAnimationFrame(animate);
+    });
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(synchronize);
+    resizeObserver?.observe(lane);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+    };
+  }, [items]);
+
+  return (
+    <div ref={laneRef} className={`global-review-backdrop__lane global-review-backdrop__lane--${side}`}>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          ref={(node) => {
+            if (node) anchorRefs.current.set(item.id, node);
+            else anchorRefs.current.delete(item.id);
+          }}
+          className="review-bubble-anchor"
+          style={{ '--review-bubble-width': `${item.tagWidthRem}rem` } as CSSProperties}
+        >
+          <div
+            className={`review-bubble review-bubble--physics${poppingIds.has(item.id) ? ' review-bubble--popping' : ''}`}
+            style={{
+              '--review-bubble-top': `${item.topPercent}%`,
+              '--review-bubble-duration': `${item.swimDurationSeconds}s`,
+              '--review-bubble-arrive-delay': `${item.arriveDelaySeconds}s`,
+              '--review-bubble-swim-delay': `${item.swimDelaySeconds}s`,
+              '--review-bubble-glow-delay': `${item.glowDelaySeconds}s`,
+              '--review-bubble-x': `${item.xPercent}%`,
+              '--review-bubble-width': `${item.tagWidthRem}rem`,
+              '--review-bubble-tilt': `${item.tiltDegrees}deg`,
+              '--review-bubble-scale': item.scale,
+              '--review-bubble-opacity': item.opacity,
+              '--review-bubble-blur': `${item.blurPixels}px`,
+              '--review-bubble-wander-x1': `${item.wanderX1Rem}rem`,
+              '--review-bubble-wander-y1': `${item.wanderY1Rem}rem`,
+              '--review-bubble-wander-x2': `${item.wanderX2Rem}rem`,
+              '--review-bubble-wander-y2': `${item.wanderY2Rem}rem`,
+              '--review-bubble-wander-x3': `${item.wanderX3Rem}rem`,
+              '--review-bubble-wander-y3': `${item.wanderY3Rem}rem`,
+            } as CSSProperties}
+          >
+            <span className="review-bubble__shine" />
+            <span className="review-bubble__word">{item.word}</span>
+            <span className="review-bubble__fragments" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function GlobalReviewBackdrop({ currentPath }: GlobalReviewBackdropProps) {
@@ -265,37 +396,7 @@ export function GlobalReviewBackdrop({ currentPath }: GlobalReviewBackdropProps)
       </div>
       <div className="global-review-backdrop__lanes">
         {(['left', 'right'] as const).map((side) => (
-          <div key={side} className={`global-review-backdrop__lane global-review-backdrop__lane--${side}`}>
-            {lanes[side].map((item) => (
-                <div
-                  key={item.id}
-                  className={`review-bubble${poppingIds.has(item.id) ? ' review-bubble--popping' : ''}`}
-                  style={{
-                    '--review-bubble-top': `${item.topPercent}%`,
-                    '--review-bubble-duration': `${item.swimDurationSeconds}s`,
-                    '--review-bubble-arrive-delay': `${item.arriveDelaySeconds}s`,
-                    '--review-bubble-swim-delay': `${item.swimDelaySeconds}s`,
-                    '--review-bubble-glow-delay': `${item.glowDelaySeconds}s`,
-                    '--review-bubble-x': `${item.xPercent}%`,
-                    '--review-bubble-width': `${item.tagWidthRem}rem`,
-                    '--review-bubble-tilt': `${item.tiltDegrees}deg`,
-                    '--review-bubble-scale': item.scale,
-                    '--review-bubble-opacity': item.opacity,
-                    '--review-bubble-blur': `${item.blurPixels}px`,
-                    '--review-bubble-wander-x1': `${item.wanderX1Rem}rem`,
-                    '--review-bubble-wander-y1': `${item.wanderY1Rem}rem`,
-                    '--review-bubble-wander-x2': `${item.wanderX2Rem}rem`,
-                    '--review-bubble-wander-y2': `${item.wanderY2Rem}rem`,
-                    '--review-bubble-wander-x3': `${item.wanderX3Rem}rem`,
-                    '--review-bubble-wander-y3': `${item.wanderY3Rem}rem`,
-                  } as CSSProperties}
-                >
-                  <span className="review-bubble__shine" />
-                  <span className="review-bubble__word">{item.word}</span>
-                  <span className="review-bubble__fragments" />
-                </div>
-            ))}
-          </div>
+          <BubbleLane key={side} side={side} items={lanes[side]} poppingIds={poppingIds} />
         ))}
       </div>
     </div>
