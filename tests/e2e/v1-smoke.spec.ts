@@ -1,5 +1,7 @@
 import { expect, test } from 'playwright/test';
 
+import { TINY_MP3_BASE64, TINY_MP4_BASE64, TINY_PNG_BASE64 } from '../fixtures/tinyMp4';
+
 test('creates a card with media, reviews it, and shows statistics/settings', async ({ page }) => {
   const suffix = Date.now().toString(36);
   const targetWord = `smoke-${suffix}`;
@@ -31,17 +33,17 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
   await page.getByLabel('上传本地视频').setInputFiles({
     name: 'smoke.mp4',
     mimeType: 'video/mp4',
-    buffer: Buffer.from('mp4'),
+    buffer: Buffer.from(TINY_MP4_BASE64, 'base64'),
   });
   await page.getByLabel('上传截图').setInputFiles({
     name: 'smoke.png',
     mimeType: 'image/png',
-    buffer: Buffer.from('png'),
+    buffer: Buffer.from(TINY_PNG_BASE64, 'base64'),
   });
   await page.getByLabel('上传音频').setInputFiles({
     name: 'smoke.mp3',
     mimeType: 'audio/mpeg',
-    buffer: Buffer.from('mp3'),
+    buffer: Buffer.from(TINY_MP3_BASE64, 'base64'),
   });
 
   await page.getByRole('button', { name: '保存词义条目' }).click();
@@ -50,10 +52,41 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
   await expect(page.getByText(sentence)).toBeVisible();
   await expect(page.getByRole('img', { name: /\.png$/ })).toBeVisible();
 
+  const detailVideo = page.locator('.vn-media-preview__video');
+  await expect(detailVideo).toBeVisible();
+  const videoSrc = await detailVideo.getAttribute('src');
+  expect(videoSrc).toMatch(/^\/uploads\//);
+  const mediaResponse = await page.request.get(videoSrc!, { headers: { Range: 'bytes=0-31' } });
+  expect(mediaResponse.status()).toBe(206);
+  expect(mediaResponse.headers()['content-type']).toContain('video/mp4');
+  expect(mediaResponse.headers()['accept-ranges']).toBe('bytes');
+  await expect.poll(() => detailVideo.evaluate((video: HTMLVideoElement) => ({
+    duration: video.duration,
+    hasMetadata: video.readyState >= 1,
+    height: video.videoHeight,
+    width: video.videoWidth,
+  }))).toMatchObject({ width: 160, height: 90, hasMetadata: true });
+  const videoBox = await detailVideo.boundingBox();
+  expect((videoBox?.width ?? 0) / (videoBox?.height ?? 1)).toBeCloseTo(16 / 9, 1);
+  await detailVideo.evaluate(async (video: HTMLVideoElement) => {
+    video.muted = true;
+    await video.play();
+  });
+  await expect.poll(() => detailVideo.evaluate((video: HTMLVideoElement) => video.paused)).toBe(false);
+
   await page.goto('/#/review');
   await expect(page.getByText(sentence)).toBeVisible();
   await page.getByRole('button', { name: 'Good' }).click();
   await expect(page.getByText('Good 已选择，请查看语境；确认无误后进入下一张。')).toBeVisible();
+  const reviewVideo = page.locator('.phase7-review-media-player--video');
+  await expect(reviewVideo).toBeVisible();
+  await expect.poll(() => reviewVideo.evaluate((video: HTMLVideoElement) => ({
+    hasMetadata: video.readyState >= 1,
+    height: video.videoHeight,
+    width: video.videoWidth,
+  }))).toMatchObject({ width: 160, height: 90, hasMetadata: true });
+  const reviewVideoBox = await reviewVideo.boundingBox();
+  expect((reviewVideoBox?.width ?? 0) / (reviewVideoBox?.height ?? 1)).toBeCloseTo(16 / 9, 1);
   await page.getByRole('button', { name: '下一张' }).click();
   await expect(page.getByText('今天没有待复习内容')).toBeVisible();
 
@@ -62,6 +95,22 @@ test('creates a card with media, reviews it, and shows statistics/settings', asy
   await expect(page.getByTestId('recent-14-chart')).toBeVisible();
   await expect(page.getByText('历史月份数量图')).toBeVisible();
   await expect(page.getByText('Again / Good 趋势')).toBeVisible();
+  const chartCards = page.locator('.phase7-statistics-chart-card');
+  await expect(chartCards).toHaveCount(5);
+  const chartGeometry = await chartCards.evaluateAll((cards) => cards.map((card) => ({
+    clientHeight: card.clientHeight,
+    clientWidth: card.clientWidth,
+    scrollHeight: card.scrollHeight,
+  })));
+  for (const chart of chartGeometry) {
+    expect(chart.clientWidth).toBeGreaterThan(250);
+    expect(chart.clientHeight).toBeGreaterThan(200);
+    expect(chart.scrollHeight).toBeLessThanOrEqual(chart.clientHeight + 2);
+  }
+  const trendCardBox = await chartCards.last().boundingBox();
+  const trendGroupsBox = await page.locator('.phase7-statistics-rating-groups').boundingBox();
+  expect(trendCardBox?.width).toBeGreaterThan(900);
+  expect((trendGroupsBox?.y ?? 0) + (trendGroupsBox?.height ?? 0)).toBeLessThanOrEqual((trendCardBox?.y ?? 0) + (trendCardBox?.height ?? 0) + 1);
 
   await page.goto('/#/settings');
   await expect(page.getByRole('heading', { name: '学习与界面设置' })).toBeVisible();

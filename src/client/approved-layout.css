@@ -1237,6 +1237,219 @@ body::after {
   }
 }
 
+/* -------------------------------------------------------------------------
+ * Content-driven layout and media correctness
+ *
+ * Real feature density now controls the page height.  These rules replace
+ * the screenshot-sized placeholders from the parity pass with resilient
+ * grids that can grow and scroll without clipping useful content.
+ * ---------------------------------------------------------------------- */
+
+@media (min-width: 921px) {
+  .app-content-shell {
+    padding-bottom: 1rem !important;
+  }
+
+  /* Statistics: two readable rows plus a full-width rating trend. */
+  .phase7-statistics-shell {
+    align-items: start !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .phase7-statistics-chart-card {
+    min-width: 0 !important;
+    min-height: 18rem !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .phase7-statistics-chart-card:nth-of-type(1),
+  .phase7-statistics-chart-card:nth-of-type(3) {
+    grid-column: span 7 !important;
+  }
+
+  .phase7-statistics-chart-card:nth-of-type(2),
+  .phase7-statistics-chart-card:nth-of-type(4) {
+    grid-column: span 5 !important;
+  }
+
+  .phase7-statistics-chart-card:nth-of-type(5) {
+    grid-column: 1 / -1 !important;
+    min-height: 18.5rem !important;
+  }
+
+  .phase7-statistics-card-head {
+    min-width: 0 !important;
+  }
+
+  .phase7-statistics-bars,
+  .phase7-statistics-line-chart,
+  .phase7-statistics-rating-groups {
+    min-width: 0 !important;
+    overflow-y: visible !important;
+  }
+
+  .phase7-statistics-rating-trend {
+    min-height: 13.5rem !important;
+  }
+
+  .phase7-statistics-rating-groups {
+    min-height: 10.5rem !important;
+    padding-bottom: .75rem !important;
+  }
+
+  /* Tags and batch import shrink naturally when only one item or no queue
+     exists, then expand through auto-flow when real content is present. */
+  .phase6-tags-board,
+  .phase6-tag-grid,
+  .batch-import-page,
+  .batch-import-list {
+    align-content: start !important;
+  }
+
+  .phase6-tag-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr)) !important;
+    grid-auto-rows: auto !important;
+  }
+
+  .phase6-tag-card {
+    width: 100% !important;
+    max-width: 24rem !important;
+    min-height: 11.5rem !important;
+    height: auto !important;
+  }
+
+  .batch-import-workflow,
+  .batch-import-toolbar,
+  .batch-import-readiness {
+    height: auto !important;
+  }
+
+  .batch-import-workflow,
+  .batch-import-toolbar {
+    min-height: 13rem !important;
+  }
+
+  .batch-import-readiness {
+    min-height: 7.5rem !important;
+  }
+
+  .batch-import-empty {
+    align-self: start !important;
+    min-height: 7rem !important;
+    height: 7rem !important;
+    max-height: 7rem !important;
+  }
+
+  /* Settings sections grow with their actual controls instead of reserving
+     screenshot-specific empty bands. */
+  .phase7-settings-shell {
+    align-items: start !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .phase7-settings-section,
+  .phase7-settings-section:first-child,
+  .phase7-settings-section:first-child > .recognition-setup-card {
+    height: auto !important;
+  }
+
+  .phase7-settings-section:first-child {
+    min-height: 0 !important;
+  }
+
+  /* Media containers and replaced media elements are intentionally separate.
+     Video always preserves the source ratio and may letterbox. */
+  .phase6-media-row {
+    display: grid !important;
+    gap: .75rem !important;
+    min-width: 0 !important;
+  }
+
+  .vn-media-preview {
+    box-sizing: border-box !important;
+    display: grid !important;
+    gap: .55rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: .7rem !important;
+    overflow: visible !important;
+  }
+
+  .vn-media-preview__video,
+  .vn-media-preview__image {
+    box-sizing: border-box !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(58vh, 34rem) !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border-radius: .7rem !important;
+    background: #020713 !important;
+    object-fit: contain !important;
+  }
+
+  .vn-media-preview__audio {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .vn-media-preview__caption {
+    color: rgba(231, 241, 255, .78) !important;
+    font-size: .78rem !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .phase7-review-media-item {
+    min-width: 0 !important;
+  }
+
+  .phase7-review-media-player--video,
+  .phase7-review-media-image {
+    box-sizing: border-box !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(58vh, 34rem) !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #020713 !important;
+    object-fit: contain !important;
+  }
+
+  .phase7-review-context-panel {
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+}
+
+@media (min-width: 921px) and (max-width: 1279px) {
+  .phase7-statistics-chart-card,
+  .phase7-statistics-chart-card:nth-of-type(n) {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 920px) {
+  .vn-media-preview__video,
+  .vn-media-preview__image,
+  .phase7-review-media-player--video,
+  .phase7-review-media-image {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 70vh !important;
+    padding: 0 !important;
+    background: #020713 !important;
+    object-fit: contain !important;
+  }
+}
+
 @media (max-width: 620px) {
   .app-nav { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
   .app-page-header::after { display: none !important; }

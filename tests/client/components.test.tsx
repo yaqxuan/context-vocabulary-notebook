@@ -92,6 +92,39 @@ describe('shared components', () => {
     expect(await screen.findByText('File unavailable')).toBeInTheDocument();
   });
 
+  it('renders available media inside dedicated wrappers with metadata loading', async () => {
+    mockEnglishSettings();
+    render(
+      <I18nProvider>
+        <MediaPreview mediaType="video" src="/uploads/clip.mp4" fileName="clip.mp4" isAvailable />
+        <MediaPreview mediaType="audio" src="/uploads/clip.mp3" fileName="clip.mp3" isAvailable />
+        <MediaPreview mediaType="image" src="/uploads/shot.png" fileName="shot.png" isAvailable />
+      </I18nProvider>
+    );
+
+    const video = screen.getByLabelText('clip.mp4');
+    const audio = screen.getByLabelText('clip.mp3');
+    const image = screen.getByRole('img', { name: 'shot.png' });
+    expect(video).toHaveAttribute('preload', 'metadata');
+    expect(video).toHaveAttribute('playsinline');
+    expect(video.parentElement).toHaveClass('vn-media-preview--video');
+    expect(audio.parentElement).toHaveClass('vn-media-preview--audio');
+    expect(image.parentElement).toHaveClass('vn-media-preview--image');
+  });
+
+  it('replaces a media element with an unavailable state after a load error', async () => {
+    mockEnglishSettings();
+    render(
+      <I18nProvider>
+        <MediaPreview mediaType="video" src="/uploads/broken.mp4" fileName="broken.mp4" isAvailable />
+      </I18nProvider>
+    );
+
+    fireEvent.error(screen.getByLabelText('broken.mp4'));
+    expect(screen.getByText('broken.mp4').parentElement).toHaveTextContent('File unavailable');
+    expect(screen.queryByLabelText('broken.mp4')).not.toBeInTheDocument();
+  });
+
   it('renders confirm dialog as a fixed modal overlay and runs callbacks', async () => {
     mockEnglishSettings();
     const onConfirm = vi.fn();
