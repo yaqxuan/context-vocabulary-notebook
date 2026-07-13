@@ -9,11 +9,11 @@ const MAX_BUBBLES_PER_SIDE = 8;
 const POP_DURATION_MS = 620;
 const TAG_X_PATTERN = [4, 16, 7, 25, 12, 30, 5, 22, 9, 18];
 const TAG_TOP_PATTERN = [7.4, 16.3, 26.2, 36.8, 47.6, 57.2, 67.4, 76.6, 85.4, 91.2];
-const TAG_WIDTH_PATTERN = [5.05, 5.35, 5.65, 4.95, 5.85, 5.1, 5.55, 5, 5.75, 5.25];
-const TAG_TILT_PATTERN = [-18, 14, -11, 19, -7, 16, -20, 9, -15, 12];
-const TAG_SCALE_PATTERN = [0.92, 1.04, 0.88, 0.98, 1.08, 0.9, 1, 0.86, 0.95, 1.02];
-const TAG_OPACITY_PATTERN = [0.60, 0.50, 0.56, 0.46, 0.62, 0.52, 0.58, 0.44, 0.54, 0.48];
-const TAG_BLUR_PATTERN = [0, 0.2, 0, 0.4, 0, 0.3, 0.1, 0.55, 0.2, 0.45];
+const TAG_WIDTH_PATTERN = [4.45, 4.7, 4.3, 4.6, 4.85, 4.35, 4.65, 4.25, 4.75, 4.4];
+const TAG_TILT_PATTERN = [-8, 6, -5, 8, -4, 7, -9, 4, -6, 5];
+const TAG_SCALE_PATTERN = [0.94, 1.01, 0.9, 0.97, 1.04, 0.92, 1, 0.89, 0.96, 1.02];
+const TAG_OPACITY_PATTERN = [0.46, 0.40, 0.43, 0.36, 0.48, 0.39, 0.44, 0.34, 0.42, 0.37];
+const TAG_BLUR_PATTERN = [0, 0.1, 0, 0.2, 0, 0.15, 0.05, 0.25, 0.1, 0.2];
 const WANDER_X1_PATTERN = [-1.7, 2.1, -2.3, 1.8, -2, 2.4, -1.5, 2.2];
 const WANDER_Y1_PATTERN = [3.4, -4.2, 4.8, -3.2, 4.1, -4.6, 3.7, -4];
 const WANDER_X2_PATTERN = [2.4, -1.8, 1.6, -2.5, 2.2, -1.6, 2.5, -2.1];
@@ -84,7 +84,7 @@ export function splitBubbleWords(words: ReviewBubbleWordDto[]): BubbleViewModel[
       topPercent: TAG_TOP_PATTERN[slot] ?? 8,
       tagWidthRem: TAG_WIDTH_PATTERN[slot] ?? 5,
       tiltDegrees: side === 'left' ? tiltMagnitude : -tiltMagnitude,
-      swimDurationSeconds: 15.4 + slot * 1.25 + (side === 'right' ? 0.7 : 0),
+      swimDurationSeconds: 23.5 + slot * 1.8 + (side === 'right' ? 1.1 : 0),
       arriveDelaySeconds: index * 0.054,
       swimDelaySeconds: slot * -0.24,
       glowDelaySeconds: slot * -0.16,
