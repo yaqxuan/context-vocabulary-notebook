@@ -297,12 +297,49 @@ body::after {
   top: -.75rem !important;
   width: 23rem !important;
   height: 11rem !important;
-  background: url('./assets/crystal-archive/open-book.png') right center/contain no-repeat !important;
+  background-image: var(--page-header-art, none) !important;
+  background-position: right bottom !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
   filter: drop-shadow(0 0 18px rgba(51,146,255,.42)) !important;
   left: auto !important;
   bottom: auto !important;
   transform: none !important;
   pointer-events: none !important;
+}
+
+/* Page-specific archive vignettes. The open book belongs only to the card
+   catalogue; every other functional route gets its own visual shorthand. */
+.app-shell[data-route="/cards"] {
+  --page-header-art: url('./assets/crystal-archive/open-book.png');
+}
+
+.app-shell[data-route="/create"] {
+  --page-header-art: url('./assets/crystal-archive/header-create-quill.webp');
+}
+
+.app-shell[data-route="/batch-import"] {
+  --page-header-art: url('./assets/crystal-archive/header-batch-film.webp');
+}
+
+.app-shell[data-route^="/cards/"] {
+  --page-header-art: url('./assets/crystal-archive/header-card-detail.webp');
+}
+
+.app-shell[data-route="/tags"] {
+  --page-header-art: url('./assets/crystal-archive/header-tags.webp');
+}
+
+.app-shell[data-route="/favorites"] {
+  --page-header-art: url('./assets/crystal-archive/header-favorites.webp');
+}
+
+.app-shell[data-route="/statistics"] {
+  --page-header-art: url('./assets/crystal-archive/header-statistics.webp');
+}
+
+.app-shell[data-route="/settings"] {
+  --page-header-art: url('./assets/crystal-archive/header-settings.webp');
 }
 
 .app-page-header-copy {
@@ -2661,5 +2698,16 @@ body {
     word-break: normal !important;
     hyphens: none !important;
     text-wrap: pretty !important;
+  }
+}
+
+/* Keep every route illustration inside the variable-height header instead of
+   relying on the old book-specific negative offset and incidental cropping. */
+@media (min-width: 621px) {
+  .app-shell[data-route] .app-page-header::after {
+    top: 0 !important;
+    bottom: auto !important;
+    height: 100% !important;
+    background-position: right bottom !important;
   }
 }

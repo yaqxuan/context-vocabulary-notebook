@@ -146,7 +146,7 @@ test('keeps the remaining desktop pages inside the shared centered archive layou
 });
 
 test('keeps real page content free of horizontal overflow at desktop widths', async ({ page }) => {
-  const routes = ['/#/', '/#/create', '/#/cards', '/#/batch-import', '/#/settings', '/#/tags', '/#/statistics', '/#/review'];
+  const routes = ['/#/', '/#/create', '/#/cards', '/#/cards/card-1', '/#/batch-import', '/#/settings', '/#/tags', '/#/favorites', '/#/statistics', '/#/review'];
 
   for (const width of [1600, 1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -160,4 +160,46 @@ test('keeps real page content free of horizontal overflow at desktop widths', as
       expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
     }
   }
+});
+
+test('uses one distinct decorative header illustration for each functional route', async ({ page, request }) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  const routes: Array<[string, string]> = [
+    ['/#/create', 'header-create-quill.webp'],
+    ['/#/batch-import', 'header-batch-film.webp'],
+    ['/#/cards', 'open-book.png'],
+    ['/#/cards/card-1', 'header-card-detail.webp'],
+    ['/#/tags', 'header-tags.webp'],
+    ['/#/favorites', 'header-favorites.webp'],
+    ['/#/statistics', 'header-statistics.webp'],
+    ['/#/settings', 'header-settings.webp'],
+  ];
+  const loadedAssets = new Set<string>();
+
+  for (const [route, expectedAsset] of routes) {
+    await page.goto(route);
+    const header = page.locator('.app-page-header');
+    await expect(header).toBeVisible();
+    const metrics = await header.evaluate((element) => {
+      const headerBox = element.getBoundingClientRect();
+      const titleBox = element.querySelector('h1')?.getBoundingClientRect();
+      const artwork = getComputedStyle(element, '::after');
+      const source = artwork.backgroundImage.match(/^url\(["']?(.*?)["']?\)$/)?.[1] ?? '';
+      const artworkLeft = headerBox.right - Number.parseFloat(artwork.right) - Number.parseFloat(artwork.width);
+      return {
+        source,
+        artworkDisplay: artwork.display,
+        titleArtworkGap: titleBox ? artworkLeft - titleBox.right : -1,
+      };
+    });
+
+    expect(metrics.source).toContain(expectedAsset);
+    expect(metrics.artworkDisplay).not.toBe('none');
+    expect(metrics.titleArtworkGap).toBeGreaterThan(0);
+    expect((await request.get(metrics.source)).ok()).toBe(true);
+    loadedAssets.add(metrics.source);
+  }
+
+  expect(loadedAssets.size).toBe(routes.length);
+  expect([...loadedAssets].filter((source) => source.includes('open-book.png'))).toHaveLength(1);
 });
