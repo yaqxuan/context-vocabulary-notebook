@@ -66,6 +66,49 @@ test('centers a 1440px desktop canvas and confines bubble lanes to the outer gut
   expect(compactFrameBox?.width).toBeCloseTo(1440, 0);
 });
 
+test('moves gutter bubbles across the lanes without allowing overlaps', async ({ page }) => {
+  await page.route('**/api/review/due-bubbles*', async (route) => {
+    const items = Array.from({ length: 16 }, (_, index) => ({
+      id: `physics-${index}`,
+      target_word: `word-${index}`,
+      context_meaning: `meaning-${index}`,
+      target_language: 'English',
+      due_date: '2026-01-01T00:00:00.000Z',
+    }));
+    await route.fulfill({ json: { items, total_due_count: items.length, limit: 20, next_due_at: null } });
+  });
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto('/#/');
+  const anchors = page.locator('.review-bubble-anchor');
+  await expect(anchors).toHaveCount(16);
+  await page.waitForTimeout(500);
+
+  const readCenters = () => anchors.evaluateAll((elements) => elements.map((element) => {
+    const box = element.getBoundingClientRect();
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2, radius: box.width / 2 };
+  }));
+  const assertSeparated = (bubbles: Array<{ x: number; y: number; radius: number }>) => {
+    for (let first = 0; first < bubbles.length; first += 1) {
+      for (let second = first + 1; second < bubbles.length; second += 1) {
+        const sameLane = (bubbles[first].x < 240) === (bubbles[second].x < 240);
+        if (!sameLane) continue;
+        expect(Math.hypot(bubbles[first].x - bubbles[second].x, bubbles[first].y - bubbles[second].y))
+          .toBeGreaterThanOrEqual(bubbles[first].radius + bubbles[second].radius - 1);
+      }
+    }
+  };
+
+  const before = await readCenters();
+  assertSeparated(before);
+  await page.waitForTimeout(2400);
+  const after = await readCenters();
+  assertSeparated(after);
+  const moved = after.filter((bubble, index) => (
+    Math.hypot(bubble.x - before[index].x, bubble.y - before[index].y) > 8
+  ));
+  expect(moved.length).toBeGreaterThanOrEqual(12);
+});
+
 test('keeps create primary actions in the first screen and advanced tools below the main grid', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.goto('/#/create');
