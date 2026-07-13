@@ -28,6 +28,20 @@ function Has-Command($Name) {
   return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
 }
 
+function Invoke-CheckedNative {
+  param(
+    [Parameter(Mandatory = $true)][string]$Command,
+    [string[]]$Arguments = @(),
+    [Parameter(Mandatory = $true)][string]$FailureMessage
+  )
+
+  & $Command @Arguments
+  $ExitCode = $LASTEXITCODE
+  if ($ExitCode -ne 0) {
+    throw "$FailureMessage (exit code $ExitCode)."
+  }
+}
+
 function Test-Ffmpeg {
   return Has-Command "ffmpeg"
 }
@@ -98,13 +112,14 @@ function Refresh-Path {
   Write-Step "Refreshed PATH for this PowerShell session; if commands are still unavailable, reopen PowerShell and rerun this installer"
 }
 
-function Get-NodeMajor {
-  if (-not (Has-Command "node")) { return 0 }
-  try { return [int](& node -p "process.versions.node.split('.')[0]") } catch { return 0 }
-}
-
 function Node-IsSupported {
-  return (Has-Command "node") -and (Has-Command "npm") -and ((Get-NodeMajor) -ge 20)
+  if ((-not (Has-Command "node")) -or (-not (Has-Command "npm"))) { return $false }
+  try {
+    & node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit((major === 20 && minor >= 19) || (major === 22 && minor >= 12) || major > 22 ? 0 : 1)'
+    return $LASTEXITCODE -eq 0
+  } catch {
+    return $false
+  }
 }
 
 function Ensure-Winget {
@@ -117,21 +132,21 @@ function Ensure-Environment {
   if (-not (Has-Command "git")) {
     Ensure-Winget
     Write-Step "Installing Git"
-    winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements
+    Invoke-CheckedNative -Command "winget" -Arguments @("install", "--id", "Git.Git", "-e", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements") -FailureMessage "Git installation failed"
     Refresh-Path
   }
 
   if (-not (Node-IsSupported)) {
     Ensure-Winget
     Write-Step "Installing or upgrading Node.js 22 LTS"
-    winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-package-agreements --accept-source-agreements
+    Invoke-CheckedNative -Command "winget" -Arguments @("install", "--id", "OpenJS.NodeJS.LTS", "-e", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements") -FailureMessage "Node.js installation or upgrade failed"
     Refresh-Path
   }
 
   if (($env:CVN_INSTALL_FFMPEG -eq "1") -and (-not (Test-Ffmpeg))) {
     Ensure-Winget
     Write-Step "CVN_INSTALL_FFMPEG=1; installing ffmpeg"
-    winget install --id Gyan.FFmpeg -e --source winget --accept-package-agreements --accept-source-agreements
+    Invoke-CheckedNative -Command "winget" -Arguments @("install", "--id", "Gyan.FFmpeg", "-e", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements") -FailureMessage "ffmpeg installation failed"
     Refresh-Path
     if (-not (Test-Ffmpeg)) {
       Write-Host "ffmpeg is still unavailable after installation. The app install will continue; if you need video transcription, reopen PowerShell and confirm ffmpeg is on PATH."
@@ -143,7 +158,7 @@ function Ensure-Environment {
   if (($env:CVN_INSTALL_TESSERACT -eq "1") -and (-not (Test-Tesseract))) {
     Ensure-Winget
     Write-Step "CVN_INSTALL_TESSERACT=1; installing Tesseract OCR"
-    winget install --id UB-Mannheim.TesseractOCR -e --source winget --accept-package-agreements --accept-source-agreements
+    Invoke-CheckedNative -Command "winget" -Arguments @("install", "--id", "UB-Mannheim.TesseractOCR", "-e", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements") -FailureMessage "Tesseract installation failed"
     Refresh-Path
     if (-not (Test-Tesseract)) {
       Write-Host "Tesseract is still unavailable after installation. The app install will continue; if you need local OCR, reopen PowerShell and confirm tesseract is on PATH, or set CVN_TESSERACT_PATH."
@@ -155,7 +170,7 @@ function Ensure-Environment {
   if (-not (Has-Command "git")) { throw "Git is still unavailable after installation. Reopen PowerShell, then rerun this installer." }
   if (-not (Has-Command "node")) { throw "Node.js is still unavailable after installation. Reopen PowerShell, then rerun this installer." }
   if (-not (Has-Command "npm")) { throw "npm is still unavailable after installation. Reopen PowerShell, then rerun this installer." }
-  if (-not (Node-IsSupported)) { throw "Node.js is too old. Install Node.js 20+; Node.js 22 LTS is recommended." }
+  if (-not (Node-IsSupported)) { throw "Unsupported Node.js version. Install Node.js 20.19+ or 22.12+; Node.js 22 LTS is recommended." }
 
   Write-Step "Environment check"
   git --version
@@ -171,7 +186,7 @@ function Test-EmptyDir($Path) {
 }
 
 function Invoke-NpmCi {
-  npm ci
+  npm ci --prefer-offline --no-audit --no-fund --fetch-retries=5 --fetch-retry-mintimeout=2000 --fetch-retry-maxtimeout=15000 --fetch-timeout=60000
   return $LASTEXITCODE -eq 0
 }
 
@@ -182,7 +197,7 @@ function Install-Project {
 
   if (Test-ProjectDir $InstallDir) {
     Write-Step "Existing project directory found; updating: $InstallDir"
-    git -C "$InstallDir" pull --ff-only
+    Invoke-CheckedNative -Command "git" -Arguments @("-C", $InstallDir, "pull", "--ff-only") -FailureMessage "Project update failed; resolve local Git changes or network errors, then rerun the installer"
   } else {
     if (-not (Test-EmptyDir $InstallDir)) {
       throw @"
@@ -202,7 +217,7 @@ Example:
     Write-Step "Cloning project into the current directory: $InstallDir"
     Push-Location -LiteralPath $InstallDir
     try {
-      git clone $RepoUrl .
+      Invoke-CheckedNative -Command "git" -Arguments @("clone", $RepoUrl, ".") -FailureMessage "Project clone failed"
     } finally {
       Pop-Location
     }
@@ -231,7 +246,7 @@ On Windows, try:
   }
 
   Write-Step "Building project"
-  npm run build
+  Invoke-CheckedNative -Command "npm" -Arguments @("run", "build") -FailureMessage "Project build failed"
 
   Write-Host ""
   Write-Host "Installation complete."
@@ -249,7 +264,7 @@ On Windows, try:
   Write-Host "To update later:"
   Write-Host "  Set-Location `"$InstallDir`""
   Write-Host "  git pull --ff-only"
-  Write-Host "  npm ci"
+  Write-Host "  npm ci --prefer-offline --no-audit --no-fund"
   Write-Host "  npm run build"
   Write-Host ""
   Write-Host "You can also rerun this installer; keep the same CVN_HOME or run it from the same directory."

@@ -26,12 +26,10 @@ has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-node_major() {
-  node -p "Number(process.versions.node.split('.')[0])" 2>/dev/null || echo 0
-}
-
 node_ok() {
-  has_cmd node && has_cmd npm && [ "$(node_major)" -ge 20 ]
+  has_cmd node \
+    && has_cmd npm \
+    && node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit((major === 20 && minor >= 19) || (major === 22 && minor >= 12) || major > 22 ? 0 : 1)' >/dev/null 2>&1
 }
 
 ffmpeg_ok() {
@@ -116,7 +114,7 @@ Common causes include broken Docker / Chrome / NVIDIA third-party apt sources, m
 
 Options:
   1. Fix or disable the broken apt sources, then rerun this installer;
-  2. Install Git, Node.js 20+, and npm manually, then rerun this installer;
+  2. Install Git, Node.js 20.19+ or 22.12+, and npm manually, then rerun this installer;
   3. If npm ci later reports native module build errors, install python3, make, g++, or build-essential.
 
 EOF
@@ -266,7 +264,7 @@ ensure_environment() {
   done
 
   if ! node_ok; then
-    echo "Node.js is too old. Install Node.js 20+; Node.js 22 LTS is recommended."
+    echo "Unsupported Node.js version. Install Node.js 20.19+ or 22.12+; Node.js 22 LTS is recommended."
     exit 1
   fi
 
@@ -318,7 +316,14 @@ EOF
   fi
 
   log "Installing project dependencies"
-  if ! npm ci; then
+  if ! npm ci \
+    --prefer-offline \
+    --no-audit \
+    --no-fund \
+    --fetch-retries=5 \
+    --fetch-retry-mintimeout=2000 \
+    --fetch-retry-maxtimeout=15000 \
+    --fetch-timeout=60000; then
     cat <<'EOF'
 
 npm ci failed. Check the npm error above first.
@@ -351,7 +356,7 @@ Local API health check:
 To update later:
   cd "$INSTALL_DIR"
   git pull --ff-only
-  npm ci
+  npm ci --prefer-offline --no-audit --no-fund
   npm run build
 
 You can also rerun this installer; keep the same CVN_HOME or run it from the same directory.
