@@ -270,6 +270,8 @@ describe('ReviewPage', () => {
 
       // Available media should render as playable/viewable elements, not just file names.
       expect(document.querySelector('video[src="/uploads/clip.mp4"]')).toBeInTheDocument();
+      expect(document.querySelector('video[src="/uploads/clip.mp4"]')?.closest('.phase7-review-card'))
+        .toHaveClass('phase7-review-card--with-visual-media');
       expect(document.querySelector('video[src="/uploads/other-context.mp4"]')).not.toBeInTheDocument();
       expect(screen.getByRole('img', { name: 'screenshot.jpg' })).toHaveAttribute('src', '/uploads/screenshot.jpg');
       expect(document.querySelector('audio[src="/uploads/clip.mp3"]')).toBeInTheDocument();
