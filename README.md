@@ -165,6 +165,8 @@ Windows PowerShell：
 $env:CVN_TESSERACT_LANG='eng'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
 ```
 
+Windows 脚本会优先复用系统中已有的 FFmpeg；缺失时下载 BtbN 长期保留的 `latest` 构建，并用同一发布页的 SHA-256 清单校验。它还会在项目的 `tools/`、`models/` 下配置 Tesseract、所选 OCR 语言数据、whisper.cpp 与 `ggml-small.bin`，最后把路径写入 `.env`。核心应用安装和本地识别安装仍是两个独立步骤。
+
 如果要识别中文和英文字幕，可把语言改成：
 
 ```powershell
@@ -356,7 +358,7 @@ CVN_TESSERACT_LANG=eng+chi_sim
 
 ### Whisper 模型路径未配置
 
-`CVN_WHISPER_CPP_MODEL` 没有默认模型。请下载 whisper.cpp 支持的 ggml 模型，并在 `.env` 中写入绝对路径。
+应用本身不内置 Whisper 模型。运行本地识别一键脚本会下载并配置默认的 `ggml-small.bin`；只有手动配置时，才需要自行下载 whisper.cpp 支持的 ggml 模型并在 `.env` 中填写绝对路径。
 
 ## 数据与备份
 
@@ -425,7 +427,7 @@ AI API Key 属于本地敏感配置，不会随导出文件带走；换设备后
 
 - WSL 通常最稳：Node、Git、ffmpeg、Tesseract 和 native build tools 的安装路径更接近 Linux。
 - Windows 原生 PowerShell 可以安装：脚本会复用已有 Git / Node.js / npm，缺少时才尝试 `winget`。
-- STT 需要单独安装 whisper.cpp，并手动下载 Whisper ggml 模型；核心安装不默认下载模型。
+- 核心安装不默认安装 STT；运行上面的本地识别一键脚本后，会自动安装 whisper.cpp 并下载 `ggml-small.bin`。也可以按手动配置章节自行管理工具和模型。
 - 如果 Windows 原生 `npm ci` 在 `better-sqlite3` 处失败，需要按提示安装 Python 和 Visual Studio Build Tools / MSVC，或改用 WSL。
 
 ## 环境变量
@@ -439,7 +441,7 @@ AI API Key 属于本地敏感配置，不会随导出文件带走；换设备后
 | `CVN_FFMPEG_PATH` | 否 | `ffmpeg` | ffmpeg 可执行文件路径；Windows 本地 tools 安装可填绝对路径。 |
 | `CVN_STT_PROVIDER` | 否 | `whisper.cpp` | 本地语音识别提供方；可设为 `whisper.cpp` 或 `disabled`。 |
 | `CVN_WHISPER_CPP_PATH` | 否 | `whisper-cli` | whisper.cpp 可执行文件路径；如果系统只有旧版 `main`，可填 `main` 或绝对路径。 |
-| `CVN_WHISPER_CPP_MODEL` | 本地 STT 需要 | 空 | Whisper 模型文件路径；安装脚本不会自动下载模型。 |
+| `CVN_WHISPER_CPP_MODEL` | 本地 STT 需要 | 空 | Whisper 模型文件路径；本地识别一键脚本会下载默认模型，手动安装时需要自行填写。 |
 | `CVN_WHISPER_CPP_TIMEOUT_MS` | 否 | `120000` | whisper.cpp 单次识别超时时间。 |
 | `CVN_OCR_PROVIDER` | 否 | `tesseract` | 本地 OCR 提供方；可设为 `tesseract` 或 `disabled`。 |
 | `CVN_TESSERACT_PATH` | 否 | `tesseract` | Tesseract 可执行文件路径。 |

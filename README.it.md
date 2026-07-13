@@ -337,7 +337,7 @@ CVN_TESSERACT_LANG=eng+chi_sim
 
 ### Il percorso del modello Whisper non è configurato
 
-`CVN_WHISPER_CPP_MODEL` non ha un modello predefinito. Scarica un modello ggml supportato da whisper.cpp e scrivi il suo percorso assoluto in `.env`.
+L’app non include un modello Whisper. Il programma di installazione del riconoscimento locale scarica e configura `ggml-small.bin`; solo le configurazioni manuali devono scaricare un modello ggml compatibile con whisper.cpp e scriverne il percorso assoluto in `.env`.
 
 ## Dati e backup
 
@@ -419,7 +419,7 @@ Notes:
 | `CVN_FFMPEG_PATH` | Non richiesto | `ffmpeg` | Percorso dell’eseguibile ffmpeg; nelle installazioni di strumenti Windows nativi, usa un percorso assoluto se necessario. |
 | `CVN_STT_PROVIDER` | Non richiesto | `whisper.cpp` | Provider locale di riconoscimento vocale; può essere `whisper.cpp` o `disabled`. |
 | `CVN_WHISPER_CPP_PATH` | Non richiesto | `whisper-cli` | Percorso dell’eseguibile whisper.cpp; se il sistema ha solo il vecchio `main`, imposta `main` o un percorso assoluto. |
-| `CVN_WHISPER_CPP_MODEL` | Richiesto per STT locale | Vuoto | Percorso del file modello Whisper; l’installer non scarica automaticamente un modello. |
+| `CVN_WHISPER_CPP_MODEL` | Richiesto per STT locale | Vuoto | Percorso del modello Whisper; l’installer del riconoscimento locale scarica il modello predefinito, mentre le configurazioni manuali devono indicare questo percorso. |
 | `CVN_WHISPER_CPP_TIMEOUT_MS` | Non richiesto | `120000` | Timeout per una singola esecuzione di riconoscimento whisper.cpp. |
 | `CVN_OCR_PROVIDER` | Non richiesto | `tesseract` | Provider OCR locale; può essere `tesseract` o `disabled`. |
 | `CVN_TESSERACT_PATH` | Non richiesto | `tesseract` | Percorso dell’eseguibile Tesseract. |

@@ -148,6 +148,8 @@ Windows PowerShell:
 $env:CVN_TESSERACT_LANG='eng'; irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install-recognition-windows.ps1 -ErrorAction Stop | iex
 ```
 
+The Windows script reuses an existing FFmpeg installation when available. Otherwise it downloads BtbN's retained `latest` build and verifies it against the SHA-256 manifest from the same release. It also configures Tesseract and the selected OCR language data, whisper.cpp, and `ggml-small.bin` under the project's `tools/` and `models/` directories, then writes their paths to `.env`. Core app installation and local-recognition installation remain two separate steps.
+
 To recognize Chinese and English subtitles, change the language to:
 
 ```powershell
@@ -337,7 +339,7 @@ CVN_TESSERACT_LANG=eng+chi_sim
 
 ### Whisper model path is not configured
 
-`CVN_WHISPER_CPP_MODEL` has no default model. Download a ggml model supported by whisper.cpp and write its absolute path into `.env`.
+The app does not bundle a Whisper model. The local-recognition installer downloads and configures the default `ggml-small.bin`; only manual setups need to download a whisper.cpp-compatible ggml model and write its absolute path into `.env`.
 
 ## Data and backup
 
@@ -419,7 +421,7 @@ Notes:
 | `CVN_FFMPEG_PATH` | No | `ffmpeg` | Path to the ffmpeg executable; on native Windows tools installs, use an absolute path if needed. |
 | `CVN_STT_PROVIDER` | No | `whisper.cpp` | Local speech-recognition provider; can be `whisper.cpp` or `disabled`. |
 | `CVN_WHISPER_CPP_PATH` | No | `whisper-cli` | Path to the whisper.cpp executable; if your system only has the old `main`, set `main` or an absolute path. |
-| `CVN_WHISPER_CPP_MODEL` | Required for local STT | Empty | Whisper model file path; the installer does not automatically download a model. |
+| `CVN_WHISPER_CPP_MODEL` | Required for local STT | Empty | Whisper model file path; the local-recognition installer downloads the default model, while manual setups must provide this path. |
 | `CVN_WHISPER_CPP_TIMEOUT_MS` | No | `120000` | Timeout for one whisper.cpp recognition run. |
 | `CVN_OCR_PROVIDER` | No | `tesseract` | Local OCR provider; can be `tesseract` or `disabled`. |
 | `CVN_TESSERACT_PATH` | No | `tesseract` | Path to the Tesseract executable. |

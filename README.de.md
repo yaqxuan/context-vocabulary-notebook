@@ -337,7 +337,7 @@ CVN_TESSERACT_LANG=eng+chi_sim
 
 ### Whisper-Modellpfad ist nicht konfiguriert
 
-`CVN_WHISPER_CPP_MODEL` hat kein Standardmodell. Lade ein von whisper.cpp unterstütztes ggml-Modell herunter und trage dessen absoluten Pfad in `.env` ein.
+Die App enthält kein Whisper-Modell. Der Installer für die lokale Erkennung lädt `ggml-small.bin` herunter und konfiguriert es; nur bei manueller Einrichtung musst du ein whisper.cpp-kompatibles ggml-Modell herunterladen und den absoluten Pfad in `.env` eintragen.
 
 ## Daten und Backup
 
@@ -419,7 +419,7 @@ Notes:
 | `CVN_FFMPEG_PATH` | Nein | `ffmpeg` | Pfad zur ffmpeg-Ausführungsdatei; bei nativen Windows-Toolinstallationen bei Bedarf einen absoluten Pfad verwenden. |
 | `CVN_STT_PROVIDER` | Nein | `whisper.cpp` | Lokaler Spracherkennungsanbieter; kann `whisper.cpp` oder `disabled` sein. |
 | `CVN_WHISPER_CPP_PATH` | Nein | `whisper-cli` | Pfad zur whisper.cpp-Ausführungsdatei; wenn dein System nur das alte `main` hat, setze `main` oder einen absoluten Pfad. |
-| `CVN_WHISPER_CPP_MODEL` | Für lokale STT erforderlich | Leer | Pfad zur Whisper-Modelldatei; der Installer lädt kein Modell automatisch herunter. |
+| `CVN_WHISPER_CPP_MODEL` | Für lokale STT erforderlich | Leer | Pfad zum Whisper-Modell; der Installer für lokale Erkennung lädt das Standardmodell, bei manueller Einrichtung muss dieser Pfad angegeben werden. |
 | `CVN_WHISPER_CPP_TIMEOUT_MS` | Nein | `120000` | Zeitlimit für einen whisper.cpp-Erkennungslauf. |
 | `CVN_OCR_PROVIDER` | Nein | `tesseract` | Lokaler OCR-Anbieter; kann `tesseract` oder `disabled` sein. |
 | `CVN_TESSERACT_PATH` | Nein | `tesseract` | Pfad zur Tesseract-Ausführungsdatei. |
