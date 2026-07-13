@@ -2,33 +2,89 @@
 
 # Context Vocabulary Notebook（语境单词本）
 
-看视频、听课程、读字幕时遇到生词，不只保存“单词本身”，还把它出现时的原句、上下文、截图、音频/视频片段、备注和标签一起保存下来。
+一个本地优先的语境单词本：把生词和它出现时的原句、语境释义、截图、音频或视频片段一起保存，再通过 FSRS 安排复习。
 
-复习时，你看到的不是一个孤立单词，而是当时真正遇到它的场景。
+它不是“单词 + 翻译”的静态列表。复习时，你会重新看到当时真正遇到这个词的场景。
 
-适合你，如果你：
+> 数据默认只保存在本机 SQLite 数据库与 `uploads/` 文件夹中；不需要注册云账号。AI、OCR 和语音识别都是可选能力，不配置也能正常制卡、管理和复习。
 
-- 经常看外语视频、课程、影视、播客或听力材料。
-- 想做类似 Anki 的间隔复习，但希望卡片带原句、截图和媒体片段。
-- 想把学习数据放在自己电脑里，不想为了单词本注册云账号。
-- 需要从本地视频、音频、图片里辅助识别句子，再手动整理成卡片。
+## 界面预览
 
-> 当前项目是本地 Web 应用。默认数据保存在你电脑上的 SQLite 数据库和 `uploads/` 文件夹里，不需要云账号。
+![新建语境卡片](./docs/demo/01-create-card-zh.png)
 
-## Demo
+## 从遇到生词到完成复习
 
-![Context Vocabulary Notebook 制卡示例](./docs/demo/01-create-card-zh.png)
+1. **记录语境**：填写原句、目标单词和当前语境下的释义，也可以附加图片、音频或 MP4。
+2. **整理卡片**：添加标签、收藏、备注和更多语境；可选用 AI 检查拼写、词形和释义。
+3. **批量处理素材**：从“新建卡片”页顶部进入“批量导入”，一次选择多个 MP4 片段并逐条确认识别结果。
+4. **按计划复习**：使用 `Again / Good` 反馈记忆情况，FSRS 自动计算下次复习时间。
+5. **回顾积累**：在卡片、标签、收藏与统计页面查找和整理学习记录。
 
-## 你可以用它做什么
+## 功能一览
 
-- 围绕真实语境制卡：目标单词、原句、语境释义、备注、标签。
-- 保存本地媒体附件：视频 `mp4`、音频 `mp3`、图片 `jpg / png / webp`。
-- 批量导入剪辑：一次导入多个视频、音频、图片片段，逐条检查识别结果并制卡。
-- 本地 OCR/STT 辅助：可配置 ffmpeg、Tesseract、whisper.cpp，从图片/视频帧/音频里识别句子。
-- 同一词义可关联多个语境实例，适合记录“同一个意思在不同材料里怎么用”。
-- 使用 FSRS 间隔复习，让单词回到你遇到它的上下文里。
-- 搜索、标签筛选、收藏、统计、ZIP 导入导出。
-- 可选 AI 建议：配置 OpenAI-compatible API 后，可辅助生成语境释义、用法说明、整句翻译、词形还原和拼写检查。
+| 模块 | 能力 |
+|------|------|
+| 语境制卡 | 原句、目标词、语境释义、备注、标签，以及多个语境实例。 |
+| 媒体附件 | 视频 `mp4`、音频 `mp3`、图片 `jpg / png / webp`，支持详情页与复习页播放。 |
+| 批量导入 | 批量选择 MP4，使用本地 OCR / STT 生成候选词并逐条保存为卡片。 |
+| 本地识别 | ffmpeg 提取音频、Tesseract 识别画面文字、whisper.cpp 识别语音。 |
+| 间隔复习 | FSRS 调度、`Again / Good` 评分、媒体语境回放和每日进度。 |
+| 组织检索 | 搜索、状态筛选、标签、收藏、详情与掌握状态管理。 |
+| 学习统计 | 复习数量、正确率、月份汇总、标签分布与评分趋势。 |
+| 数据管理 | ZIP 导入导出、本地数据库与媒体备份。 |
+| 可选 AI | 通过 OpenAI-compatible API 生成释义、用法、翻译、词形和拼写建议。 |
+
+## 五分钟开始
+
+安装脚本会复用已有的 Git、Node.js 和 npm；缺失时才尝试使用系统包管理器安装。建议使用 Node.js 22 LTS。
+
+### Linux / macOS / WSL
+
+```bash
+mkdir -p "$HOME/context-vocabulary-notebook"
+cd "$HOME/context-vocabulary-notebook"
+curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
+```
+
+### Windows PowerShell
+
+```powershell
+$InstallDir = Join-Path $HOME "context-vocabulary-notebook"
+New-Item -ItemType Directory -Force $InstallDir | Out-Null
+Set-Location $InstallDir
+irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
+```
+
+安装完成后，在同一目录启动：
+
+```bash
+npm run dev
+```
+
+然后打开：
+
+- 应用界面：<http://localhost:5173>
+- 后端健康检查：<http://localhost:3107/api/health>
+
+第一次使用可以按这个顺序：
+
+1. 打开“新建”，手动建立第一张语境卡片。
+2. 需要处理多个视频时，点击新建页顶部的“批量导入”，或直接打开 `http://localhost:5173/#/batch-import`。
+3. 打开“复习”，使用 `Again / Good` 完成一次复习。
+4. 在“设置”中按需配置本地识别与 AI；这些配置不是核心功能的前置条件。
+
+### 一键安装脚本会做什么
+
+| 操作 | 新安装 | 再次运行 |
+|------|--------|----------|
+| 检查 Git、Node.js、npm | 是 | 是 |
+| 克隆仓库 | 只在空目录首次执行 | 否 |
+| 更新代码 | 否 | 使用 `git pull --ff-only` |
+| 创建 `.env` | 文件不存在时创建 | 保留现有文件 |
+| 安装依赖并构建 | 带缓存优先、重试与超时保护的 `npm ci`，然后执行 `npm run build` | 同样执行 |
+| 修改数据库或删除媒体 | 不会 | 不会 |
+
+脚本遇到克隆、更新、依赖安装或构建失败时会立即停止并显示出错步骤，不会继续报告“安装完成”。目标目录如果不是空目录且不是本项目，也会拒绝写入，避免把项目文件混进其他文件夹。
 
 ## 数据位置与磁盘占用提醒
 
@@ -59,45 +115,6 @@ E:\study\context
 $HOME/context-vocabulary-notebook
 ```
 
-## 一键安装
-
-先进入你想放项目文件的空目录，再运行对应系统命令。脚本会把项目安装到当前目录；如果目录里已经是本项目，会自动更新。
-
-| 系统 | 命令 |
-|------|------|
-| Linux / macOS / WSL | 见下方 Linux / macOS / WSL 命令 |
-| Windows PowerShell | 见下方 Windows PowerShell 命令 |
-
-### Linux / macOS / WSL
-
-```bash
-curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
-```
-
-### Windows PowerShell
-
-```powershell
-irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
-```
-
-安装完成后启动：
-
-```bash
-npm run dev
-```
-
-浏览器打开：
-
-```text
-http://localhost:5173
-```
-
-后端健康检查：
-
-```text
-http://localhost:3107/api/health
-```
-
 ## 更新到最新版
 
 进入当初安装项目文件的目录后运行：
@@ -106,7 +123,7 @@ Linux / macOS / WSL / Git Bash：
 
 ```bash
 git pull --ff-only
-npm ci
+npm ci --prefer-offline --no-audit --no-fund
 npm run build
 npm run dev
 ```
@@ -115,7 +132,7 @@ Windows PowerShell：
 
 ```powershell
 git pull --ff-only
-npm ci
+npm ci --prefer-offline --no-audit --no-fund
 npm run build
 npm run dev
 ```
@@ -248,7 +265,7 @@ cd "$HOME"
 git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
 cd context-vocabulary-notebook
 cp .env.example .env
-npm ci
+npm ci --prefer-offline --no-audit --no-fund
 npm run dev
 ```
 
@@ -259,7 +276,7 @@ Set-Location $HOME
 git clone https://github.com/yaqxuan/context-vocabulary-notebook.git context-vocabulary-notebook
 Set-Location context-vocabulary-notebook
 Copy-Item .env.example .env
-npm ci
+npm ci --prefer-offline --no-audit --no-fund
 npm run dev
 ```
 
@@ -274,6 +291,8 @@ http://localhost:5173
 ### 一键安装失败怎么办
 
 - 如果提示命令不存在，请关闭终端后重新打开，再运行一次安装命令。
+- 如果提示 Node.js 版本不支持，请升级到 Node.js `20.19+` 或 `22.12+`；推荐使用 Node.js 22 LTS。
+- 如果更新阶段的 `git pull --ff-only` 失败，先运行 `git status`。脚本会保护本地修改，不会强行覆盖；请先提交、暂存或手动处理这些修改。
 - Linux / WSL 如果 `apt-get update` 报 Docker、Chromium、Snap、GPG key 等错误，通常是系统已有 apt 源或未完成包配置异常，不是本项目依赖这些软件。可以先修复/禁用对应 apt 源，或手动安装 Git、Node.js 22 LTS 和 npm 后重试。
 - macOS 如果弹出 Xcode Command Line Tools 安装窗口，请点击“安装”，完成后重新运行安装命令。
 - Windows 如果 `npm ci` 在 `better-sqlite3` 处失败，通常需要 Python 和 Visual Studio Build Tools / MSVC；如果不熟悉这些工具，建议改用 WSL。
@@ -392,7 +411,7 @@ AI API Key 属于本地敏感配置，不会随导出文件带走；换设备后
 
 | 环境 | 要求 | 说明 |
 |------|------|------|
-| Node.js | 推荐 Node.js 22 LTS | 前端构建、开发服务和后端服务都依赖 Node.js。安装脚本会尝试补齐。 |
+| Node.js | `20.19+` 或 `22.12+`，推荐 Node.js 22 LTS | 当前 Vite、前端构建、开发服务和后端服务都依赖受支持的 Node.js 版本。安装脚本会检查并尝试补齐。 |
 | npm | 跟随 Node.js 安装 | 仓库包含 `package-lock.json`，安装依赖使用 `npm ci`。 |
 | Git | 克隆 GitHub 仓库时需要 | 安装脚本会检查并尝试补齐。 |
 | 浏览器 | Chrome / Edge / Firefox / Safari 等现代浏览器 | 应用通过本地 Web 页面使用。 |
@@ -442,6 +461,8 @@ AI API Key 属于本地敏感配置，不会随导出文件带走；换设备后
 | `npm run test:e2e` | 运行 Playwright E2E 测试；没有测试文件时也通过。 |
 | `npm run typecheck` | 运行前端和 Node 侧 TypeScript 类型检查。 |
 | `npm run lint` | 当前等同于 `npm run typecheck`。 |
+| `npm run readme:i18n:check` | 检查九种语言 README 的安装链接、环境变量与关键说明。 |
+| `npm run smoke:install` | 在临时目录完成首次安装、重复更新、数据保留与非空目录拒绝测试。 |
 <!-- /AUTO-GENERATED:SCRIPTS -->
 
 ## 开发说明
