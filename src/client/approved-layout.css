@@ -2640,3 +2640,26 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* API failures briefly fall back to the English interface.  Keep Latin and
+   other space-delimited labels readable instead of placing them in the old
+   icon grid column that happened to fit two-character Chinese labels. */
+@media (min-width: 921px) {
+  .app-brand > div:last-child { min-width: 0 !important; }
+  .app-brand p {
+    white-space: normal !important;
+    overflow-wrap: normal !important;
+    line-height: 1.05 !important;
+  }
+  .app-nav a {
+    display: flex !important;
+    align-items: center !important;
+  }
+  .app-nav-label {
+    width: 100% !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    hyphens: none !important;
+    text-wrap: pretty !important;
+  }
+}
