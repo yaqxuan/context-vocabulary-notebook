@@ -444,19 +444,39 @@ describe('install.ps1 installer safeguards', () => {
   it('installs directly into the current PowerShell location in examples', () => {
     const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
     const userGuide = fs.readFileSync(path.join(repoRoot, 'docs', 'USER_GUIDE.md'), 'utf8');
+    const resolveInstallDir = functionBody(readPowerShellInstallScript(), 'Resolve-InstallDir');
     const installProject = functionBody(readPowerShellInstallScript(), 'Install-Project');
 
-    expect(readme).not.toContain('$HOME\\context-vocabulary-notebook');
+    expect(readme).not.toContain('$HOME/context-vocabulary-notebook');
+    expect(readme).not.toContain('Join-Path $HOME "context-vocabulary-notebook"');
+    expect(readme).not.toContain('New-Item -ItemType Directory -Force $InstallDir');
     expect(readme).not.toContain('.\\context-vocabulary-notebook');
     expect(readme).not.toContain('Read-Host');
     expect(readme).not.toContain('$ErrorActionPreference = "Stop"');
     expect(readme).not.toContain('$InstallDir = (Get-Location).Path');
     expect(readme).toContain('irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex');
     expect(userGuide).toContain('$env:CVN_HOME = "C:\\path\\to\\empty-folder"');
+    expect(resolveInstallDir).toContain('return (Get-Location).Path');
     expect(installProject).not.toContain('$HOME\\context-vocabulary-notebook');
     expect(installProject).not.toContain('.\\context-vocabulary-notebook');
     expect(installProject).not.toContain('Read-Host');
     expect(installProject).toContain('`$InstallDir = "C:\\path\\to\\empty-folder"');
     expect(installProject).toContain('Set-Location `$InstallDir');
+  });
+
+  it('keeps every public quick-start command in the current directory', () => {
+    const readmeFiles = [
+      'README.md', 'README.zh-CN.md', 'README.ja.md', 'README.es.md', 'README.ar.md',
+      'README.de.md', 'README.fr.md', 'README.it.md', 'README.ko.md', 'README.ru.md',
+      'README.la.md',
+    ];
+
+    for (const file of readmeFiles) {
+      const content = fs.readFileSync(path.join(repoRoot, file), 'utf8');
+      expect(content, file).not.toContain('$HOME/context-vocabulary-notebook');
+      expect(content, file).not.toContain('Join-Path $HOME "context-vocabulary-notebook"');
+      expect(content, file).toContain('scripts/install.sh | bash');
+      expect(content, file).toContain('scripts/install.ps1 -ErrorAction Stop | iex');
+    }
   });
 });

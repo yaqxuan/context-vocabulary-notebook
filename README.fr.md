@@ -53,20 +53,18 @@ résultat avant l’enregistrement. Les URL de sites vidéo ne sont pas accepté
 
 Requiert Git, npm et Node.js `20.19+` ou `22.12+` (Node.js 22 LTS recommandé).
 
+Exécutez l’installateur depuis un dossier vide. Le projet est installé directement
+dans ce dossier, sans créer un sous-dossier `context-vocabulary-notebook`.
+
 Linux, macOS ou WSL :
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook"
-cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 Windows PowerShell :
 
 ```powershell
-$InstallDir = Join-Path $HOME "context-vocabulary-notebook"
-New-Item -ItemType Directory -Force $InstallDir | Out-Null
-Set-Location $InstallDir
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 

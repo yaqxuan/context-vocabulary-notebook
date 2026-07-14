@@ -28,6 +28,9 @@ binary. It is a local web app for vocabulary you collect yourself.
 More current screens: [card detail](./docs/demo/02-context-card.png),
 [review](./docs/demo/03-review.png), and [statistics](./docs/demo/04-statistics.png).
 
+Browse the [complete English screen catalog](./docs/SCREEN_CATALOG.md) for every
+application page and a short description of what it does.
+
 <!-- README:WORKFLOW -->
 ## A simple study loop
 
@@ -59,22 +62,20 @@ recognition result before saving each card. It does not accept website video URL
 
 Requires Git, npm, and Node.js `20.19+` or `22.12+` (Node.js 22 LTS recommended).
 
+Run the installer from an empty directory. It installs the project directly into
+that directory and does not create a nested `context-vocabulary-notebook` folder.
+
 ### 1. Install the core app
 
 Linux, macOS, or WSL:
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook"
-cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 Windows PowerShell:
 
 ```powershell
-$InstallDir = Join-Path $HOME "context-vocabulary-notebook"
-New-Item -ItemType Directory -Force $InstallDir | Out-Null
-Set-Location $InstallDir
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 
@@ -133,6 +134,7 @@ fails. API keys stay local and are excluded from in-app ZIP exports.
 <!-- README:DOCS -->
 ## Documentation
 
+- [Application screen catalog](./docs/SCREEN_CATALOG.md)
 - [Complete user guide](./docs/USER_GUIDE.md)
 - [中文用户手册](./docs/USER_GUIDE.zh-CN.md)
 - [Contributing](./CONTRIBUTING.md)
