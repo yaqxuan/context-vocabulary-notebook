@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest an improvement grounded in a vocabulary-learning workflow.
+title: '[Feature]: '
+labels: [enhancement]
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and Discussions for similar ideas.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Learning problem
+      description: What vocabulary-learning task is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Explain the smallest useful behavior and how it would fit the current local-first workflow.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: How do you handle this task now?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Card creation, Review, Media and batch import, OCR or speech recognition, Statistics, Installation, Documentation, Other]
+    validations:
+      required: true

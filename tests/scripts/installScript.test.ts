@@ -119,7 +119,7 @@ function functionBody(script: string, name: string) {
   return script.slice(start, nextFunction === -1 ? script.length : nextFunction);
 }
 
-describe('install.sh path selection', () => {
+describe.skipIf(process.platform === 'win32')('install.sh path selection', () => {
   it('clones into the current empty directory by default', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-install-'));
     const installDir = path.join(tempRoot, 'empty-install');
@@ -174,7 +174,7 @@ describe('install.sh path selection', () => {
   });
 });
 
-describe('install-recognition.sh installer', () => {
+describe.skipIf(process.platform === 'win32')('install-recognition.sh installer', () => {
   it('refuses to install recognition tooling outside this project', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-recognition-'));
     fs.writeFileSync(path.join(tempRoot, 'package.json'), '{"name":"other-project"}\n');
@@ -258,20 +258,26 @@ describe('install-recognition.sh installer', () => {
 describe('README current behavior docs', () => {
   it('documents current local OCR/STT and AI suggestion behavior', () => {
     const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
-    const englishReadme = fs.readFileSync(path.join(repoRoot, 'README.en.md'), 'utf8');
+    const chineseReadme = fs.readFileSync(path.join(repoRoot, 'README.zh-CN.md'), 'utf8');
+    const englishGuide = fs.readFileSync(path.join(repoRoot, 'docs', 'USER_GUIDE.md'), 'utf8');
+    const chineseGuide = fs.readFileSync(path.join(repoRoot, 'docs', 'USER_GUIDE.zh-CN.md'), 'utf8');
     const envExample = fs.readFileSync(path.join(repoRoot, '.env.example'), 'utf8');
 
-    expect(readme).toContain('整句翻译');
-    expect(readme).toContain('词形还原');
-    expect(readme).toContain('拼写检查');
-    expect(readme).toContain('WSL 通常最稳');
-    expect(readme).toContain('Windows 原生 PowerShell 可以安装');
-    expect(readme).toContain('本地识别一键脚本后，会自动安装 whisper.cpp');
-    expect(englishReadme).toContain('Local Clip Recognition (OCR / STT)');
-    expect(englishReadme).toContain('whisper.cpp');
-    expect(englishReadme).toContain('Tesseract');
-    expect(englishReadme).not.toContain('/audio/transcriptions');
-    expect(englishReadme).not.toContain('TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES');
+    expect(chineseReadme).toContain('OpenAI-compatible 释义、用法、翻译、词形和拼写建议');
+    expect(chineseGuide).toContain('整句翻译、词形还原和拼写检查');
+    expect(chineseGuide).toContain('WSL 通常更容易配置');
+    expect(chineseGuide).toContain('Windows 原生 PowerShell 也已支持');
+    expect(chineseGuide).toContain('下载并校验 whisper.cpp 和默认的 `ggml-small.bin`');
+    expect(readme).toContain('Optional recognition and AI');
+    expect(readme).toContain('CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1');
+    expect(chineseReadme).toContain('卡片云端转写会发送音频');
+    expect(englishGuide).toContain('whisper.cpp');
+    expect(englishGuide).toContain('Tesseract');
+    expect(englishGuide).toContain('ALLOW_PRIVATE_AI_PROVIDER_URLS');
+    expect(englishGuide).toContain('100 MB per-file hard');
+    expect(chineseGuide).toContain('所有网络接口');
+    expect(englishGuide).not.toContain('/audio/transcriptions');
+    expect(englishGuide).not.toContain('TRANSCRIPTION_UPLOAD_SIZE_LIMIT_BYTES');
     expect(envExample).toContain('CVN_WHISPER_CPP_MODEL');
     expect(envExample).toContain('CVN_TESSERACT_LANG');
   });
@@ -437,6 +443,7 @@ describe('install.ps1 installer safeguards', () => {
 
   it('installs directly into the current PowerShell location in examples', () => {
     const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
+    const userGuide = fs.readFileSync(path.join(repoRoot, 'docs', 'USER_GUIDE.md'), 'utf8');
     const installProject = functionBody(readPowerShellInstallScript(), 'Install-Project');
 
     expect(readme).not.toContain('$HOME\\context-vocabulary-notebook');
@@ -445,7 +452,7 @@ describe('install.ps1 installer safeguards', () => {
     expect(readme).not.toContain('$ErrorActionPreference = "Stop"');
     expect(readme).not.toContain('$InstallDir = (Get-Location).Path');
     expect(readme).toContain('irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex');
-    expect(readme).toContain('$env:CVN_HOME = "C:\\path\\to\\empty-folder"');
+    expect(userGuide).toContain('$env:CVN_HOME = "C:\\path\\to\\empty-folder"');
     expect(installProject).not.toContain('$HOME\\context-vocabulary-notebook');
     expect(installProject).not.toContain('.\\context-vocabulary-notebook');
     expect(installProject).not.toContain('Read-Host');

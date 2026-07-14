@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yaqxuan.github.io/context-vocabulary-notebook/sitemap.xml
