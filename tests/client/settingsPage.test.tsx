@@ -20,7 +20,9 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 function blobResponse(data = new Uint8Array([1, 2, 3]), type = 'application/zip'): Response {
-  return new Response(new Blob([data], { type }), { status: 200 });
+  // Keep the mock body in the runtime's native Response implementation. Mixing
+  // jsdom's Blob with Node's fetch Response breaks response.blob() on Node 22.
+  return new Response(data, { status: 200, headers: { 'Content-Type': type } });
 }
 
 /** Collect FormData keys from a fetch call's body */

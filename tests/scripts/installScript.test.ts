@@ -119,7 +119,7 @@ function functionBody(script: string, name: string) {
   return script.slice(start, nextFunction === -1 ? script.length : nextFunction);
 }
 
-describe('install.sh path selection', () => {
+describe.skipIf(process.platform === 'win32')('install.sh path selection', () => {
   it('clones into the current empty directory by default', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-install-'));
     const installDir = path.join(tempRoot, 'empty-install');
@@ -174,7 +174,7 @@ describe('install.sh path selection', () => {
   });
 });
 
-describe('install-recognition.sh installer', () => {
+describe.skipIf(process.platform === 'win32')('install-recognition.sh installer', () => {
   it('refuses to install recognition tooling outside this project', () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-recognition-'));
     fs.writeFileSync(path.join(tempRoot, 'package.json'), '{"name":"other-project"}\n');
