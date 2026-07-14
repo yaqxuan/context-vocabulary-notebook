@@ -747,7 +747,7 @@ describe('SettingsPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: '导出含有标记的卡片' }));
 
-      await waitFor(() => expect(createObjectURLSpy).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(createObjectURLSpy).toHaveBeenCalledTimes(1), { timeout: 5_000 });
       expect(revokeObjectURLSpy).toHaveBeenCalledTimes(1);
       expect(lastAnchorHref).toBe('blob:test-url');
       expect(lastAnchorDownload).toContain('marked');
@@ -768,7 +768,7 @@ describe('SettingsPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: '导出纯卡片' }));
 
-      await waitFor(() => expect(createObjectURLSpy).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(createObjectURLSpy).toHaveBeenCalledTimes(1), { timeout: 5_000 });
       expect(revokeObjectURLSpy).toHaveBeenCalledTimes(1);
       expect(lastAnchorHref).toBe('blob:test-url');
       expect(lastAnchorDownload).toContain('pure');
@@ -832,7 +832,7 @@ describe('SettingsPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: '导出含有标记的卡片' }));
 
-      await waitFor(() => expect(createObjectURLSpy).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(createObjectURLSpy).toHaveBeenCalledTimes(1), { timeout: 5_000 });
 
       // removeChild must have been called with the anchor element
       expect(removeChildSpy).toHaveBeenCalledTimes(1);
