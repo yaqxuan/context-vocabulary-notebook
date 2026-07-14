@@ -23,10 +23,10 @@ binary. It is a local web app for vocabulary you collect yourself.
 <!-- README:PREVIEW -->
 ## Preview
 
-![Create a context card in the current English interface](./docs/demo/01-create-card-en.png)
+![Create a context card in the current English interface](./docs/demo/screen-create-card.jpg)
 
-More current screens: [card detail](./docs/demo/02-context-card.png),
-[review](./docs/demo/03-review.png), and [statistics](./docs/demo/04-statistics.png).
+More current screens: [card detail](./docs/demo/screen-card-detail.jpg),
+[review](./docs/demo/screen-review.jpg), and [statistics](./docs/demo/screen-statistics.jpg).
 
 Browse the [complete English screen catalog](./docs/SCREEN_CATALOG.md) for every
 application page and a short description of what it does.

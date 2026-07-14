@@ -487,7 +487,7 @@ export function ReviewPage() {
   if (state.kind === 'loading') return <LoadingState />;
   if (state.kind === 'error') return <ErrorState message={state.message} onRetry={load} />;
   if (state.kind === 'empty') return (
-    <div className="phase7-review-shell">
+    <div className="phase7-review-shell" data-review-title={t('nav.review.title')}>
         {lastRating ? (
           <p className="phase7-review-success">{t('review.recorded', { rating: lastRating === 'good' ? 'Good' : 'Again' })}</p>
         ) : null}
@@ -504,7 +504,7 @@ export function ReviewPage() {
   const showLimitBanner = state.progress.is_limit_reached && !limitDismissed;
 
   return (
-    <div className="phase7-review-shell">
+    <div className="phase7-review-shell" data-review-title={t('nav.review.title')}>
         {showLimitBanner ? (
           <LimitReminder
             onEnd={() => setLimitDismissed(true)}

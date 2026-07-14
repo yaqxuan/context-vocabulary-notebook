@@ -19,8 +19,8 @@ Desktopprogramm. Es ist eine lokale Web-App für selbst gesammelte Wörter.
 
 ![Kontextkarte in der aktuellen deutschen Oberfläche erstellen](./docs/demo/01-create-card-de.png)
 
-Weitere Ansichten: [Kartendetail](./docs/demo/02-context-card.png),
-[Wiederholung](./docs/demo/03-review.png), [Statistik](./docs/demo/04-statistics.png).
+Weitere Ansichten: [Kartendetail](./docs/demo/screen-card-detail.jpg),
+[Wiederholung](./docs/demo/screen-review.jpg), [Statistik](./docs/demo/screen-statistics.jpg).
 
 <!-- README:WORKFLOW -->
 ## Lernablauf

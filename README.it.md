@@ -20,10 +20,10 @@ locale per il vocabolario che raccogli personalmente.
 <!-- README:PREVIEW -->
 ## Anteprima
 
-![Creazione di una scheda nell’interfaccia inglese attuale](./docs/demo/01-create-card-en.png)
+![Creazione di una scheda nell’interfaccia inglese attuale](./docs/demo/screen-create-card.jpg)
 
-Altre schermate: [dettaglio](./docs/demo/02-context-card.png),
-[ripasso](./docs/demo/03-review.png), [statistiche](./docs/demo/04-statistics.png).
+Altre schermate: [dettaglio](./docs/demo/screen-card-detail.jpg),
+[ripasso](./docs/demo/screen-review.jpg), [statistiche](./docs/demo/screen-statistics.jpg).
 
 <!-- README:WORKFLOW -->
 ## Flusso di studio

@@ -19,8 +19,8 @@ nativa de escritorio. Es una aplicación web local para el vocabulario que tú r
 
 ![Creación de una tarjeta en la interfaz actual en español](./docs/demo/01-create-card-es.png)
 
-Más pantallas: [detalle](./docs/demo/02-context-card.png),
-[repaso](./docs/demo/03-review.png) y [estadísticas](./docs/demo/04-statistics.png).
+Más pantallas: [detalle](./docs/demo/screen-card-detail.jpg),
+[repaso](./docs/demo/screen-review.jpg) y [estadísticas](./docs/demo/screen-statistics.jpg).
 
 <!-- README:WORKFLOW -->
 ## Flujo de estudio

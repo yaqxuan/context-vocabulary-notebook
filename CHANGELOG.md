@@ -12,6 +12,8 @@ versions used while installation and data workflows continue to mature.
   current empty directory instead of creating a folder under the user home.
 - Added an English catalog covering every current application page with clean
   demonstration screenshots and short descriptions.
+- Refreshed every public screen-catalog image from one current English build,
+  updated the Pages gallery, and localized the review heading correctly.
 
 ## [0.2.0-alpha] - 2026-07-14
 

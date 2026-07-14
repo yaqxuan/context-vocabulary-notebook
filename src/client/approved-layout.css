@@ -812,7 +812,7 @@ body::after {
 }
 
 .phase7-review-shell::before {
-  content: "开始复习" !important;
+  content: attr(data-review-title) !important;
   position: absolute !important;
   left: 2.6rem !important;
   top: 2rem !important;

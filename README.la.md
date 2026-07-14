@@ -20,10 +20,10 @@ Est applicatio Web localis vocabulorum quae ipse colligis.
 <!-- README:PREVIEW -->
 ## Imago
 
-![Scheda contextus in interfacie Anglica hodierna](./docs/demo/01-create-card-en.png)
+![Scheda contextus in interfacie Anglica hodierna](./docs/demo/screen-create-card.jpg)
 
-Aliae paginae: [schedae singula](./docs/demo/02-context-card.png),
-[repetitio](./docs/demo/03-review.png), [statistica](./docs/demo/04-statistics.png).
+Aliae paginae: [schedae singula](./docs/demo/screen-card-detail.jpg),
+[repetitio](./docs/demo/screen-review.jpg), [statistica](./docs/demo/screen-statistics.jpg).
 
 <!-- README:WORKFLOW -->
 ## Ordo discendi
