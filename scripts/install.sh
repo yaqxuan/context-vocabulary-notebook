@@ -293,11 +293,11 @@ install_project() {
 The target directory is not empty and is not a Context Vocabulary Notebook project directory:
   $INSTALL_DIR
 
-To avoid mixing project files into an unrelated folder, rerun this installer from an empty directory, or set CVN_HOME to the directory where you want the project installed.
+To avoid mixing project files into an unrelated folder, change into an empty directory and rerun the installer. CVN_HOME is an optional explicit override.
 
 Example:
-  mkdir -p "$HOME/context-vocabulary-notebook"
-  cd "$HOME/context-vocabulary-notebook"
+  mkdir -p /path/to/empty-directory
+  cd /path/to/empty-directory
   curl -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 
 EOF
@@ -359,7 +359,7 @@ To update later:
   npm ci --prefer-offline --no-audit --no-fund
   npm run build
 
-You can also rerun this installer; keep the same CVN_HOME or run it from the same directory.
+You can also rerun this installer from this same project directory.
 
 Data locations:
   Database: $INSTALL_DIR/data/context-vocabulary-notebook.sqlite

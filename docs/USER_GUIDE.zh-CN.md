@@ -42,20 +42,18 @@ uploads/
 请选一个能长期保留、空间足够的文件夹。不要放进系统保护目录、临时目录，或可能
 被同步与清理工具自动删除的目录。
 
+请先进入这个空目录，再执行一键安装命令。仓库会直接克隆到当前目录，
+不会额外创建同名项目子目录。
+
 ### Linux、macOS 或 WSL
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook"
-cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ### Windows PowerShell
 
 ```powershell
-$InstallDir = Join-Path $HOME "context-vocabulary-notebook"
-New-Item -ItemType Directory -Force $InstallDir | Out-Null
-Set-Location $InstallDir
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 

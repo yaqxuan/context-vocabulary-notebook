@@ -6,6 +6,13 @@ versions used while installation and data workflows continue to mature.
 
 ## [Unreleased]
 
+### Changed
+
+- One-line installers now document and test installation directly into the
+  current empty directory instead of creating a folder under the user home.
+- Added an English catalog covering every current application page with clean
+  demonstration screenshots and short descriptions.
+
 ## [0.2.0-alpha] - 2026-07-14
 
 ### Added

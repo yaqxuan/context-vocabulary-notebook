@@ -53,20 +53,18 @@ FSRS планирует повторение, а пользователь отв
 
 Нужны Git, npm и Node.js `20.19+` или `22.12+` (рекомендуется Node.js 22 LTS).
 
+Запускайте установщик из пустого каталога. Проект устанавливается прямо в текущий
+каталог и не создаёт вложенную папку `context-vocabulary-notebook`.
+
 Linux, macOS или WSL:
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook"
-cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 Windows PowerShell:
 
 ```powershell
-$InstallDir = Join-Path $HOME "context-vocabulary-notebook"
-New-Item -ItemType Directory -Force $InstallDir | Out-Null
-Set-Location $InstallDir
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 

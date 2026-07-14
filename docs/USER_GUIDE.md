@@ -44,20 +44,18 @@ Tesseract, and native build tools. Native Windows PowerShell is also supported.
 Choose a durable folder with enough space for media and models. Avoid system
 folders, temporary folders, and folders that a sync or cleanup tool may remove.
 
+Change into that empty folder before running the one-line installer. The repository
+is cloned directly into the current directory; no nested project folder is created.
+
 ### Linux, macOS, or WSL
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook"
-cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 ### Windows PowerShell
 
 ```powershell
-$InstallDir = Join-Path $HOME "context-vocabulary-notebook"
-New-Item -ItemType Directory -Force $InstallDir | Out-Null
-Set-Location $InstallDir
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 

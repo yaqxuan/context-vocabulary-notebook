@@ -56,22 +56,20 @@
 
 需要 Git、npm，以及 Node.js `20.19+` 或 `22.12+`（推荐 Node.js 22 LTS）。
 
+请先进入准备安装的空目录，再执行安装命令。项目会直接安装到当前目录，
+不会在里面继续新建 `context-vocabulary-notebook` 子目录。
+
 ### 1. 安装核心应用
 
 Linux、macOS 或 WSL：
 
 ```bash
-mkdir -p "$HOME/context-vocabulary-notebook"
-cd "$HOME/context-vocabulary-notebook"
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash
 ```
 
 Windows PowerShell：
 
 ```powershell
-$InstallDir = Join-Path $HOME "context-vocabulary-notebook"
-New-Item -ItemType Directory -Force $InstallDir | Out-Null
-Set-Location $InstallDir
 irm https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.ps1 -ErrorAction Stop | iex
 ```
 

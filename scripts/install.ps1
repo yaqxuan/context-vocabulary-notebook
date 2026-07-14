@@ -211,7 +211,7 @@ function Install-Project {
 The target directory is not empty and is not a Context Vocabulary Notebook project directory:
   $InstallDir
 
-To avoid mixing project files into an unrelated folder, rerun this installer from an empty directory, or set CVN_HOME to the directory where you want the project installed.
+To avoid mixing project files into an unrelated folder, change into an empty directory and rerun the installer. CVN_HOME is an optional explicit override.
 
 Example:
   `$InstallDir = "C:\path\to\empty-folder"
@@ -274,7 +274,7 @@ On Windows, try:
   Write-Host "  npm ci --prefer-offline --no-audit --no-fund"
   Write-Host "  npm run build"
   Write-Host ""
-  Write-Host "You can also rerun this installer; keep the same CVN_HOME or run it from the same directory."
+  Write-Host "You can also rerun this installer from this same project directory."
   Write-Host ""
   Write-Host "Data locations:"
   Write-Host "  Database: $InstallDir\data\context-vocabulary-notebook.sqlite"

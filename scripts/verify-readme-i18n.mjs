@@ -214,6 +214,13 @@ for (const language of languages) {
     failures.push(`${file}: PowerShell recognition command must install OCR language ${ocrCode}`)
   }
 
+  const quickStart = sectionContent(content, '<!-- README:QUICKSTART -->', '<!-- README:OPTIONAL -->')
+  for (const nestedTarget of ['$HOME/context-vocabulary-notebook', 'Join-Path $HOME "context-vocabulary-notebook"']) {
+    if (quickStart.includes(nestedTarget)) {
+      failures.push(`${file}: QUICKSTART must install directly into the current directory, found ${nestedTarget}`)
+    }
+  }
+
   const privacy = sectionContent(content, '<!-- README:PRIVACY -->', '<!-- README:DOCS -->')
   if (!privacy.includes('CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1')) {
     failures.push(`${file}: PRIVACY must disclose optional network clip fallback`)
@@ -251,6 +258,38 @@ if (!existsSync(compatibilityPath)) {
   if (!compatibility.includes('existing links')) {
     failures.push('README.en.md: must explain why the compatibility file remains')
   }
+}
+
+const screenCatalogPath = path.join(rootDir, 'docs/SCREEN_CATALOG.md')
+const englishReadme = await readFile(path.join(rootDir, 'README.md'), 'utf8')
+if (!existsSync(screenCatalogPath)) {
+  failures.push('docs/SCREEN_CATALOG.md: missing English application screen catalog')
+} else {
+  const catalog = await readFile(screenCatalogPath, 'utf8')
+  const expectedScreens = [
+    ['Home', './demo/screen-home.jpg'],
+    ['Create card', './demo/01-create-card-en.png'],
+    ['Card library', './demo/screen-cards.jpg'],
+    ['Batch MP4 import', './demo/screen-batch-import.jpg'],
+    ['Card detail', './demo/02-context-card.png'],
+    ['Review', './demo/03-review.png'],
+    ['Tags', './demo/screen-tags.jpg'],
+    ['Favorites', './demo/screen-favorites.jpg'],
+    ['Statistics', './demo/04-statistics.png'],
+    ['Settings', './demo/screen-settings.jpg'],
+  ]
+
+  for (const [heading, screenshot] of expectedScreens) {
+    if (!catalog.includes(`## ${heading}`)) failures.push(`docs/SCREEN_CATALOG.md: missing ${heading} section`)
+    if (!catalog.includes(`](${screenshot})`)) failures.push(`docs/SCREEN_CATALOG.md: missing screenshot ${screenshot}`)
+    if (!existsSync(path.join(rootDir, 'docs', screenshot.replace(/^\.\//, '')))) {
+      failures.push(`docs/SCREEN_CATALOG.md: screenshot file does not exist ${screenshot}`)
+    }
+  }
+}
+
+if (!englishReadme.includes('](./docs/SCREEN_CATALOG.md)')) {
+  failures.push('README.md: missing link to the English application screen catalog')
 }
 
 for (const guide of ['docs/USER_GUIDE.md', 'docs/USER_GUIDE.zh-CN.md']) {
