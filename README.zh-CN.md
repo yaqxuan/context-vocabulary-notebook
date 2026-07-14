@@ -22,8 +22,8 @@
 
 ![当前中文界面的新建语境卡片页](./docs/demo/01-create-card-zh.png)
 
-更多当前界面：[卡片详情](./docs/demo/02-context-card.png)、
-[复习](./docs/demo/03-review.png)和[统计](./docs/demo/04-statistics.png)。
+更多当前界面：[卡片详情](./docs/demo/screen-card-detail.jpg)、
+[复习](./docs/demo/screen-review.jpg)和[统计](./docs/demo/screen-statistics.jpg)。
 
 <!-- README:WORKFLOW -->
 ## 一条简单的学习闭环

@@ -19,8 +19,8 @@ application de bureau native. C’est une application Web locale pour votre prop
 
 ![Création d’une carte dans l’interface française actuelle](./docs/demo/01-create-card-fr.png)
 
-Autres écrans : [détail](./docs/demo/02-context-card.png),
-[révision](./docs/demo/03-review.png), [statistiques](./docs/demo/04-statistics.png).
+Autres écrans : [détail](./docs/demo/screen-card-detail.jpg),
+[révision](./docs/demo/screen-review.jpg), [statistiques](./docs/demo/screen-statistics.jpg).
 
 <!-- README:WORKFLOW -->
 ## Parcours d’apprentissage

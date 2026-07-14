@@ -34,10 +34,10 @@ jobs:
         run: |
           mkdir -p _site/assets/screenshots
           cp -a site/. _site/
-          cp docs/demo/01-create-card-en.png _site/assets/screenshots/create-card-en.png
+          cp docs/demo/screen-create-card.jpg _site/assets/screenshots/create-card-en.jpg
           cp docs/demo/01-create-card-zh.png _site/assets/screenshots/create-card-zh.png
-          cp docs/demo/03-review.png _site/assets/screenshots/review.png
-          cp docs/demo/04-statistics.png _site/assets/screenshots/statistics.png
+          cp docs/demo/screen-review.jpg _site/assets/screenshots/review.jpg
+          cp docs/demo/screen-statistics.jpg _site/assets/screenshots/statistics.jpg
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

@@ -925,6 +925,8 @@ describe('ReviewPage', () => {
 
     render(<I18nProvider><ReviewPage /></I18nProvider>);
 
-    expect(await screen.findByRole('button', { name: 'End review' })).toBeInTheDocument();
+    const endReview = await screen.findByRole('button', { name: 'End review' });
+    expect(endReview).toBeInTheDocument();
+    expect(endReview.closest('.phase7-review-shell')).toHaveAttribute('data-review-title', 'Review');
   });
 });

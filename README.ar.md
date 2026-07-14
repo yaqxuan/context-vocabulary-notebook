@@ -20,10 +20,10 @@ Context Vocabulary Notebook تطبيق ذاتي الاستضافة ومحلي أ
 <!-- README:PREVIEW -->
 ## المعاينة
 
-![إنشاء بطاقة سياق في الواجهة الإنجليزية الحالية](./docs/demo/01-create-card-en.png)
+![إنشاء بطاقة سياق في الواجهة الإنجليزية الحالية](./docs/demo/screen-create-card.jpg)
 
-شاشات أخرى: [تفاصيل البطاقة](./docs/demo/02-context-card.png)،
-[المراجعة](./docs/demo/03-review.png)، [الإحصاءات](./docs/demo/04-statistics.png).
+شاشات أخرى: [تفاصيل البطاقة](./docs/demo/screen-card-detail.jpg)،
+[المراجعة](./docs/demo/screen-review.jpg)، [الإحصاءات](./docs/demo/screen-statistics.jpg).
 
 <!-- README:WORKFLOW -->
 ## دورة الدراسة

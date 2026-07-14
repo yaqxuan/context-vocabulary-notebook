@@ -9,7 +9,7 @@ const languages = [
   {
     label: 'English',
     file: 'README.md',
-    screenshot: './docs/demo/01-create-card-en.png',
+    screenshot: './docs/demo/screen-create-card.jpg',
     ocrCode: 'eng',
     truths: ['website video URLs', 'cloud sync', 'native desktop'],
   },
@@ -37,7 +37,7 @@ const languages = [
   {
     label: 'العربية',
     file: 'README.ar.md',
-    screenshot: './docs/demo/01-create-card-en.png',
+    screenshot: './docs/demo/screen-create-card.jpg',
     ocrCode: 'ara',
     truths: ['روابط مواقع الفيديو', 'مزامنة سحابية', 'سطح مكتب أصلياً'],
     unavailableUi: 'الواجهة العربية غير متاحة حالياً',
@@ -59,7 +59,7 @@ const languages = [
   {
     label: 'Italiano',
     file: 'README.it.md',
-    screenshot: './docs/demo/01-create-card-en.png',
+    screenshot: './docs/demo/screen-create-card.jpg',
     ocrCode: 'ita',
     truths: ['URL di siti video', 'cloud sync', 'desktop nativa'],
     unavailableUi: 'interfaccia italiana non è ancora disponibile',
@@ -81,7 +81,7 @@ const languages = [
   {
     label: 'Latina',
     file: 'README.la.md',
-    screenshot: './docs/demo/01-create-card-en.png',
+    screenshot: './docs/demo/screen-create-card.jpg',
     ocrCode: 'lat',
     truths: ['URL situs pellicularum', 'Synchronizatio nubis', 'desktop nativum'],
     unavailableUi: 'Interfacies Latina nondum praebetur',
@@ -268,14 +268,14 @@ if (!existsSync(screenCatalogPath)) {
   const catalog = await readFile(screenCatalogPath, 'utf8')
   const expectedScreens = [
     ['Home', './demo/screen-home.jpg'],
-    ['Create card', './demo/01-create-card-en.png'],
+    ['Create card', './demo/screen-create-card.jpg'],
     ['Card library', './demo/screen-cards.jpg'],
     ['Batch MP4 import', './demo/screen-batch-import.jpg'],
-    ['Card detail', './demo/02-context-card.png'],
-    ['Review', './demo/03-review.png'],
+    ['Card detail', './demo/screen-card-detail.jpg'],
+    ['Review', './demo/screen-review.jpg'],
     ['Tags', './demo/screen-tags.jpg'],
     ['Favorites', './demo/screen-favorites.jpg'],
-    ['Statistics', './demo/04-statistics.png'],
+    ['Statistics', './demo/screen-statistics.jpg'],
     ['Settings', './demo/screen-settings.jpg'],
   ]
 

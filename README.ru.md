@@ -19,8 +19,8 @@ FSRS планирует повторение, а пользователь отв
 
 ![Создание контекстной карточки в текущем русском интерфейсе](./docs/demo/01-create-card-ru.png)
 
-Другие экраны: [карточка](./docs/demo/02-context-card.png),
-[повторение](./docs/demo/03-review.png), [статистика](./docs/demo/04-statistics.png).
+Другие экраны: [карточка](./docs/demo/screen-card-detail.jpg),
+[повторение](./docs/demo/screen-review.jpg), [статистика](./docs/demo/screen-statistics.jpg).
 
 <!-- README:WORKFLOW -->
 ## Процесс обучения

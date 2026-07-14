@@ -29,7 +29,7 @@ paths to reviewing or creating a card.
 Save a sentence, target word, contextual meaning, languages, tags, notes, and
 optional image, audio, or video media in one guided form.
 
-![Create a context card](./demo/01-create-card-en.png)
+![Create a context card](./demo/screen-create-card.jpg)
 
 ## Card library
 
@@ -50,14 +50,14 @@ and speech candidates, and confirm each result before saving a card.
 Read every saved context for a word, replay attached media, manage tags and
 review state, and edit or delete the card.
 
-![Card detail](./demo/02-context-card.png)
+![Card detail](./demo/screen-card-detail.jpg)
 
 ## Review
 
 Review the due sentence and optional media, reveal the contextual meaning, then
 choose `Again` or `Good` so FSRS can schedule the next interval.
 
-![FSRS review](./demo/03-review.png)
+![FSRS review](./demo/screen-review.jpg)
 
 ## Tags
 
@@ -78,7 +78,7 @@ favorites while preserving the same search and filtering tools.
 Track card totals, daily review volume, accuracy, monthly history, tag
 distribution, and `Again / Good` rating trends.
 
-![Learning statistics](./demo/04-statistics.png)
+![Learning statistics](./demo/screen-statistics.jpg)
 
 ## Settings
 

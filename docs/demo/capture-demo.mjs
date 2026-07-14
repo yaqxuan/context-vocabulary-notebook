@@ -216,10 +216,32 @@ try {
   await patchSettings(page.request, '英语', '英语');
 
   await captureRoute(page, '/?demo=home#/', '.home-desk', 'screen-home.jpg');
+  await page.goto('/?demo=create#/create');
+  await readyPage(page, '#cc-sentence');
+  await page.locator('#cc-sentence').fill('The small team remained resilient through every unexpected challenge.');
+  await page.locator('#cc-target-word').fill('resilient');
+  await page.locator('#cc-meaning').fill('able to recover quickly');
+  await page.waitForTimeout(900);
+  await capture(page, 'screen-create-card.jpg');
   await captureRoute(page, '/?demo=cards#/cards', '.phase6-word-card', 'screen-cards.jpg');
   await captureRoute(page, '/?demo=batch#/batch-import', '.batch-import-page', 'screen-batch-import.jpg');
+  await captureRoute(page, `/?demo=detail#/cards/${card.id}`, '.phase6-detail', 'screen-card-detail.jpg');
+
+  await page.goto('/?demo=review#/review');
+  await readyPage(page, '.phase7-review-card');
+  await page.getByRole('button', { name: 'Good' }).click();
+  await page.locator('.phase7-review-meaning').waitFor({ state: 'visible' });
+  await page.waitForTimeout(350);
+  await capture(page, 'screen-review.jpg');
+
   await captureRoute(page, '/?demo=tags#/tags', '.phase6-tag-card', 'screen-tags.jpg');
   await captureRoute(page, '/?demo=favorites#/favorites', '.phase6-word-card', 'screen-favorites.jpg');
+
+  await page.route('**/api/statistics', async (route) => {
+    await route.fulfill({ json: statisticsFixture });
+  });
+  await captureRoute(page, '/?demo=statistics#/statistics', '.phase7-statistics-shell', 'screen-statistics.jpg');
+
   await captureRoute(page, '/?demo=settings#/settings', '.phase7-settings-shell', 'screen-settings.jpg');
 
   if (!catalogOnly) {
@@ -234,9 +256,6 @@ try {
     await page.waitForTimeout(350);
     await capture(page, '03-review.png');
 
-    await page.route('**/api/statistics', async (route) => {
-      await route.fulfill({ json: statisticsFixture });
-    });
     await page.goto('/?demo=statistics#/statistics');
     await readyPage(page, '.phase7-statistics-shell');
     await capture(page, '04-statistics.png');

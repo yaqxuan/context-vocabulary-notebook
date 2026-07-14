@@ -23,10 +23,10 @@ const htmlDocuments = collectFiles(path.join(rootDir, 'site'), '.html')
 // Pages assembles these tracked demo screenshots into the deployment artifact.
 // Keeping the mapping here verifies both the HTML contract and its source file.
 const generatedSiteAssets = new Map([
-  ['site/assets/screenshots/create-card-en.png', 'docs/demo/01-create-card-en.png'],
+  ['site/assets/screenshots/create-card-en.jpg', 'docs/demo/screen-create-card.jpg'],
   ['site/assets/screenshots/create-card-zh.png', 'docs/demo/01-create-card-zh.png'],
-  ['site/assets/screenshots/review.png', 'docs/demo/03-review.png'],
-  ['site/assets/screenshots/statistics.png', 'docs/demo/04-statistics.png'],
+  ['site/assets/screenshots/review.jpg', 'docs/demo/screen-review.jpg'],
+  ['site/assets/screenshots/statistics.jpg', 'docs/demo/screen-statistics.jpg'],
 ].map(([target, source]) => [path.join(rootDir, target), path.join(rootDir, source)]))
 
 const failures = []
