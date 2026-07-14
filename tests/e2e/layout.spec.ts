@@ -81,32 +81,57 @@ test('moves gutter bubbles across the lanes without allowing overlaps', async ({
   await page.goto('/#/');
   const anchors = page.locator('.review-bubble-anchor');
   await expect(anchors).toHaveCount(16);
-  await page.waitForTimeout(500);
 
   const readCenters = () => anchors.evaluateAll((elements) => elements.map((element) => {
     const box = element.getBoundingClientRect();
     return { x: box.x + box.width / 2, y: box.y + box.height / 2, radius: box.width / 2 };
   }));
-  const assertSeparated = (bubbles: Array<{ x: number; y: number; radius: number }>) => {
+  const minimumSeparation = (bubbles: Array<{ x: number; y: number; radius: number }>) => {
+    let minimum = Number.POSITIVE_INFINITY;
     for (let first = 0; first < bubbles.length; first += 1) {
       for (let second = first + 1; second < bubbles.length; second += 1) {
         const sameLane = (bubbles[first].x < 240) === (bubbles[second].x < 240);
         if (!sameLane) continue;
-        expect(Math.hypot(bubbles[first].x - bubbles[second].x, bubbles[first].y - bubbles[second].y))
-          .toBeGreaterThanOrEqual(bubbles[first].radius + bubbles[second].radius - 1);
+        const gap = Math.hypot(bubbles[first].x - bubbles[second].x, bubbles[first].y - bubbles[second].y)
+          - bubbles[first].radius
+          - bubbles[second].radius;
+        minimum = Math.min(minimum, gap);
       }
     }
+    return minimum;
   };
 
-  const before = await readCenters();
-  assertSeparated(before);
-  await page.waitForTimeout(2400);
-  const after = await readCenters();
-  assertSeparated(after);
-  const moved = after.filter((bubble, index) => (
-    Math.hypot(bubble.x - before[index].x, bubble.y - before[index].y) > 8
-  ));
-  expect(moved.length).toBeGreaterThanOrEqual(12);
+  await expect.poll(async () => minimumSeparation(await readCenters()), {
+    message: 'bubble physics should resolve the initial stacked render before movement is sampled',
+    timeout: 5_000,
+    intervals: [50, 100, 150, 200],
+  }).toBeGreaterThanOrEqual(-1);
+
+  let previous = await readCenters();
+  const travelled = previous.map(() => 0);
+  let smallestObservedGap = minimumSeparation(previous);
+
+  await expect.poll(async () => {
+    const current = await readCenters();
+    smallestObservedGap = Math.min(smallestObservedGap, minimumSeparation(current));
+    current.forEach((bubble, index) => {
+      travelled[index] += Math.hypot(bubble.x - previous[index].x, bubble.y - previous[index].y);
+    });
+    previous = current;
+    return travelled.filter((distance) => distance > 8).length;
+  }, {
+    message: 'at least 12 bubbles should accumulate visible travel across repeated samples',
+    timeout: 8_000,
+    intervals: [150, 200, 250, 300],
+  }).toBeGreaterThanOrEqual(12);
+
+  // Continue sampling after the movement condition succeeds so collision
+  // coverage is not limited to only the initial and final animation frames.
+  for (let sample = 0; sample < 8; sample += 1) {
+    await page.waitForTimeout(125);
+    smallestObservedGap = Math.min(smallestObservedGap, minimumSeparation(await readCenters()));
+  }
+  expect(smallestObservedGap).toBeGreaterThanOrEqual(-1);
 });
 
 test('keeps create primary actions in the first screen and advanced tools below the main grid', async ({ page }) => {

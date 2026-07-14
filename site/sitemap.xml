@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://yaqxuan.github.io/context-vocabulary-notebook/</loc>
+    <lastmod>2026-07-14</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yaqxuan.github.io/context-vocabulary-notebook/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yaqxuan.github.io/context-vocabulary-notebook/zh/" />
+  </url>
+  <url>
+    <loc>https://yaqxuan.github.io/context-vocabulary-notebook/zh/</loc>
+    <lastmod>2026-07-14</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yaqxuan.github.io/context-vocabulary-notebook/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yaqxuan.github.io/context-vocabulary-notebook/zh/" />
+  </url>
+</urlset>
