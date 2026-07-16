@@ -29,6 +29,9 @@ describe('schema: all required tables exist', () => {
     'sync_card_checkpoints',
     'sync_state',
     'sync_device_cursors',
+    'sync_server_config',
+    'sync_devices',
+    'pairing_sessions',
     'user_settings',
     'ai_configs',
   ];
@@ -167,7 +170,7 @@ describe('schema: migrations', () => {
   it('records each migration once', () => {
     initDb(db);
     const rows = db.prepare('SELECT version FROM schema_migrations ORDER BY version').all();
-    expect(rows).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
+    expect(rows).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }]);
   });
 
   it('creates one active scheduler profile and one local device identity', () => {

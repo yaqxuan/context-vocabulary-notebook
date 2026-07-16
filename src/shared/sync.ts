@@ -2,6 +2,42 @@ import type { ReviewRating } from './constants.js';
 
 export const SYNC_PROTOCOL_VERSION = 1;
 export const MAX_SYNC_EVENT_BATCH = 500;
+export const PAIRING_SESSION_TTL_MS = 5 * 60 * 1000;
+
+export interface SyncCapabilities {
+  protocol_version: 1;
+  server_id: string;
+  server_time: string;
+  minimum_client_version: string;
+}
+
+export interface PairingPayload {
+  protocol_version: 1;
+  server_id: string;
+  session_id: string;
+  secret: string;
+  expires_at: string;
+  tailscale_url: string | null;
+  lan: {
+    service_name: string;
+    urls: string[];
+    spki_sha256: string;
+    public_key_spki: string;
+  } | null;
+}
+
+export interface SignedConnectionProfile {
+  profile: {
+    protocol_version: 1;
+    server_id: string;
+    tailscale_url: string | null;
+    lan_service_name: string;
+    lan_urls: string[];
+    lan_spki_sha256: string;
+    issued_at: string;
+  };
+  signature: string;
+}
 
 export interface SyncReviewEventInput {
   event_id: string;

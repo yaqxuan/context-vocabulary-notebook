@@ -1,5 +1,51 @@
 import type { SupportedLanguage } from '../../shared/constants';
 
+const deviceSyncText = {
+  title: 'Android 离线同步',
+  description: '配对一台 Android 手机，并通过局域网 HTTPS 或 Tailscale 手动选择通道同步。普通网页接口不会暴露到这些监听器。',
+  failed: '设备同步操作失败',
+  lan: '局域网',
+  tailscale: 'Tailscale',
+  enabled: '已启用（重启应用后监听）',
+  disabled: '未启用',
+  online: '已安装并在线',
+  offline: '已安装但离线',
+  notInstalled: '未检测到 Tailscale',
+  tailscaleUrl: 'MagicDNS HTTPS 地址',
+  enableLan: '启用局域网同步',
+  disableLan: '关闭局域网同步',
+  restartRequired: '设置已保存；请重启 PC 应用使监听器变更生效。',
+  saved: 'Tailscale 地址已保存',
+  createPairing: '创建 5 分钟配对二维码',
+  updateProfile: '生成连接配置二维码',
+  pairQr: '配对二维码（一次性，五分钟有效）',
+  profileQr: '已签名连接配置二维码',
+  requestFrom: '来自 {name} 的配对请求',
+  approve: '确认配对',
+  approved: '设备已配对',
+  deny: '拒绝',
+  lastSeen: '最后同步',
+  neverSynced: '尚未同步',
+  revoke: '撤销设备',
+  revoked: '设备已撤销，两条通道的凭据均已失效',
+  noDevice: '当前没有已授权的 Android 设备。',
+};
+
+const deviceSyncEnglish = {
+  title: 'Android offline sync',
+  description: 'Pair one Android phone and manually sync through pinned LAN HTTPS or Tailscale. The regular web API is never exposed on these listeners.',
+  failed: 'Device sync operation failed', lan: 'Local network', tailscale: 'Tailscale',
+  enabled: 'Enabled (listener starts after restart)', disabled: 'Disabled', online: 'Installed and online',
+  offline: 'Installed but offline', notInstalled: 'Tailscale was not detected', tailscaleUrl: 'MagicDNS HTTPS URL',
+  enableLan: 'Enable LAN sync', disableLan: 'Disable LAN sync',
+  restartRequired: 'Saved. Restart the PC app to apply listener changes.', saved: 'Tailscale URL saved',
+  createPairing: 'Create five-minute pairing QR', updateProfile: 'Create connection profile QR',
+  pairQr: 'One-time pairing QR (valid for five minutes)', profileQr: 'Signed connection profile QR',
+  requestFrom: 'Pairing request from {name}', approve: 'Approve', approved: 'Device paired', deny: 'Deny',
+  lastSeen: 'Last sync', neverSynced: 'Never synced', revoke: 'Revoke device',
+  revoked: 'Device revoked on both transports', noDevice: 'No Android device is currently authorized.',
+};
+
 export const zh = {
   "placeholder": {
     "message": "{message}。此功能将在 {phase} 实现。",
@@ -160,6 +206,7 @@ export const zh = {
   },
   "settings": {
     "loadFailed": "无法加载设置",
+    "deviceSync": deviceSyncText,
     "learning": {
       "title": "学习与界面设置",
       "interfaceLanguage": "界面语言",
@@ -584,6 +631,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "settings": {
     "loadFailed": "Failed to load settings",
+    "deviceSync": deviceSyncEnglish,
     "learning": {
       "title": "Learning and interface settings",
       "interfaceLanguage": "Interface language",
@@ -1005,6 +1053,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "settings": {
     "loadFailed": "設定を読み込めませんでした",
+    "deviceSync": deviceSyncEnglish,
     "learning": {
       "title": "学習とインターフェース設定",
       "interfaceLanguage": "インターフェース言語",
@@ -1426,6 +1475,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "settings": {
     "loadFailed": "설정을 불러오지 못했습니다",
+    "deviceSync": deviceSyncEnglish,
     "learning": {
       "title": "학습 및 인터페이스 설정",
       "interfaceLanguage": "인터페이스 언어",
@@ -1847,6 +1897,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "settings": {
     "loadFailed": "Échec du chargement des paramètres",
+    "deviceSync": deviceSyncEnglish,
     "learning": {
       "title": "Paramètres d’apprentissage et d’interface",
       "interfaceLanguage": "Langue de l’interface",
@@ -2268,6 +2319,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "settings": {
     "loadFailed": "Einstellungen konnten nicht geladen werden",
+    "deviceSync": deviceSyncEnglish,
     "learning": {
       "title": "Lern- und Oberflächeinstellungen",
       "interfaceLanguage": "Oberflächensprache",
@@ -2689,6 +2741,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "settings": {
     "loadFailed": "No se pudieron cargar los ajustes",
+    "deviceSync": deviceSyncEnglish,
     "learning": {
       "title": "Ajustes de aprendizaje e interfaz",
       "interfaceLanguage": "Idioma de interfaz",
@@ -3110,6 +3163,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
   },
   "settings": {
     "loadFailed": "Не удалось загрузить настройки",
+    "deviceSync": deviceSyncEnglish,
     "learning": {
       "title": "Настройки обучения и интерфейса",
       "interfaceLanguage": "Язык интерфейса",

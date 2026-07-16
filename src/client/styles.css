@@ -4,6 +4,72 @@ html {
   scrollbar-gutter: stable;
 }
 
+.device-sync-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.device-sync-card,
+.device-sync-diagnostic,
+.device-sync-request,
+.device-sync-device,
+.device-sync-qr {
+  border: 1px solid var(--color-border, #d8d5cd);
+  border-radius: 12px;
+  padding: 1rem;
+  background: rgb(255 255 255 / 55%);
+}
+
+.device-sync-card h3 {
+  margin-top: 0;
+}
+
+.device-sync-card .phase7-settings-input {
+  margin: .4rem 0 .75rem;
+}
+
+.device-sync-break {
+  overflow-wrap: anywhere;
+}
+
+.device-sync-diagnostic pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.device-sync-request,
+.device-sync-device {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-top: .75rem;
+}
+
+.device-sync-request > span,
+.device-sync-device > div {
+  flex: 1;
+}
+
+.device-sync-device small {
+  display: block;
+  margin-top: .25rem;
+}
+
+.device-sync-qr {
+  width: min(100%, 360px);
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.device-sync-qr img {
+  display: block;
+  width: min(100%, 320px);
+  margin: .75rem auto 0;
+}
+
 body {
   margin: 0;
   min-width: 320px;

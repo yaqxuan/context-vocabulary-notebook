@@ -48,6 +48,7 @@
 | 词库 | 搜索、筛选、收藏、标签、详情编辑和熟记状态。 |
 | 统计 | 复习数量、正确率、月份汇总、标签与评分趋势。 |
 | 迁移 | 用 ZIP 完整备份个人数据，或分享纯卡片。 |
+| Android 离线复习 | 一台配对 Android 设备、加密本地副本、局域网 HTTPS 或 Tailscale 同步、离线图片/音频复习。 |
 | 本地识别 | 可选 ffmpeg、Tesseract OCR 和 whisper.cpp STT。 |
 | AI 辅助 | 可选 OpenAI-compatible 释义、用法、翻译、词形和拼写建议。 |
 
@@ -116,7 +117,7 @@ uploads/
 .env
 ```
 
-项目没有内置云同步。手动操作和本地 OCR/STT 不会把内容发出电脑。配置网络 AI
+本项目不提供厂商云同步。可选 Android 设备同步仍然完全自托管：PC 是权威端，不使用厂商云保存副本。手动操作和本地 OCR/STT 不会把内容发出电脑。配置网络 AI
 服务后，请求 AI 建议会发送文本，卡片云端转写会发送音频；只有显式开启
 `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1` 时，本地识别失败后才可能发送片段帧图或音频。
 API Key 保存在本地，并从应用内 ZIP 导出中排除。
@@ -126,6 +127,8 @@ API Key 保存在本地，并从应用内 ZIP 导出中排除。
 
 - [完整中文用户手册](./docs/USER_GUIDE.zh-CN.md)
 - [English user guide](./docs/USER_GUIDE.md)
+- [Android 离线复习与同步](./docs/ANDROID_SYNC.zh-CN.md)
+- [Android offline review and sync](./docs/ANDROID_SYNC.md)
 - [贡献指南](./CONTRIBUTING.md)
 - [安全政策](./SECURITY.md)
 - [行为准则](./CODE_OF_CONDUCT.md)

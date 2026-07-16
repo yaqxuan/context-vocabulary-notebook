@@ -32,6 +32,27 @@ export class ConflictError extends HttpError {
   }
 }
 
+export class UnauthorizedError extends HttpError {
+  constructor(message = 'Authentication required') {
+    super(401, message);
+    this.name = 'UnauthorizedError';
+  }
+}
+
+export class ForbiddenError extends HttpError {
+  constructor(message = 'Access denied') {
+    super(403, message);
+    this.name = 'ForbiddenError';
+  }
+}
+
+export class UpgradeRequiredError extends HttpError {
+  constructor(message = 'Sync protocol upgrade required') {
+    super(426, message);
+    this.name = 'UpgradeRequiredError';
+  }
+}
+
 export interface ApiErrorBody {
   error: string;
   message: string;

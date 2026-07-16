@@ -6,6 +6,32 @@ versions used while installation and data workflows continue to mature.
 
 ## [Unreleased]
 
+## [0.3.0-alpha] - 2026-07-16
+
+### Added
+
+- Transactional schema migrations, immutable device review events, canonical
+  FSRS replay, and schema-v2 ZIP backups with v1 import compatibility.
+- A dedicated `/v1` sync service with idempotent event batches, atomic full
+  snapshots, revision acknowledgements, hashed media manifests, and Range
+  downloads.
+- One-PC/one-Android pairing with short-lived secrets, PC approval, hashed
+  long-lived credentials, device revocation, and signed connection profiles.
+- Separate Tailscale Serve and pinned-certificate LAN transports, mDNS discovery,
+  private-source filtering, and WSL mirrored-network diagnostics.
+- A Capacitor 8 Android client with SQLCipher storage, Keystore-protected secret,
+  offline `Again / Good` review, foreground sync, media cache, and manual
+  LAN/Tailscale selection.
+- Android CI that produces a checksum artifact and publishes a signed APK only
+  when all four signing secrets are available.
+
+### Security
+
+- The regular browser app and API now bind to localhost by default. Network
+  listeners expose only device-sync routes and reject plaintext mobile traffic.
+- PC identity keys and device credentials are excluded from ZIP backups and
+  Android system/cloud backup.
+
 ### Changed
 
 - One-line installers now document and test installation directly into the
@@ -53,5 +79,6 @@ versions used while installation and data workflows continue to mature.
 - There is no hosted sync service, public online demo, native desktop package,
   or automatic multi-device synchronization.
 
-[Unreleased]: https://github.com/yaqxuan/context-vocabulary-notebook/compare/v0.2.0-alpha...HEAD
+[Unreleased]: https://github.com/yaqxuan/context-vocabulary-notebook/compare/v0.3.0-alpha...HEAD
+[0.3.0-alpha]: https://github.com/yaqxuan/context-vocabulary-notebook/compare/v0.2.0-alpha...v0.3.0-alpha
 [0.2.0-alpha]: https://github.com/yaqxuan/context-vocabulary-notebook/releases/tag/v0.2.0-alpha

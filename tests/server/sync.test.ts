@@ -84,6 +84,11 @@ describe('sync engine', () => {
       .toThrowError(SyncSequenceGapError);
     expect(() => applyReviewEventBatch(db, 'android-1', [{ ...event, event_id: 'different-event' }]))
       .toThrowError(SyncEventConflictError);
+    expect(() => applyReviewEventBatch(
+      db,
+      'android-oversized',
+      Array.from({ length: 501 }, (_, index) => mobileEvent(card.id, index + 1, '2026-07-04T08:00:00.000Z')),
+    )).toThrowError(SyncEventConflictError);
   });
 
   it('replays concurrent PC and Android streams into one canonical state', () => {

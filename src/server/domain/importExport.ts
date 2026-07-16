@@ -446,6 +446,11 @@ export async function executeImportZip(
           WHERE id = 1
         `).run(data.settings.interface_language, data.settings.default_target_language, data.settings.default_definition_language, data.settings.daily_review_limit, now);
       }
+
+      // A personal backup restore establishes a new trust epoch. Credentials and
+      // pending pairing sessions are deliberately not portable across restores.
+      db.prepare('UPDATE sync_devices SET revoked_at = COALESCE(revoked_at, ?)').run(now);
+      db.prepare('DELETE FROM pairing_sessions').run();
     }
   });
 

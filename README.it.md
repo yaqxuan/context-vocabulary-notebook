@@ -48,6 +48,7 @@ prima del salvataggio. Non accetta URL di siti video.
 | Libreria | Ricerca, filtri, preferiti, etichette, modifica e stato imparato. |
 | Statistiche | Numero di ripassi, accuratezza, totali mensili, etichette e tendenze. |
 | Portabilità | ZIP per backup personale o schede condivisibili. |
+| Ripasso Android offline | Un Android associato, replica cifrata, sincronizzazione LAN HTTPS o Tailscale, immagini/audio offline. |
 | Riconoscimento | ffmpeg, Tesseract OCR e whisper.cpp STT facoltativi. |
 | IA | Suggerimenti facoltativi tramite API OpenAI-compatible. |
 

@@ -45,6 +45,7 @@ Speichern prüfen. URLs von Video-Websites werden nicht unterstützt.
 | Bibliothek | Suche, Filter, Favoriten, Tags, Bearbeitung, Beherrscht-Status. |
 | Statistik | Wiederholungszahl, Genauigkeit, Monatssummen, Tags und Bewertungstrends. |
 | Portabilität | ZIP für persönliche Sicherung oder geteilte Karten. |
+| Android-Offline-Wiederholung | Ein gekoppeltes Android-Gerät, verschlüsselte Kopie, LAN-HTTPS- oder Tailscale-Sync, Bilder/Audio offline. |
 | Erkennung | Optionale ffmpeg-, Tesseract-OCR- und whisper.cpp-STT-Werkzeuge. |
 | KI | Optionale Vorschläge über eine OpenAI-compatible API. |
 

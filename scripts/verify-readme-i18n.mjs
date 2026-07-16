@@ -202,8 +202,8 @@ for (const language of languages) {
 
   const features = sectionContent(content, '<!-- README:FEATURES -->', '<!-- README:QUICKSTART -->')
   const featureRows = features.split('\n').filter((line) => /^\|.+\|$/.test(line) && !/^\|[-|]+\|$/.test(line))
-  if (featureRows.length !== 9) {
-    failures.push(`${file}: FEATURES must contain one header and 8 shared capability rows; found ${featureRows.length}`)
+  if (featureRows.length !== 10) {
+    failures.push(`${file}: FEATURES must contain one header and 9 shared capability rows; found ${featureRows.length}`)
   }
 
   const optional = sectionContent(content, '<!-- README:OPTIONAL -->', '<!-- README:PRIVACY -->')
@@ -299,7 +299,7 @@ for (const guide of ['docs/USER_GUIDE.md', 'docs/USER_GUIDE.zh-CN.md']) {
     continue
   }
   const content = await readFile(guidePath, 'utf8')
-  for (const literal of ['ALLOW_PRIVATE_AI_PROVIDER_URLS', 'CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1', '100 MB', 'PORT=3108', 'CLIENT_PORT=5174']) {
+  for (const literal of ['ALLOW_PRIVATE_AI_PROVIDER_URLS', 'CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1', '100 MB', 'PORT=3117', 'CLIENT_PORT=5174']) {
     if (!content.includes(literal)) failures.push(`${guide}: missing operational boundary ${literal}`)
   }
 }

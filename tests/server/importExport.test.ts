@@ -439,6 +439,14 @@ describe('import/export API', () => {
         created_at: '2026-05-30T00:00:00.000Z',
       }],
     });
+    db.prepare(`
+      INSERT INTO sync_devices (device_id, device_name, device_type, credential_hash, paired_at)
+      VALUES ('old-phone', 'Old phone', 'android', ?, ?)
+    `).run('a'.repeat(64), '2026-05-30T00:00:00.000Z');
+    db.prepare(`
+      INSERT INTO pairing_sessions (session_id, secret_hash, status, created_at, expires_at)
+      VALUES ('pending', ?, 'created', ?, ?)
+    `).run('b'.repeat(64), '2026-05-30T00:00:00.000Z', '2099-05-30T00:00:00.000Z');
 
     await request(createApp(db, { uploadsDir }))
       .post('/api/import/execute')
@@ -453,5 +461,7 @@ describe('import/export API', () => {
     expect(card.is_favorite).toBe(1);
     expect(fsrs).toMatchObject({ reps: 4, lapses: 1, state: 2 });
     expect(logs.count).toBe(1);
+    expect((db.prepare('SELECT revoked_at FROM sync_devices WHERE device_id = ?').get('old-phone') as { revoked_at: string | null }).revoked_at).toBeTruthy();
+    expect((db.prepare('SELECT COUNT(*) AS count FROM pairing_sessions').get() as { count: number }).count).toBe(0);
   });
 });

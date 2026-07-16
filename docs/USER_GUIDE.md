@@ -84,14 +84,16 @@ Then open:
 - App: <http://localhost:5173>
 - Backend health check: <http://localhost:3107/api/health>
 
-The development servers currently listen on all network interfaces, and the app
-does not provide user authentication. Use the `localhost` URLs above, keep the
-ports behind your firewall on untrusted networks, and do not expose them directly
-to the public Internet.
+The regular web app and API bind to localhost by default. Device sync, when
+explicitly enabled, uses separate restricted listeners and device credentials.
+Do not expose the regular app directly to the public Internet.
 
 Create a card manually first. Use the Batch Import entry on the Create page when
 you want to process multiple local MP4 clips. Review due cards with `Again` or
 `Good`; FSRS calculates the next due date.
+
+For Android installation, pairing, local-network firewall rules, Tailscale Serve,
+and WSL mirrored networking, see [Android offline review and device sync](./ANDROID_SYNC.md).
 
 ## 5. Update
 
@@ -243,6 +245,12 @@ PowerShell uses `Copy-Item .env.example .env` instead of `cp`.
 | `DATABASE_PATH` | `./data/context-vocabulary-notebook.sqlite` | SQLite database path. |
 | `UPLOADS_DIR` | `./uploads` | Uploaded media directory. |
 | `CLIENT_PORT` | `5173` | Vite development port. |
+| `HOST` | `127.0.0.1` | Regular web/API bind address; change only deliberately. |
+| `CVN_DEVICE_SYNC` | `1` | Enable the localhost Tailscale upstream. |
+| `SYNC_PORT` | `3108` | HTTP upstream used only by Tailscale Serve. |
+| `CVN_LAN_SYNC` | `0` | Optional environment override for LAN HTTPS. |
+| `LAN_SYNC_PORT` | `3109` | Pinned-certificate LAN HTTPS port. |
+| `SYNC_IDENTITY_DIR` | `data/sync-identity` | PC identity key/certificate directory; excluded from ZIP backups. |
 | `CVN_HOME` | Current directory | Installer target directory. |
 | `CVN_INSTALL_FFMPEG` | `0` | Ask the core installer to try installing ffmpeg. |
 | `CVN_INSTALL_TESSERACT` | `0` | Ask the core installer to try installing Tesseract. |
@@ -263,11 +271,11 @@ Set both ports in the process environment before `npm run dev` so the Express
 server and Vite proxy read the same API port:
 
 ```bash
-PORT=3108 CLIENT_PORT=5174 npm run dev
+PORT=3117 CLIENT_PORT=5174 npm run dev
 ```
 
 ```powershell
-$env:PORT = "3108"
+$env:PORT = "3117"
 $env:CLIENT_PORT = "5174"
 npm run dev
 ```
