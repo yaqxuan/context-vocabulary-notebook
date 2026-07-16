@@ -3,6 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createProductionApp } from './startup.js';
+import { getDb } from './db/connection.js';
+import { createSyncApp } from './syncApp.js';
 
 function findProjectRoot(startDir: string): string {
   let current = startDir;
@@ -36,8 +38,17 @@ const projectRoot = findProjectRoot(path.dirname(fileURLToPath(import.meta.url))
 loadEnvFile(path.join(projectRoot, '.env'));
 
 const port = Number(process.env.PORT ?? 3107);
+const host = process.env.HOST ?? '127.0.0.1';
 const app = createProductionApp();
 
-app.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
+app.listen(port, host, () => {
+  console.log(`Server listening on http://${host}:${port}`);
 });
+
+if (process.env.CVN_DEVICE_SYNC === '1') {
+  const syncPort = Number(process.env.SYNC_PORT ?? 3108);
+  const uploadsDir = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? 'uploads');
+  createSyncApp(getDb(), uploadsDir).listen(syncPort, '127.0.0.1', () => {
+    console.log(`Device sync listening on http://127.0.0.1:${syncPort}`);
+  });
+}

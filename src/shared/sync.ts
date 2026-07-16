@@ -2,6 +2,23 @@ import type { ReviewRating } from './constants.js';
 
 export const SYNC_PROTOCOL_VERSION = 1;
 export const MAX_SYNC_EVENT_BATCH = 500;
+export const PAIRING_SESSION_TTL_MS = 5 * 60 * 1000;
+
+export interface SyncCapabilities {
+  protocol_version: 1;
+  server_id: string;
+  server_time: string;
+  minimum_client_version: string;
+}
+
+export interface PairingPayload {
+  protocol_version: 1;
+  server_id: string;
+  session_id: string;
+  secret: string;
+  expires_at: string;
+  tailscale_url: string | null;
+}
 
 export interface SyncReviewEventInput {
   event_id: string;

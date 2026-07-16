@@ -8,6 +8,7 @@ export default defineConfig({
   plugins: [react()],
   root: '.',
   server: {
+    host: process.env.HOST ?? '127.0.0.1',
     port: clientPort,
     strictPort: true,
     proxy: {

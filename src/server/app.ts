@@ -18,6 +18,7 @@ import { clipAnalysisRouter } from './routes/clipAnalysis.js';
 import { statisticsRouter } from './routes/statistics.js';
 import { importExportRouter } from './routes/importExport.js';
 import { localRecognitionRouter } from './routes/localRecognition.js';
+import { deviceSyncRouter } from './routes/deviceSync.js';
 import { ensureUploadsDir, resolveUploadPath } from './storage/uploads.js';
 import { BadRequestError } from './http/errors.js';
 
@@ -100,6 +101,7 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
   application.use('/api/local-recognition', localRecognitionRouter(options.localRecognition));
   application.use('/api/statistics', statisticsRouter(db));
   application.use('/api', importExportRouter(db, uploadsDir));
+  application.use('/api/device-sync', deviceSyncRouter(db));
 
   return application;
 }

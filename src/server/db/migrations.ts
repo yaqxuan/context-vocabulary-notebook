@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION } from '../../shared/scheduler.js';
 
-export const DATABASE_SCHEMA_VERSION = 3;
+export const DATABASE_SCHEMA_VERSION = 4;
 
 interface Migration {
   version: number;
@@ -185,9 +185,52 @@ function migrateSyncEngine(db: Database): void {
   `);
 }
 
+function migrateDevicePairing(db: Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sync_server_config (
+      id             INTEGER PRIMARY KEY CHECK (id = 1),
+      server_id      TEXT NOT NULL UNIQUE,
+      tailscale_url  TEXT,
+      created_at     TEXT NOT NULL,
+      updated_at     TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS sync_devices (
+      device_id       TEXT PRIMARY KEY,
+      device_name     TEXT NOT NULL,
+      device_type     TEXT NOT NULL CHECK (device_type IN ('android')),
+      credential_hash TEXT NOT NULL UNIQUE,
+      paired_at       TEXT NOT NULL,
+      last_seen_at    TEXT,
+      revoked_at      TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS pairing_sessions (
+      session_id          TEXT PRIMARY KEY,
+      secret_hash         TEXT NOT NULL,
+      status              TEXT NOT NULL CHECK (status IN ('created', 'awaiting_approval', 'approved', 'denied')),
+      requested_device_id TEXT,
+      requested_name      TEXT,
+      issued_credential   TEXT,
+      created_at          TEXT NOT NULL,
+      expires_at          TEXT NOT NULL,
+      approved_at         TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_pairing_sessions_expires_at ON pairing_sessions (expires_at);
+    CREATE INDEX IF NOT EXISTS idx_sync_devices_active ON sync_devices (revoked_at) WHERE revoked_at IS NULL;
+  `);
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT OR IGNORE INTO sync_server_config (id, server_id, created_at, updated_at)
+    VALUES (1, ?, ?, ?)
+  `).run(randomUUID(), now, now);
+}
+
 const migrations: Migration[] = [
   { version: 2, name: 'review-events-and-scheduler-profile', up: migrateReviewEvents },
   { version: 3, name: 'snapshot-and-event-sync-engine', up: migrateSyncEngine },
+  { version: 4, name: 'device-pairing-and-authentication', up: migrateDevicePairing },
 ];
 
 export function runMigrations(db: Database): void {
