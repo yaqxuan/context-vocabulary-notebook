@@ -23,6 +23,10 @@ describe('schema: all required tables exist', () => {
     'card_tags',
     'fsrs_states',
     'review_logs',
+    'schema_migrations',
+    'scheduler_profiles',
+    'local_device_identity',
+    'sync_card_checkpoints',
     'user_settings',
     'ai_configs',
   ];
@@ -142,6 +146,31 @@ describe('schema: review_logs columns', () => {
     expect(names).toContain('due_date_before');
     expect(names).toContain('due_date_after');
     expect(names).toContain('created_at');
+    expect(names).toContain('device_id');
+    expect(names).toContain('device_sequence');
+    expect(names).toContain('scheduler_version');
+    expect(names).toContain('parameter_version');
+    expect(names).toContain('state_before_json');
+    expect(names).toContain('state_after_json');
+    expect(names).toContain('replay_epoch');
+  });
+
+  it('exposes enriched records through the review_events view', () => {
+    const view = db.prepare("SELECT name FROM sqlite_master WHERE type='view' AND name='review_events'").get();
+    expect(view).toBeTruthy();
+  });
+});
+
+describe('schema: migrations', () => {
+  it('records each migration once', () => {
+    initDb(db);
+    const rows = db.prepare('SELECT version FROM schema_migrations ORDER BY version').all();
+    expect(rows).toEqual([{ version: 1 }, { version: 2 }]);
+  });
+
+  it('creates one active scheduler profile and one local device identity', () => {
+    expect(db.prepare('SELECT COUNT(*) AS count FROM scheduler_profiles WHERE is_active = 1').get()).toEqual({ count: 1 });
+    expect(db.prepare('SELECT COUNT(*) AS count FROM local_device_identity').get()).toEqual({ count: 1 });
   });
 });
 

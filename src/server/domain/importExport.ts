@@ -61,7 +61,7 @@ async function readExportJsonFromZip(buffer: Buffer): Promise<{ zip: JSZip; data
     throw new BadRequestError('export.json must be valid JSON');
   }
 
-  if (data.schema_version !== 1) throw new BadRequestError('Unsupported export schema_version');
+  if (data.schema_version !== 1 && data.schema_version !== 2) throw new BadRequestError('Unsupported export schema_version');
   if (data.export_type !== 'marked' && data.export_type !== 'pure') throw new BadRequestError('Invalid export_type');
   if (!Array.isArray(data.cards) || !Array.isArray(data.contexts) || !Array.isArray(data.media_files) || !Array.isArray(data.tags) || !Array.isArray(data.card_tags)) {
     throw new BadRequestError('Invalid export.json shape');
@@ -109,6 +109,17 @@ function validateExportJson(data: ExportJson): void {
     requireIsoTimestamp(log.due_date_before);
     requireIsoTimestamp(log.due_date_after);
     requireIsoTimestamp(log.created_at);
+  }
+  for (const event of data.review_events ?? []) {
+    requireIsoTimestamp(event.reviewed_at);
+    requireIsoTimestamp(event.recorded_at);
+    requireIsoTimestamp(event.received_at);
+    requireIsoTimestamp(event.due_date_before);
+    requireIsoTimestamp(event.due_date_after);
+    requireIsoTimestamp(event.created_at);
+    if (!event.device_id || !Number.isSafeInteger(event.device_sequence) || event.device_sequence < 1) {
+      throw new BadRequestError('Invalid review event device sequence');
+    }
   }
 }
 
@@ -163,7 +174,7 @@ export async function buildExportZip(db: Database, uploadsDir: string, type: Exp
   `).all() as ExportJson['card_tags'];
 
   const exportJson: ExportJson = {
-    schema_version: 1,
+    schema_version: 2,
     export_type: type,
     exported_at: new Date().toISOString(),
     cards,
@@ -183,12 +194,17 @@ export async function buildExportZip(db: Database, uploadsDir: string, type: Exp
       WHERE wsc.deleted_at IS NULL
       ORDER BY fs.created_at ASC, fs.id ASC
     `).all() as ExportJson['fsrs_states'];
-    exportJson.review_logs = db.prepare(`
+    exportJson.review_events = db.prepare(`
       SELECT rl.* FROM review_logs rl
       JOIN word_sense_cards wsc ON wsc.id = rl.card_id
       WHERE wsc.deleted_at IS NULL
       ORDER BY rl.reviewed_at ASC, rl.id ASC
-    `).all() as ExportJson['review_logs'];
+    `).all() as ExportJson['review_events'];
+    exportJson.scheduler_profiles = db.prepare(`
+      SELECT profile_id, scheduler_version, parameters_json, is_active, created_at
+      FROM scheduler_profiles
+      ORDER BY created_at ASC, profile_id ASC
+    `).all() as ExportJson['scheduler_profiles'];
     exportJson.settings = db.prepare('SELECT * FROM user_settings WHERE id = 1').get() as ExportJson['settings'];
   }
 
@@ -225,7 +241,7 @@ export async function scanImportZip(db: Database, buffer: Buffer): Promise<Impor
     .map((media) => media.file_name);
 
   return {
-    schema_version: 1,
+    schema_version: data.schema_version,
     export_type: data.export_type,
     counts: {
       cards: data.cards.length,
@@ -395,13 +411,30 @@ export async function executeImportZip(
     }
 
     if (data.export_type === 'marked') {
-      for (const log of data.review_logs ?? []) {
+      const importedDeviceId = `import:${randomUUID()}`;
+      const importedEvents = data.review_events ?? data.review_logs ?? [];
+      let importedSequence = 1;
+      for (const log of importedEvents) {
         const localCardId = cardMap.get(log.card_id);
         if (!localCardId || mergedCardIds.has(log.card_id)) continue;
         db.prepare(`
-          INSERT INTO review_logs (id, card_id, rating, reviewed_at, due_date_before, due_date_after, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(randomUUID(), localCardId, log.rating, log.reviewed_at, log.due_date_before, log.due_date_after, log.created_at);
+          INSERT INTO review_logs (
+            id, card_id, rating, reviewed_at, due_date_before, due_date_after, created_at,
+            device_id, device_sequence, recorded_at, received_at, scheduler_version,
+            parameter_version, state_before_json, state_after_json, replay_epoch
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+        `).run(
+          randomUUID(), localCardId, log.rating, log.reviewed_at, log.due_date_before,
+          log.due_date_after, log.created_at, importedDeviceId, importedSequence,
+          'recorded_at' in log ? log.recorded_at : log.created_at,
+          now,
+          'scheduler_version' in log ? log.scheduler_version : 'ts-fsrs@5.4.1',
+          'parameter_version' in log ? log.parameter_version : 'default-v1',
+          'state_before_json' in log ? log.state_before_json : null,
+          'state_after_json' in log ? log.state_after_json : null,
+        );
+        importedSequence += 1;
       }
 
       if (data.settings) {

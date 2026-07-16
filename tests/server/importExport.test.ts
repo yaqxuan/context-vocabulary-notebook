@@ -100,11 +100,12 @@ describe('import/export API', () => {
 
     const exported = await readExportJson(response.body as Buffer);
     expect(exported.export_type).toBe('pure');
+    expect(exported.schema_version).toBe(2);
     expect(exported.cards).toHaveLength(1);
     expect(exported.cards[0]).not.toHaveProperty('is_favorite');
     expect(exported.cards[0]).not.toHaveProperty('status');
     expect(exported.fsrs_states).toBeUndefined();
-    expect(exported.review_logs).toBeUndefined();
+    expect(exported.review_events).toBeUndefined();
     expect(exported.settings).toBeUndefined();
   });
 
@@ -118,8 +119,17 @@ describe('import/export API', () => {
     createContext(db, { card_id: card.id, sentence: 'That was awkward.' });
     db.prepare('UPDATE word_sense_cards SET is_favorite = 1, status = ? WHERE id = ?').run('mastered', card.id);
     db.prepare(`
-      INSERT INTO review_logs (id, card_id, rating, reviewed_at, due_date_before, due_date_after, created_at)
-      VALUES ('log-1', ?, 'good', '2026-05-30T00:00:00.000Z', '2026-05-30T00:00:00.000Z', '2026-06-01T00:00:00.000Z', '2026-05-30T00:00:00.000Z')
+      INSERT INTO review_logs (
+        id, card_id, rating, reviewed_at, due_date_before, due_date_after, created_at,
+        device_id, device_sequence, recorded_at, received_at, scheduler_version,
+        parameter_version, replay_epoch
+      )
+      VALUES (
+        'log-1', ?, 'good', '2026-05-30T00:00:00.000Z', '2026-05-30T00:00:00.000Z',
+        '2026-06-01T00:00:00.000Z', '2026-05-30T00:00:00.000Z', 'pc-test', 1,
+        '2026-05-30T00:00:00.000Z', '2026-05-30T00:00:00.000Z', 'ts-fsrs@5.4.1',
+        'default-v1', 1
+      )
     `).run(card.id);
     db.prepare(`
       INSERT INTO ai_configs (id, name, base_url, api_key, model, is_active, created_at, updated_at)
@@ -138,7 +148,9 @@ describe('import/export API', () => {
     expect(exported.cards[0].is_favorite).toBe(1);
     expect(exported.cards[0].status).toBe('mastered');
     expect(exported.fsrs_states).toHaveLength(1);
-    expect(exported.review_logs).toHaveLength(1);
+    expect(exported.review_events).toHaveLength(1);
+    expect(exported.review_events?.[0].device_id).toBeTruthy();
+    expect(exported.scheduler_profiles).toHaveLength(1);
     expect(exported.settings?.id).toBe(1);
     expect(JSON.stringify(exported)).not.toContain('sk-secret');
     expect(exported).not.toHaveProperty('ai_configs');
