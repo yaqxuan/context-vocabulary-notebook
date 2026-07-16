@@ -81,11 +81,14 @@ npm run dev
 - 应用：<http://localhost:5173>
 - 后端健康检查：<http://localhost:3107/api/health>
 
-当前开发服务器监听所有网络接口，而且应用没有用户认证。请使用上面的
-`localhost` 地址；在不可信网络中用防火墙保护端口，不要直接暴露到公网。
+普通网页应用和 API 默认只绑定 localhost。只有用户明确启用时，设备同步才会启动
+独立、受限且需要设备凭据的监听器。不要把普通应用直接暴露到公网。
 
 建议先手动创建第一张卡片。需要处理多个本地 MP4 时，从新建页进入“批量导入”。
 复习时用 `Again` 或 `Good` 反馈，FSRS 会计算下次到期时间。
+
+Android 安装、配对、局域网防火墙、Tailscale Serve 和 WSL mirrored 网络说明见
+[Android 离线复习与同步](./ANDROID_SYNC.zh-CN.md)。
 
 ## 5. 更新
 
@@ -233,6 +236,12 @@ PowerShell 用 `Copy-Item .env.example .env` 代替 `cp`。
 | `DATABASE_PATH` | `./data/context-vocabulary-notebook.sqlite` | SQLite 数据库路径。 |
 | `UPLOADS_DIR` | `./uploads` | 上传媒体目录。 |
 | `CLIENT_PORT` | `5173` | Vite 开发端口。 |
+| `HOST` | `127.0.0.1` | 普通网页/API 绑定地址；只在明确理解风险时修改。 |
+| `CVN_DEVICE_SYNC` | `1` | 启用只供 Tailscale Serve 使用的 localhost 上游。 |
+| `SYNC_PORT` | `3108` | 只供 Tailscale Serve 代理的 HTTP 上游端口。 |
+| `CVN_LAN_SYNC` | `0` | 局域网 HTTPS 的可选环境变量覆盖。 |
+| `LAN_SYNC_PORT` | `3109` | 固定证书局域网 HTTPS 端口。 |
+| `SYNC_IDENTITY_DIR` | `data/sync-identity` | PC 身份密钥/证书目录；ZIP 备份排除。 |
 | `CVN_HOME` | 当前目录 | 安装目标目录。 |
 | `CVN_INSTALL_FFMPEG` | `0` | 让核心安装器尝试安装 ffmpeg。 |
 | `CVN_INSTALL_TESSERACT` | `0` | 让核心安装器尝试安装 Tesseract。 |
@@ -253,11 +262,11 @@ PowerShell 用 `Copy-Item .env.example .env` 代替 `cp`。
 代理读取同一个 API 端口：
 
 ```bash
-PORT=3108 CLIENT_PORT=5174 npm run dev
+PORT=3117 CLIENT_PORT=5174 npm run dev
 ```
 
 ```powershell
-$env:PORT = "3108"
+$env:PORT = "3117"
 $env:CLIENT_PORT = "5174"
 npm run dev
 ```

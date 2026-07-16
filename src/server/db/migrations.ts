@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION } from '../../shared/scheduler.js';
 
-export const DATABASE_SCHEMA_VERSION = 4;
+export const DATABASE_SCHEMA_VERSION = 5;
 
 interface Migration {
   version: number;
@@ -227,10 +227,19 @@ function migrateDevicePairing(db: Database): void {
   `).run(randomUUID(), now, now);
 }
 
+function migrateLanTransport(db: Database): void {
+  addColumn(db, 'sync_server_config', 'lan_enabled', 'INTEGER NOT NULL DEFAULT 0');
+  addColumn(db, 'sync_server_config', 'lan_port', 'INTEGER NOT NULL DEFAULT 3109');
+  addColumn(db, 'sync_server_config', 'lan_fingerprint', 'TEXT');
+  addColumn(db, 'sync_server_config', 'lan_public_key', 'TEXT');
+  addColumn(db, 'sync_server_config', 'lan_service_name', "TEXT NOT NULL DEFAULT 'cvn-vocabulary-notebook'");
+}
+
 const migrations: Migration[] = [
   { version: 2, name: 'review-events-and-scheduler-profile', up: migrateReviewEvents },
   { version: 3, name: 'snapshot-and-event-sync-engine', up: migrateSyncEngine },
   { version: 4, name: 'device-pairing-and-authentication', up: migrateDevicePairing },
+  { version: 5, name: 'lan-https-and-discovery-config', up: migrateLanTransport },
 ];
 
 export function runMigrations(db: Database): void {

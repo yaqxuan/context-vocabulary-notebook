@@ -1156,10 +1156,10 @@ describe('SettingsPage', () => {
       expect(screen.queryByText(/AI 自动制卡/)).not.toBeInTheDocument();
     });
 
-    it('does not render text "同步"', async () => {
+    it('renders the Android device sync entry', async () => {
       render(<SettingsPage />);
       await screen.findByLabelText('默认学习语言');
-      expect(screen.queryByText(/同步/)).not.toBeInTheDocument();
+      expect(screen.getByText('Android 离线同步')).toBeInTheDocument();
     });
   });
 

@@ -45,6 +45,7 @@ résultat avant l’enregistrement. Les URL de sites vidéo ne sont pas accepté
 | Bibliothèque | Recherche, filtres, favoris, étiquettes, édition, état maîtrisé. |
 | Statistiques | Nombre de révisions, précision, totaux mensuels, étiquettes et tendances. |
 | Portabilité | ZIP de sauvegarde personnelle ou de cartes partageables. |
+| Révision Android hors ligne | Un Android associé, copie chiffrée, synchro LAN HTTPS ou Tailscale, images/audio hors ligne. |
 | Reconnaissance | ffmpeg, Tesseract OCR et whisper.cpp STT facultatifs. |
 | IA | Suggestions facultatives via une API OpenAI-compatible. |
 

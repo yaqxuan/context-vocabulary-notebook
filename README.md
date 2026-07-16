@@ -54,6 +54,7 @@ recognition result before saving each card. It does not accept website video URL
 | Library | Search, filters, favorites, tags, detail editing, mastered state. |
 | Statistics | Review count, accuracy, monthly totals, tags, rating trend. |
 | Portability | ZIP backup/import for personal data or shareable cards. |
+| Android offline review | One paired Android device, encrypted local replica, LAN HTTPS or Tailscale sync, offline image/audio review. |
 | Local recognition | Optional ffmpeg, Tesseract OCR, and whisper.cpp STT. |
 | AI assistance | Optional OpenAI-compatible meaning, usage, translation, lemma, and spelling suggestions. |
 
@@ -125,7 +126,9 @@ uploads/
 .env
 ```
 
-There is no built-in cloud sync. Manual work and local OCR/STT keep content on
+There is no vendor cloud sync. Optional Android device sync remains self-hosted:
+the PC is authoritative and no
+vendor cloud stores the replica. Manual work and local OCR/STT keep content on
 your machine. A configured network AI provider can receive text requested for AI
 suggestions, audio sent through card transcription, and—only when
 `CVN_CLIP_ANALYSIS_CLOUD_FALLBACK=1`—clip frames or audio after local recognition
@@ -137,6 +140,8 @@ fails. API keys stay local and are excluded from in-app ZIP exports.
 - [Application screen catalog](./docs/SCREEN_CATALOG.md)
 - [Complete user guide](./docs/USER_GUIDE.md)
 - [中文用户手册](./docs/USER_GUIDE.zh-CN.md)
+- [Android offline review and sync](./docs/ANDROID_SYNC.md)
+- [Android 离线复习与同步](./docs/ANDROID_SYNC.zh-CN.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Security policy](./SECURITY.md)
 - [Code of Conduct](./CODE_OF_CONDUCT.md)

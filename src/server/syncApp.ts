@@ -50,9 +50,22 @@ function asSyncHttpError(error: unknown): never {
   throw error;
 }
 
-export function createSyncApp(db: Database, uploadsDir: string): express.Express {
+export function createSyncApp(
+  db: Database,
+  uploadsDir: string,
+  options: { allowRemoteAddress?: (address: string | undefined) => boolean } = {},
+): express.Express {
   const app = express();
   app.disable('x-powered-by');
+  if (options.allowRemoteAddress) {
+    app.use((req, res, next) => {
+      if (!options.allowRemoteAddress!(req.socket.remoteAddress)) {
+        res.status(403).json({ error: 'LAN source is not allowed', message: 'LAN source is not allowed' });
+        return;
+      }
+      next();
+    });
+  }
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/v1/capabilities', (_req, res) => {

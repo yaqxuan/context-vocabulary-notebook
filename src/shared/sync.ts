@@ -18,6 +18,25 @@ export interface PairingPayload {
   secret: string;
   expires_at: string;
   tailscale_url: string | null;
+  lan: {
+    service_name: string;
+    urls: string[];
+    spki_sha256: string;
+    public_key_spki: string;
+  } | null;
+}
+
+export interface SignedConnectionProfile {
+  profile: {
+    protocol_version: 1;
+    server_id: string;
+    tailscale_url: string | null;
+    lan_service_name: string;
+    lan_urls: string[];
+    lan_spki_sha256: string;
+    issued_at: string;
+  };
+  signature: string;
 }
 
 export interface SyncReviewEventInput {

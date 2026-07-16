@@ -35,12 +35,14 @@ export interface AppOptions {
     analyze?: (options: AnalyzeClipOptions) => Promise<import('../shared/types.js').ClipAnalysisResponseDto>;
   };
   localRecognition?: LocalRecognitionReadinessOptions;
+  syncIdentityDir?: string;
 }
 
 const DEFAULT_UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
 
 export function createApp(db: Database, options: AppOptions = {}): express.Express {
   const uploadsDir = options.uploadsDir ?? DEFAULT_UPLOADS_DIR;
+  const syncIdentityDir = options.syncIdentityDir ?? path.resolve(process.cwd(), 'data/sync-identity');
   ensureUploadsDir(uploadsDir);
 
   const application = express();
@@ -101,7 +103,7 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
   application.use('/api/local-recognition', localRecognitionRouter(options.localRecognition));
   application.use('/api/statistics', statisticsRouter(db));
   application.use('/api', importExportRouter(db, uploadsDir));
-  application.use('/api/device-sync', deviceSyncRouter(db));
+  application.use('/api/device-sync', deviceSyncRouter(db, syncIdentityDir));
 
   return application;
 }

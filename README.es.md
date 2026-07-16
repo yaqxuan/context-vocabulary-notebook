@@ -45,6 +45,7 @@ resultado antes de guardarlo. No admite URL de sitios de vídeo.
 | Biblioteca | Búsqueda, filtros, favoritos, etiquetas, edición y estado dominado. |
 | Estadísticas | Cantidad de repasos, precisión, totales mensuales, etiquetas y tendencias. |
 | Portabilidad | ZIP para copia personal o para compartir tarjetas. |
+| Repaso Android sin conexión | Un Android vinculado, réplica cifrada, sincronización LAN HTTPS o Tailscale e imágenes/audio sin conexión. |
 | Reconocimiento | ffmpeg, Tesseract OCR y whisper.cpp STT opcionales. |
 | IA | Sugerencias opcionales mediante una API OpenAI-compatible. |
 

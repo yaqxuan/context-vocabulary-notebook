@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Context Vocabulary Notebook</string>
+    <string name="title_activity_main">Context Vocabulary Notebook</string>
+    <string name="package_name">io.github.yaqxuan.contextvocabularynotebook</string>
+    <string name="custom_url_scheme">io.github.yaqxuan.contextvocabularynotebook</string>
+</resources>

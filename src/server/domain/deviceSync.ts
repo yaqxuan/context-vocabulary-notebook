@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import type { Database } from 'better-sqlite3';
 import { PAIRING_SESSION_TTL_MS, SYNC_PROTOCOL_VERSION, type PairingPayload } from '../../shared/sync.js';
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../http/errors.js';
+import { lanUrls } from './lanIdentity.js';
 
 interface PairingSessionRow {
   session_id: string;
@@ -31,6 +32,7 @@ export interface TailscaleStatus {
   dns_name: string | null;
   configured_url: string | null;
   serve_command: string;
+  serve_available: boolean;
 }
 
 function digest(value: string): string {
@@ -49,7 +51,18 @@ function activeSession(db: Database, sessionId: string, secret: string, now = ne
 }
 
 export function createPairingSession(db: Database, now = new Date()): PairingPayload {
-  const server = db.prepare('SELECT server_id, tailscale_url FROM sync_server_config WHERE id = 1').get() as { server_id: string; tailscale_url: string | null };
+  const server = db.prepare(`
+    SELECT server_id, tailscale_url, lan_enabled, lan_port, lan_fingerprint, lan_public_key, lan_service_name
+    FROM sync_server_config WHERE id = 1
+  `).get() as {
+    server_id: string;
+    tailscale_url: string | null;
+    lan_enabled: number;
+    lan_port: number;
+    lan_fingerprint: string | null;
+    lan_public_key: string | null;
+    lan_service_name: string;
+  };
   const sessionId = randomUUID();
   const secret = randomSecret();
   const expiresAt = new Date(now.getTime() + PAIRING_SESSION_TTL_MS).toISOString();
@@ -65,6 +78,12 @@ export function createPairingSession(db: Database, now = new Date()): PairingPay
     secret,
     expires_at: expiresAt,
     tailscale_url: server.tailscale_url,
+    lan: server.lan_enabled && server.lan_fingerprint && server.lan_public_key ? {
+      service_name: server.lan_service_name,
+      urls: lanUrls(server.lan_port),
+      spki_sha256: server.lan_fingerprint,
+      public_key_spki: server.lan_public_key,
+    } : null,
   };
 }
 
@@ -135,10 +154,17 @@ export function pairingStatus(
   secret: string,
   now = new Date(),
 ): { status: PairingSessionRow['status']; credential?: string; device_id?: string } {
-  const session = activeSession(db, sessionId, secret, now);
-  if (session.status === 'denied') return { status: 'denied' };
-  if (session.status !== 'approved' || !session.issued_credential || !session.requested_device_id) return { status: session.status };
-  return { status: 'approved', credential: session.issued_credential, device_id: session.requested_device_id };
+  return db.transaction(() => {
+    const session = activeSession(db, sessionId, secret, now);
+    if (session.status === 'denied') {
+      db.prepare('DELETE FROM pairing_sessions WHERE session_id = ?').run(sessionId);
+      return { status: 'denied' as const };
+    }
+    if (session.status !== 'approved' || !session.issued_credential || !session.requested_device_id) return { status: session.status };
+    const result = { status: 'approved' as const, credential: session.issued_credential, device_id: session.requested_device_id };
+    db.prepare('DELETE FROM pairing_sessions WHERE session_id = ?').run(sessionId);
+    return result;
+  })();
 }
 
 export function denyPairing(db: Database, sessionId: string): void {
@@ -186,7 +212,9 @@ export function setTailscaleUrl(db: Database, url: string | null): void {
   if (url !== null) {
     let parsed: URL;
     try { parsed = new URL(url); } catch { throw new ConflictError('Tailscale URL must be a valid HTTPS URL'); }
-    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new ConflictError('Tailscale URL must be a valid HTTPS URL');
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password || !parsed.hostname.toLowerCase().endsWith('.ts.net')) {
+      throw new ConflictError('Tailscale URL must be a MagicDNS HTTPS URL ending in .ts.net');
+    }
     url = parsed.origin;
   }
   db.prepare('UPDATE sync_server_config SET tailscale_url = ?, updated_at = ? WHERE id = 1')
@@ -199,14 +227,20 @@ export function detectTailscale(db: Database): TailscaleStatus {
     const output = execFileSync('tailscale', ['status', '--json'], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] });
     const status = JSON.parse(output) as { BackendState?: string; Self?: { DNSName?: string } };
     const dnsName = status.Self?.DNSName?.replace(/\.$/u, '') ?? null;
+    let serveAvailable = false;
+    try {
+      execFileSync('tailscale', ['serve', '--help'], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'ignore', 'ignore'] });
+      serveAvailable = true;
+    } catch { /* an older client can be online without Serve support */ }
     return {
       installed: true,
       online: status.BackendState === 'Running',
       dns_name: dnsName,
       configured_url: configured.tailscale_url,
       serve_command: 'tailscale serve --bg 3108',
+      serve_available: serveAvailable,
     };
   } catch {
-    return { installed: false, online: false, dns_name: null, configured_url: configured.tailscale_url, serve_command: 'tailscale serve --bg 3108' };
+    return { installed: false, online: false, dns_name: null, configured_url: configured.tailscale_url, serve_command: 'tailscale serve --bg 3108', serve_available: false };
   }
 }

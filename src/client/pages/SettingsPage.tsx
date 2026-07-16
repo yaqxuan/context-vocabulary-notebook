@@ -33,6 +33,7 @@ import { getSettings, patchSettings } from '../api/settings';
 import { useI18n } from '../i18n/I18nProvider';
 import { Button } from '../components/Button';
 import { RecognitionSetupCard } from '../components/RecognitionSetupCard';
+import { DeviceSyncSection } from '../components/DeviceSyncSection';
 import { ErrorState, LoadingState } from '../components/UiStates';
 
 // ─── Type helpers ─────────────────────────────────────────────────────────────
@@ -824,6 +825,7 @@ function SettingsReady({ initial }: { initial: SettingsDto }) {
   return (
     <div className="phase7-settings-shell">
         <SettingsForm initial={current} onSaved={setCurrent} />
+        <DeviceSyncSection />
         <AiConfigSection />
         <ExportSection />
         <ImportSection />

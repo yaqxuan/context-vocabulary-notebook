@@ -48,6 +48,7 @@ conservationem confirmari sinit. URL situs pellicularum non accipiuntur.
 | Bibliotheca | Inquisitio, filtra, dilecta, indicia, emendatio, status memoriae. |
 | Statisticae | Numerus repetitionum, rectitudo, summae mensium, indicia et mutationes. |
 | Translatio | ZIP ad exemplar privatum vel schedas communicandas. |
+| Repetitio Android sine rete | Unum Android, exemplar cryptatum, LAN HTTPS vel Tailscale, imagines et sonus sine rete. |
 | Agnitio | ffmpeg, Tesseract OCR et whisper.cpp STT libita. |
 | AI | Suggestiones libitae per API OpenAI-compatible. |
 
