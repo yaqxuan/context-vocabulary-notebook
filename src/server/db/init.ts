@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { Database } from 'better-sqlite3';
+import { runMigrations } from './migrations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,6 +22,7 @@ export function initDb(db: Database): void {
   ensureColumn(db, 'fsrs_states', 'learning_steps', 'INTEGER NOT NULL DEFAULT 0');
   ensureColumn(db, 'fsrs_states', 'same_day_retry_at', 'TEXT');
   db.exec('CREATE INDEX IF NOT EXISTS idx_fsrs_same_day_retry_at ON fsrs_states (same_day_retry_at)');
+  runMigrations(db);
 
   // Initialize singleton user_settings row (id=1) only if not already present
   const existing = db.prepare('SELECT id FROM user_settings WHERE id = 1').get();

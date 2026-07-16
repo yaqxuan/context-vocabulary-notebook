@@ -461,8 +461,28 @@ export interface ExportReviewLogRecord {
   created_at: string;
 }
 
+export interface ExportReviewEventRecord extends ExportReviewLogRecord {
+  device_id: string;
+  device_sequence: number;
+  recorded_at: string;
+  received_at: string;
+  scheduler_version: string;
+  parameter_version: string;
+  state_before_json: string | null;
+  state_after_json: string | null;
+  replay_epoch: number;
+}
+
+export interface ExportSchedulerProfileRecord {
+  profile_id: string;
+  scheduler_version: string;
+  parameters_json: string;
+  is_active: number;
+  created_at: string;
+}
+
 export interface ExportJson {
-  schema_version: 1;
+  schema_version: 1 | 2;
   export_type: ExportType;
   exported_at: string;
   cards: ExportCardRecord[];
@@ -472,6 +492,8 @@ export interface ExportJson {
   card_tags: ExportCardTagRecord[];
   fsrs_states?: ExportFsrsRecord[];
   review_logs?: ExportReviewLogRecord[];
+  review_events?: ExportReviewEventRecord[];
+  scheduler_profiles?: ExportSchedulerProfileRecord[];
   settings?: SettingsDto;
 }
 
@@ -483,7 +505,7 @@ export interface ImportConflictDto {
 }
 
 export interface ImportScanResponseDto {
-  schema_version: 1;
+  schema_version: 1 | 2;
   export_type: ExportType;
   counts: {
     cards: number;

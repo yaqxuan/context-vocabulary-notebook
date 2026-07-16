@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
-import { Rating, fsrs, type CardInput } from 'ts-fsrs';
+import type { CardInput } from 'ts-fsrs';
 import type { ReviewRating } from '../../shared/constants.js';
+import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION, scheduleReview } from '../../shared/scheduler.js';
 import { getSettings } from './settings.js';
 
 export const REVIEW_BUBBLE_WORD_LIMIT = 20;
@@ -265,7 +266,6 @@ export function getDailyReviewProgress(db: Database, now = new Date(), options: 
 
 export function submitReview(db: Database, cardId: string, rating: ReviewRating, reviewedAt = new Date(), options: ReviewScopeOptions = {}): SubmitReviewResult | undefined {
   const reviewedAtIso = reviewedAt.toISOString();
-  const grade = rating === 'again' ? Rating.Again : Rating.Good;
 
   const transaction = db.transaction(() => {
     const fsrsBefore = db.prepare(`
@@ -290,9 +290,10 @@ export function submitReview(db: Database, cardId: string, rating: ReviewRating,
       last_review: fsrsBefore.last_reviewed_at,
     };
 
-    const next = fsrs().next(cardInput, reviewedAt, grade).card;
+    const scheduled = scheduleReview(cardInput, reviewedAt, rating);
+    const next = scheduled.card;
     const dueDateAfter = next.due.toISOString();
-    const sameDayRetryAt = rating === 'again' ? reviewedAtIso : null;
+    const sameDayRetryAt = scheduled.sameDayRetryAt;
 
     db.prepare(`
       UPDATE fsrs_states
@@ -325,10 +326,25 @@ export function submitReview(db: Database, cardId: string, rating: ReviewRating,
       cardId,
     );
 
+    const localDevice = db.prepare(`
+      SELECT device_id, next_review_sequence
+      FROM local_device_identity
+      WHERE id = 1
+    `).get() as { device_id: string; next_review_sequence: number };
+    db.prepare('UPDATE local_device_identity SET next_review_sequence = next_review_sequence + 1 WHERE id = 1').run();
     db.prepare(`
-      INSERT INTO review_logs (id, card_id, rating, reviewed_at, due_date_before, due_date_after, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(randomUUID(), cardId, rating, reviewedAtIso, fsrsBefore.due_date, dueDateAfter, reviewedAtIso);
+      INSERT INTO review_logs (
+        id, card_id, rating, reviewed_at, due_date_before, due_date_after, created_at,
+        device_id, device_sequence, recorded_at, received_at, scheduler_version,
+        parameter_version, state_before_json, state_after_json, replay_epoch
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `).run(
+      randomUUID(), cardId, rating, reviewedAtIso, fsrsBefore.due_date, dueDateAfter, reviewedAtIso,
+      localDevice.device_id, localDevice.next_review_sequence, reviewedAtIso, reviewedAtIso,
+      SCHEDULER_VERSION, SCHEDULER_PARAMETER_VERSION, JSON.stringify(fsrsBefore),
+      JSON.stringify({ ...next, due: dueDateAfter, last_review: reviewedAtIso, same_day_retry_at: sameDayRetryAt }),
+    );
 
     const fsrsAfter = db.prepare('SELECT * FROM fsrs_states WHERE card_id = ?').get(cardId) as FsrsStateRow;
 

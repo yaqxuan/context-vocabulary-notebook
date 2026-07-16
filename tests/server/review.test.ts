@@ -523,10 +523,15 @@ describe('review API', () => {
     expect(res.body.fsrs.last_reviewed_at).toBeTruthy();
     expect(res.body.fsrs.due_date).not.toBe(before.due_date);
 
-    const log = db.prepare('SELECT * FROM review_logs WHERE card_id = ?').get(card.id) as { rating: string; due_date_before: string; due_date_after: string };
+    const log = db.prepare('SELECT * FROM review_logs WHERE card_id = ?').get(card.id) as { rating: string; due_date_before: string; due_date_after: string; device_id: string; device_sequence: number; scheduler_version: string; state_before_json: string; state_after_json: string };
     expect(log.rating).toBe('good');
     expect(log.due_date_before).toBe(before.due_date);
     expect(log.due_date_after).toBe(res.body.fsrs.due_date);
+    expect(log.device_id).toBeTruthy();
+    expect(log.device_sequence).toBeGreaterThan(0);
+    expect(log.scheduler_version).toBe('ts-fsrs@5.4.1');
+    expect(JSON.parse(log.state_before_json)).toHaveProperty('due_date');
+    expect(JSON.parse(log.state_after_json)).toHaveProperty('due');
   });
 
   it('stores FSRS learning step so two Good reviews can graduate a new card', async () => {
