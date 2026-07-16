@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION } from '../../shared/scheduler.js';
 
-export const DATABASE_SCHEMA_VERSION = 2;
+export const DATABASE_SCHEMA_VERSION = 3;
 
 interface Migration {
   version: number;
@@ -75,7 +75,7 @@ function migrateReviewEvents(db: Database): void {
     );
 
     CREATE TABLE IF NOT EXISTS sync_card_checkpoints (
-      card_id       TEXT NOT NULL REFERENCES word_sense_cards (id),
+      card_id       TEXT NOT NULL REFERENCES word_sense_cards (id) ON DELETE CASCADE,
       replay_epoch  INTEGER NOT NULL,
       state_json    TEXT NOT NULL,
       created_at    TEXT NOT NULL,
@@ -125,8 +125,69 @@ function migrateReviewEvents(db: Database): void {
   `);
 }
 
+function migrateSyncEngine(db: Database): void {
+  addColumn(db, 'media_files', 'sha256', 'TEXT');
+  db.exec(`
+    ALTER TABLE sync_card_checkpoints RENAME TO sync_card_checkpoints_v2;
+    CREATE TABLE sync_card_checkpoints (
+      card_id       TEXT NOT NULL REFERENCES word_sense_cards (id) ON DELETE CASCADE,
+      replay_epoch  INTEGER NOT NULL,
+      state_json    TEXT NOT NULL,
+      created_at    TEXT NOT NULL,
+      PRIMARY KEY (card_id, replay_epoch)
+    );
+    INSERT INTO sync_card_checkpoints (card_id, replay_epoch, state_json, created_at)
+      SELECT card_id, replay_epoch, state_json, created_at FROM sync_card_checkpoints_v2;
+    DROP TABLE sync_card_checkpoints_v2;
+
+    CREATE INDEX IF NOT EXISTS idx_media_sha256_active
+      ON media_files (sha256) WHERE sha256 IS NOT NULL AND deleted_at IS NULL;
+
+    CREATE TABLE IF NOT EXISTS sync_state (
+      id               INTEGER PRIMARY KEY CHECK (id = 1),
+      content_revision INTEGER NOT NULL DEFAULT 1
+    );
+    INSERT OR IGNORE INTO sync_state (id, content_revision) VALUES (1, 1);
+
+    CREATE TABLE IF NOT EXISTS sync_device_cursors (
+      device_id                TEXT PRIMARY KEY,
+      accepted_event_sequence  INTEGER NOT NULL DEFAULT 0,
+      acknowledged_revision    INTEGER NOT NULL DEFAULT 0,
+      updated_at                TEXT NOT NULL
+    );
+
+    CREATE TRIGGER IF NOT EXISTS sync_revision_cards_insert AFTER INSERT ON word_sense_cards
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_cards_update AFTER UPDATE ON word_sense_cards
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_contexts_insert AFTER INSERT ON context_examples
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_contexts_update AFTER UPDATE ON context_examples
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_tags_insert AFTER INSERT ON tags
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_tags_update AFTER UPDATE ON tags
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_card_tags_insert AFTER INSERT ON card_tags
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_card_tags_delete AFTER DELETE ON card_tags
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_media_insert AFTER INSERT ON media_files
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_media_update AFTER UPDATE ON media_files
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_fsrs_insert AFTER INSERT ON fsrs_states
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_fsrs_update AFTER UPDATE ON fsrs_states
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+    CREATE TRIGGER IF NOT EXISTS sync_revision_settings_update AFTER UPDATE ON user_settings
+      BEGIN UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1; END;
+  `);
+}
+
 const migrations: Migration[] = [
   { version: 2, name: 'review-events-and-scheduler-profile', up: migrateReviewEvents },
+  { version: 3, name: 'snapshot-and-event-sync-engine', up: migrateSyncEngine },
 ];
 
 export function runMigrations(db: Database): void {

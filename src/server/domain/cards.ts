@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
+import { ensureSyncCheckpoint } from './syncCheckpoints.js';
 
 export interface CardRow {
   id: string;
@@ -66,6 +67,7 @@ export function createCard(db: Database, input: CreateCardInput): CardRow {
   const transaction = db.transaction(() => {
     insertCard.run(id, input.target_word, input.context_meaning, input.target_language, input.definition_language, now, now);
     insertFsrs.run(randomUUID(), id, now, now, now);
+    ensureSyncCheckpoint(db, id);
   });
 
   transaction();

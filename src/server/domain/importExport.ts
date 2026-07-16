@@ -15,6 +15,7 @@ import { resolveUploadPath } from '../storage/uploads.js';
 import { BadRequestError } from '../http/errors.js';
 import { ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, MEDIA_TYPES } from '../../shared/constants.js';
 import { MAX_IMPORT_CARDS } from '../../shared/validators.js';
+import { ensureSyncCheckpoint } from './syncCheckpoints.js';
 
 const MAX_EXPORT_JSON_BYTES = 10 * 1024 * 1024;
 const MAX_IMPORT_CONTEXTS = 20000;
@@ -408,6 +409,7 @@ export async function executeImportZip(
         fsrs?.created_at ?? now,
         now,
       );
+      ensureSyncCheckpoint(db, localCardId);
     }
 
     if (data.export_type === 'marked') {
