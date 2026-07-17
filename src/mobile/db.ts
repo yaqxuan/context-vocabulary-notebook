@@ -1,7 +1,7 @@
 import { CapacitorSQLite, SQLiteConnection, type SQLiteDBConnection } from '@capacitor-community/sqlite';
 import type { ReviewRating } from '../shared/constants.js';
 import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION, scheduleReview } from '../shared/scheduler.js';
-import type { SyncReviewEventInput, SyncSnapshot } from '../shared/sync.js';
+import type { SyncCardActionInput, SyncReviewEventInput, SyncSnapshot } from '../shared/sync.js';
 import type { CardInput } from 'ts-fsrs';
 
 const DATABASE_NAME = 'context-vocabulary-notebook-mobile';
@@ -22,6 +22,7 @@ export interface MobileConfig {
   tailscale_url: string | null;
   snapshot_revision: number;
   next_device_sequence: number;
+  next_card_action_sequence: number;
   last_sync_at: string | null;
   interface_language: string;
 }
@@ -32,9 +33,18 @@ export interface MobileDueCard {
   context_meaning: string;
   target_language: string;
   definition_language: string;
+  status: 'reviewing' | 'mastered';
+  is_favorite: number;
   due_date: string;
   primary_sentence: string | null;
-  media: Array<{ media_type: string; local_path: string | null; offline_available: number }>;
+  media: Array<{
+    id: string;
+    media_type: string;
+    file_name: string;
+    mime_type: string;
+    local_path: string | null;
+    offline_available: number;
+  }>;
 }
 
 export interface MobileProgress {
@@ -58,6 +68,11 @@ function requiredString(value: unknown, field: string): string {
 
 function nullableNumber(value: unknown): number | null {
   return typeof value === 'number' ? value : null;
+}
+
+function defaultInterfaceLanguage(): string {
+  const locale = globalThis.navigator?.language?.toLowerCase().split('-')[0] ?? 'en';
+  return ({ zh: '中文', ja: '日语', ko: '韩语', fr: '法语', de: '德语', es: '西班牙语', ru: '俄语' } as Record<string, string>)[locale] ?? '英语';
 }
 
 export class MobileDatabase {
@@ -103,6 +118,7 @@ export class MobileDatabase {
         tailscale_url TEXT,
         snapshot_revision INTEGER NOT NULL DEFAULT 0,
         next_device_sequence INTEGER NOT NULL DEFAULT 1,
+        next_card_action_sequence INTEGER NOT NULL DEFAULT 1,
         last_sync_at TEXT,
         interface_language TEXT NOT NULL DEFAULT '英语'
       );
@@ -143,15 +159,33 @@ export class MobileDatabase {
         due_date_before TEXT NOT NULL, due_date_after TEXT NOT NULL,
         state_before_json TEXT, state_after_json TEXT, uploaded INTEGER NOT NULL DEFAULT 0
       );
+      CREATE TABLE IF NOT EXISTS card_action_outbox (
+        action_id TEXT PRIMARY KEY, card_id TEXT NOT NULL, action_sequence INTEGER NOT NULL UNIQUE,
+        action TEXT NOT NULL CHECK (action IN ('set_favorite', 'mark_mastered')),
+        value INTEGER NOT NULL CHECK (value IN (0, 1)), recorded_at TEXT NOT NULL,
+        uploaded INTEGER NOT NULL DEFAULT 0
+      );
       CREATE INDEX IF NOT EXISTS idx_mobile_due ON fsrs_states (due_date);
       CREATE INDEX IF NOT EXISTS idx_mobile_outbox ON review_outbox (uploaded, device_sequence);
+      CREATE INDEX IF NOT EXISTS idx_mobile_card_action_outbox
+        ON card_action_outbox (uploaded, action_sequence);
       INSERT OR IGNORE INTO mobile_schema_migrations (version, applied_at) VALUES (1, CURRENT_TIMESTAMP);
     `);
+    const configColumns = await this.db().query('PRAGMA table_info(mobile_config)');
+    if (!(configColumns.values ?? []).some((column) => column.name === 'next_card_action_sequence')) {
+      await this.db().run(
+        'ALTER TABLE mobile_config ADD COLUMN next_card_action_sequence INTEGER NOT NULL DEFAULT 1',
+      );
+    }
+    await this.db().run(
+      'INSERT OR IGNORE INTO mobile_schema_migrations (version, applied_at) VALUES (2, ?)',
+      [new Date().toISOString()],
+    );
     const config = await this.db().query('SELECT id FROM mobile_config WHERE id = 1');
     if (!config.values?.length) {
       await this.db().run(
-        `INSERT INTO mobile_config (id, device_id, device_name) VALUES (1, ?, ?)`,
-        [crypto.randomUUID(), 'Android'],
+        `INSERT INTO mobile_config (id, device_id, device_name, interface_language) VALUES (1, ?, ?, ?)`,
+        [crypto.randomUUID(), 'Android', defaultInterfaceLanguage()],
       );
     }
   }
@@ -201,11 +235,12 @@ export class MobileDatabase {
     const db = this.db();
     await db.beginTransaction();
     try {
-      await db.execute('DELETE FROM card_tags; DELETE FROM tags; DELETE FROM media; DELETE FROM contexts; DELETE FROM fsrs_states; DELETE FROM cards; DELETE FROM scheduler_profile; DELETE FROM mobile_settings; DELETE FROM review_outbox;', false);
+      await this.deleteMirrorTables(true);
       await db.run(`
         UPDATE mobile_config SET device_id = ?, server_id = NULL, credential = NULL, lan_url = NULL,
           lan_spki_sha256 = NULL, lan_public_key = NULL, lan_service_name = NULL, tailscale_url = NULL,
-          snapshot_revision = 0, next_device_sequence = 1, last_sync_at = NULL WHERE id = 1
+          snapshot_revision = 0, next_device_sequence = 1, next_card_action_sequence = 1,
+          last_sync_at = NULL WHERE id = 1
       `, [crypto.randomUUID()], false);
       await db.commitTransaction();
     } catch (error) {
@@ -223,7 +258,7 @@ export class MobileDatabase {
     const paths = new Map((existingMedia.values ?? []).map((row) => [row.sha256 as string, row.local_path as string]));
     await db.beginTransaction();
     try {
-      await db.execute('DELETE FROM card_tags; DELETE FROM tags; DELETE FROM media; DELETE FROM contexts; DELETE FROM fsrs_states; DELETE FROM cards; DELETE FROM scheduler_profile; DELETE FROM mobile_settings;', false);
+      await this.deleteMirrorTables(false);
       for (const card of snapshot.cards) {
         await db.run(`INSERT INTO cards VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
           requiredString(card.id, 'card.id'), requiredString(card.target_word, 'card.target_word'),
@@ -268,6 +303,25 @@ export class MobileDatabase {
     }
   }
 
+  private async deleteMirrorTables(includeOutbox: boolean): Promise<void> {
+    // The Android SQLite bridge splits execute() batches only at a semicolon followed
+    // by a newline. Running each statement separately avoids silently executing only
+    // the first DELETE when a snapshot is replaced.
+    const tables = [
+      'card_tags',
+      'tags',
+      'media',
+      'contexts',
+      'fsrs_states',
+      'cards',
+      'scheduler_profile',
+      'mobile_settings',
+      ...(includeOutbox ? ['review_outbox'] : []),
+      ...(includeOutbox ? ['card_action_outbox'] : []),
+    ];
+    for (const table of tables) await this.db().run(`DELETE FROM ${table}`, [], false);
+  }
+
   async pendingEvents(): Promise<SyncReviewEventInput[]> {
     const result = await this.db().query('SELECT * FROM review_outbox WHERE uploaded = 0 ORDER BY device_sequence LIMIT 500');
     return (result.values ?? []).map((row) => ({
@@ -290,6 +344,28 @@ export class MobileDatabase {
     await this.db().run('UPDATE review_outbox SET uploaded = 1 WHERE device_sequence <= ?', [acceptedThrough]);
   }
 
+  async pendingCardActions(): Promise<SyncCardActionInput[]> {
+    const result = await this.db().query(`
+      SELECT * FROM card_action_outbox
+      WHERE uploaded = 0 ORDER BY action_sequence LIMIT 500
+    `);
+    return (result.values ?? []).map((row) => ({
+      action_id: row.action_id as string,
+      card_id: row.card_id as string,
+      action_sequence: row.action_sequence as number,
+      action: row.action as 'set_favorite' | 'mark_mastered',
+      value: Boolean(row.value),
+      recorded_at: row.recorded_at as string,
+    } as SyncCardActionInput));
+  }
+
+  async markCardActionsUploaded(acceptedThrough: number): Promise<void> {
+    await this.db().run(
+      'UPDATE card_action_outbox SET uploaded = 1 WHERE action_sequence <= ?',
+      [acceptedThrough],
+    );
+  }
+
   async nextDueCard(now = new Date()): Promise<MobileDueCard | null> {
     const nowIso = now.toISOString();
     const start = new Date(now);
@@ -304,46 +380,84 @@ export class MobileDatabase {
     const card = result.values?.[0] as Omit<MobileDueCard, 'media'> | undefined;
     if (!card) return null;
     const media = await this.db().query(`
-      SELECT m.media_type, m.local_path, m.offline_available FROM media m
+      SELECT m.id, m.media_type, m.file_name, m.mime_type, m.local_path, m.offline_available FROM media m
       JOIN contexts c ON c.id = m.context_example_id WHERE c.card_id = ? ORDER BY m.created_at
     `, [card.id]);
     return { ...card, media: (media.values ?? []) as MobileDueCard['media'] };
+  }
+
+  private async submitReviewInTransaction(
+    cardId: string,
+    rating: ReviewRating,
+    reviewedAt: Date,
+  ): Promise<void> {
+    const db = this.db();
+    const query = await db.query('SELECT * FROM fsrs_states WHERE card_id = ?', [cardId]);
+    const state = query.values?.[0] as Record<string, unknown> | undefined;
+    if (!state) throw new Error('Card scheduling state is missing');
+    const input: CardInput = {
+      due: requiredString(state.due_date, 'due_date'),
+      stability: nullableNumber(state.stability) ?? 0,
+      difficulty: nullableNumber(state.difficulty) ?? 0,
+      elapsed_days: Number(state.elapsed_days ?? 0), scheduled_days: Number(state.scheduled_days ?? 0),
+      learning_steps: Number(state.learning_steps ?? 0), reps: Number(state.reps ?? 0),
+      lapses: Number(state.lapses ?? 0), state: Number(state.state ?? 0),
+      last_review: typeof state.last_reviewed_at === 'string' ? state.last_reviewed_at : null,
+    };
+    const scheduled = scheduleReview(input, reviewedAt, rating);
+    const next = scheduled.card;
+    const config = await this.getConfig();
+    const reviewedAtIso = reviewedAt.toISOString();
+    const dueAfter = next.due.toISOString();
+    await db.run(`
+      UPDATE fsrs_states SET due_date = ?, stability = ?, difficulty = ?, elapsed_days = ?,
+        scheduled_days = ?, learning_steps = ?, reps = ?, lapses = ?, state = ?,
+        last_reviewed_at = ?, same_day_retry_at = ?, updated_at = ? WHERE card_id = ?
+    `, [dueAfter, next.stability, next.difficulty, next.elapsed_days, next.scheduled_days,
+      next.learning_steps, next.reps, next.lapses, next.state, reviewedAtIso,
+      scheduled.sameDayRetryAt, reviewedAtIso, cardId], false);
+    await db.run(`
+      INSERT INTO review_outbox VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+    `, [crypto.randomUUID(), cardId, config.next_device_sequence, rating, reviewedAtIso,
+      reviewedAtIso, SCHEDULER_VERSION, SCHEDULER_PARAMETER_VERSION, state.due_date,
+      dueAfter, JSON.stringify(state), JSON.stringify({ ...next, due: dueAfter })], false);
+    await db.run(
+      'UPDATE mobile_config SET next_device_sequence = next_device_sequence + 1 WHERE id = 1',
+      [],
+      false,
+    );
+  }
+
+  private async enqueueCardActionInTransaction(
+    cardId: string,
+    action: 'set_favorite' | 'mark_mastered',
+    value: boolean,
+    recordedAt: Date,
+  ): Promise<void> {
+    const config = await this.getConfig();
+    await this.db().run(`
+      INSERT INTO card_action_outbox
+        (action_id, card_id, action_sequence, action, value, recorded_at, uploaded)
+      VALUES (?, ?, ?, ?, ?, ?, 0)
+    `, [
+      crypto.randomUUID(),
+      cardId,
+      config.next_card_action_sequence,
+      action,
+      value ? 1 : 0,
+      recordedAt.toISOString(),
+    ], false);
+    await this.db().run(`
+      UPDATE mobile_config
+      SET next_card_action_sequence = next_card_action_sequence + 1 WHERE id = 1
+    `, [], false);
   }
 
   async submitReview(cardId: string, rating: ReviewRating, reviewedAt = new Date()): Promise<void> {
     const db = this.db();
     await db.beginTransaction();
     try {
-      const query = await db.query('SELECT * FROM fsrs_states WHERE card_id = ?', [cardId]);
-      const state = query.values?.[0] as Record<string, unknown> | undefined;
-      if (!state) throw new Error('Card scheduling state is missing');
-      const input: CardInput = {
-        due: requiredString(state.due_date, 'due_date'),
-        stability: nullableNumber(state.stability) ?? 0,
-        difficulty: nullableNumber(state.difficulty) ?? 0,
-        elapsed_days: Number(state.elapsed_days ?? 0), scheduled_days: Number(state.scheduled_days ?? 0),
-        learning_steps: Number(state.learning_steps ?? 0), reps: Number(state.reps ?? 0),
-        lapses: Number(state.lapses ?? 0), state: Number(state.state ?? 0),
-        last_review: typeof state.last_reviewed_at === 'string' ? state.last_reviewed_at : null,
-      };
-      const scheduled = scheduleReview(input, reviewedAt, rating);
-      const next = scheduled.card;
-      const config = await this.getConfig();
-      const reviewedAtIso = reviewedAt.toISOString();
-      const dueAfter = next.due.toISOString();
-      await db.run(`
-        UPDATE fsrs_states SET due_date = ?, stability = ?, difficulty = ?, elapsed_days = ?,
-          scheduled_days = ?, learning_steps = ?, reps = ?, lapses = ?, state = ?,
-          last_reviewed_at = ?, same_day_retry_at = ?, updated_at = ? WHERE card_id = ?
-      `, [dueAfter, next.stability, next.difficulty, next.elapsed_days, next.scheduled_days,
-        next.learning_steps, next.reps, next.lapses, next.state, reviewedAtIso,
-        scheduled.sameDayRetryAt, reviewedAtIso, cardId], false);
-      await db.run(`
-        INSERT INTO review_outbox VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-      `, [crypto.randomUUID(), cardId, config.next_device_sequence, rating, reviewedAtIso,
-        reviewedAtIso, SCHEDULER_VERSION, SCHEDULER_PARAMETER_VERSION, state.due_date,
-        dueAfter, JSON.stringify(state), JSON.stringify({ ...next, due: dueAfter })], false);
-      await db.run('UPDATE mobile_config SET next_device_sequence = next_device_sequence + 1 WHERE id = 1', [], false);
+      await this.submitReviewInTransaction(cardId, rating, reviewedAt);
       await db.commitTransaction();
     } catch (error) {
       await db.rollbackTransaction();
@@ -351,11 +465,60 @@ export class MobileDatabase {
     }
   }
 
-  async missingMedia(): Promise<Array<{ sha256: string }>> {
+  async toggleFavorite(cardId: string, recordedAt = new Date()): Promise<boolean> {
+    const db = this.db();
+    await db.beginTransaction();
+    try {
+      const result = await db.query(
+        'SELECT is_favorite FROM cards WHERE id = ? AND status IN (?, ?)',
+        [cardId, 'reviewing', 'mastered'],
+      );
+      const card = result.values?.[0] as { is_favorite: number } | undefined;
+      if (!card) throw new Error('Card is no longer available');
+      const favorite = !Boolean(card.is_favorite);
+      await db.run('UPDATE cards SET is_favorite = ?, updated_at = ? WHERE id = ?', [
+        favorite ? 1 : 0,
+        recordedAt.toISOString(),
+        cardId,
+      ], false);
+      await this.enqueueCardActionInTransaction(cardId, 'set_favorite', favorite, recordedAt);
+      await db.commitTransaction();
+      return favorite;
+    } catch (error) {
+      await db.rollbackTransaction();
+      throw error;
+    }
+  }
+
+  async submitReviewAndMarkMastered(
+    cardId: string,
+    rating: ReviewRating,
+    reviewedAt = new Date(),
+  ): Promise<void> {
+    const db = this.db();
+    await db.beginTransaction();
+    try {
+      await this.submitReviewInTransaction(cardId, rating, reviewedAt);
+      await db.run(
+        `UPDATE cards SET status = 'mastered', updated_at = ? WHERE id = ?`,
+        [reviewedAt.toISOString(), cardId],
+        false,
+      );
+      await this.enqueueCardActionInTransaction(cardId, 'mark_mastered', true, reviewedAt);
+      await db.commitTransaction();
+    } catch (error) {
+      await db.rollbackTransaction();
+      throw error;
+    }
+  }
+
+  async missingMedia(): Promise<Array<{ sha256: string; file_name: string }>> {
     const result = await this.db().query(`
-      SELECT DISTINCT sha256 FROM media WHERE offline_available = 1 AND sha256 IS NOT NULL AND local_path IS NULL
+      SELECT sha256, MIN(file_name) AS file_name FROM media
+      WHERE offline_available = 1 AND sha256 IS NOT NULL AND local_path IS NULL
+      GROUP BY sha256
     `);
-    return (result.values ?? []) as Array<{ sha256: string }>;
+    return (result.values ?? []) as Array<{ sha256: string; file_name: string }>;
   }
 
   async setMediaPath(sha256: string, localPath: string): Promise<void> {
@@ -375,11 +538,13 @@ export class MobileDatabase {
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
     const reviewed = await this.db().query('SELECT COUNT(*) AS count FROM review_outbox WHERE reviewed_at >= ?', [start.toISOString()]);
-    const pending = await this.db().query('SELECT COUNT(*) AS count FROM review_outbox WHERE uploaded = 0');
+    const pendingReviews = await this.db().query('SELECT COUNT(*) AS count FROM review_outbox WHERE uploaded = 0');
+    const pendingActions = await this.db().query('SELECT COUNT(*) AS count FROM card_action_outbox WHERE uploaded = 0');
     const settings = await this.db().query('SELECT daily_review_limit FROM mobile_settings WHERE id = 1');
     return {
       reviewedToday: Number(reviewed.values?.[0]?.count ?? 0),
-      pendingUpload: Number(pending.values?.[0]?.count ?? 0),
+      pendingUpload: Number(pendingReviews.values?.[0]?.count ?? 0)
+        + Number(pendingActions.values?.[0]?.count ?? 0),
       dailyLimit: Number(settings.values?.[0]?.daily_review_limit ?? 0),
     };
   }

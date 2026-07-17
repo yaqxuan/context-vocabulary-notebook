@@ -1,5 +1,12 @@
-import type { PairingPayload, SignedConnectionProfile, SyncEventBatchResult, SyncSnapshot } from '../shared/sync.js';
-import { SYNC_PROTOCOL_VERSION } from '../shared/sync.js';
+import packageMetadata from '../../package.json';
+import type {
+  PairingPayload,
+  SignedConnectionProfile,
+  SyncCardActionBatchResult,
+  SyncEventBatchResult,
+  SyncSnapshot,
+} from '../shared/sync.js';
+import { decodePairingPayloadText, SYNC_PROTOCOL_VERSION } from '../shared/sync.js';
 import { MobileDatabase, type MobileConfig, type MobileTransport } from './db.js';
 import { LanDiscovery, PinnedHttp, type PinnedHttpResponse } from './native.js';
 
@@ -30,7 +37,45 @@ function parseJson<T>(response: PinnedHttpResponse): T {
   return JSON.parse(response.body) as T;
 }
 
+export function isClientVersionSupported(current: string, minimum: string): boolean {
+  const parse = (value: string): { core: number[]; prerelease: string[] | null } | null => {
+    const match = value.match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/u);
+    if (!match) return null;
+    return {
+      core: [Number(match[1]), Number(match[2]), Number(match[3])],
+      prerelease: match[4]?.split('.') ?? null,
+    };
+  };
+  const currentVersion = parse(current);
+  const minimumVersion = parse(minimum);
+  if (!currentVersion || !minimumVersion) return current === minimum;
+  for (let index = 0; index < 3; index += 1) {
+    if (currentVersion.core[index]! !== minimumVersion.core[index]!) {
+      return currentVersion.core[index]! > minimumVersion.core[index]!;
+    }
+  }
+  if (!minimumVersion.prerelease) return currentVersion.prerelease === null;
+  if (!currentVersion.prerelease) return true;
+  const length = Math.max(currentVersion.prerelease.length, minimumVersion.prerelease.length);
+  for (let index = 0; index < length; index += 1) {
+    const currentPart = currentVersion.prerelease[index];
+    const minimumPart = minimumVersion.prerelease[index];
+    if (currentPart === undefined) return false;
+    if (minimumPart === undefined) return true;
+    if (currentPart === minimumPart) continue;
+    const currentNumber = /^\d+$/u.test(currentPart) ? Number(currentPart) : null;
+    const minimumNumber = /^\d+$/u.test(minimumPart) ? Number(minimumPart) : null;
+    if (currentNumber !== null && minimumNumber !== null) return currentNumber > minimumNumber;
+    if (currentNumber !== null) return false;
+    if (minimumNumber !== null) return true;
+    return currentPart.localeCompare(minimumPart) > 0;
+  }
+  return true;
+}
+
 export class MobileSyncClient {
+  private activeSync: Promise<{ revision: number; uploaded: number; downloadedMedia: number }> | null = null;
+
   constructor(private readonly db: MobileDatabase) {}
 
   private async discoverLan(config: MobileConfig): Promise<string | null> {
@@ -138,13 +183,33 @@ export class MobileSyncClient {
   }
 
   async syncNow(): Promise<{ revision: number; uploaded: number; downloadedMedia: number }> {
+    if (this.activeSync) return this.activeSync;
+    const operation = this.performSync();
+    this.activeSync = operation;
+    try {
+      return await operation;
+    } finally {
+      if (this.activeSync === operation) this.activeSync = null;
+    }
+  }
+
+  private async performSync(): Promise<{ revision: number; uploaded: number; downloadedMedia: number }> {
     let config = await this.db.getConfig();
     if (!config.server_id || !config.credential) throw new Error('Pair with a PC before syncing');
     const endpoint = await this.endpoint(config);
     const auth = { Authorization: `Bearer ${config.credential}` };
-    const capabilities = parseJson<{ protocol_version: number; server_id: string }>(await this.request(endpoint, '/v1/capabilities'));
+    const capabilities = parseJson<{
+      protocol_version: number;
+      server_id: string;
+      minimum_client_version: string;
+    }>(await this.request(endpoint, '/v1/capabilities'));
     if (capabilities.protocol_version !== SYNC_PROTOCOL_VERSION || capabilities.server_id !== config.server_id) {
       throw new Error('Connected server identity or sync protocol does not match');
+    }
+    if (!isClientVersionSupported(packageMetadata.version, capabilities.minimum_client_version)) {
+      throw new Error(
+        `Android app ${capabilities.minimum_client_version} or newer is required; installed version is ${packageMetadata.version}`,
+      );
     }
 
     let uploaded = 0;
@@ -155,6 +220,19 @@ export class MobileSyncClient {
       await this.db.markUploaded(result.accepted_through);
       uploaded += events.length;
       if (events.length < 500) break;
+    }
+
+    while (true) {
+      const actions = await this.db.pendingCardActions();
+      if (!actions.length) break;
+      const result = parseJson<SyncCardActionBatchResult>(await this.request(
+        endpoint,
+        '/v1/card-actions',
+        { method: 'POST', headers: auth, body: { actions } },
+      ));
+      await this.db.markCardActionsUploaded(result.accepted_through);
+      uploaded += actions.length;
+      if (actions.length < 500) break;
     }
 
     config = await this.db.getConfig();
@@ -170,6 +248,7 @@ export class MobileSyncClient {
       const result = await PinnedHttp.download({
         url: `${endpoint.baseUrl}/v1/media/${item.sha256}`,
         sha256: item.sha256,
+        fileName: item.file_name,
         headers: { ...auth, 'X-CVN-Protocol': String(SYNC_PROTOCOL_VERSION) },
         spkiSha256: endpoint.pin,
       });
@@ -190,7 +269,7 @@ export class MobileSyncClient {
 }
 
 export function parsePairingPayload(raw: string): PairingPayload {
-  const value = JSON.parse(raw) as PairingPayload;
+  const value = decodePairingPayloadText(raw) as PairingPayload;
   if (value.protocol_version !== SYNC_PROTOCOL_VERSION || !value.server_id || !value.session_id || !value.secret || !value.expires_at) {
     throw new Error('This is not a supported Context Vocabulary Notebook pairing code');
   }

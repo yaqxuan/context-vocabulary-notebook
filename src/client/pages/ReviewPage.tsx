@@ -172,13 +172,14 @@ interface ReviewCardProps {
   pendingRequiresConfirm: boolean;
   lastRating: 'again' | 'good' | null;
   onChooseRating: (rating: 'again' | 'good') => void;
+  onCorrectToAgain: () => void;
   onConfirmRating: (advanceAfterSubmit?: boolean) => void;
   onToggleFavorite: () => void;
   onMarkMastered: () => void;
   onNext: () => void;
 }
 
-function ReviewCard({ card, progress, submitting, submitError, pendingRating, pendingRequiresConfirm, lastRating, onChooseRating, onConfirmRating, onToggleFavorite, onMarkMastered, onNext }: ReviewCardProps) {
+function ReviewCard({ card, progress, submitting, submitError, pendingRating, pendingRequiresConfirm, lastRating, onChooseRating, onCorrectToAgain, onConfirmRating, onToggleFavorite, onMarkMastered, onNext }: ReviewCardProps) {
   const { t } = useI18n();
   const [contextOpen, setContextOpen] = useState(false);
   const contextOpenRef = useRef(false);
@@ -271,7 +272,7 @@ function ReviewCard({ card, progress, submitting, submitError, pendingRating, pe
           </div>
         ) : pendingRating === 'good' ? (
           <div className="phase7-review-rating-row">
-            <Button variant="secondary" disabled={submitting} onClick={() => onChooseRating('again')}>{t('review.wrongAgain')}</Button>
+            <Button variant="secondary" disabled={submitting} onClick={onCorrectToAgain}>{t('review.wrongAgain')}</Button>
             <Button variant="primary" disabled={submitting} onClick={pendingRequiresConfirm ? () => onConfirmRating() : onNext}>
               {pendingRequiresConfirm ? t('review.confirmGood') : t('review.next')}
             </Button>
@@ -388,6 +389,32 @@ export function ReviewPage() {
       setLastRating(rating);
     } catch (err) {
       if (advanceAfterSubmit && ratingSubmitted) {
+        setState({ kind: 'error', message: err instanceof Error ? err.message : tRef.current('review.loadFailed') });
+      } else {
+        setSubmitError(err instanceof Error ? err.message : tRef.current('review.submitFailed'));
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCorrectToAgain = async () => {
+    if (state.kind !== 'due') return;
+
+    let ratingSubmitted = false;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const result = await submitReview(state.card.id, { rating: 'again' });
+      ratingSubmitted = true;
+      if (!result.progress.is_limit_reached) setLimitDismissed(false);
+      const res = await getDueReview();
+      setPendingRating(null);
+      setPendingRequiresConfirm(false);
+      setLastRating(null);
+      applyDueResponse(res);
+    } catch (err) {
+      if (ratingSubmitted) {
         setState({ kind: 'error', message: err instanceof Error ? err.message : tRef.current('review.loadFailed') });
       } else {
         setSubmitError(err instanceof Error ? err.message : tRef.current('review.submitFailed'));
@@ -520,6 +547,7 @@ export function ReviewPage() {
           pendingRequiresConfirm={pendingRequiresConfirm}
           lastRating={lastRating}
           onChooseRating={handleChooseRating}
+          onCorrectToAgain={handleCorrectToAgain}
           onConfirmRating={handleConfirmRating}
           onToggleFavorite={handleToggleFavorite}
           onMarkMastered={handleMarkMastered}

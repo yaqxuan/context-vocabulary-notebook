@@ -9,8 +9,27 @@ Android 客户端最低要求 Android 7.0 / API 24。Capacitor 8 已不再支持
 
 ## 安装 APK
 
-从 GitHub Release 下载 APK 和同名 `.sha256` 文件，校验后再安装。PR 和缺少签名
-材料的 tag 构建只会产生短期 Debug artifact，不会创建公开 Release。
+正式签名发布后，从 GitHub Release 下载 APK 和同名 `.sha256` 文件。正式发布前测试
+时，请打开对应的 **Android APK** 工作流运行页面，滚动到 **Artifacts**，下载
+`cvn-android-...` 并解压。里面有两个文件：
+
+- `app-debug.apk`：Android 安装包，需要发送到手机的是这个文件；
+- `app-debug.apk.sha256`：预期校验值，只需留在电脑上用于验证。
+
+发送到手机前，在该目录打开 Windows PowerShell 并校验：
+
+```powershell
+$expected = (Get-Content .\app-debug.apk.sha256).Split()[0].ToLowerInvariant()
+$actual = (Get-FileHash .\app-debug.apk -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actual -ne $expected) { throw "APK checksum mismatch" }
+```
+
+两者一致后，只把 `app-debug.apk` 通过 USB、快速分享或其他文件传输方式发到手机，
+在手机上点开安装。如果 Android 提示权限，请只允许当前文件管理器“安装未知应用”，
+安装完成后可以再次关闭这项权限。Debug APK 是测试构建，系统可能额外显示风险提示；
+校验值不一致时不要安装。
+
+PR 和缺少签名材料的 tag 构建只会产生短期 Debug artifact，不会创建公开 Release。
 
 发布工作流只从 GitHub Actions secrets 读取以下材料，仓库和 artifact 都不保存：
 
@@ -38,8 +57,9 @@ CVN_DEVICE_SYNC=1
 
 1. 在 PC 设置中启用局域网同步并重启应用。
 2. 只在可信/专用网络中允许 TCP `3109` 入站。
-3. 创建五分钟有效的配对二维码。
-4. Android 扫码后，在 PC 确认显示的设备名称。
+3. 创建五分钟有效的紧凑配对二维码。
+4. Android 扫码后，在 PC 确认显示的设备名称；扫码不可用时可把二维码下方的
+   **配对文本**直接复制到手机，不需要第三方二维码解析服务。
 5. 手机保持选择 **局域网**。
 
 PC 通过 `_cvn-sync._tcp.local` 发布 mDNS。广播只用于寻找地址，Android 始终校验
@@ -74,7 +94,8 @@ NAT 模式不承诺 mDNS 与直接连接。排障时可手动设置 Windows
 
 ## Tailscale 模式
 
-设置页只读检测 Tailscale，不会修改系统配置。请自行运行：
+设置页只读检测 Tailscale，不会修改系统配置。在 WSL 中会依次检测 Linux CLI 和
+Windows 通过 WSL interop 暴露的 `tailscale.exe`。请自行运行：
 
 ```bash
 tailscale serve --bg 3108
@@ -86,11 +107,19 @@ tailscale serve --bg 3108
 
 ## 同步语义
 
-每次同步依次检查协议、上传连续事件、由 PC 重放受影响卡片、原子替换手机文本快照、
-用 Range 补齐并校验图片/音频哈希，最后确认修订。视频只保存元数据，不复制原文件。
+每次同步依次检查协议和最低客户端版本、上传连续复习事件、上传幂等的收藏/熟记操作、
+由 PC 重放受影响卡片、原子替换手机文本快照、
+用 Range 补齐并校验图片/音频/视频哈希，最后确认修订。视频保存在应用私有的哈希缓存
+中，在选择评分并显示答案后播放；当语境只有视频而没有独立音频时，PC 还会生成一个
+较小的 AAC 备用音轨。
 
-手机在启动、回到前台或点击 **立即同步** 时同步，不注册 Android 后台任务。切换
-局域网/Tailscale 不会创建新设备，也不会重置 outbox、快照修订或媒体缓存。
+选择评分并显示答案后，收藏/取消收藏和 **标记熟记** 也能离线操作。先选 Good 后改
+Again 会立即记录 Again 并进入下一张；首次选择 Again 仍会停留显示答案，确认后才进入
+下一张。标记熟记会在同一手机事务中记录当前评分、移出活动复习队列并加入待上传操作。
+
+手机在启动、回到前台或点击 **立即同步** 时同步；“立即同步”会上传离线复习和卡片
+操作、刷新 PC 规范快照并下载缺少的媒体，不注册 Android 后台任务。切换
+局域网/Tailscale 不会创建新设备，也不会重置两个 outbox、快照修订或媒体缓存。
 
 ## 本地构建
 

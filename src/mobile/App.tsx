@@ -6,6 +6,7 @@ import { NATIVE_LANGUAGE_LABELS, SUPPORTED_LANGUAGES, type SupportedLanguage } f
 import type { PairingPayload, SignedConnectionProfile } from '../shared/sync.js';
 import { MobileDatabase, type MobileConfig, type MobileDueCard, type MobileProgress, type MobileTransport } from './db.js';
 import { mobileTranslations } from './i18n.js';
+import { normalizeNativeMediaPath } from './media.js';
 import { MobileSyncClient, parsePairingPayload } from './syncClient.js';
 import './styles.css';
 
@@ -24,6 +25,7 @@ export function MobileApp(): React.JSX.Element {
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [message, setMessage] = useState('');
+  const [pendingRating, setPendingRating] = useState<'again' | 'good' | null>(null);
   const language = (config?.interface_language ?? '英语') as SupportedLanguage;
   const t = mobileTranslations[language] ?? mobileTranslations.英语;
 
@@ -47,6 +49,7 @@ export function MobileApp(): React.JSX.Element {
     } catch (error) {
       if (!quiet) setMessage(error instanceof Error ? error.message : String(error));
     } finally {
+      await refresh();
       setBusy(false);
     }
   }, [busy, refresh]);
@@ -67,6 +70,15 @@ export function MobileApp(): React.JSX.Element {
   }, []); // database and sync client are stable process singletons
 
   const scanValue = async (): Promise<string> => {
+    const supported = await BarcodeScanner.isSupported();
+    if (!supported.supported) throw new Error('This device does not provide a supported QR scanner; paste the pairing text instead');
+    if (Capacitor.getPlatform() === 'android') {
+      const module = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable();
+      if (!module.available) {
+        await BarcodeScanner.installGoogleBarcodeScannerModule();
+        throw new Error('The QR scanner component is being installed. Try again shortly, or paste the pairing text.');
+      }
+    }
     const result = await BarcodeScanner.scan({ formats: [BarcodeFormat.QrCode] });
     const raw = result.barcodes[0]?.rawValue;
     if (!raw) throw new Error('No QR code was read');
@@ -101,15 +113,21 @@ export function MobileApp(): React.JSX.Element {
       setWaiting(false);
       setMessage(error instanceof Error ? error.message : String(error));
     } finally {
+      // Approval stores the long-term credential before the first snapshot is
+      // downloaded. Refresh even when that initial sync fails so the app moves
+      // to the paired screen and lets the user retry without pairing again.
+      await refresh();
       setBusy(false);
     }
   };
 
-  const review = async (rating: 'again' | 'good'): Promise<void> => {
-    if (!due) return;
+  const confirmReview = async (ratingOverride?: 'again' | 'good'): Promise<void> => {
+    const rating = ratingOverride ?? pendingRating;
+    if (!due || !rating) return;
     setBusy(true);
     try {
       await database.submitReview(due.id, rating);
+      setPendingRating(null);
       await refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error));
@@ -117,6 +135,39 @@ export function MobileApp(): React.JSX.Element {
       setBusy(false);
     }
   };
+
+  const toggleFavorite = async (): Promise<void> => {
+    if (!due) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      await database.toggleFavorite(due.id);
+      await refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const markMastered = async (): Promise<void> => {
+    if (!due || !pendingRating) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      await database.submitReviewAndMarkMastered(due.id, pendingRating);
+      setPendingRating(null);
+      await refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    setPendingRating(null);
+  }, [due?.id]);
 
   const changeTransport = async (value: MobileTransport): Promise<void> => {
     await database.setTransport(value);
@@ -153,6 +204,9 @@ export function MobileApp(): React.JSX.Element {
     </main>;
   }
 
+  const answerRevealed = pendingRating !== null;
+  const hasLocalVideo = Boolean(due?.media.some((item) => item.media_type === 'video' && item.local_path));
+
   return <main className="mobile-shell">
     <header className="mobile-header">
       <div><p className="eyebrow">{t.offline}</p><h1>{t.app}</h1></div>
@@ -164,20 +218,44 @@ export function MobileApp(): React.JSX.Element {
       {due ? <>
         <p className="language-label">{due.target_language}</p>
         <h2>{due.target_word}</h2>
-        <p className="meaning">{due.context_meaning}</p>
         {due.primary_sentence && <blockquote>{due.primary_sentence}</blockquote>}
-        <div className="media-stack">
-          {due.media.map((item, index) => item.local_path && item.media_type === 'image'
-            ? <img key={index} src={Capacitor.convertFileSrc(item.local_path)} alt="" />
-            : item.local_path && item.media_type === 'audio'
-              ? <audio key={index} src={Capacitor.convertFileSrc(item.local_path)} controls />
-              : item.media_type === 'video' ? <p key={index} className="muted">{t.videoUnavailable}</p> : null)}
-        </div>
-        <div className="review-actions"><button disabled={busy} className="again" onClick={() => void review('again')}>{t.again}</button><button disabled={busy} className="good" onClick={() => void review('good')}>{t.good}</button></div>
+        {answerRevealed ? <>
+          <p className="meaning">{due.context_meaning}</p>
+          <div className="media-stack">
+            {due.media.map((item) => item.id.startsWith('derived-audio-') && hasLocalVideo
+              ? null
+              : item.local_path && item.media_type === 'image'
+              ? <img key={item.id} src={Capacitor.convertFileSrc(normalizeNativeMediaPath(item.local_path))} alt="" />
+              : item.local_path && item.media_type === 'video'
+                ? <video key={item.id} src={Capacitor.convertFileSrc(normalizeNativeMediaPath(item.local_path))} controls playsInline preload="metadata" autoPlay />
+              : item.local_path && item.media_type === 'audio'
+                ? <audio key={item.id} src={Capacitor.convertFileSrc(normalizeNativeMediaPath(item.local_path))} controls autoPlay />
+                : item.media_type === 'video' ? <p key={item.id} className="muted">{t.videoUnavailable}</p> : null)}
+          </div>
+          <div className="card-management-actions">
+            <button disabled={busy} className="secondary" onClick={() => void toggleFavorite()}>
+              {due.is_favorite ? t.unfavorite : t.favorite}
+            </button>
+            <button disabled={busy} className="secondary" onClick={() => void markMastered()}>
+              {t.markMastered}
+            </button>
+          </div>
+          {pendingRating === 'good' ? (
+            <div className="review-actions">
+              <button disabled={busy} className="again" onClick={() => void confirmReview('again')}>{t.wrongAgain}</button>
+              <button disabled={busy} className="good" onClick={() => void confirmReview()}>{t.next}</button>
+            </div>
+          ) : (
+            <div className="review-actions single-action">
+              <button disabled={busy} className="again" onClick={() => void confirmReview()}>{t.confirmAgain}</button>
+            </div>
+          )}
+        </> : <div className="review-actions"><button disabled={busy} className="again" onClick={() => setPendingRating('again')}>{t.again}</button><button disabled={busy} className="good" onClick={() => setPendingRating('good')}>{t.good}</button></div>}
       </> : <div className="empty"><span>✓</span><p>{t.noDue}</p></div>}
     </section>
     <section className="panel settings-panel">
       <h3>{t.connection}</h3>
+      <p className="muted">{t.syncHelp}</p>
       <div className="segmented">
         <button className={config.selected_transport === 'lan' ? 'active' : ''} disabled={!config.lan_url} onClick={() => void changeTransport('lan')}>{t.lan}</button>
         <button className={config.selected_transport === 'tailscale' ? 'active' : ''} disabled={!config.tailscale_url} onClick={() => void changeTransport('tailscale')}>{t.tailscale}</button>

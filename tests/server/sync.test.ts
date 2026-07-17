@@ -13,10 +13,11 @@ import {
   SyncEventConflictError,
   SyncSequenceGapError,
   acknowledgeSnapshot,
+  applyCardActionBatch,
   applyReviewEventBatch,
   buildSyncSnapshot,
 } from '../../src/server/domain/sync.js';
-import type { SyncReviewEventInput, SyncSnapshot } from '../../src/shared/sync.js';
+import type { SyncCardActionInput, SyncReviewEventInput, SyncSnapshot } from '../../src/shared/sync.js';
 
 let db: Database;
 let replica: Database;
@@ -55,6 +56,22 @@ function mobileEvent(cardId: string, sequence: number, reviewedAt: string, ratin
     state_before_json: null,
     state_after_json: null,
   };
+}
+
+function mobileAction(
+  cardId: string,
+  sequence: number,
+  action: 'set_favorite' | 'mark_mastered',
+  value = true,
+): SyncCardActionInput {
+  return {
+    action_id: `mobile-action-${sequence}`,
+    card_id: cardId,
+    action_sequence: sequence,
+    action,
+    value,
+    recorded_at: `2026-07-${String(sequence).padStart(2, '0')}T09:00:00.000Z`,
+  } as SyncCardActionInput;
 }
 
 function applySnapshotToReplica(snapshot: SyncSnapshot): void {
@@ -101,6 +118,61 @@ describe('sync engine', () => {
     expect(db.prepare('SELECT COUNT(*) AS count FROM review_logs WHERE card_id = ? AND replay_epoch = 1').get(card.id)).toEqual({ count: 2 });
   });
 
+  it('applies offline favorite and mastered actions once with an independent sequence', () => {
+    const card = createCard(db, {
+      target_word: 'action',
+      context_meaning: '操作',
+      target_language: '英语',
+      definition_language: '中文',
+    });
+    const actions = [
+      mobileAction(card.id, 1, 'set_favorite', true),
+      mobileAction(card.id, 2, 'mark_mastered'),
+    ];
+    const first = applyCardActionBatch(db, 'android-actions', actions);
+    const duplicate = applyCardActionBatch(db, 'android-actions', actions);
+
+    expect(first.accepted_through).toBe(2);
+    expect(first.affected_card_ids).toEqual([card.id]);
+    expect(duplicate.accepted_through).toBe(2);
+    expect(duplicate.affected_card_ids).toEqual([]);
+    expect(db.prepare(`
+      SELECT is_favorite, status FROM word_sense_cards WHERE id = ?
+    `).get(card.id)).toEqual({ is_favorite: 1, status: 'mastered' });
+    expect(db.prepare(`
+      SELECT COUNT(*) AS count FROM sync_card_action_events WHERE device_id = ?
+    `).get('android-actions')).toEqual({ count: 2 });
+    expect(() => applyCardActionBatch(
+      db,
+      'android-actions',
+      [mobileAction(card.id, 4, 'set_favorite', false)],
+    )).toThrowError(SyncSequenceGapError);
+  });
+
+  it('acknowledges but does not resurrect actions for a deleted card', () => {
+    const card = createCard(db, {
+      target_word: 'deleted',
+      context_meaning: '已删除',
+      target_language: '英语',
+      definition_language: '中文',
+    });
+    db.prepare('UPDATE word_sense_cards SET deleted_at = ? WHERE id = ?')
+      .run('2026-07-01T00:00:00.000Z', card.id);
+
+    const result = applyCardActionBatch(
+      db,
+      'android-deleted',
+      [mobileAction(card.id, 1, 'set_favorite', true)],
+    );
+
+    expect(result.accepted_through).toBe(1);
+    expect(result.affected_card_ids).toEqual([]);
+    expect(result.ignored_deleted_card_ids).toEqual([card.id]);
+    expect(db.prepare(`
+      SELECT outcome FROM sync_card_action_events WHERE device_id = ?
+    `).get('android-deleted')).toEqual({ outcome: 'ignored_deleted' });
+  });
+
   it('builds an atomic full snapshot that can replace a second SQLite replica', () => {
     const card = createCard(db, { target_word: 'snapshot', context_meaning: '快照', target_language: '英语', definition_language: '中文' });
     createContext(db, { card_id: card.id, sentence: 'Keep a complete snapshot.' });
@@ -124,7 +196,7 @@ describe('sync engine', () => {
     expect(cursor).toEqual({ acknowledged_revision: 0 });
   });
 
-  it('hashes image and audio media while keeping video metadata non-offline', () => {
+  it('hashes image, audio, and video media for offline sync', () => {
     const card = createCard(db, { target_word: 'media', context_meaning: '媒体', target_language: '英语', definition_language: '中文' });
     const context = createContext(db, { card_id: card.id, sentence: 'Media travels by hash.' });
     for (const [name, type, mime] of [
@@ -147,6 +219,57 @@ describe('sync engine', () => {
     const snapshot = buildSyncSnapshot(db, uploadsDir)!;
     expect(snapshot.media.find((item) => item.media_type === 'image')).toMatchObject({ offline_available: true });
     expect(snapshot.media.find((item) => item.media_type === 'audio')).toMatchObject({ offline_available: true });
-    expect(snapshot.media.find((item) => item.media_type === 'video')).toMatchObject({ sha256: null, offline_available: false });
+    expect(snapshot.media.find((item) => item.media_type === 'video')).toMatchObject({ offline_available: true });
+    expect(snapshot.media.find((item) => item.media_type === 'video')?.sha256).toMatch(/^[a-f0-9]{64}$/u);
+  });
+
+  it('increments the snapshot revision when existing video gains its offline hash', () => {
+    const card = createCard(db, { target_word: 'watch', context_meaning: '观看', target_language: '英语', definition_language: '中文' });
+    const context = createContext(db, { card_id: card.id, sentence: 'Watch the original context.' });
+    const video = Buffer.from('video-revision-source');
+    fs.writeFileSync(path.join(uploadsDir, 'revision-video.mp4'), video);
+    const created = createMedia(db, {
+      context_example_id: context.id,
+      media_type: 'video',
+      file_name: 'revision-video.mp4',
+      file_path: path.join(uploadsDir, 'revision-video.mp4'),
+      mime_type: 'video/mp4',
+      file_size: video.length,
+    });
+    const knownRevision = db.prepare('SELECT content_revision FROM sync_state WHERE id = 1').pluck().get() as number;
+    expect(db.prepare('SELECT sha256 FROM media_files WHERE id = ?').pluck().get(created.id)).toBeNull();
+
+    const snapshot = buildSyncSnapshot(db, uploadsDir, knownRevision)!;
+    expect(snapshot.revision).toBeGreaterThan(knownRevision);
+    expect(snapshot.media.find((item) => item.id === created.id)).toMatchObject({ offline_available: true });
+  });
+
+  it('derives a cached offline audio asset when a context only has video', () => {
+    const card = createCard(db, { target_word: 'listen', context_meaning: '听', target_language: '英语', definition_language: '中文' });
+    const context = createContext(db, { card_id: card.id, sentence: 'Listen to the original context.' });
+    const video = Buffer.from('video-source');
+    fs.writeFileSync(path.join(uploadsDir, 'video-only.mp4'), video);
+    createMedia(db, {
+      context_example_id: context.id,
+      media_type: 'video',
+      file_name: 'video-only.mp4',
+      file_path: path.join(uploadsDir, 'video-only.mp4'),
+      mime_type: 'video/mp4',
+      file_size: video.length,
+    });
+
+    let extractionCount = 0;
+    const extractAudio = (_sourcePath: string, outputPath: string) => {
+      extractionCount += 1;
+      fs.writeFileSync(outputPath, Buffer.from('derived-audio'));
+    };
+    const first = buildSyncSnapshot(db, uploadsDir, undefined, { extractAudio })!;
+    const audio = first.media.find((item) => item.id.startsWith('derived-audio-'));
+    expect(audio).toMatchObject({ media_type: 'audio', mime_type: 'audio/mp4', offline_available: true });
+    expect(audio?.sha256).toMatch(/^[a-f0-9]{64}$/u);
+
+    const second = buildSyncSnapshot(db, uploadsDir, undefined, { extractAudio })!;
+    expect(second.media.find((item) => item.id === audio?.id)?.sha256).toBe(audio?.sha256);
+    expect(extractionCount).toBe(1);
   });
 });

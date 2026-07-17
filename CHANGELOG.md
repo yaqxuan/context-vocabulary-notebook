@@ -6,6 +6,31 @@ versions used while installation and data workflows continue to mature.
 
 ## [Unreleased]
 
+### Fixed
+
+- Submit and advance immediately when a revealed `Good` answer is corrected to
+  `Again`, while retaining the answer-confirmation step for an initial `Again`.
+- Add offline Android favorite/unfavorite and mastered actions with a separate
+  idempotent outbox, PC-side audit events, and canonical snapshot convergence.
+- Enforce the server-advertised minimum Android client version before uploading
+  credentials or local changes.
+- Replace Android snapshot tables one statement at a time and serialize syncs,
+  preventing duplicate-card failures after offline events are uploaded.
+- Hide meanings until the learner explicitly reveals the answer, refresh pending
+  counts after failures, and derive offline AAC audio from video-only contexts.
+- Encode pairing QR codes as compact high-resolution payloads with a copyable
+  pairing-text fallback, and detect Windows `tailscale.exe` from WSL.
+- Show pending Android pairing requests as a global PC confirmation dialog,
+  regardless of which PC page is currently open.
+- Allow hash-addressed audio downloads from the private derived-media cache and
+  keep the Android app paired when its first media download needs to be retried.
+- Match the web review flow on Android: choose `Again / Good` first, then reveal
+  the answer and confirm or advance without a separate reveal button.
+- Sync original video files into Android private storage with hash validation,
+  Range resume, extension-preserving cache names, and inline offline playback.
+- Normalize legacy `file:/...` Android cache paths and return absolute paths for
+  new downloads so Capacitor serves private video/audio/image files to WebView.
+
 ## [0.3.0-alpha] - 2026-07-16
 
 ### Added

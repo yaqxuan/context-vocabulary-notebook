@@ -223,24 +223,28 @@ export function setTailscaleUrl(db: Database, url: string | null): void {
 
 export function detectTailscale(db: Database): TailscaleStatus {
   const configured = db.prepare('SELECT tailscale_url FROM sync_server_config WHERE id = 1').get() as { tailscale_url: string | null };
-  try {
-    const output = execFileSync('tailscale', ['status', '--json'], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] });
-    const status = JSON.parse(output) as { BackendState?: string; Self?: { DNSName?: string } };
-    const dnsName = status.Self?.DNSName?.replace(/\.$/u, '') ?? null;
-    let serveAvailable = false;
+  const configuredCli = process.env.CVN_TAILSCALE_CLI_PATH?.trim();
+  const candidates = [configuredCli, 'tailscale', process.env.WSL_DISTRO_NAME ? 'tailscale.exe' : null]
+    .filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index);
+  for (const cli of candidates) {
     try {
-      execFileSync('tailscale', ['serve', '--help'], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'ignore', 'ignore'] });
-      serveAvailable = true;
-    } catch { /* an older client can be online without Serve support */ }
-    return {
-      installed: true,
-      online: status.BackendState === 'Running',
-      dns_name: dnsName,
-      configured_url: configured.tailscale_url,
-      serve_command: 'tailscale serve --bg 3108',
-      serve_available: serveAvailable,
-    };
-  } catch {
-    return { installed: false, online: false, dns_name: null, configured_url: configured.tailscale_url, serve_command: 'tailscale serve --bg 3108', serve_available: false };
+      const output = execFileSync(cli, ['status', '--json'], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] });
+      const status = JSON.parse(output) as { BackendState?: string; Self?: { DNSName?: string } };
+      const dnsName = status.Self?.DNSName?.replace(/\.$/u, '') ?? null;
+      let serveAvailable = false;
+      try {
+        execFileSync(cli, ['serve', '--help'], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'ignore', 'ignore'] });
+        serveAvailable = true;
+      } catch { /* an older client can be online without Serve support */ }
+      return {
+        installed: true,
+        online: status.BackendState === 'Running',
+        dns_name: dnsName,
+        configured_url: configured.tailscale_url,
+        serve_command: 'tailscale serve --bg 3108',
+        serve_available: serveAvailable,
+      };
+    } catch { /* try a native CLI, then the Windows CLI exposed through WSL interop */ }
   }
+  return { installed: false, online: false, dns_name: null, configured_url: configured.tailscale_url, serve_command: 'tailscale serve --bg 3108', serve_available: false };
 }

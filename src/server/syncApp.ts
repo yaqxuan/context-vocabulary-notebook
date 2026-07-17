@@ -1,13 +1,20 @@
+import fs from 'node:fs';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import type { Database } from 'better-sqlite3';
-import { SYNC_PROTOCOL_VERSION, type SyncReviewEventInput } from '../shared/sync.js';
+import {
+  SYNC_PROTOCOL_VERSION,
+  type SyncCardActionInput,
+  type SyncReviewEventInput,
+} from '../shared/sync.js';
 import { authenticateDevice, pairingStatus, requestPairing } from './domain/deviceSync.js';
 import {
   SyncEventConflictError,
   SyncSequenceGapError,
   acknowledgeSnapshot,
+  applyCardActionBatch,
   applyReviewEventBatch,
   buildSyncSnapshot,
+  resolveDerivedAudioPath,
 } from './domain/sync.js';
 import { asyncRoute } from './http/asyncRoute.js';
 import {
@@ -105,6 +112,20 @@ export function createSyncApp(
     }
   }));
 
+  app.post('/v1/card-actions', asyncRoute(async (req, res) => {
+    const body = req.body as { actions?: unknown };
+    if (!Array.isArray(body.actions)) throw new BadRequestError('actions must be an array');
+    try {
+      res.json(applyCardActionBatch(
+        db,
+        res.locals.syncDevice.device_id as string,
+        body.actions as SyncCardActionInput[],
+      ));
+    } catch (error) {
+      asSyncHttpError(error);
+    }
+  }));
+
   app.get('/v1/snapshot', asyncRoute(async (req, res) => {
     const rawRevision = req.query.known_revision;
     let knownRevision: number | undefined;
@@ -135,15 +156,24 @@ export function createSyncApp(
     if (!/^[a-f0-9]{64}$/u.test(sha256)) throw new BadRequestError('Invalid media hash');
     const media = db.prepare(`
       SELECT file_name, mime_type FROM media_files
-      WHERE sha256 = ? AND deleted_at IS NULL AND is_available = 1 AND media_type IN ('image', 'audio')
+      WHERE sha256 = ? AND deleted_at IS NULL AND is_available = 1 AND media_type IN ('image', 'audio', 'video')
       ORDER BY id LIMIT 1
     `).get(sha256) as { file_name: string; mime_type: string } | undefined;
-    if (!media) {
+    const derivedPath = media ? null : resolveDerivedAudioPath(uploadsDir, sha256);
+    if (!media && !derivedPath) {
       res.status(404).json({ error: 'Media not found', message: 'Media not found' });
       return;
     }
-    res.type(media.mime_type);
-    res.sendFile(resolveUploadPath(uploadsDir, media.file_name));
+    const filePath = media ? resolveUploadPath(uploadsDir, media.file_name) : derivedPath!;
+    if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+      res.status(404).json({ error: 'Media not found', message: 'Media not found' });
+      return;
+    }
+    res.type(media?.mime_type ?? 'audio/mp4');
+    // Derived audio is kept in the private `.cvn-sync-audio` cache directory.
+    // Express ignores dot-directories by default, so explicitly allow this exact,
+    // hash-addressed path after it has been resolved and validated above.
+    res.sendFile(filePath, { dotfiles: 'allow' });
   }));
 
   app.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {

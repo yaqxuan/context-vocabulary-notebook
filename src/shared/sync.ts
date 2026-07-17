@@ -2,6 +2,7 @@ import type { ReviewRating } from './constants.js';
 
 export const SYNC_PROTOCOL_VERSION = 1;
 export const MAX_SYNC_EVENT_BATCH = 500;
+export const MAX_SYNC_CARD_ACTION_BATCH = 500;
 export const PAIRING_SESSION_TTL_MS = 5 * 60 * 1000;
 
 export interface SyncCapabilities {
@@ -24,6 +25,56 @@ export interface PairingPayload {
     spki_sha256: string;
     public_key_spki: string;
   } | null;
+}
+
+export type CompactPairingPayload = [
+  'cvn-pair-v1',
+  string,
+  string,
+  string,
+  string,
+  string | null,
+  string | null,
+  string[] | null,
+  string | null,
+  string | null,
+];
+
+export function encodeCompactPairingPayload(payload: PairingPayload): string {
+  return JSON.stringify([
+    'cvn-pair-v1',
+    payload.server_id,
+    payload.session_id,
+    payload.secret,
+    payload.expires_at,
+    payload.tailscale_url,
+    payload.lan?.service_name ?? null,
+    payload.lan?.urls ?? null,
+    payload.lan?.spki_sha256 ?? null,
+    payload.lan?.public_key_spki ?? null,
+  ] satisfies CompactPairingPayload);
+}
+
+export function decodePairingPayloadText(text: string): unknown {
+  const value = JSON.parse(text) as unknown;
+  if (!Array.isArray(value) || value[0] !== 'cvn-pair-v1') return value;
+  if (value.length !== 10) throw new Error('Compact pairing payload is invalid');
+  const [, serverId, sessionId, secret, expiresAt, tailscaleUrl, serviceName, urls, pin, publicKey] = value;
+  const hasLan = serviceName !== null || urls !== null || pin !== null || publicKey !== null;
+  return {
+    protocol_version: SYNC_PROTOCOL_VERSION,
+    server_id: serverId,
+    session_id: sessionId,
+    secret,
+    expires_at: expiresAt,
+    tailscale_url: tailscaleUrl,
+    lan: hasLan ? {
+      service_name: serviceName,
+      urls,
+      spki_sha256: pin,
+      public_key_spki: publicKey,
+    } : null,
+  };
 }
 
 export interface SignedConnectionProfile {
@@ -58,6 +109,31 @@ export interface SyncEventBatchResult {
   accepted_through: number;
   canonical_revision: number;
   affected_card_ids: string[];
+}
+
+export type SyncCardActionInput =
+  | {
+      action_id: string;
+      card_id: string;
+      action_sequence: number;
+      action: 'set_favorite';
+      value: boolean;
+      recorded_at: string;
+    }
+  | {
+      action_id: string;
+      card_id: string;
+      action_sequence: number;
+      action: 'mark_mastered';
+      value: true;
+      recorded_at: string;
+    };
+
+export interface SyncCardActionBatchResult {
+  accepted_through: number;
+  canonical_revision: number;
+  affected_card_ids: string[];
+  ignored_deleted_card_ids: string[];
 }
 
 export interface SyncMediaManifestItem {
