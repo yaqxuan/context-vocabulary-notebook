@@ -532,7 +532,7 @@ describe('ReviewPage', () => {
       expect(events).toEqual(['due', 'submit']);
     });
 
-    it('allows a Good choice to be corrected to Again before next-card submission', async () => {
+    it('submits Again and advances immediately when a Good choice is corrected', async () => {
       const againSubmitResponse: SubmitReviewResponseDto = {
         ...submitResponse,
         rating: 'again',
@@ -561,11 +561,8 @@ describe('ReviewPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Good' }));
       fireEvent.click(screen.getByRole('button', { name: '记错了，Again' }));
 
-      expect(screen.queryByRole('button', { name: '改为 Good' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: '确认 Again' })).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: '确认' }));
-
       expect(await screen.findByText('今天没有待复习内容')).toBeInTheDocument();
+      expect(dueCallCount).toBe(2);
       expect(screen.queryByText(/Again 已记录/)).not.toBeInTheDocument();
     });
 

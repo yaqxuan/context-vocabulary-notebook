@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import QRCode from 'qrcode';
+import { encodeCompactPairingPayload } from '../../shared/sync';
 
 import {
-  approvePairing,
   createPairingSession,
-  denyPairing,
   getConnectionProfile,
   getDeviceSyncStatus,
   getTailscaleStatus,
@@ -23,6 +22,7 @@ export function DeviceSyncSection() {
   const [tailscale, setTailscale] = useState<TailscaleStatus | null>(null);
   const [tailscaleUrl, setTailscaleUrlValue] = useState('');
   const [qr, setQr] = useState<string | null>(null);
+  const [pairingText, setPairingText] = useState('');
   const [qrKind, setQrKind] = useState<'pair' | 'profile' | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -69,7 +69,9 @@ export function DeviceSyncSection() {
   async function makePairingQr() {
     await run(async () => {
       const payload = await createPairingSession();
-      setQr(await QRCode.toDataURL(JSON.stringify(payload), { errorCorrectionLevel: 'M', width: 320, margin: 2 }));
+      const compact = encodeCompactPairingPayload(payload);
+      setPairingText(compact);
+      setQr(await QRCode.toDataURL(compact, { errorCorrectionLevel: 'L', width: 768, margin: 4 }));
       setQrKind('pair');
     });
   }
@@ -77,7 +79,8 @@ export function DeviceSyncSection() {
   async function makeProfileQr() {
     await run(async () => {
       const profile = await getConnectionProfile();
-      setQr(await QRCode.toDataURL(JSON.stringify(profile), { errorCorrectionLevel: 'M', width: 320, margin: 2 }));
+      setPairingText('');
+      setQr(await QRCode.toDataURL(JSON.stringify(profile), { errorCorrectionLevel: 'L', width: 768, margin: 4 }));
       setQrKind('profile');
     });
   }
@@ -92,8 +95,6 @@ export function DeviceSyncSection() {
   }
 
   const activeDevice = status.devices.find((device) => !device.revoked_at);
-  const pending = status.pairing_requests.filter((request) => request.status === 'awaiting_approval');
-
   return (
     <section className="phase7-settings-section device-sync-section">
       <h2 className="phase7-settings-section-title">{t('settings.deviceSync.title')}</h2>
@@ -145,16 +146,15 @@ export function DeviceSyncSection() {
         <div className="device-sync-qr">
           <strong>{qrKind === 'pair' ? t('settings.deviceSync.pairQr') : t('settings.deviceSync.profileQr')}</strong>
           <img src={qr} alt={qrKind === 'pair' ? t('settings.deviceSync.pairQr') : t('settings.deviceSync.profileQr')} />
+          {qrKind === 'pair' && pairingText ? <>
+            <label className="phase7-settings-label" htmlFor="pairing-text">{t('settings.deviceSync.pairingText')}</label>
+            <textarea id="pairing-text" className="phase7-settings-input device-sync-pairing-text" value={pairingText} readOnly rows={4} />
+            <Button variant="secondary" onClick={() => void navigator.clipboard.writeText(pairingText).then(() => setNotice(t('settings.deviceSync.copied')))}>
+              {t('settings.deviceSync.copyPairing')}
+            </Button>
+          </> : null}
         </div>
       ) : null}
-
-      {pending.map((request) => (
-        <div className="device-sync-request" key={request.session_id}>
-          <span>{t('settings.deviceSync.requestFrom', { name: request.requested_name ?? 'Android' })}</span>
-          <Button disabled={busy} onClick={() => run(() => approvePairing(request.session_id), t('settings.deviceSync.approved'))}>{t('settings.deviceSync.approve')}</Button>
-          <Button variant="secondary" disabled={busy} onClick={() => run(() => denyPairing(request.session_id))}>{t('settings.deviceSync.deny')}</Button>
-        </div>
-      ))}
 
       {activeDevice ? (
         <div className="device-sync-device">

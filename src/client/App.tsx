@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { Layout, type NavItem } from './components/Layout';
+import { DevicePairingPrompt } from './components/DevicePairingPrompt';
 import { HomePage } from './pages/HomePage';
 import { CardCreatePage } from './pages/CardCreatePage';
 import { BatchClipImportPage } from './pages/BatchClipImportPage';
@@ -88,9 +89,12 @@ function AppShell() {
   const items = useMemo(() => getNavItems(t), [t]);
 
   return (
-    <Layout navItems={items} currentPath={routePath} title={route.title} subtitle={route.subtitle}>
-      {route.element}
-    </Layout>
+    <>
+      <Layout navItems={items} currentPath={routePath} title={route.title} subtitle={route.subtitle}>
+        {route.element}
+      </Layout>
+      <DevicePairingPrompt />
+    </>
   );
 }
 

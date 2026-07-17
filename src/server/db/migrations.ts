@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION } from '../../shared/scheduler.js';
 
-export const DATABASE_SCHEMA_VERSION = 5;
+export const DATABASE_SCHEMA_VERSION = 6;
 
 interface Migration {
   version: number;
@@ -235,11 +235,33 @@ function migrateLanTransport(db: Database): void {
   addColumn(db, 'sync_server_config', 'lan_service_name', "TEXT NOT NULL DEFAULT 'cvn-vocabulary-notebook'");
 }
 
+function migrateMobileCardActions(db: Database): void {
+  addColumn(db, 'sync_device_cursors', 'accepted_card_action_sequence', 'INTEGER NOT NULL DEFAULT 0');
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sync_card_action_events (
+      action_id        TEXT PRIMARY KEY,
+      card_id          TEXT NOT NULL,
+      device_id        TEXT NOT NULL,
+      action_sequence  INTEGER NOT NULL,
+      action           TEXT NOT NULL CHECK (action IN ('set_favorite', 'mark_mastered')),
+      value_json       TEXT NOT NULL,
+      recorded_at      TEXT NOT NULL,
+      received_at      TEXT NOT NULL,
+      outcome          TEXT NOT NULL CHECK (outcome IN ('applied', 'ignored_deleted')),
+      UNIQUE (device_id, action_sequence)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sync_card_action_events_card
+      ON sync_card_action_events (card_id, recorded_at, action_id);
+  `);
+}
+
 const migrations: Migration[] = [
   { version: 2, name: 'review-events-and-scheduler-profile', up: migrateReviewEvents },
   { version: 3, name: 'snapshot-and-event-sync-engine', up: migrateSyncEngine },
   { version: 4, name: 'device-pairing-and-authentication', up: migrateDevicePairing },
   { version: 5, name: 'lan-https-and-discovery-config', up: migrateLanTransport },
+  { version: 6, name: 'mobile-card-action-events', up: migrateMobileCardActions },
 ];
 
 export function runMigrations(db: Database): void {

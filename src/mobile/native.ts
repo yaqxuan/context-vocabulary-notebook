@@ -17,6 +17,7 @@ interface PinnedHttpPlugin {
   download(options: {
     url: string;
     sha256: string;
+    fileName?: string;
     headers?: Record<string, string>;
     spkiSha256?: string;
   }): Promise<{ path: string; bytes: number }>;

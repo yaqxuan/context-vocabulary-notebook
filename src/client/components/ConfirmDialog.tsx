@@ -9,11 +9,12 @@ interface ConfirmDialogProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  confirmVariant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, confirmVariant = 'danger', onConfirm, onCancel }: ConfirmDialogProps) {
   const headingId = useId();
   const { t } = useI18n();
 
@@ -29,7 +30,7 @@ export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, onCon
         <p className="mt-2 text-sm text-slate-600">{message}</p>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="ghost" onClick={onCancel}>{cancelLabel ?? t('common.cancel')}</Button>
-          <Button variant="danger" onClick={onConfirm}>{confirmLabel ?? t('common.confirm')}</Button>
+          <Button variant={confirmVariant} onClick={onConfirm}>{confirmLabel ?? t('common.confirm')}</Button>
         </div>
       </div>
     </div>

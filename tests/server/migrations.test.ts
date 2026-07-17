@@ -47,6 +47,9 @@ describe('database migrations', () => {
     expect(event.replay_epoch).toBe(0);
     const checkpoint = db.prepare('SELECT state_json FROM sync_card_checkpoints WHERE card_id = ? AND replay_epoch = 1').get('card-1') as { state_json: string };
     expect(JSON.parse(checkpoint.state_json)).toMatchObject({ due_date: dueAfter, reps: 3 });
-    expect(db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()).toEqual({ count: 5 });
+    expect(db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()).toEqual({ count: 6 });
+    const cursorColumns = db.prepare(`PRAGMA table_info('sync_device_cursors')`)
+      .all() as Array<{ name: string }>;
+    expect(cursorColumns.map((column) => column.name)).toContain('accepted_card_action_sequence');
   });
 });

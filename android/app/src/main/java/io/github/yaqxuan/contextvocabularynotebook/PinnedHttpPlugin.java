@@ -90,6 +90,15 @@ public class PinnedHttpPlugin extends Plugin {
         }
     }
 
+    private static String safeMediaSuffix(String fileName) {
+        if (fileName == null) return "";
+        String baseName = new File(fileName).getName();
+        int dot = baseName.lastIndexOf('.');
+        if (dot < 0 || dot == baseName.length() - 1) return "";
+        String suffix = baseName.substring(dot).toLowerCase(java.util.Locale.ROOT);
+        return suffix.matches("\\.[a-z0-9]{1,10}") ? suffix : "";
+    }
+
     @PluginMethod
     public void request(PluginCall call) {
         getBridge().executeOnMainThread(() -> new Thread(() -> {
@@ -130,11 +139,16 @@ public class PinnedHttpPlugin extends Plugin {
                 if (url == null || expectedHash == null || !expectedHash.matches("[a-f0-9]{64}")) throw new IllegalArgumentException("url and sha256 are required");
                 File directory = new File(getContext().getFilesDir(), "cvn-media");
                 if (!directory.exists() && !directory.mkdirs()) throw new IllegalStateException("Unable to create media directory");
-                File completed = new File(directory, expectedHash);
-                File partial = new File(directory, expectedHash + ".part");
+                String suffix = safeMediaSuffix(call.getString("fileName"));
+                File completed = new File(directory, expectedHash + suffix);
+                File partial = new File(directory, expectedHash + suffix + ".part");
+                File legacy = new File(directory, expectedHash);
+                if (!suffix.isEmpty() && legacy.exists() && !completed.exists() && expectedHash.equals(fileSha256(legacy))) {
+                    if (!legacy.renameTo(completed)) throw new IllegalStateException("Unable to migrate cached media filename");
+                }
                 if (completed.exists() && expectedHash.equals(fileSha256(completed))) {
                     JSObject result = new JSObject();
-                    result.put("path", completed.toURI().toString());
+                    result.put("path", completed.getAbsolutePath());
                     result.put("bytes", completed.length());
                     call.resolve(result);
                     return;
@@ -143,7 +157,7 @@ public class PinnedHttpPlugin extends Plugin {
                     if (completed.exists()) completed.delete();
                     if (!partial.renameTo(completed)) throw new IllegalStateException("Unable to finalize completed partial media");
                     JSObject result = new JSObject();
-                    result.put("path", completed.toURI().toString());
+                    result.put("path", completed.getAbsolutePath());
                     result.put("bytes", completed.length());
                     call.resolve(result);
                     return;
@@ -169,7 +183,7 @@ public class PinnedHttpPlugin extends Plugin {
                 if (completed.exists()) completed.delete();
                 if (!partial.renameTo(completed)) throw new IllegalStateException("Unable to finalize media download");
                 JSObject result = new JSObject();
-                result.put("path", completed.toURI().toString());
+                result.put("path", completed.getAbsolutePath());
                 result.put("bytes", completed.length());
                 call.resolve(result);
             } catch (Exception error) {
@@ -212,7 +226,7 @@ public class PinnedHttpPlugin extends Plugin {
             if (files != null) {
                 for (File file : files) {
                     String name = file.getName();
-                    String hash = name.endsWith(".part") ? name.substring(0, name.length() - 5) : name;
+                    String hash = name.length() >= 64 ? name.substring(0, 64) : name;
                     if (!keep.contains(hash) && file.delete()) removed++;
                 }
             }

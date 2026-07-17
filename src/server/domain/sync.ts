@@ -1,15 +1,21 @@
 import fs from 'node:fs';
-import { createHash } from 'node:crypto';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { createHash, randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import type { CardInput } from 'ts-fsrs';
 import {
+  MAX_SYNC_CARD_ACTION_BATCH,
   MAX_SYNC_EVENT_BATCH,
   SYNC_PROTOCOL_VERSION,
+  type SyncCardActionBatchResult,
+  type SyncCardActionInput,
   type SyncEventBatchResult,
   type SyncReviewEventInput,
   type SyncSnapshot,
 } from '../../shared/sync.js';
 import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION, scheduleReview } from '../../shared/scheduler.js';
+import { resolveLocalRecognitionConfig } from './localRecognitionConfig.js';
 import { resolveUploadPath } from '../storage/uploads.js';
 
 interface FsrsReplayState {
@@ -28,6 +34,28 @@ interface FsrsReplayState {
   same_day_retry_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+function validateCardActions(actions: SyncCardActionInput[]): void {
+  if (actions.length > MAX_SYNC_CARD_ACTION_BATCH) {
+    throw new SyncEventConflictError(`A batch may contain at most ${MAX_SYNC_CARD_ACTION_BATCH} card actions`);
+  }
+  for (let index = 0; index < actions.length; index += 1) {
+    const item = actions[index]!;
+    if (!item.action_id || !item.card_id || !Number.isSafeInteger(item.action_sequence) || item.action_sequence < 1) {
+      throw new SyncEventConflictError('Invalid card action identity or sequence');
+    }
+    if (!Number.isFinite(Date.parse(item.recorded_at))) throw new SyncEventConflictError('Invalid card action timestamp');
+    if (item.action !== 'set_favorite' && item.action !== 'mark_mastered') {
+      throw new SyncEventConflictError('Unsupported card action');
+    }
+    if (typeof item.value !== 'boolean' || (item.action === 'mark_mastered' && item.value !== true)) {
+      throw new SyncEventConflictError('Invalid card action value');
+    }
+    if (index > 0 && item.action_sequence !== actions[index - 1]!.action_sequence + 1) {
+      throw new SyncEventConflictError('Card action batch must contain contiguous sequences');
+    }
+  }
 }
 
 interface StoredReviewEvent extends SyncReviewEventInput {
@@ -225,6 +253,109 @@ export function applyReviewEventBatch(
   })();
 }
 
+export function applyCardActionBatch(
+  db: Database,
+  deviceId: string,
+  actions: SyncCardActionInput[],
+  receivedAt = new Date(),
+): SyncCardActionBatchResult {
+  validateCardActions(actions);
+  return db.transaction(() => {
+    const now = receivedAt.toISOString();
+    db.prepare(`
+      INSERT OR IGNORE INTO sync_device_cursors
+        (device_id, accepted_event_sequence, accepted_card_action_sequence, acknowledged_revision, updated_at)
+      VALUES (?, 0, 0, 0, ?)
+    `).run(deviceId, now);
+    const cursor = db.prepare(`
+      SELECT accepted_card_action_sequence FROM sync_device_cursors WHERE device_id = ?
+    `).get(deviceId) as { accepted_card_action_sequence: number };
+    if (actions.length === 0) {
+      return {
+        accepted_through: cursor.accepted_card_action_sequence,
+        canonical_revision: currentRevision(db),
+        affected_card_ids: [],
+        ignored_deleted_card_ids: [],
+      };
+    }
+
+    if (actions[0]!.action_sequence <= cursor.accepted_card_action_sequence) {
+      const duplicate = actions.every((item) => {
+        const row = db.prepare(`
+          SELECT action_id FROM sync_card_action_events
+          WHERE device_id = ? AND action_sequence = ?
+        `).get(deviceId, item.action_sequence) as { action_id: string } | undefined;
+        return row?.action_id === item.action_id;
+      });
+      if (duplicate && actions.at(-1)!.action_sequence <= cursor.accepted_card_action_sequence) {
+        return {
+          accepted_through: cursor.accepted_card_action_sequence,
+          canonical_revision: currentRevision(db),
+          affected_card_ids: [],
+          ignored_deleted_card_ids: [],
+        };
+      }
+      throw new SyncEventConflictError('Card action sequence was already used by a different action');
+    }
+
+    const expected = cursor.accepted_card_action_sequence + 1;
+    if (actions[0]!.action_sequence !== expected) throw new SyncSequenceGapError(expected);
+    const affected = new Set<string>();
+    const ignoredDeleted = new Set<string>();
+    for (const item of actions) {
+      if (db.prepare('SELECT action_id FROM sync_card_action_events WHERE action_id = ?').get(item.action_id)) {
+        throw new SyncEventConflictError(`Card action id ${item.action_id} already exists`);
+      }
+      const card = db.prepare(`
+        SELECT id FROM word_sense_cards WHERE id = ? AND deleted_at IS NULL
+      `).get(item.card_id) as { id: string } | undefined;
+      const outcome = card ? 'applied' : 'ignored_deleted';
+      db.prepare(`
+        INSERT INTO sync_card_action_events (
+          action_id, card_id, device_id, action_sequence, action, value_json,
+          recorded_at, received_at, outcome
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        item.action_id,
+        item.card_id,
+        deviceId,
+        item.action_sequence,
+        item.action,
+        JSON.stringify(item.value),
+        item.recorded_at,
+        now,
+        outcome,
+      );
+      if (!card) {
+        ignoredDeleted.add(item.card_id);
+        continue;
+      }
+      if (item.action === 'set_favorite') {
+        db.prepare(`
+          UPDATE word_sense_cards SET is_favorite = ?, updated_at = ? WHERE id = ?
+        `).run(item.value ? 1 : 0, now, item.card_id);
+      } else {
+        db.prepare(`
+          UPDATE word_sense_cards SET status = 'mastered', updated_at = ? WHERE id = ?
+        `).run(now, item.card_id);
+      }
+      affected.add(item.card_id);
+    }
+    const acceptedThrough = actions.at(-1)!.action_sequence;
+    db.prepare(`
+      UPDATE sync_device_cursors
+      SET accepted_card_action_sequence = ?, updated_at = ?
+      WHERE device_id = ?
+    `).run(acceptedThrough, now, deviceId);
+    return {
+      accepted_through: acceptedThrough,
+      canonical_revision: currentRevision(db),
+      affected_card_ids: [...affected].sort(),
+      ignored_deleted_card_ids: [...ignoredDeleted].sort(),
+    };
+  })();
+}
+
 export function acknowledgeSnapshot(db: Database, deviceId: string, revision: number): void {
   const revisionNow = currentRevision(db);
   if (!Number.isSafeInteger(revision) || revision < 0 || revision > revisionNow) {
@@ -238,24 +369,145 @@ export function acknowledgeSnapshot(db: Database, deviceId: string, revision: nu
   if (result.changes === 0) throw new SyncEventConflictError(`Unknown sync device ${deviceId}`);
 }
 
-function ensureMediaHashes(db: Database, uploadsDir: string): void {
+function ensureMediaHashes(db: Database, uploadsDir: string): boolean {
   const rows = db.prepare(`
-    SELECT id, file_name FROM media_files
-    WHERE deleted_at IS NULL AND is_available = 1 AND media_type IN ('image', 'audio') AND sha256 IS NULL
-  `).all() as Array<{ id: string; file_name: string }>;
+    SELECT id, file_name, sha256 FROM media_files
+    WHERE deleted_at IS NULL AND is_available = 1 AND media_type IN ('image', 'audio', 'video')
+  `).all() as Array<{ id: string; file_name: string; sha256: string | null }>;
   const update = db.prepare('UPDATE media_files SET sha256 = ?, is_available = ? WHERE id = ?');
+  let changed = false;
   for (const row of rows) {
     const filePath = resolveUploadPath(uploadsDir, row.file_name);
     if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
       update.run(null, 0, row.id);
+      changed = true;
       continue;
     }
-    update.run(createHash('sha256').update(fs.readFileSync(filePath)).digest('hex'), 1, row.id);
+    if (!row.sha256) {
+      update.run(createHash('sha256').update(fs.readFileSync(filePath)).digest('hex'), 1, row.id);
+      changed = true;
+    }
   }
+  return changed;
 }
 
-export function buildSyncSnapshot(db: Database, uploadsDir: string, knownRevision?: number): SyncSnapshot | null {
-  db.transaction(() => ensureMediaHashes(db, uploadsDir))();
+const DERIVED_AUDIO_DIR = '.cvn-sync-audio';
+const failedDerivedAudioSources = new Set<string>();
+
+export interface SyncAudioExtractionOptions {
+  extractAudio?: (sourcePath: string, outputPath: string) => void;
+}
+
+function defaultExtractAudio(sourcePath: string, outputPath: string): void {
+  const ffmpeg = resolveLocalRecognitionConfig().ffmpeg.executablePath;
+  execFileSync(ffmpeg, [
+    '-hide_banner', '-loglevel', 'error', '-y', '-i', sourcePath,
+    '-map', '0:a:0', '-vn', '-c:a', 'aac', '-b:a', '96k', '-movflags', '+faststart', outputPath,
+  ], { timeout: 120_000, stdio: ['ignore', 'ignore', 'ignore'] });
+}
+
+function ensureDerivedAudio(
+  db: Database,
+  uploadsDir: string,
+  options: SyncAudioExtractionOptions = {},
+): { items: SyncSnapshot['media']; created: boolean } {
+  const videos = db.prepare(`
+    SELECT mf.id, mf.context_example_id, mf.file_name, mf.created_at
+    FROM media_files mf
+    JOIN context_examples ce ON ce.id = mf.context_example_id
+    JOIN word_sense_cards wsc ON wsc.id = ce.card_id
+    WHERE mf.media_type = 'video' AND mf.is_available = 1
+      AND mf.deleted_at IS NULL AND ce.deleted_at IS NULL AND wsc.deleted_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM media_files audio
+        WHERE audio.context_example_id = mf.context_example_id AND audio.media_type = 'audio'
+          AND audio.is_available = 1 AND audio.deleted_at IS NULL
+      )
+    ORDER BY mf.id
+  `).all() as Array<{ id: string; context_example_id: string; file_name: string; created_at: string }>;
+  if (!videos.length) return { items: [], created: false };
+
+  const cacheDir = path.join(uploadsDir, DERIVED_AUDIO_DIR);
+  fs.mkdirSync(cacheDir, { recursive: true });
+  const extractor = options.extractAudio ?? defaultExtractAudio;
+  const items: SyncSnapshot['media'] = [];
+  let created = false;
+
+  for (const video of videos) {
+    const sourcePath = resolveUploadPath(uploadsDir, video.file_name);
+    try {
+      const sourceStat = fs.statSync(sourcePath);
+      if (!sourceStat.isFile()) continue;
+      const sourceKey = createHash('sha256').update(video.id).digest('hex').slice(0, 24);
+      const prefix = `${sourceKey}-${sourceStat.size}-${Math.trunc(sourceStat.mtimeMs)}-`;
+      if (failedDerivedAudioSources.has(prefix)) continue;
+      let fileName = fs.readdirSync(cacheDir).find((name) => (
+        name.startsWith(prefix) && /^[a-f0-9]{24}-\d+-\d+-[a-f0-9]{64}\.m4a$/u.test(name)
+      ));
+      if (!fileName) {
+        const tempPath = path.join(cacheDir, `.tmp-${randomUUID()}.m4a`);
+        try {
+          extractor(sourcePath, tempPath);
+          const output = fs.readFileSync(tempPath);
+          if (!output.length) continue;
+          const sha256 = createHash('sha256').update(output).digest('hex');
+          fileName = `${prefix}${sha256}.m4a`;
+          const finalPath = path.join(cacheDir, fileName);
+          if (!fs.existsSync(finalPath)) fs.renameSync(tempPath, finalPath);
+          else fs.rmSync(tempPath, { force: true });
+          failedDerivedAudioSources.delete(prefix);
+          created = true;
+        } finally {
+          if (fs.existsSync(tempPath)) fs.rmSync(tempPath, { force: true });
+        }
+      }
+      const hashMatch = fileName.match(/-([a-f0-9]{64})\.m4a$/u);
+      if (!hashMatch) continue;
+      const relativeName = path.join(DERIVED_AUDIO_DIR, fileName);
+      const audioPath = resolveUploadPath(uploadsDir, relativeName);
+      items.push({
+        id: `derived-audio-${video.id}`,
+        context_example_id: video.context_example_id,
+        media_type: 'audio',
+        file_name: relativeName,
+        mime_type: 'audio/mp4',
+        file_size: fs.statSync(audioPath).size,
+        sha256: hashMatch[1]!,
+        offline_available: true,
+        created_at: video.created_at,
+      });
+    } catch {
+      // A video without an audio stream or an unavailable ffmpeg binary should not
+      // prevent text snapshots from syncing. The UI keeps the video-only notice.
+      try {
+        const sourceStat = fs.statSync(sourcePath);
+        const sourceKey = createHash('sha256').update(video.id).digest('hex').slice(0, 24);
+        failedDerivedAudioSources.add(`${sourceKey}-${sourceStat.size}-${Math.trunc(sourceStat.mtimeMs)}-`);
+      } catch { /* missing sources are already excluded from the snapshot */ }
+    }
+  }
+  return { items, created };
+}
+
+export function resolveDerivedAudioPath(uploadsDir: string, sha256: string): string | null {
+  const cacheDir = path.join(uploadsDir, DERIVED_AUDIO_DIR);
+  if (!fs.existsSync(cacheDir)) return null;
+  const suffix = `-${sha256}.m4a`;
+  const fileName = fs.readdirSync(cacheDir).find((name) => name.endsWith(suffix));
+  return fileName ? path.join(cacheDir, fileName) : null;
+}
+
+export function buildSyncSnapshot(
+  db: Database,
+  uploadsDir: string,
+  knownRevision?: number,
+  audioOptions: SyncAudioExtractionOptions = {},
+): SyncSnapshot | null {
+  const mediaHashesChanged = db.transaction(() => ensureMediaHashes(db, uploadsDir))();
+  const derivedAudio = ensureDerivedAudio(db, uploadsDir, audioOptions);
+  if (mediaHashesChanged || derivedAudio.created) {
+    db.prepare('UPDATE sync_state SET content_revision = content_revision + 1 WHERE id = 1').run();
+  }
   const revision = currentRevision(db);
   if (knownRevision === revision) return null;
   const cards = db.prepare('SELECT * FROM word_sense_cards WHERE deleted_at IS NULL ORDER BY id').all() as Array<Record<string, unknown>>;
@@ -277,16 +529,17 @@ export function buildSyncSnapshot(db: Database, uploadsDir: string, knownRevisio
   `).all() as Array<Record<string, unknown>>;
   const media = db.prepare(`
     SELECT mf.id, mf.context_example_id, mf.media_type, mf.file_name, mf.mime_type,
-           mf.file_size, mf.sha256, mf.created_at
+           mf.file_size, mf.sha256, mf.is_available, mf.created_at
     FROM media_files mf
     JOIN context_examples ce ON ce.id = mf.context_example_id
     JOIN word_sense_cards wsc ON wsc.id = ce.card_id
     WHERE mf.deleted_at IS NULL AND ce.deleted_at IS NULL AND wsc.deleted_at IS NULL
     ORDER BY mf.id
   `).all().map((row) => {
-    const item = row as Omit<SyncSnapshot['media'][number], 'offline_available'>;
-    return { ...item, offline_available: item.media_type !== 'video' && Boolean(item.sha256) };
-  });
+    const item = row as Omit<SyncSnapshot['media'][number], 'offline_available'> & { is_available: number };
+    const { is_available: isAvailable, ...manifestItem } = item;
+    return { ...manifestItem, offline_available: Boolean(isAvailable && item.sha256) };
+  }).concat(derivedAudio.items);
   const settings = db.prepare(`
     SELECT default_target_language, default_definition_language, daily_review_limit
     FROM user_settings WHERE id = 1

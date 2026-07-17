@@ -48,9 +48,15 @@
 | 词库 | 搜索、筛选、收藏、标签、详情编辑和熟记状态。 |
 | 统计 | 复习数量、正确率、月份汇总、标签与评分趋势。 |
 | 迁移 | 用 ZIP 完整备份个人数据，或分享纯卡片。 |
-| Android 离线复习 | 一台配对 Android 设备、加密本地副本、局域网 HTTPS 或 Tailscale 同步、离线图片/音频复习。 |
+| Android 离线复习 | 一台配对 Android 设备、加密本地副本、局域网 HTTPS 或 Tailscale 同步、离线图片/音频/视频复习、收藏和标记熟记。 |
 | 本地识别 | 可选 ffmpeg、Tesseract OCR 和 whisper.cpp STT。 |
 | AI 辅助 | 可选 OpenAI-compatible 释义、用法、翻译、词形和拼写建议。 |
+
+正式签名发布前测试 Android 时，请从对应的 GitHub Actions 运行页面下载
+`cvn-android-...` artifact 并解压，使用随附的 `app-debug.apk.sha256` 校验
+`app-debug.apk`，然后**只把 `app-debug.apk` 发到手机**安装；校验文件留在电脑即可。
+具体命令和 Debug APK 安全提示见
+[Android 安装与同步指南](./docs/ANDROID_SYNC.zh-CN.md)。
 
 <!-- README:QUICKSTART -->
 ## 快速开始

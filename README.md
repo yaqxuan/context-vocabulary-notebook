@@ -54,9 +54,16 @@ recognition result before saving each card. It does not accept website video URL
 | Library | Search, filters, favorites, tags, detail editing, mastered state. |
 | Statistics | Review count, accuracy, monthly totals, tags, rating trend. |
 | Portability | ZIP backup/import for personal data or shareable cards. |
-| Android offline review | One paired Android device, encrypted local replica, LAN HTTPS or Tailscale sync, offline image/audio review. |
+| Android offline review | One paired Android device, encrypted local replica, LAN HTTPS or Tailscale sync, offline image/audio/video review, favorites, and mastered actions. |
 | Local recognition | Optional ffmpeg, Tesseract OCR, and whisper.cpp STT. |
 | AI assistance | Optional OpenAI-compatible meaning, usage, translation, lemma, and spelling suggestions. |
+
+Testing Android before a signed release? Download the `cvn-android-...` artifact from
+the relevant GitHub Actions run, extract it, verify `app-debug.apk` with the included
+`app-debug.apk.sha256`, and send **only `app-debug.apk`** to the phone for installation.
+The checksum file stays on the computer. See the
+[Android installation and sync guide](./docs/ANDROID_SYNC.md) for exact commands and
+the Debug APK warning.
 
 <!-- README:QUICKSTART -->
 ## Quick start

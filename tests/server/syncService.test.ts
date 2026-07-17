@@ -106,6 +106,23 @@ describe('dedicated sync service', () => {
 
     const events = await request(sync).post('/v1/events').set(headers).send({ events: [] }).expect(200);
     expect(events.body.accepted_through).toBe(0);
+    const actions = await request(sync).post('/v1/card-actions').set(headers).send({
+      actions: [{
+        action_id: 'favorite-action-1',
+        card_id: card.id,
+        action_sequence: 1,
+        action: 'set_favorite',
+        value: true,
+        recorded_at: '2026-07-17T01:00:00.000Z',
+      }],
+    }).expect(200);
+    expect(actions.body).toMatchObject({
+      accepted_through: 1,
+      affected_card_ids: [card.id],
+      ignored_deleted_card_ids: [],
+    });
+    expect(db.prepare('SELECT is_favorite FROM word_sense_cards WHERE id = ?').get(card.id))
+      .toEqual({ is_favorite: 1 });
     const snapshot = await request(sync).get('/v1/snapshot').set(headers).expect(200);
     expect(snapshot.body.cards.map((item: { id: string }) => item.id)).toContain(card.id);
     await request(sync).post(`/v1/snapshot/${snapshot.body.revision}/ack`).set(headers).expect(204);
@@ -115,6 +132,51 @@ describe('dedicated sync service', () => {
     const mediaHash = createHash('sha256').update(mediaBytes).digest('hex');
     const ranged = await request(sync).get(`/v1/media/${mediaHash}`).set(headers).set('Range', 'bytes=1-3').expect(206);
     expect(ranged.body).toEqual(Buffer.from('bcd'));
+  });
+
+  it('downloads derived audio from the private cache with Range support', async () => {
+    const derivedBytes = Buffer.from('derived-audio-bytes');
+    const derivedHash = createHash('sha256').update(derivedBytes).digest('hex');
+    const cacheDir = path.join(uploadsDir, '.cvn-sync-audio');
+    fs.mkdirSync(cacheDir, { recursive: true });
+    fs.writeFileSync(path.join(cacheDir, `video-${derivedHash}.m4a`), derivedBytes);
+
+    const { credential } = await pairAndroid();
+    const headers = { 'X-CVN-Protocol': '1', Authorization: `Bearer ${credential}` };
+    const ranged = await request(createSyncApp(db, uploadsDir))
+      .get(`/v1/media/${derivedHash}`)
+      .set(headers)
+      .set('Range', 'bytes=8-12')
+      .expect(206);
+
+    expect(ranged.body).toEqual(Buffer.from('audio'));
+  });
+
+  it('downloads original video media with Range support', async () => {
+    const card = createCard(db, { target_word: 'video', context_meaning: '视频', target_language: '英语', definition_language: '中文' });
+    const context = createContext(db, { card_id: card.id, sentence: 'Play this video offline.' });
+    const videoBytes = Buffer.from('video-file-bytes');
+    fs.writeFileSync(path.join(uploadsDir, 'offline.mp4'), videoBytes);
+    createMedia(db, {
+      context_example_id: context.id,
+      media_type: 'video',
+      file_name: 'offline.mp4',
+      file_path: path.join(uploadsDir, 'offline.mp4'),
+      mime_type: 'video/mp4',
+      file_size: videoBytes.length,
+    });
+
+    const { credential } = await pairAndroid();
+    const headers = { 'X-CVN-Protocol': '1', Authorization: `Bearer ${credential}` };
+    const snapshot = await request(createSyncApp(db, uploadsDir)).get('/v1/snapshot').set(headers).expect(200);
+    const video = snapshot.body.media.find((item: { media_type: string }) => item.media_type === 'video');
+    expect(video).toMatchObject({ offline_available: true });
+    const ranged = await request(createSyncApp(db, uploadsDir))
+      .get(`/v1/media/${video.sha256}`)
+      .set(headers)
+      .set('Range', 'bytes=6-9')
+      .expect(206);
+    expect(ranged.body).toEqual(Buffer.from('file'));
   });
 
   it('revokes both transport credentials and requires revocation before replacing the Android', async () => {
