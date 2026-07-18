@@ -1,5 +1,51 @@
 import { expect, test } from 'playwright/test';
 
+function contrastRatio(foreground: string, background: string) {
+  const parse = (color: string) => {
+    const channels = color.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+    if (!channels || channels.length !== 3) throw new Error(`Unsupported computed color: ${color}`);
+    return channels.map((channel) => {
+      const value = channel / 255;
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    });
+  };
+  const [redForeground, greenForeground, blueForeground] = parse(foreground);
+  const [redBackground, greenBackground, blueBackground] = parse(background);
+  const foregroundLuminance = 0.2126 * redForeground + 0.7152 * greenForeground + 0.0722 * blueForeground;
+  const backgroundLuminance = 0.2126 * redBackground + 0.7152 * greenBackground + 0.0722 * blueBackground;
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+test('keeps native select options readable across every form route', async ({ page }) => {
+  const routes = ['/#/', '/#/create', '/#/cards', '/#/batch-import', '/#/settings'];
+  let checkedOptions = 0;
+
+  for (const route of routes) {
+    await page.goto(route);
+    const selects = page.locator('select:visible');
+    await expect.poll(() => selects.count(), { message: `${route} should expose at least one select` }).toBeGreaterThan(0);
+
+    for (let selectIndex = 0; selectIndex < await selects.count(); selectIndex += 1) {
+      const select = selects.nth(selectIndex);
+      await expect(select).toHaveCSS('color-scheme', 'dark');
+      const optionStyles = await select.locator('option').evaluateAll((options) => options.map((option) => {
+        const style = getComputedStyle(option);
+        return { color: style.color, backgroundColor: style.backgroundColor };
+      }));
+
+      for (const style of optionStyles) {
+        expect(style.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+        expect(contrastRatio(style.color, style.backgroundColor)).toBeGreaterThanOrEqual(4.5);
+        checkedOptions += 1;
+      }
+    }
+  }
+
+  expect(checkedOptions).toBeGreaterThan(20);
+});
+
 test('keeps the desktop sidebar contained and scrollable on short screens', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 640 });
   await page.goto('/#/');

@@ -2717,3 +2717,20 @@ body {
     background-position: right bottom !important;
   }
 }
+
+/* Native select popups do not reliably inherit the painted control surface.
+   Give every desktop option an explicit dark palette so Windows Chromium does
+   not combine a white system popup with the app's light control text. */
+.app-shell select {
+  color-scheme: dark;
+}
+
+.app-shell select option,
+.app-shell select optgroup {
+  background-color: #071b3f;
+  color: #f4fbff;
+}
+
+.app-shell select option:disabled {
+  color: #a9bfd2;
+}
