@@ -4,13 +4,17 @@ import { encodeCompactPairingPayload } from '../../shared/sync';
 
 import {
   createPairingSession,
+  configureWslMirrored,
   getConnectionProfile,
   getDeviceSyncStatus,
+  getDeviceSyncSetupStatus,
   getTailscaleStatus,
   revokeSyncDevice,
+  runAutomaticDeviceSyncSetup,
   setLanEnabled,
   setTailscaleUrl,
   type DeviceSyncStatus,
+  type DeviceSyncSetupStatus,
   type TailscaleStatus,
 } from '../api/deviceSync';
 import { useI18n } from '../i18n/I18nProvider';
@@ -20,6 +24,7 @@ export function DeviceSyncSection() {
   const { t } = useI18n();
   const [status, setStatus] = useState<DeviceSyncStatus | null>(null);
   const [tailscale, setTailscale] = useState<TailscaleStatus | null>(null);
+  const [setup, setSetup] = useState<DeviceSyncSetupStatus | null>(null);
   const [tailscaleUrl, setTailscaleUrlValue] = useState('');
   const [qr, setQr] = useState<string | null>(null);
   const [pairingText, setPairingText] = useState('');
@@ -30,12 +35,15 @@ export function DeviceSyncSection() {
 
   const refresh = useCallback(async () => {
     try {
-      const [nextStatus, nextTailscale] = await Promise.all([getDeviceSyncStatus(), getTailscaleStatus()]);
-      if (!nextStatus?.config || !Array.isArray(nextStatus.devices) || !Array.isArray(nextStatus.pairing_requests) || typeof nextTailscale?.installed !== 'boolean') {
+      const [nextStatus, nextTailscale, nextSetup] = await Promise.all([
+        getDeviceSyncStatus(), getTailscaleStatus(), getDeviceSyncSetupStatus(),
+      ]);
+      if (!nextStatus?.config || !Array.isArray(nextStatus.devices) || !Array.isArray(nextStatus.pairing_requests) || typeof nextTailscale?.installed !== 'boolean' || typeof nextSetup?.lan_running !== 'boolean') {
         throw new Error(t('settings.deviceSync.failed'));
       }
       setStatus(nextStatus);
       setTailscale(nextTailscale);
+      setSetup(nextSetup);
       setTailscaleUrlValue(nextTailscale.configured_url ?? (nextTailscale.dns_name ? `https://${nextTailscale.dns_name}` : ''));
       setError('');
     } catch (cause) {
@@ -85,7 +93,7 @@ export function DeviceSyncSection() {
     });
   }
 
-  if (!status || !tailscale) {
+  if (!status || !tailscale || !setup) {
     return (
       <section className="phase7-settings-section">
         <h2 className="phase7-settings-section-title">{t('settings.deviceSync.title')}</h2>
@@ -99,6 +107,28 @@ export function DeviceSyncSection() {
     <section className="phase7-settings-section device-sync-section">
       <h2 className="phase7-settings-section-title">{t('settings.deviceSync.title')}</h2>
       <p className="phase7-settings-export-desc">{t('settings.deviceSync.description')}</p>
+
+      <div className="device-sync-diagnostic">
+        <h3>{t('settings.deviceSync.wizardTitle')}</h3>
+        <p>{t('settings.deviceSync.wizardHelp')}</p>
+        <div className="device-sync-setup-status">
+          <span>{t('settings.deviceSync.lanRunning')}: <strong>{setup.lan_running ? t('settings.deviceSync.ready') : t('settings.deviceSync.needsSetup')}</strong></span>
+          <span>{t('settings.deviceSync.mdnsRunning')}: <strong>{setup.mdns_running ? t('settings.deviceSync.ready') : t('settings.deviceSync.needsSetup')}</strong></span>
+          <span>{t('settings.deviceSync.firewall')}: <strong>{!setup.firewall.required ? t('settings.deviceSync.notRequired') : setup.firewall.configured ? t('settings.deviceSync.ready') : t('settings.deviceSync.needsSetup')}</strong></span>
+          <span>{t('settings.deviceSync.serve')}: <strong>{setup.tailscale.serve_enabled ? t('settings.deviceSync.ready') : t('settings.deviceSync.needsSetup')}</strong></span>
+        </div>
+        <Button disabled={busy} onClick={() => run(() => runAutomaticDeviceSyncSetup(), t('settings.deviceSync.setupComplete'))}>
+          {t('settings.deviceSync.automaticSetup')}
+        </Button>
+        {setup.tailscale.authorization_url ? <p><a href={setup.tailscale.authorization_url} target="_blank" rel="noreferrer">{t('settings.deviceSync.authorizeTailscale')}</a></p> : null}
+        {setup.tailscale.error ? <p className="phase7-settings-save-error">{setup.tailscale.error}</p> : null}
+        {setup.wsl.is_wsl && setup.wsl.networking_mode === 'nat' ? <>
+          <p>{t('settings.deviceSync.natHelp')}</p>
+          <Button variant="secondary" disabled={busy} onClick={() => run(() => configureWslMirrored(), t('settings.deviceSync.restartWsl'))}>
+            {t('settings.deviceSync.configureMirrored')}
+          </Button>
+        </> : null}
+      </div>
 
       <div className="device-sync-grid">
         <div className="device-sync-card">

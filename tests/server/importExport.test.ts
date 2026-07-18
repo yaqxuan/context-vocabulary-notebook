@@ -150,7 +150,11 @@ describe('import/export API', () => {
     expect(exported.fsrs_states).toHaveLength(1);
     expect(exported.review_events).toHaveLength(1);
     expect(exported.review_events?.[0].device_id).toBeTruthy();
-    expect(exported.scheduler_profiles).toHaveLength(1);
+    expect(exported.scheduler_profiles).toHaveLength(2);
+    expect(exported.scheduler_profiles?.filter((profile) => profile.is_active)).toHaveLength(1);
+    expect(exported.scheduler_profiles?.find((profile) => profile.is_active)?.profile_id).toBe(
+      'default-v2',
+    );
     expect(exported.settings?.id).toBe(1);
     expect(JSON.stringify(exported)).not.toContain('sk-secret');
     expect(exported).not.toHaveProperty('ai_configs');

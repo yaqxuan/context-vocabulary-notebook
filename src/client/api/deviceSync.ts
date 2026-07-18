@@ -44,6 +44,7 @@ export interface DeviceSyncStatus {
   devices: SyncDevice[];
   pairing_requests: PairingRequest[];
   wsl: WslNetworkStatus;
+  lan_running: boolean;
 }
 
 export interface TailscaleStatus {
@@ -53,12 +54,35 @@ export interface TailscaleStatus {
   configured_url: string | null;
   serve_command: string;
   serve_available: boolean;
+  serve_enabled: boolean;
+  cli_path: string | null;
+  authorization_url: string | null;
+  error: string | null;
+}
+
+export interface DeviceSyncSetupStatus {
+  lan_running: boolean;
+  mdns_running: boolean;
+  firewall: {
+    platform: 'windows' | 'wsl' | 'other';
+    required: boolean;
+    configured: boolean;
+    requires_admin: boolean;
+  };
+  wsl: WslNetworkStatus;
+  tailscale: TailscaleStatus;
+  restart_wsl_required: boolean;
 }
 
 export const getDeviceSyncStatus = () => apiRequest<DeviceSyncStatus>('/device-sync/status');
 export const getTailscaleStatus = () => apiRequest<TailscaleStatus>('/device-sync/tailscale');
+export const getDeviceSyncSetupStatus = () => apiRequest<DeviceSyncSetupStatus>('/device-sync/setup');
+export const runAutomaticDeviceSyncSetup = () => apiRequest<DeviceSyncSetupStatus>('/device-sync/setup/automatic', {
+  method: 'POST', json: { configure_firewall: true },
+});
+export const configureWslMirrored = () => apiRequest<DeviceSyncSetupStatus>('/device-sync/setup/wsl-mirrored', { method: 'POST' });
 export const createPairingSession = () => apiRequest<PairingPayload>('/device-sync/pairing-sessions', { method: 'POST' });
-export const setLanEnabled = (enabled: boolean) => apiRequest<{ enabled: boolean; restart_required: boolean }>('/device-sync/lan', { method: 'PATCH', json: { enabled } });
+export const setLanEnabled = (enabled: boolean) => apiRequest<{ enabled: boolean; restart_required: boolean; running: boolean }>('/device-sync/lan', { method: 'PATCH', json: { enabled } });
 export const setTailscaleUrl = (tailscaleUrl: string | null) => apiRequest<TailscaleStatus>('/device-sync/tailscale', { method: 'PATCH', json: { tailscale_url: tailscaleUrl } });
 export const approvePairing = (sessionId: string) => apiRequest<SyncDevice>(`/device-sync/pairing-sessions/${encodeURIComponent(sessionId)}/approve`, { method: 'POST' });
 export const denyPairing = (sessionId: string) => apiRequest<void>(`/device-sync/pairing-sessions/${encodeURIComponent(sessionId)}/deny`, { method: 'POST' });

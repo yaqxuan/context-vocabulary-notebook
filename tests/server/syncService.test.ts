@@ -11,20 +11,29 @@ import { createCard } from '../../src/server/domain/cards.js';
 import { createContext } from '../../src/server/domain/contexts.js';
 import { createMedia } from '../../src/server/domain/media.js';
 import { createSyncApp } from '../../src/server/syncApp.js';
+import { DeviceSyncRuntime } from '../../src/server/deviceSyncRuntime.js';
 
 let db: Database;
 let uploadsDir: string;
+let runtime: DeviceSyncRuntime;
 
 function adminApp() {
-  return createApp(db, { uploadsDir, syncIdentityDir: path.join(uploadsDir, 'sync-identity') });
+  return createApp(db, {
+    uploadsDir,
+    syncIdentityDir: path.join(uploadsDir, 'sync-identity'),
+    deviceSyncRuntime: runtime,
+  });
 }
 
 beforeEach(() => {
   db = createTestDb();
   uploadsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cvn-sync-service-'));
+  db.prepare('UPDATE sync_server_config SET lan_port = 0 WHERE id = 1').run();
+  runtime = new DeviceSyncRuntime(db, uploadsDir, path.join(uploadsDir, 'sync-identity'), { advertise: false });
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await runtime.close();
   db.close();
   fs.rmSync(uploadsDir, { recursive: true, force: true });
 });
@@ -52,7 +61,7 @@ describe('dedicated sync service', () => {
   it('exposes capabilities and no regular application API', async () => {
     const sync = createSyncApp(db, uploadsDir);
     const capabilities = await request(sync).get('/v1/capabilities').expect(200);
-    expect(capabilities.body).toMatchObject({ protocol_version: 1, minimum_client_version: '0.3.0-alpha' });
+    expect(capabilities.body).toMatchObject({ protocol_version: 1, minimum_client_version: '0.3.0-alpha.7' });
     expect(capabilities.body.server_id).toBeTruthy();
     await request(sync).get('/api/cards').expect(404);
   });

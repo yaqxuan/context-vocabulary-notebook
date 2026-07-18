@@ -2,11 +2,11 @@ import type { SupportedLanguage } from '../../shared/constants';
 
 const deviceSyncText = {
   title: 'Android 离线同步',
-  description: '配对一台 Android 手机，并通过局域网 HTTPS 或 Tailscale 手动选择通道同步。普通网页接口不会暴露到这些监听器。',
+  description: '配对一台 Android 手机，自动使用可用的局域网 HTTPS 或 Tailscale。普通网页接口不会暴露到这些监听器。',
   failed: '设备同步操作失败',
   lan: '局域网',
   tailscale: 'Tailscale',
-  enabled: '已启用（重启应用后监听）',
+  enabled: '已启用并正在监听',
   disabled: '未启用',
   online: '已安装并在线',
   offline: '已安装但离线',
@@ -14,7 +14,7 @@ const deviceSyncText = {
   tailscaleUrl: 'MagicDNS HTTPS 地址',
   enableLan: '启用局域网同步',
   disableLan: '关闭局域网同步',
-  restartRequired: '设置已保存；请重启 PC 应用使监听器变更生效。',
+  restartRequired: '设置已立即生效。',
   saved: 'Tailscale 地址已保存',
   createPairing: '创建 5 分钟配对二维码',
   updateProfile: '生成连接配置二维码',
@@ -34,16 +34,23 @@ const deviceSyncText = {
   revoke: '撤销设备',
   revoked: '设备已撤销，两条通道的凭据均已失效',
   noDevice: '当前没有已授权的 Android 设备。',
+  wizardTitle: '统一网络设置', wizardHelp: '自动启用局域网同步、检查防火墙并配置 Tailscale Serve。涉及 Windows 防火墙时会显示管理员确认。',
+  automaticSetup: '自动设置手机同步', setupComplete: '网络设置检查完成',
+  lanRunning: '局域网 HTTPS', mdnsRunning: '局域网自动发现', firewall: '防火墙规则', serve: 'Tailscale Serve',
+  ready: '就绪', needsSetup: '需要设置', notRequired: '无需应用配置',
+  authorizeTailscale: '打开 Tailscale 授权页面', continueCheck: '继续检查',
+  configureMirrored: '将 WSL 设置为 mirrored', restartWsl: '设置已写入。关闭应用后在 PowerShell 运行 wsl --shutdown，再重新打开 WSL。',
+  natHelp: 'WSL NAT 不提供可靠的局域网直连；切换 mirrored 后再配置防火墙。',
 };
 
 const deviceSyncEnglish = {
   title: 'Android offline sync',
-  description: 'Pair one Android phone and manually sync through pinned LAN HTTPS or Tailscale. The regular web API is never exposed on these listeners.',
+  description: 'Pair one Android phone and automatically use pinned LAN HTTPS or Tailscale. The regular web API is never exposed on these listeners.',
   failed: 'Device sync operation failed', lan: 'Local network', tailscale: 'Tailscale',
-  enabled: 'Enabled (listener starts after restart)', disabled: 'Disabled', online: 'Installed and online',
+  enabled: 'Enabled and listening', disabled: 'Disabled', online: 'Installed and online',
   offline: 'Installed but offline', notInstalled: 'Tailscale was not detected', tailscaleUrl: 'MagicDNS HTTPS URL',
   enableLan: 'Enable LAN sync', disableLan: 'Disable LAN sync',
-  restartRequired: 'Saved. Restart the PC app to apply listener changes.', saved: 'Tailscale URL saved',
+  restartRequired: 'The listener change is active now.', saved: 'Tailscale URL saved',
   createPairing: 'Create five-minute pairing QR', updateProfile: 'Create connection profile QR',
   pairQr: 'One-time pairing QR (valid for five minutes)', profileQr: 'Signed connection profile QR',
   pairingText: 'Pairing text (copy to the phone if scanning fails)', copyPairing: 'Copy pairing text', copied: 'Pairing text copied',
@@ -52,6 +59,13 @@ const deviceSyncEnglish = {
   approve: 'Approve', approved: 'Device paired', deny: 'Deny',
   lastSeen: 'Last sync', neverSynced: 'Never synced', revoke: 'Revoke device',
   revoked: 'Device revoked on both transports', noDevice: 'No Android device is currently authorized.',
+  wizardTitle: 'Unified network setup', wizardHelp: 'Enable LAN sync, check the firewall, and configure Tailscale Serve. Windows shows an administrator confirmation only when required.',
+  automaticSetup: 'Set up phone sync automatically', setupComplete: 'Network setup check completed',
+  lanRunning: 'LAN HTTPS', mdnsRunning: 'LAN discovery', firewall: 'Firewall rule', serve: 'Tailscale Serve',
+  ready: 'Ready', needsSetup: 'Needs setup', notRequired: 'No app setup required',
+  authorizeTailscale: 'Open Tailscale authorization', continueCheck: 'Check again',
+  configureMirrored: 'Set WSL to mirrored mode', restartWsl: 'The setting was written. Close the app, run wsl --shutdown in PowerShell, then reopen WSL.',
+  natHelp: 'WSL NAT does not provide reliable direct LAN access. Switch to mirrored mode before configuring the firewall.',
 };
 
 export const zh = {

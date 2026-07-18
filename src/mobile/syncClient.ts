@@ -7,7 +7,12 @@ import type {
   SyncSnapshot,
 } from '../shared/sync.js';
 import { decodePairingPayloadText, SYNC_PROTOCOL_VERSION } from '../shared/sync.js';
-import { MobileDatabase, type MobileConfig, type MobileTransport } from './db.js';
+import {
+  MobileDatabase,
+  type MobileConfig,
+  type MobileConnectionMode,
+  type MobileTransport,
+} from './db.js';
 import { MobileError } from './errors.js';
 import { LanDiscovery, PinnedHttp, type PinnedHttpResponse } from './native.js';
 
@@ -16,6 +21,42 @@ export class MobileSyncError extends MobileError {
     super('http_error', message, { status });
     this.name = 'MobileSyncError';
   }
+}
+
+interface SyncEndpoint {
+  baseUrl: string;
+  pin?: string;
+  transport: MobileTransport;
+  source: 'discovered-lan' | 'saved-lan' | 'tailscale';
+}
+
+interface CapabilitiesResponse {
+  protocol_version: number;
+  server_id: string;
+  minimum_client_version: string;
+}
+
+const ENDPOINT_PROBE_TIMEOUT_MS = 4_000;
+
+function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Connection probe timed out')), timeoutMs);
+    operation.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error: unknown) => { clearTimeout(timer); reject(error); },
+    );
+  });
+}
+
+function isPinnedIdentityError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /pinned server identity|certificate pin|pin mismatch/iu.test(message);
+}
+
+function isTerminalSyncError(error: unknown): boolean {
+  if (error instanceof MobileSyncError) return error.status >= 400 && error.status < 500;
+  return error instanceof MobileError
+    && ['server_mismatch', 'upgrade_required', 'pc_identity_changed'].includes(error.code);
 }
 
 function normalizedBaseUrl(value: string): string {
@@ -79,28 +120,107 @@ export class MobileSyncClient {
 
   constructor(private readonly db: MobileDatabase) {}
 
-  private async discoverLan(config: MobileConfig): Promise<string | null> {
-    if (!config.server_id) return config.lan_url;
+  private async discoverLan(config: MobileConfig): Promise<SyncEndpoint | null> {
+    if (!config.server_id || !config.lan_spki_sha256) return null;
     try {
       const result = await LanDiscovery.discover();
       const service = result.services.find((item) => item.attributes.server_id === config.server_id);
       if (service?.host && service.port) {
         const url = normalizedBaseUrl(`https://${service.host.includes(':') ? `[${service.host}]` : service.host}:${service.port}`);
-        await this.db.updateConnection({ serverId: config.server_id, lanUrl: url });
-        return url;
+        return { baseUrl: url, pin: config.lan_spki_sha256, transport: 'lan', source: 'discovered-lan' };
       }
     } catch { /* mDNS is a convenience; the pinned saved address remains authoritative */ }
-    return config.lan_url;
+    return null;
   }
 
-  private async endpoint(config: MobileConfig): Promise<{ baseUrl: string; pin?: string }> {
-    if (config.selected_transport === 'lan') {
-      const baseUrl = await this.discoverLan(config);
-      if (!baseUrl || !config.lan_spki_sha256) throw new MobileError('lan_not_configured');
-      return { baseUrl: normalizedBaseUrl(baseUrl), pin: config.lan_spki_sha256 };
+  private validateCapabilities(capabilities: CapabilitiesResponse, config: MobileConfig): void {
+    if (capabilities.protocol_version !== SYNC_PROTOCOL_VERSION || capabilities.server_id !== config.server_id) {
+      throw new MobileError('server_mismatch');
     }
-    if (!config.tailscale_url) throw new MobileError('tailscale_not_configured');
-    return { baseUrl: normalizedBaseUrl(config.tailscale_url) };
+    if (!isClientVersionSupported(packageMetadata.version, capabilities.minimum_client_version)) {
+      throw new MobileError('upgrade_required', undefined, {
+        minimum: capabilities.minimum_client_version,
+        current: packageMetadata.version,
+      });
+    }
+  }
+
+  private async availableEndpoints(config: MobileConfig): Promise<SyncEndpoint[]> {
+    const mode = config.connection_mode ?? config.selected_transport;
+    const candidateOperations: Array<Promise<SyncEndpoint | null>> = [];
+    if (mode === 'auto' || mode === 'lan') {
+      candidateOperations.push(this.discoverLan(config));
+      candidateOperations.push(Promise.resolve(
+        config.lan_url && config.lan_spki_sha256
+          ? {
+              baseUrl: normalizedBaseUrl(config.lan_url), pin: config.lan_spki_sha256,
+              transport: 'lan' as const, source: 'saved-lan' as const,
+            }
+          : null,
+      ));
+    }
+    if (mode === 'auto' || mode === 'tailscale') {
+      candidateOperations.push(Promise.resolve(config.tailscale_url ? {
+        baseUrl: normalizedBaseUrl(config.tailscale_url),
+        transport: 'tailscale' as const,
+        source: 'tailscale' as const,
+      } : null));
+    }
+    if (!candidateOperations.length) throw new MobileError('pairing_transport_missing');
+
+    const startedAt = Date.now();
+    const results = await Promise.all(candidateOperations.map(async (operation, index) => {
+      let candidate: SyncEndpoint | null = null;
+      try {
+        candidate = await withTimeout(operation, ENDPOINT_PROBE_TIMEOUT_MS);
+        if (!candidate) return {
+          endpoint: null, candidate: null, error: null,
+          completedAt: Number.MAX_SAFE_INTEGER, index,
+        };
+        const capabilities = parseJson<CapabilitiesResponse>(await withTimeout(
+          this.request(candidate, '/v1/capabilities'),
+          ENDPOINT_PROBE_TIMEOUT_MS,
+        ));
+        this.validateCapabilities(capabilities, config);
+        return {
+          endpoint: candidate, candidate, error: null,
+          completedAt: Date.now() - startedAt, index,
+        };
+      } catch (error) {
+        return {
+          endpoint: null, candidate, error,
+          completedAt: Number.MAX_SAFE_INTEGER, index,
+        };
+      }
+    }));
+
+    const storedIdentityFailure = results.find((result) => (
+      result.candidate?.source !== 'discovered-lan'
+      && result.error
+      && (
+        isPinnedIdentityError(result.error)
+        || (result.error instanceof MobileError && result.error.code === 'server_mismatch')
+      )
+    ));
+    if (storedIdentityFailure) {
+      if (isPinnedIdentityError(storedIdentityFailure.error)) {
+        throw new MobileError('pc_identity_changed');
+      }
+      throw storedIdentityFailure.error;
+    }
+
+    const endpoints = results
+      .filter((result): result is typeof result & { endpoint: SyncEndpoint } => Boolean(result.endpoint))
+      .sort((a, b) => a.completedAt - b.completedAt || a.index - b.index)
+      .map((result) => result.endpoint)
+      .filter((endpoint, index, values) => values.findIndex((item) => item.baseUrl === endpoint.baseUrl) === index);
+    if (endpoints.length) return endpoints;
+
+    const error = results.find((result) => result.error)?.error;
+    if (error) throw error;
+    if (mode === 'lan') throw new MobileError('lan_not_configured');
+    if (mode === 'tailscale') throw new MobileError('tailscale_not_configured');
+    throw new MobileError('pairing_transport_missing');
   }
 
   private async request(
@@ -124,7 +244,7 @@ export class MobileSyncClient {
 
   async pairAndWait(
     payload: PairingPayload,
-    transport: MobileTransport,
+    mode: MobileConnectionMode,
     onWaiting?: () => void,
   ): Promise<void> {
     const config = await this.db.getConfig();
@@ -132,16 +252,15 @@ export class MobileSyncClient {
     await this.db.updateConnection({
       serverId: payload.server_id,
       credential: null,
-      transport,
+      mode,
       lanUrl,
       lanSpkiSha256: payload.lan?.spki_sha256 ?? null,
       lanPublicKey: payload.lan?.public_key_spki ?? null,
       lanServiceName: payload.lan?.service_name ?? null,
       tailscaleUrl: payload.tailscale_url,
     });
-    const endpoint = transport === 'lan'
-      ? { baseUrl: normalizedBaseUrl(lanUrl ?? ''), pin: payload.lan?.spki_sha256 }
-      : { baseUrl: normalizedBaseUrl(payload.tailscale_url ?? '') };
+    const pairedConfig = await this.db.getConfig();
+    const endpoint = (await this.availableEndpoints(pairedConfig))[0]!;
     parseJson(await this.request(endpoint, '/v1/pair', {
       method: 'POST',
       body: { session_id: payload.session_id, secret: payload.secret, device_id: config.device_id, device_name: config.device_name },
@@ -157,6 +276,7 @@ export class MobileSyncClient {
       if (status.status === 'denied') throw new MobileError('pairing_denied');
       if (status.status === 'approved' && status.credential && status.device_id === config.device_id) {
         await this.db.updateConnection({ serverId: payload.server_id, credential: status.credential });
+        await this.db.markSuccessfulTransport(endpoint.transport, endpoint.transport === 'lan' ? endpoint.baseUrl : undefined);
         return;
       }
     }
@@ -195,24 +315,34 @@ export class MobileSyncClient {
   }
 
   private async performSync(): Promise<{ revision: number; uploaded: number; downloadedMedia: number }> {
-    let config = await this.db.getConfig();
+    const config = await this.db.getConfig();
     if (!config.server_id || !config.credential) throw new MobileError('not_paired');
-    const endpoint = await this.endpoint(config);
+    const endpoints = await this.availableEndpoints(config);
+    let lastError: unknown;
+    for (const endpoint of endpoints) {
+      try {
+        const result = await this.performSyncWithEndpoint(config, endpoint);
+        await this.db.markSuccessfulTransport(
+          endpoint.transport,
+          endpoint.transport === 'lan' ? endpoint.baseUrl : undefined,
+        );
+        return result;
+      } catch (error) {
+        lastError = isPinnedIdentityError(error) ? new MobileError('pc_identity_changed') : error;
+        if (isTerminalSyncError(lastError)) throw lastError;
+      }
+    }
+    throw lastError ?? new MobileError('unknown');
+  }
+
+  private async performSyncWithEndpoint(
+    initialConfig: MobileConfig,
+    endpoint: SyncEndpoint,
+  ): Promise<{ revision: number; uploaded: number; downloadedMedia: number }> {
+    let config = initialConfig;
     const auth = { Authorization: `Bearer ${config.credential}` };
-    const capabilities = parseJson<{
-      protocol_version: number;
-      server_id: string;
-      minimum_client_version: string;
-    }>(await this.request(endpoint, '/v1/capabilities'));
-    if (capabilities.protocol_version !== SYNC_PROTOCOL_VERSION || capabilities.server_id !== config.server_id) {
-      throw new MobileError('server_mismatch');
-    }
-    if (!isClientVersionSupported(packageMetadata.version, capabilities.minimum_client_version)) {
-      throw new MobileError('upgrade_required', undefined, {
-        minimum: capabilities.minimum_client_version,
-        current: packageMetadata.version,
-      });
-    }
+    const capabilities = parseJson<CapabilitiesResponse>(await this.request(endpoint, '/v1/capabilities'));
+    this.validateCapabilities(capabilities, config);
 
     let uploaded = 0;
     while (true) {

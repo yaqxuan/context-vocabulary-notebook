@@ -1,9 +1,9 @@
 # Android offline review and device sync
 
-Version `0.3.0-alpha.6` supports one PC and one Android device. After the first sync,
+Version `0.3.0-alpha.7` supports one PC and one Android device. After the first sync,
 the phone can review text, images, and audio while the PC is off. Review events
-remain in an encrypted outbox and are uploaded when the user-selected connection
-is available again.
+remain in an encrypted outbox and are uploaded through the first secure connection
+available again.
 
 The Android client requires Android 7.0 / API 24 or newer. Capacitor 8 no longer
 supports API 23. The package id is `io.github.yaqxuan.contextvocabularynotebook`.
@@ -48,7 +48,7 @@ the repository or an artifact:
 
 ## Enable the PC sync service
 
-Set the feature flag and restart the PC app:
+The one-click installer adds the feature flag when it is not already configured:
 
 ```env
 CVN_DEVICE_SYNC=1
@@ -58,20 +58,23 @@ The regular browser app and API remain on localhost. Device sync uses a separate
 restricted `/v1` service. It never exposes card editing, AI configuration, API
 keys, imports, exports, or the general media API.
 
-Open **Settings → Android offline sync**. The first pairing creates a long-lived
+Open **Settings → Android offline sync** and click **Set up phone sync automatically**.
+The app starts LAN HTTPS immediately, checks the firewall, and attempts to configure
+Tailscale Serve. Windows displays an administrator confirmation only when a scoped
+firewall rule is required. The first pairing creates a long-lived
 P-256 PC identity and a self-signed certificate under `data/sync-identity/` by
 default. Do not copy this identity between PCs. Losing or rotating it requires
 pairing again.
 
 ## Local network mode
 
-1. In PC Settings, enable Local network sync and restart the app.
-2. Allow TCP `3109` through the firewall only on trusted/private networks.
+1. In PC Settings, click **Set up phone sync automatically**; no app restart is required.
+2. Approve the Windows prompt that allows only TCP `3109` on the appropriate firewall.
 3. Create a compact five-minute pairing QR code.
 4. Scan it on Android and confirm the displayed device name on the PC. If scanning
    is unavailable, copy the **pairing text** shown below the QR directly to the
    phone; do not upload the one-time secret to a third-party QR decoder.
-5. Keep **Local network** selected on the phone.
+5. Keep **Automatic** selected, or force **Local network** while troubleshooting.
 
 The PC publishes `_cvn-sync._tcp.local` with mDNS. Discovery is only a routing
 hint: Android always checks the exact saved SHA-256 SPKI fingerprint. If mDNS is
@@ -101,28 +104,29 @@ disable the whole firewall on any platform.
 
 Mirrored networking is the supported WSL configuration because it provides LAN
 reachability and multicast. The Settings page reports the detected mode and shows
-an exact Hyper-V firewall command without running it. Microsoft documents the
+an exact Hyper-V firewall rule and can apply it after an explicit Windows administrator
+confirmation. Microsoft documents the
 mode and firewall behavior in [Accessing network applications with WSL](https://learn.microsoft.com/windows/wsl/networking).
 
-For NAT mode, mDNS and direct LAN access are not supported. Manual troubleshooting
-can use Windows `netsh interface portproxy` plus a scoped Windows firewall rule,
-but the address must be updated when the WSL address changes. Prefer mirrored
-mode instead of treating this as a permanent setup.
+For NAT mode, mDNS and direct LAN access are not supported. The wizard can back up
+and update `.wslconfig` to `networkingMode=mirrored`; close the app and run
+`wsl --shutdown` once afterward. It never creates a fragile `portproxy` rule or
+shuts WSL down without the user.
 
 ## Tailscale mode
 
-The Settings page only detects Tailscale; it never changes system configuration.
-Under WSL it checks both a Linux CLI and `tailscale.exe` exposed by Windows through
-WSL interop. Run the displayed command yourself:
+The setup wizard checks the Linux CLI, Windows PATH, common installation directories,
+and the running Tailscale program directory, then attempts:
 
 ```bash
 tailscale serve --bg 3108
 ```
 
-Save the resulting MagicDNS `https://...ts.net` URL in Settings, create the pairing
-QR, and select **Tailscale** on Android. Do not enable Funnel. Tailnet ACLs and the
-app credential are both required; failure in either layer does not fall back to
-LAN or plaintext HTTP.
+The first Serve use can still require approval on Tailscale's official HTTPS page.
+Return to Settings and check again; the app validates and saves the MagicDNS URL.
+Do not enable Funnel. Android defaults to **Automatic**, securely probes LAN and
+Tailscale, and keeps LAN-only/Tailscale-only modes for troubleshooting. Authentication,
+revocation, protocol, and saved-PC-identity errors are never bypassed by fallback.
 
 ## Sync behavior
 
@@ -139,6 +143,10 @@ After choosing a rating and revealing the answer, favorite/unfavorite and
 and immediately advances; an initial `Again` still pauses on the answer until it
 is confirmed. Marking mastered records the pending rating and removes the card
 from the active phone queue in one local transaction.
+
+An `Again` card enters a ten-minute cooldown after confirmation. It does not appear
+on either queue during that interval. If no other card is due, both apps show the
+next review time and refresh when the cooldown expires.
 
 The phone syncs at startup, when returning to the foreground, or when **Sync now**
 is pressed. The button uploads offline reviews and card actions, refreshes the

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type NextFunction, type Request, type Response } from 'express';
 import type { Database } from 'better-sqlite3';
 import {
   approvePairing,
@@ -9,16 +9,35 @@ import {
   revokeDevice,
   setTailscaleUrl,
 } from '../domain/deviceSync.js';
+import type { DeviceSyncRuntime } from '../deviceSyncRuntime.js';
 import { asyncRoute } from '../http/asyncRoute.js';
 import { BadRequestError } from '../http/errors.js';
 import { ensureLanIdentity, signedConnectionProfile } from '../domain/lanIdentity.js';
 import { detectWslNetwork } from '../domain/networkDiagnostics.js';
+import {
+  configureWslMirrored,
+  deviceSyncSetupStatus,
+  runAutomaticDeviceSyncSetup,
+} from '../domain/networkSetup.js';
 
 function paramStr(value: string | string[]): string {
   return Array.isArray(value) ? value[0]! : value;
 }
 
-export function deviceSyncRouter(db: Database, identityDir: string): Router {
+function requireLoopback(req: Request, res: Response, next: NextFunction): void {
+  const address = req.socket.remoteAddress?.replace(/^::ffff:/u, '');
+  if (address !== '127.0.0.1' && address !== '::1') {
+    res.status(403).json({ error: 'Network setup is available only from this PC' });
+    return;
+  }
+  next();
+}
+
+export function deviceSyncRouter(
+  db: Database,
+  identityDir: string,
+  runtime: DeviceSyncRuntime,
+): Router {
   const router = Router();
 
   router.get('/status', asyncRoute(async (_req, res) => {
@@ -33,7 +52,27 @@ export function deviceSyncRouter(db: Database, identityDir: string): Router {
       ORDER BY created_at DESC
     `).all(new Date().toISOString());
     const port = (config as { lan_port: number }).lan_port;
-    res.json({ config, devices: listDevices(db), pairing_requests, wsl: detectWslNetwork(port) });
+    res.json({
+      config, devices: listDevices(db), pairing_requests,
+      wsl: detectWslNetwork(port), lan_running: runtime.lanRunning,
+    });
+  }));
+
+  router.get('/setup', requireLoopback, asyncRoute(async (_req, res) => {
+    res.json(deviceSyncSetupStatus(db, runtime));
+  }));
+
+  router.post('/setup/automatic', requireLoopback, asyncRoute(async (req, res) => {
+    const configureFirewall = (req.body as Record<string, unknown>).configure_firewall;
+    if (typeof configureFirewall !== 'boolean') {
+      throw new BadRequestError('configure_firewall must be a boolean');
+    }
+    res.json(await runAutomaticDeviceSyncSetup(db, runtime, { configureFirewall }));
+  }));
+
+  router.post('/setup/wsl-mirrored', requireLoopback, asyncRoute(async (_req, res) => {
+    configureWslMirrored();
+    res.json(deviceSyncSetupStatus(db, runtime, true));
   }));
 
   router.get('/tailscale', asyncRoute(async (_req, res) => {
@@ -52,13 +91,12 @@ export function deviceSyncRouter(db: Database, identityDir: string): Router {
     res.status(201).json(createPairingSession(db));
   }));
 
-  router.patch('/lan', asyncRoute(async (req, res) => {
+  router.patch('/lan', requireLoopback, asyncRoute(async (req, res) => {
     const enabled = (req.body as Record<string, unknown>).enabled;
     if (typeof enabled !== 'boolean') throw new BadRequestError('enabled must be a boolean');
     if (enabled) await ensureLanIdentity(db, identityDir);
-    db.prepare('UPDATE sync_server_config SET lan_enabled = ?, updated_at = ? WHERE id = 1')
-      .run(enabled ? 1 : 0, new Date().toISOString());
-    res.json({ enabled, restart_required: true });
+    await runtime.setLanEnabled(enabled);
+    res.json({ enabled, restart_required: false, running: runtime.lanRunning });
   }));
 
   router.get('/connection-profile', asyncRoute(async (_req, res) => {

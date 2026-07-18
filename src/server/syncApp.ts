@@ -81,7 +81,7 @@ export function createSyncApp(
       protocol_version: SYNC_PROTOCOL_VERSION,
       server_id: server.server_id,
       server_time: new Date().toISOString(),
-      minimum_client_version: '0.3.0-alpha',
+      minimum_client_version: '0.3.0-alpha.7',
     });
   });
 

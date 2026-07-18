@@ -40,6 +40,19 @@ html {
   overflow-wrap: anywhere;
 }
 
+.device-sync-setup-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: .55rem;
+  margin: .8rem 0 1rem;
+}
+
+.device-sync-setup-status span {
+  padding: .6rem .75rem;
+  border-radius: 9px;
+  background: rgb(255 255 255 / 65%);
+}
+
 .device-sync-request,
 .device-sync-device {
   display: flex;

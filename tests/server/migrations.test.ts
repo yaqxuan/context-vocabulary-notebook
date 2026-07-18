@@ -27,9 +27,10 @@ describe('database migrations', () => {
     `).run(createdAt, createdAt);
     db.prepare(`
       INSERT INTO fsrs_states
-        (id, card_id, due_date, stability, difficulty, reps, state, last_reviewed_at, created_at, updated_at)
-      VALUES ('state-1', 'card-1', ?, 4.5, 5.5, 3, 2, ?, ?, ?)
-    `).run(dueAfter, reviewedAt, createdAt, reviewedAt);
+        (id, card_id, due_date, stability, difficulty, reps, state, last_reviewed_at,
+          same_day_retry_at, created_at, updated_at)
+      VALUES ('state-1', 'card-1', ?, 4.5, 5.5, 3, 2, ?, ?, ?, ?)
+    `).run(dueAfter, reviewedAt, reviewedAt, createdAt, reviewedAt);
     db.prepare(`
       INSERT INTO review_logs
         (id, card_id, rating, reviewed_at, due_date_before, due_date_after, created_at)
@@ -39,15 +40,20 @@ describe('database migrations', () => {
     initDb(db);
     initDb(db);
 
-    const state = db.prepare('SELECT due_date, stability, reps FROM fsrs_states WHERE card_id = ?').get('card-1');
-    expect(state).toEqual({ due_date: dueAfter, stability: 4.5, reps: 3 });
+    const state = db.prepare('SELECT due_date, stability, reps, same_day_retry_at FROM fsrs_states WHERE card_id = ?').get('card-1');
+    expect(state).toEqual({
+      due_date: dueAfter, stability: 4.5, reps: 3,
+      same_day_retry_at: '2026-02-01T00:10:00.000Z',
+    });
     const event = db.prepare('SELECT * FROM review_events WHERE event_id = ?').get('review-1') as Record<string, unknown>;
     expect(event.device_id).toBe('legacy-pc');
     expect(event.device_sequence).toBe(1);
     expect(event.replay_epoch).toBe(0);
     const checkpoint = db.prepare('SELECT state_json FROM sync_card_checkpoints WHERE card_id = ? AND replay_epoch = 1').get('card-1') as { state_json: string };
     expect(JSON.parse(checkpoint.state_json)).toMatchObject({ due_date: dueAfter, reps: 3 });
-    expect(db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()).toEqual({ count: 6 });
+    expect(db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()).toEqual({ count: 7 });
+    expect(db.prepare('SELECT profile_id FROM scheduler_profiles WHERE is_active = 1').get())
+      .toEqual({ profile_id: 'default-v2' });
     const cursorColumns = db.prepare(`PRAGMA table_info('sync_device_cursors')`)
       .all() as Array<{ name: string }>;
     expect(cursorColumns.map((column) => column.name)).toContain('accepted_card_action_sequence');

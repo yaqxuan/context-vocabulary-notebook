@@ -14,7 +14,12 @@ import {
   type SyncReviewEventInput,
   type SyncSnapshot,
 } from '../../shared/sync.js';
-import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION, scheduleReview } from '../../shared/scheduler.js';
+import {
+  LEGACY_SCHEDULER_PARAMETER_VERSIONS,
+  SCHEDULER_PARAMETER_VERSION,
+  SCHEDULER_VERSION,
+  scheduleReview,
+} from '../../shared/scheduler.js';
 import { resolveLocalRecognitionConfig } from './localRecognitionConfig.js';
 import { resolveUploadPath } from '../storage/uploads.js';
 
@@ -94,7 +99,15 @@ function validateEvents(events: SyncReviewEventInput[]): void {
     if (!Number.isFinite(Date.parse(event.due_date_before)) || !Number.isFinite(Date.parse(event.due_date_after))) {
       throw new SyncEventConflictError('Invalid review due date');
     }
-    if (event.scheduler_version !== SCHEDULER_VERSION || event.parameter_version !== SCHEDULER_PARAMETER_VERSION) {
+    if (
+      event.scheduler_version !== SCHEDULER_VERSION
+      || (
+        event.parameter_version !== SCHEDULER_PARAMETER_VERSION
+        && !LEGACY_SCHEDULER_PARAMETER_VERSIONS.includes(
+          event.parameter_version as (typeof LEGACY_SCHEDULER_PARAMETER_VERSIONS)[number],
+        )
+      )
+    ) {
       throw new SyncEventConflictError('Unsupported scheduler or parameter version');
     }
     if (index > 0 && event.device_sequence !== events[index - 1]!.device_sequence + 1) {

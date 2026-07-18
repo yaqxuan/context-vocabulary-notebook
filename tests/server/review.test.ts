@@ -9,6 +9,7 @@ import { createCard } from '../../src/server/domain/cards.js';
 import { createContext } from '../../src/server/domain/contexts.js';
 import { getDueBubbleWords, getDueQueue, getNextDueAt } from '../../src/server/domain/review.js';
 import { addTagToCard, createTag } from '../../src/server/domain/tags.js';
+import { AGAIN_RETRY_COOLDOWN_MS } from '../../src/shared/scheduler.js';
 
 let db: TestDb;
 let app: ReturnType<typeof createApp>;
@@ -566,7 +567,7 @@ describe('review API', () => {
     expect(second.body.progress.is_limit_reached).toBe(false);
   });
 
-  it('places Again cards after normal due cards without overwriting FSRS due_date', async () => {
+  it('cools Again cards for ten minutes without overwriting FSRS due_date', async () => {
     const miss = createCard(db, { target_word: 'miss', context_meaning: '错过', target_language: '英语', definition_language: '中文' });
     const other = createCard(db, { target_word: 'other', context_meaning: '其他', target_language: '英语', definition_language: '中文' });
 
@@ -577,15 +578,26 @@ describe('review API', () => {
     expect(again.status).toBe(200);
     expect(fsrsAfterAgain.due_date).toBe(again.body.fsrs.due_date);
     expect(fsrsAfterAgain.due_date).not.toBe(again.body.reviewed_at);
-    expect(fsrsAfterAgain.same_day_retry_at).toBe(again.body.reviewed_at);
+    expect(fsrsAfterAgain.same_day_retry_at).toBe(
+      new Date(Date.parse(again.body.reviewed_at as string) + AGAIN_RETRY_COOLDOWN_MS).toISOString(),
+    );
     expect(due.body.status).toBe('due');
     expect(due.body.card.id).toBe(other.id);
   });
 
-  it('returns an Again card immediately when no normal due cards remain', async () => {
+  it('returns an Again card only after its cooldown expires', async () => {
     const card = createCard(db, { target_word: 'miss', context_meaning: '错过', target_language: '英语', definition_language: '中文' });
 
-    await request(app).post(`/api/review/${card.id}`).send({ rating: 'again' });
+    const again = await request(app).post(`/api/review/${card.id}`).send({ rating: 'again' });
+    const cooling = await request(app).get('/api/review/due').expect(200);
+
+    expect(cooling.body.status).toBe('empty');
+    expect(cooling.body.next_due_at).toBe(
+      new Date(Date.parse(again.body.reviewed_at as string) + AGAIN_RETRY_COOLDOWN_MS).toISOString(),
+    );
+
+    db.prepare('UPDATE fsrs_states SET same_day_retry_at = ? WHERE card_id = ?')
+      .run(new Date(Date.now() - 1).toISOString(), card.id);
     const due = await request(app).get('/api/review/due').expect(200);
 
     expect(due.body.status).toBe('due');

@@ -10,12 +10,15 @@ import {
   MOBILE_V3_BACKFILL_REVIEW_LANGUAGE,
   MOBILE_V3_CONFIG_COLUMNS,
   MOBILE_V3_REVIEW_COLUMNS,
+  MOBILE_V4_CONFIG_COLUMNS,
+  MOBILE_V4_BACKFILL_AGAIN_COOLDOWN,
 } from './schema.js';
 
 const DATABASE_NAME = 'context-vocabulary-notebook-mobile';
 const MOBILE_SCHEMA_VERSION = 1;
 
 export type MobileTransport = 'lan' | 'tailscale';
+export type MobileConnectionMode = 'auto' | MobileTransport;
 
 export interface MobileConfig {
   device_id: string;
@@ -23,6 +26,8 @@ export interface MobileConfig {
   server_id: string | null;
   credential: string | null;
   selected_transport: MobileTransport;
+  connection_mode: MobileConnectionMode;
+  last_successful_transport: MobileTransport | null;
   lan_url: string | null;
   lan_spki_sha256: string | null;
   lan_public_key: string | null;
@@ -125,6 +130,8 @@ export class MobileDatabase {
         server_id TEXT,
         credential TEXT,
         selected_transport TEXT NOT NULL DEFAULT 'lan' CHECK (selected_transport IN ('lan', 'tailscale')),
+        connection_mode TEXT DEFAULT 'auto',
+        last_successful_transport TEXT,
         lan_url TEXT,
         lan_spki_sha256 TEXT,
         lan_public_key TEXT,
@@ -212,6 +219,28 @@ export class MobileDatabase {
     }
     await this.db().run(MOBILE_V3_BACKFILL_REVIEW_LANGUAGE);
     await this.db().run(
+      'INSERT OR IGNORE INTO mobile_schema_migrations (version, applied_at) VALUES (3, ?)',
+      [new Date().toISOString()],
+    );
+    const v4ConfigColumns = await this.db().query('PRAGMA table_info(mobile_config)');
+    const hadConnectionMode = (v4ConfigColumns.values ?? []).some((column) => column.name === 'connection_mode');
+    for (const column of MOBILE_V4_CONFIG_COLUMNS) {
+      if (!(v4ConfigColumns.values ?? []).some((existing) => existing.name === column.name)) {
+        await this.db().run(`ALTER TABLE mobile_config ADD COLUMN ${column.definition}`);
+      }
+    }
+    if (!hadConnectionMode) {
+      await this.db().run(`
+        UPDATE mobile_config SET connection_mode = selected_transport
+        WHERE connection_mode IS NULL
+      `);
+      await this.db().run(MOBILE_V4_BACKFILL_AGAIN_COOLDOWN);
+    }
+    await this.db().run(`
+      UPDATE mobile_config SET connection_mode = 'auto'
+      WHERE connection_mode IS NULL OR connection_mode NOT IN ('auto', 'lan', 'tailscale')
+    `);
+    await this.db().run(
       'INSERT OR IGNORE INTO mobile_schema_migrations (version, applied_at) VALUES (?, ?)',
       [MOBILE_SCHEMA_MIGRATION_VERSION, new Date().toISOString()],
     );
@@ -234,7 +263,7 @@ export class MobileDatabase {
   async updateConnection(input: {
     serverId: string;
     credential?: string | null;
-    transport?: MobileTransport;
+    mode?: MobileConnectionMode;
     lanUrl?: string | null;
     lanSpkiSha256?: string | null;
     lanPublicKey?: string | null;
@@ -243,12 +272,12 @@ export class MobileDatabase {
   }): Promise<void> {
     const current = await this.getConfig();
     await this.db().run(`
-      UPDATE mobile_config SET server_id = ?, credential = ?, selected_transport = ?,
+      UPDATE mobile_config SET server_id = ?, credential = ?, connection_mode = ?,
         lan_url = ?, lan_spki_sha256 = ?, lan_public_key = ?, lan_service_name = ?, tailscale_url = ? WHERE id = 1
     `, [
       input.serverId,
       input.credential === undefined ? current.credential : input.credential,
-      input.transport ?? current.selected_transport,
+      input.mode ?? current.connection_mode,
       input.lanUrl === undefined ? current.lan_url : input.lanUrl,
       input.lanSpkiSha256 === undefined ? current.lan_spki_sha256 : input.lanSpkiSha256,
       input.lanPublicKey === undefined ? current.lan_public_key : input.lanPublicKey,
@@ -257,8 +286,15 @@ export class MobileDatabase {
     ]);
   }
 
-  async setTransport(transport: MobileTransport): Promise<void> {
-    await this.db().run('UPDATE mobile_config SET selected_transport = ? WHERE id = 1', [transport]);
+  async setTransport(mode: MobileConnectionMode): Promise<void> {
+    await this.db().run('UPDATE mobile_config SET connection_mode = ? WHERE id = 1', [mode]);
+  }
+
+  async markSuccessfulTransport(transport: MobileTransport, lanUrl?: string): Promise<void> {
+    await this.db().run(`
+      UPDATE mobile_config SET last_successful_transport = ?, selected_transport = ?,
+        lan_url = COALESCE(?, lan_url) WHERE id = 1
+    `, [transport, transport, lanUrl ?? null]);
   }
 
   async setInterfaceLanguage(language: string): Promise<void> {
@@ -325,7 +361,8 @@ export class MobileDatabase {
           lan_spki_sha256 = NULL, lan_public_key = NULL, lan_service_name = NULL, tailscale_url = NULL,
           snapshot_revision = 0, next_device_sequence = 1, next_card_action_sequence = 1,
           last_sync_at = NULL, target_language_override = NULL,
-          override_base_pc_target_language = NULL WHERE id = 1
+          override_base_pc_target_language = NULL, connection_mode = 'auto',
+          last_successful_transport = NULL WHERE id = 1
       `, [crypto.randomUUID()], false);
       await db.commitTransaction();
     } catch (error) {
@@ -470,16 +507,15 @@ export class MobileDatabase {
     const language = (await this.learningLanguageState()).effectiveTargetLanguage;
     if (!language) return null;
     const nowIso = now.toISOString();
-    const start = new Date(now);
-    start.setHours(0, 0, 0, 0);
     const result = await this.db().query(`
       SELECT c.*, fs.due_date,
         (SELECT sentence FROM contexts WHERE card_id = c.id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) AS primary_sentence
       FROM cards c JOIN fsrs_states fs ON fs.card_id = c.id
       WHERE c.status = 'reviewing' AND c.target_language = ?
-        AND (fs.due_date <= ? OR fs.same_day_retry_at >= ?)
-      ORDER BY CASE WHEN fs.same_day_retry_at >= ? THEN 1 ELSE 0 END, fs.due_date, c.created_at, c.id LIMIT 1
-    `, [language, nowIso, start.toISOString(), start.toISOString()]);
+        AND ((fs.same_day_retry_at IS NULL AND fs.due_date <= ?)
+          OR (fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at <= ?))
+      ORDER BY COALESCE(fs.same_day_retry_at, fs.due_date), c.created_at, c.id LIMIT 1
+    `, [language, nowIso, nowIso]);
     const card = result.values?.[0] as Omit<MobileDueCard, 'media'> | undefined;
     if (!card) return null;
     const media = await this.db().query(`
@@ -487,6 +523,20 @@ export class MobileDatabase {
       JOIN contexts c ON c.id = m.context_example_id WHERE c.card_id = ? ORDER BY m.created_at
     `, [card.id]);
     return { ...card, media: (media.values ?? []) as MobileDueCard['media'] };
+  }
+
+  async nextDueAt(now = new Date()): Promise<string | null> {
+    const language = (await this.learningLanguageState()).effectiveTargetLanguage;
+    if (!language) return null;
+    const result = await this.db().query(`
+      SELECT COALESCE(fs.same_day_retry_at, fs.due_date) AS next_due_at
+      FROM cards c JOIN fsrs_states fs ON fs.card_id = c.id
+      WHERE c.status = 'reviewing' AND c.target_language = ?
+        AND COALESCE(fs.same_day_retry_at, fs.due_date) > ?
+      ORDER BY next_due_at, c.created_at, c.id LIMIT 1
+    `, [language, now.toISOString()]);
+    const value = result.values?.[0]?.next_due_at;
+    return typeof value === 'string' ? value : null;
   }
 
   private async submitReviewInTransaction(
