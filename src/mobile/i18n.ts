@@ -11,6 +11,7 @@ export interface MobileStrings {
   favorite: string; unfavorite: string; markMastered: string; pcLearningLanguage: string;
   phoneLearningLanguage: string; followPc: string; downloadingLibrary: string; downloadingLibraryHelp: string;
   retrySync: string; snapshotReady: string; connectionUpdated: string; never: string;
+  autoConnection: string; connectedVia: string; nextReviewAt: string;
   syncSummary: string; unknownError: string; technicalDetails: string;
   errors: Record<MobileErrorCode, string>;
 }
@@ -48,6 +49,7 @@ export const mobileTranslations: Record<SupportedLanguage, MobileStrings> = {
     pcLearningLanguage: 'PC learning language', phoneLearningLanguage: 'Phone learning language', followPc: 'Follow PC ({language})',
     downloadingLibrary: 'Downloading the PC library', downloadingLibraryHelp: 'Review and learning-language selection unlock after the first complete snapshot.',
     retrySync: 'Retry sync', snapshotReady: 'PC library is ready.', connectionUpdated: 'Connection profile updated.', never: 'Never',
+    autoConnection: 'Automatic', connectedVia: 'Last connected via {transport}', nextReviewAt: 'Next review: {time}',
     syncSummary: 'Revision {revision} · ↑{uploaded} · ↓{downloaded}', unknownError: 'An unexpected error occurred.', technicalDetails: 'Technical details', errors: enErrors,
   },
   中文: {
@@ -61,6 +63,7 @@ export const mobileTranslations: Record<SupportedLanguage, MobileStrings> = {
     phoneLearningLanguage: '手机当前学习语言', followPc: '跟随电脑（{language}）', downloadingLibrary: '正在下载电脑词库',
     downloadingLibraryHelp: '首个完整快照下载成功后，才能开始复习和选择学习语言。', retrySync: '重新同步', snapshotReady: '电脑词库已就绪。',
     connectionUpdated: '连接资料已更新。', never: '从未', syncSummary: '修订 {revision} · 上传 {uploaded} · 下载 {downloaded}',
+    autoConnection: '自动连接', connectedVia: '上次通过{transport}连接', nextReviewAt: '下次可复习：{time}',
     unknownError: '发生了未知错误。', technicalDetails: '技术详情', errors: {
       unknown: '发生了未知错误。', database_unavailable: '加密离线存储不可用。', snapshot_invalid: '电脑词库快照无效。', snapshot_protocol: '电脑快照协议不兼容。',
       review_state_missing: '这张卡片缺少调度状态。', card_unavailable: '这张卡片已不可用。', scanner_unsupported: '此设备不支持二维码扫描，请改为粘贴配对文本。',
@@ -83,6 +86,7 @@ export const mobileTranslations: Record<SupportedLanguage, MobileStrings> = {
     phoneLearningLanguage: 'スマホの学習言語', followPc: 'PCに従う（{language}）', downloadingLibrary: 'PC単語帳をダウンロード中',
     downloadingLibraryHelp: '最初の完全なスナップショット後に復習と言語選択が使えます。', retrySync: '同期を再試行', snapshotReady: 'PC単語帳の準備ができました。',
     connectionUpdated: '接続プロファイルを更新しました。', never: '未同期', syncSummary: 'リビジョン {revision}・送信 {uploaded}・取得 {downloaded}', unknownError: '予期しないエラーが発生しました。', technicalDetails: '技術情報',
+    autoConnection: '自動接続', connectedVia: '前回の接続：{transport}', nextReviewAt: '次の復習：{time}',
     errors: localizedErrors('ja'),
   },
   韩语: {
@@ -96,6 +100,7 @@ export const mobileTranslations: Record<SupportedLanguage, MobileStrings> = {
     phoneLearningLanguage: '휴대폰 학습 언어', followPc: 'PC 따르기({language})', downloadingLibrary: 'PC 단어장 다운로드 중',
     downloadingLibraryHelp: '첫 전체 스냅샷이 완료되면 복습과 언어 선택을 사용할 수 있습니다.', retrySync: '동기화 재시도', snapshotReady: 'PC 단어장이 준비되었습니다.',
     connectionUpdated: '연결 프로필이 업데이트되었습니다.', never: '없음', syncSummary: '리비전 {revision} · 업로드 {uploaded} · 다운로드 {downloaded}', unknownError: '예기치 않은 오류가 발생했습니다.', technicalDetails: '기술 세부 정보',
+    autoConnection: '자동 연결', connectedVia: '마지막 연결: {transport}', nextReviewAt: '다음 복습: {time}',
     errors: localizedErrors('ko'),
   },
   法语: {
@@ -109,6 +114,7 @@ export const mobileTranslations: Record<SupportedLanguage, MobileStrings> = {
     phoneLearningLanguage: 'Langue d’apprentissage du téléphone', followPc: 'Suivre le PC ({language})', downloadingLibrary: 'Téléchargement de la bibliothèque du PC',
     downloadingLibraryHelp: 'La révision et le choix de langue seront disponibles après le premier instantané complet.', retrySync: 'Réessayer la synchro', snapshotReady: 'La bibliothèque du PC est prête.',
     connectionUpdated: 'Profil de connexion mis à jour.', never: 'Jamais', syncSummary: 'Révision {revision} · envoi {uploaded} · téléchargement {downloaded}', unknownError: 'Une erreur inattendue est survenue.', technicalDetails: 'Détails techniques',
+    autoConnection: 'Automatique', connectedVia: 'Dernière connexion via {transport}', nextReviewAt: 'Prochaine révision : {time}',
     errors: localizedErrors('fr'),
   },
   德语: {
@@ -122,6 +128,7 @@ export const mobileTranslations: Record<SupportedLanguage, MobileStrings> = {
     phoneLearningLanguage: 'Lernsprache am Handy', followPc: 'PC folgen ({language})', downloadingLibrary: 'PC-Wortschatz wird geladen',
     downloadingLibraryHelp: 'Wiederholung und Sprachauswahl werden nach dem ersten vollständigen Stand freigeschaltet.', retrySync: 'Erneut synchronisieren', snapshotReady: 'PC-Wortschatz ist bereit.',
     connectionUpdated: 'Verbindungsprofil aktualisiert.', never: 'Nie', syncSummary: 'Revision {revision} · hoch {uploaded} · herunter {downloaded}', unknownError: 'Ein unerwarteter Fehler ist aufgetreten.', technicalDetails: 'Technische Details',
+    autoConnection: 'Automatisch', connectedVia: 'Zuletzt über {transport} verbunden', nextReviewAt: 'Nächste Wiederholung: {time}',
     errors: localizedErrors('de'),
   },
   西班牙语: {
@@ -135,6 +142,7 @@ export const mobileTranslations: Record<SupportedLanguage, MobileStrings> = {
     phoneLearningLanguage: 'Idioma de estudio del móvil', followPc: 'Seguir al PC ({language})', downloadingLibrary: 'Descargando la biblioteca del PC',
     downloadingLibraryHelp: 'El repaso y la selección de idioma se activan tras la primera copia completa.', retrySync: 'Reintentar sincronización', snapshotReady: 'La biblioteca del PC está lista.',
     connectionUpdated: 'Perfil de conexión actualizado.', never: 'Nunca', syncSummary: 'Revisión {revision} · subidas {uploaded} · descargas {downloaded}', unknownError: 'Se produjo un error inesperado.', technicalDetails: 'Detalles técnicos',
+    autoConnection: 'Automática', connectedVia: 'Última conexión mediante {transport}', nextReviewAt: 'Próximo repaso: {time}',
     errors: localizedErrors('es'),
   },
   俄语: {
@@ -148,6 +156,7 @@ export const mobileTranslations: Record<SupportedLanguage, MobileStrings> = {
     phoneLearningLanguage: 'Язык обучения на телефоне', followPc: 'Как на ПК ({language})', downloadingLibrary: 'Загрузка словаря с ПК',
     downloadingLibraryHelp: 'Повторение и выбор языка станут доступны после первого полного снимка.', retrySync: 'Повторить синхронизацию', snapshotReady: 'Словарь с ПК готов.',
     connectionUpdated: 'Профиль подключения обновлён.', never: 'Никогда', syncSummary: 'Ревизия {revision} · отправлено {uploaded} · загружено {downloaded}', unknownError: 'Произошла непредвиденная ошибка.', technicalDetails: 'Технические сведения',
+    autoConnection: 'Автоматически', connectedVia: 'Последнее подключение: {transport}', nextReviewAt: 'Следующее повторение: {time}',
     errors: localizedErrors('ru'),
   },
 };

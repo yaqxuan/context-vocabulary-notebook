@@ -82,25 +82,17 @@ interface DueQueryParts {
   orderByParams: unknown[];
 }
 
-function startOfLocalDayIso(now: Date): string {
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  return start.toISOString();
-}
-
 function buildDueQueryParts(options: ReviewScopeOptions = {}): DueQueryParts {
-  const nowDate = new Date();
-  const now = nowDate.toISOString();
-  const todayStart = startOfLocalDayIso(nowDate);
+  const now = new Date().toISOString();
   const conditions: string[] = [
     "wsc.status = 'reviewing'",
     'wsc.deleted_at IS NULL',
     `(
-        fs.due_date <= ?
-        OR (fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ?)
+        (fs.same_day_retry_at IS NULL AND fs.due_date <= ?)
+        OR (fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at <= ?)
       )`,
   ];
-  const whereParams: unknown[] = [now, todayStart];
+  const whereParams: unknown[] = [now, now];
 
   if (options.target_language) {
     conditions.push('wsc.target_language = ?');
@@ -111,12 +103,11 @@ function buildDueQueryParts(options: ReviewScopeOptions = {}): DueQueryParts {
     whereClause: conditions.join(' AND '),
     whereParams,
     orderByClause: `
-      CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN 1 ELSE 0 END ASC,
-      CASE WHEN fs.same_day_retry_at IS NOT NULL AND fs.same_day_retry_at >= ? THEN fs.same_day_retry_at ELSE fs.due_date END ASC,
+      CASE WHEN fs.same_day_retry_at IS NOT NULL THEN fs.same_day_retry_at ELSE fs.due_date END ASC,
       wsc.created_at ASC,
       wsc.id ASC
     `,
-    orderByParams: [todayStart, todayStart],
+    orderByParams: [],
   };
 }
 
@@ -204,7 +195,10 @@ export function getNextDueAt(db: Database, options: ReviewScopeOptions = {}, now
   const conditions = [
     "wsc.status = 'reviewing'",
     'wsc.deleted_at IS NULL',
-    'fs.due_date > ?',
+    `CASE
+      WHEN fs.same_day_retry_at IS NOT NULL THEN fs.same_day_retry_at
+      ELSE fs.due_date
+    END > ?`,
   ];
   const params: unknown[] = [now.toISOString()];
 
@@ -214,11 +208,14 @@ export function getNextDueAt(db: Database, options: ReviewScopeOptions = {}, now
   }
 
   const row = db.prepare(`
-    SELECT fs.due_date AS next_due_at
+    SELECT CASE
+      WHEN fs.same_day_retry_at IS NOT NULL THEN fs.same_day_retry_at
+      ELSE fs.due_date
+    END AS next_due_at
     FROM word_sense_cards wsc
     JOIN fsrs_states fs ON fs.card_id = wsc.id
     WHERE ${conditions.join(' AND ')}
-    ORDER BY fs.due_date ASC, wsc.created_at ASC, wsc.id ASC
+    ORDER BY next_due_at ASC, wsc.created_at ASC, wsc.id ASC
     LIMIT 1
   `).get(...params) as { next_due_at: string } | undefined;
 

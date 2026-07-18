@@ -236,6 +236,10 @@ Example:
     Copy-Item -LiteralPath ".env.example" -Destination ".env"
     Write-Step "Created .env"
   }
+  if (-not ((Get-Content -Raw -LiteralPath ".env") -match '(?m)^\s*CVN_DEVICE_SYNC\s*=')) {
+    Add-Content -LiteralPath ".env" -Value "`r`n# Android offline sync`r`nCVN_DEVICE_SYNC=1"
+    Write-Step "Enabled Android device sync in the existing .env"
+  }
 
   Write-Step "Installing project dependencies"
   if (-not (Invoke-NpmCi)) {
@@ -267,6 +271,9 @@ On Windows, try:
   Write-Host ""
   Write-Host "Local API health check:"
   Write-Host "  http://localhost:3107/api/health"
+  Write-Host ""
+  Write-Host "Phone sync setup:"
+  Write-Host "  Open Settings -> Android offline sync -> Set up phone sync automatically"
   Write-Host ""
   Write-Host "To update later:"
   Write-Host "  Set-Location `"$InstallDir`""

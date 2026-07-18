@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION } from '../../shared/scheduler.js';
 
-export const DATABASE_SCHEMA_VERSION = 6;
+export const DATABASE_SCHEMA_VERSION = 7;
 
 interface Migration {
   version: number;
@@ -48,7 +48,7 @@ function migrateReviewEvents(db: Database): void {
           parameter_version = COALESCE(parameter_version, ?),
           replay_epoch = 0
       WHERE id = ?
-    `).run(index + 1, SCHEDULER_VERSION, SCHEDULER_PARAMETER_VERSION, row.id);
+    `).run(index + 1, SCHEDULER_VERSION, 'default-v1', row.id);
   });
 
   db.exec(`
@@ -88,7 +88,7 @@ function migrateReviewEvents(db: Database): void {
     INSERT OR IGNORE INTO scheduler_profiles
       (profile_id, scheduler_version, parameters_json, is_active, created_at)
     VALUES (?, ?, ?, 1, ?)
-  `).run(SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION, JSON.stringify({ kind: 'library-default' }), now);
+  `).run('default-v1', SCHEDULER_VERSION, JSON.stringify({ kind: 'library-default' }), now);
   db.prepare(`
     INSERT OR IGNORE INTO local_device_identity
       (id, device_id, next_review_sequence, created_at)
@@ -256,12 +256,35 @@ function migrateMobileCardActions(db: Database): void {
   `);
 }
 
+function migrateAgainCooldownPolicy(db: Database): void {
+  db.exec(`
+    UPDATE fsrs_states
+    SET same_day_retry_at = strftime('%Y-%m-%dT%H:%M:%fZ', same_day_retry_at, '+10 minutes')
+    WHERE same_day_retry_at IS NOT NULL
+      AND last_reviewed_at IS NOT NULL
+      AND same_day_retry_at = last_reviewed_at;
+
+    UPDATE scheduler_profiles SET is_active = 0 WHERE is_active = 1;
+  `);
+  db.prepare(`
+    INSERT OR REPLACE INTO scheduler_profiles
+      (profile_id, scheduler_version, parameters_json, is_active, created_at)
+    VALUES (?, ?, ?, 1, ?)
+  `).run(
+    SCHEDULER_PARAMETER_VERSION,
+    SCHEDULER_VERSION,
+    JSON.stringify({ kind: 'library-default', again_retry_cooldown_minutes: 10 }),
+    new Date().toISOString(),
+  );
+}
+
 const migrations: Migration[] = [
   { version: 2, name: 'review-events-and-scheduler-profile', up: migrateReviewEvents },
   { version: 3, name: 'snapshot-and-event-sync-engine', up: migrateSyncEngine },
   { version: 4, name: 'device-pairing-and-authentication', up: migrateDevicePairing },
   { version: 5, name: 'lan-https-and-discovery-config', up: migrateLanTransport },
   { version: 6, name: 'mobile-card-action-events', up: migrateMobileCardActions },
+  { version: 7, name: 'again-ten-minute-cooldown', up: migrateAgainCooldownPolicy },
 ];
 
 export function runMigrations(db: Database): void {

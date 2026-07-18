@@ -24,6 +24,7 @@ describe('one-click installers', () => {
     expect(bashInstaller).toContain('npm run build');
     expect(bashInstaller).toContain('--prefer-offline');
     expect(bashInstaller).toContain('--fetch-timeout=60000');
+    expect(bashInstaller).toContain('CVN_DEVICE_SYNC=1');
   });
 
   it('checks every critical native command in the PowerShell installer', () => {
@@ -34,6 +35,7 @@ describe('one-click installers', () => {
     expect(powershellInstaller).toContain('if (-not (Invoke-NpmCi))');
     expect(powershellInstaller).toContain('npm ci --prefer-offline --no-audit --no-fund');
     expect(powershellInstaller).toContain('--fetch-timeout=60000');
+    expect(powershellInstaller).toContain('CVN_DEVICE_SYNC=1');
 
     expect(powershellInstaller).not.toMatch(/^\s+git -C "\$InstallDir" pull --ff-only\s*$/m);
     expect(powershellInstaller).not.toMatch(/^\s+git clone \$RepoUrl \.\s*$/m);

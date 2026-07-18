@@ -21,6 +21,7 @@ import { localRecognitionRouter } from './routes/localRecognition.js';
 import { deviceSyncRouter } from './routes/deviceSync.js';
 import { ensureUploadsDir, resolveUploadPath } from './storage/uploads.js';
 import { BadRequestError } from './http/errors.js';
+import { DeviceSyncRuntime } from './deviceSyncRuntime.js';
 
 export interface AppOptions {
   uploadsDir?: string;
@@ -36,6 +37,7 @@ export interface AppOptions {
   };
   localRecognition?: LocalRecognitionReadinessOptions;
   syncIdentityDir?: string;
+  deviceSyncRuntime?: DeviceSyncRuntime;
 }
 
 const DEFAULT_UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
@@ -43,6 +45,8 @@ const DEFAULT_UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
 export function createApp(db: Database, options: AppOptions = {}): express.Express {
   const uploadsDir = options.uploadsDir ?? DEFAULT_UPLOADS_DIR;
   const syncIdentityDir = options.syncIdentityDir ?? path.resolve(process.cwd(), 'data/sync-identity');
+  const deviceSyncRuntime = options.deviceSyncRuntime
+    ?? new DeviceSyncRuntime(db, uploadsDir, syncIdentityDir);
   ensureUploadsDir(uploadsDir);
 
   const application = express();
@@ -103,7 +107,8 @@ export function createApp(db: Database, options: AppOptions = {}): express.Expre
   application.use('/api/local-recognition', localRecognitionRouter(options.localRecognition));
   application.use('/api/statistics', statisticsRouter(db));
   application.use('/api', importExportRouter(db, uploadsDir));
-  application.use('/api/device-sync', deviceSyncRouter(db, syncIdentityDir));
+  application.locals.deviceSyncRuntime = deviceSyncRuntime;
+  application.use('/api/device-sync', deviceSyncRouter(db, syncIdentityDir, deviceSyncRuntime));
 
   return application;
 }

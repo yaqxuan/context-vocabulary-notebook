@@ -9,6 +9,7 @@ import { createTestDb } from '../../src/server/db/testDb.js';
 import { ensureLanIdentity, signedConnectionProfile } from '../../src/server/domain/lanIdentity.js';
 import { detectWslNetwork } from '../../src/server/domain/networkDiagnostics.js';
 import { isPrivateNetworkAddress, startLanSyncServer, type LanSyncServer } from '../../src/server/lanServer.js';
+import { DeviceSyncRuntime } from '../../src/server/deviceSyncRuntime.js';
 
 let db: Database;
 let tempDir: string;
@@ -89,5 +90,15 @@ describe('LAN sync transport', () => {
       expect(result.verify_command).toBeNull();
       expect(result.lan_supported).toBe(true);
     }
+  });
+
+  it('enables and disables the LAN listener without restarting the app', async () => {
+    db.prepare('UPDATE sync_server_config SET lan_port = 0 WHERE id = 1').run();
+    const runtime = new DeviceSyncRuntime(db, tempDir, path.join(tempDir, 'runtime-identity'), { advertise: false });
+    await runtime.setLanEnabled(true);
+    expect(runtime.lanRunning).toBe(true);
+    expect((db.prepare('SELECT lan_enabled FROM sync_server_config WHERE id = 1').get() as { lan_enabled: number }).lan_enabled).toBe(1);
+    await runtime.setLanEnabled(false);
+    expect(runtime.lanRunning).toBe(false);
   });
 });

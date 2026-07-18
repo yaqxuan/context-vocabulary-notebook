@@ -314,6 +314,10 @@ EOF
     cp .env.example .env
     log "Created .env"
   fi
+  if ! grep -Eq '^[[:space:]]*CVN_DEVICE_SYNC[[:space:]]*=' .env; then
+    printf '\n# Android offline sync\nCVN_DEVICE_SYNC=1\n' >> .env
+    log "Enabled Android device sync in the existing .env"
+  fi
 
   log "Installing project dependencies"
   if ! npm ci \
@@ -352,6 +356,9 @@ Open in your browser:
 
 Local API health check:
   http://localhost:3107/api/health
+
+Phone sync setup:
+  Open Settings -> Android offline sync -> Set up phone sync automatically
 
 To update later:
   cd "$INSTALL_DIR"

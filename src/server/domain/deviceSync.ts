@@ -1,5 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { Database } from 'better-sqlite3';
 import { PAIRING_SESSION_TTL_MS, SYNC_PROTOCOL_VERSION, type PairingPayload } from '../../shared/sync.js';
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../http/errors.js';
@@ -33,6 +35,15 @@ export interface TailscaleStatus {
   configured_url: string | null;
   serve_command: string;
   serve_available: boolean;
+  serve_enabled: boolean;
+  cli_path: string | null;
+  authorization_url: string | null;
+  error: string | null;
+}
+
+interface ResolvedTailscale {
+  cli: string;
+  status: { BackendState?: string; Self?: { DNSName?: string } };
 }
 
 function digest(value: string): string {
@@ -221,30 +232,121 @@ export function setTailscaleUrl(db: Database, url: string | null): void {
     .run(url, new Date().toISOString());
 }
 
-export function detectTailscale(db: Database): TailscaleStatus {
-  const configured = db.prepare('SELECT tailscale_url FROM sync_server_config WHERE id = 1').get() as { tailscale_url: string | null };
+function tailscaleCandidates(): string[] {
   const configuredCli = process.env.CVN_TAILSCALE_CLI_PATH?.trim();
-  const candidates = [configuredCli, 'tailscale', process.env.WSL_DISTRO_NAME ? 'tailscale.exe' : null]
-    .filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index);
+  const candidates: Array<string | null | undefined> = [configuredCli, 'tailscale'];
+  if (process.platform === 'win32' || process.env.WSL_DISTRO_NAME) {
+    candidates.push('tailscale.exe');
+    const programFiles = process.env.ProgramFiles;
+    const localAppData = process.env.LOCALAPPDATA;
+    if (programFiles) candidates.push(path.join(programFiles, 'Tailscale', 'tailscale.exe'));
+    if (localAppData) candidates.push(path.join(localAppData, 'Tailscale', 'tailscale.exe'));
+    try {
+      const executable = execFileSync('powershell.exe', [
+        '-NoProfile', '-Command',
+        "(Get-Process tailscale-ipn -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Path)",
+      ], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      if (executable) {
+        const windowsCli = path.win32.join(path.win32.dirname(executable), 'tailscale.exe');
+        if (process.env.WSL_DISTRO_NAME) {
+          try {
+            candidates.push(execFileSync('wslpath', ['-u', windowsCli], {
+              encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'],
+            }).trim());
+          } catch { candidates.push(windowsCli); }
+        } else {
+          candidates.push(windowsCli);
+        }
+      }
+    } catch { /* PowerShell interop is optional */ }
+  }
+  return candidates
+    .filter((value): value is string => Boolean(value))
+    .map((value) => {
+      if (!process.env.WSL_DISTRO_NAME || !/^[a-z]:\\/iu.test(value)) return value;
+      try {
+        return execFileSync('wslpath', ['-u', value], {
+          encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+      } catch { return value; }
+    })
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .filter((value) => !path.isAbsolute(value) || fs.existsSync(value));
+}
+
+function resolveTailscale(): ResolvedTailscale | null {
+  const candidates = tailscaleCandidates();
   for (const cli of candidates) {
     try {
       const output = execFileSync(cli, ['status', '--json'], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] });
       const status = JSON.parse(output) as { BackendState?: string; Self?: { DNSName?: string } };
-      const dnsName = status.Self?.DNSName?.replace(/\.$/u, '') ?? null;
-      let serveAvailable = false;
-      try {
-        execFileSync(cli, ['serve', '--help'], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'ignore', 'ignore'] });
-        serveAvailable = true;
-      } catch { /* an older client can be online without Serve support */ }
-      return {
-        installed: true,
-        online: status.BackendState === 'Running',
-        dns_name: dnsName,
-        configured_url: configured.tailscale_url,
-        serve_command: 'tailscale serve --bg 3108',
-        serve_available: serveAvailable,
-      };
+      return { cli, status };
     } catch { /* try a native CLI, then the Windows CLI exposed through WSL interop */ }
   }
-  return { installed: false, online: false, dns_name: null, configured_url: configured.tailscale_url, serve_command: 'tailscale serve --bg 3108', serve_available: false };
+  return null;
+}
+
+function serveStatus(cli: string): boolean {
+  try {
+    const output = execFileSync(cli, ['serve', 'status', '--json'], {
+      encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    return Boolean(output && output !== '{}' && output !== 'null');
+  } catch {
+    try {
+      const output = execFileSync(cli, ['serve', 'status'], {
+        encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'],
+      });
+      return /https:\/\//iu.test(output) && !/no serve config/iu.test(output);
+    } catch { return false; }
+  }
+}
+
+export function detectTailscale(db: Database): TailscaleStatus {
+  const configured = db.prepare('SELECT tailscale_url FROM sync_server_config WHERE id = 1').get() as { tailscale_url: string | null };
+  const resolved = resolveTailscale();
+  if (!resolved) {
+    return {
+      installed: false, online: false, dns_name: null, configured_url: configured.tailscale_url,
+      serve_command: 'tailscale serve --bg 3108', serve_available: false, serve_enabled: false,
+      cli_path: null, authorization_url: null, error: null,
+    };
+  }
+  const dnsName = resolved.status.Self?.DNSName?.replace(/\.$/u, '') ?? null;
+  let serveAvailable = false;
+  try {
+    execFileSync(resolved.cli, ['serve', '--help'], { encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'ignore', 'ignore'] });
+    serveAvailable = true;
+  } catch { /* an older client can be online without Serve support */ }
+  return {
+    installed: true,
+    online: resolved.status.BackendState === 'Running',
+    dns_name: dnsName,
+    configured_url: configured.tailscale_url,
+    serve_command: 'tailscale serve --bg 3108',
+    serve_available: serveAvailable,
+    serve_enabled: serveAvailable && serveStatus(resolved.cli),
+    cli_path: resolved.cli,
+    authorization_url: null,
+    error: null,
+  };
+}
+
+export function startTailscaleServe(db: Database, port = 3108): TailscaleStatus {
+  const resolved = resolveTailscale();
+  if (!resolved) return detectTailscale(db);
+  try {
+    const output = execFileSync(resolved.cli, ['serve', '--bg', String(port)], {
+      encoding: 'utf8', timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return { ...detectTailscale(db), authorization_url: output.match(/https:\/\/login\.tailscale\.com\/\S+/u)?.[0] ?? null };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    const combined = `${detail} ${(error as { stdout?: string; stderr?: string }).stdout ?? ''} ${(error as { stderr?: string }).stderr ?? ''}`;
+    return {
+      ...detectTailscale(db),
+      authorization_url: combined.match(/https:\/\/login\.tailscale\.com\/\S+/u)?.[0] ?? null,
+      error: combined.trim(),
+    };
+  }
 }

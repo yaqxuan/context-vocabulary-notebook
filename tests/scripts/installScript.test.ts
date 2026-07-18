@@ -132,6 +132,7 @@ describe.skipIf(process.platform === 'win32')('install.sh path selection', () =>
     expect(commands).toContain(`git clone ${repoUrl} .`);
     expect(fs.existsSync(path.join(installDir, 'package.json'))).toBe(true);
     expect(fs.existsSync(path.join(installDir, 'context-vocabulary-notebook'))).toBe(false);
+    expect(fs.readFileSync(path.join(installDir, '.env'), 'utf8')).toContain('CVN_DEVICE_SYNC=1');
   });
 
   it('updates the current directory instead of nesting when run inside this project repo', () => {
@@ -149,6 +150,8 @@ describe.skipIf(process.platform === 'win32')('install.sh path selection', () =>
     expect(commands).toContain(`git -C ${projectDir} pull --ff-only`);
     expect(commands).not.toContain('git clone');
     expect(fs.existsSync(path.join(projectDir, 'context-vocabulary-notebook'))).toBe(false);
+    const envFile = fs.readFileSync(path.join(projectDir, '.env'), 'utf8');
+    expect(envFile.match(/^CVN_DEVICE_SYNC=.*$/gm)).toEqual(['CVN_DEVICE_SYNC=1']);
   });
 
   it('refuses to install into a non-empty non-project directory by default', () => {

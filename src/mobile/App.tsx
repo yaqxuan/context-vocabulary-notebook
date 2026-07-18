@@ -4,7 +4,14 @@ import { BarcodeFormat, BarcodeScanner } from '@capacitor-mlkit/barcode-scanning
 import { Capacitor } from '@capacitor/core';
 import { NATIVE_LANGUAGE_LABELS, SUPPORTED_LANGUAGES, type SupportedLanguage } from '../shared/constants.js';
 import type { PairingPayload, SignedConnectionProfile } from '../shared/sync.js';
-import { MobileDatabase, type MobileConfig, type MobileDueCard, type MobileLearningLanguageState, type MobileProgress, type MobileTransport } from './db.js';
+import {
+  MobileDatabase,
+  type MobileConfig,
+  type MobileConnectionMode,
+  type MobileDueCard,
+  type MobileLearningLanguageState,
+  type MobileProgress,
+} from './db.js';
 import { MobileError, toMobileError } from './errors.js';
 import { formatMobileError, formatMobileText, mobileLocale, mobileTranslations } from './i18n.js';
 import { normalizeNativeMediaPath } from './media.js';
@@ -23,11 +30,12 @@ export function MobileApp(): React.JSX.Element {
   const [ready, setReady] = useState(false);
   const [config, setConfig] = useState<MobileConfig | null>(null);
   const [due, setDue] = useState<MobileDueCard | null>(null);
+  const [nextDueAt, setNextDueAt] = useState<string | null>(null);
   const [pairingText, setPairingText] = useState('');
   const [profileText, setProfileText] = useState('');
   const [lanAddress, setLanAddress] = useState('');
   const [progress, setProgress] = useState<MobileProgress>({ reviewedToday: 0, dailyLimit: 0, pendingUpload: 0 });
-  const [transport, setTransport] = useState<MobileTransport>('lan');
+  const [connectionMode, setConnectionMode] = useState<MobileConnectionMode>('auto');
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [message, setMessage] = useState<StatusMessage>(null);
@@ -42,10 +50,12 @@ export function MobileApp(): React.JSX.Element {
   const refresh = useCallback(async () => {
     const nextConfig = await database.getConfig();
     setConfig(nextConfig);
+    setConnectionMode(nextConfig.connection_mode ?? nextConfig.selected_transport);
     setLanAddress(nextConfig.lan_url ?? '');
     const nextLearning = await database.learningLanguageState();
     setLearning(nextLearning);
     setDue(await database.nextDueCard());
+    setNextDueAt(await database.nextDueAt());
     setProgress(await database.progress());
   }, []);
 
@@ -83,6 +93,17 @@ export function MobileApp(): React.JSX.Element {
     return () => { active = false; void listener.then((handle) => handle.remove()); };
   }, []); // database and sync client are stable process singletons
 
+  useEffect(() => {
+    if (!nextDueAt) return undefined;
+    const delay = Date.parse(nextDueAt) - Date.now();
+    if (delay <= 0) {
+      void refresh();
+      return undefined;
+    }
+    const timer = window.setTimeout(() => void refresh(), Math.min(delay + 50, 2_147_000_000));
+    return () => window.clearTimeout(timer);
+  }, [nextDueAt, refresh]);
+
   const scanValue = async (): Promise<string> => {
     const supported = await BarcodeScanner.isSupported();
     if (!supported.supported) throw new MobileError('scanner_unsupported');
@@ -117,9 +138,9 @@ export function MobileApp(): React.JSX.Element {
     setMessage(null);
     try {
       const payload = parsePairingPayload(pairingText);
-      if (transport === 'lan' && !payload.lan) throw new MobileError('pairing_transport_missing');
-      if (transport === 'tailscale' && !payload.tailscale_url) throw new MobileError('pairing_transport_missing');
-      await syncClient.pairAndWait(payload, transport, () => setWaiting(true));
+      if (connectionMode === 'lan' && !payload.lan) throw new MobileError('pairing_transport_missing');
+      if (connectionMode === 'tailscale' && !payload.tailscale_url) throw new MobileError('pairing_transport_missing');
+      await syncClient.pairAndWait(payload, connectionMode, () => setWaiting(true));
       setWaiting(false);
       await syncClient.syncNow();
       await refresh();
@@ -183,9 +204,9 @@ export function MobileApp(): React.JSX.Element {
     setPendingRating(null);
   }, [due?.id]);
 
-  const changeTransport = async (value: MobileTransport): Promise<void> => {
+  const changeTransport = async (value: MobileConnectionMode): Promise<void> => {
     await database.setTransport(value);
-    setTransport(value);
+    setConnectionMode(value);
     await refresh();
   };
 
@@ -215,8 +236,9 @@ export function MobileApp(): React.JSX.Element {
         <button className="secondary" onClick={() => void scan()}>{t.scan}</button>
         <textarea value={pairingText} onChange={(event) => setPairingText(event.target.value)} rows={7} spellCheck={false} />
         <div className="segmented">
-          <button className={transport === 'lan' ? 'active' : ''} disabled={!pairingPayload?.lan} onClick={() => setTransport('lan')}>{t.lan}</button>
-          <button className={transport === 'tailscale' ? 'active' : ''} disabled={!pairingPayload?.tailscale_url} onClick={() => setTransport('tailscale')}>{t.tailscale}</button>
+          <button className={connectionMode === 'auto' ? 'active' : ''} onClick={() => setConnectionMode('auto')}>{t.autoConnection}</button>
+          <button className={connectionMode === 'lan' ? 'active' : ''} disabled={!pairingPayload?.lan} onClick={() => setConnectionMode('lan')}>{t.lan}</button>
+          <button className={connectionMode === 'tailscale' ? 'active' : ''} disabled={!pairingPayload?.tailscale_url} onClick={() => setConnectionMode('tailscale')}>{t.tailscale}</button>
         </div>
         <button className="primary" disabled={busy || !pairingPayload} onClick={() => void pair()}>{waiting ? t.waiting : t.pair}</button>
         {message && <p className={message.kind === 'error' ? 'error status' : 'status'}>{message.text}</p>}
@@ -283,7 +305,7 @@ export function MobileApp(): React.JSX.Element {
             </div>
           )}
         </> : <div className="review-actions"><button disabled={busy} className="again" onClick={() => setPendingRating('again')}>{t.again}</button><button disabled={busy} className="good" onClick={() => setPendingRating('good')}>{t.good}</button></div>}
-      </> : <div className="empty"><span>✓</span><p>{t.noDue}</p></div>}
+      </> : <div className="empty"><span>✓</span><p>{t.noDue}</p>{nextDueAt ? <p className="muted">{formatMobileText(t.nextReviewAt, { time: new Date(nextDueAt).toLocaleString(mobileLocale(language)) })}</p> : null}</div>}
     </section>
     <section className="panel settings-panel">
       <h3>{t.connection}</h3>
@@ -301,9 +323,11 @@ export function MobileApp(): React.JSX.Element {
         {learning.availableTargetLanguages.map((item) => <option key={item} value={item}>{NATIVE_LANGUAGE_LABELS[item]}</option>)}
       </select></label>
       <div className="segmented">
-        <button className={config.selected_transport === 'lan' ? 'active' : ''} disabled={!config.lan_url} onClick={() => void changeTransport('lan')}>{t.lan}</button>
-        <button className={config.selected_transport === 'tailscale' ? 'active' : ''} disabled={!config.tailscale_url} onClick={() => void changeTransport('tailscale')}>{t.tailscale}</button>
+        <button className={config.connection_mode === 'auto' ? 'active' : ''} onClick={() => void changeTransport('auto')}>{t.autoConnection}</button>
+        <button className={config.connection_mode === 'lan' ? 'active' : ''} disabled={!config.lan_url} onClick={() => void changeTransport('lan')}>{t.lan}</button>
+        <button className={config.connection_mode === 'tailscale' ? 'active' : ''} disabled={!config.tailscale_url} onClick={() => void changeTransport('tailscale')}>{t.tailscale}</button>
       </div>
+      {config.last_successful_transport ? <p className="muted">{formatMobileText(t.connectedVia, { transport: config.last_successful_transport === 'lan' ? t.lan : t.tailscale })}</p> : null}
       <p className="muted">{t.lastSync}: {config.last_sync_at ? new Date(config.last_sync_at).toLocaleString(mobileLocale(language)) : t.never}</p>
       <label>{t.lanAddress}<div className="inline-input"><input value={lanAddress} onChange={(event) => setLanAddress(event.target.value)} placeholder="https://192.168.1.2:3109" /><button className="secondary" onClick={async () => { await database.updateConnection({ serverId: config.server_id!, lanUrl: lanAddress.trim() }); await refresh(); }}>{t.apply}</button></div></label>
       {languageSelector}

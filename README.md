@@ -50,11 +50,11 @@ recognition result before saving each card. It does not accept website video URL
 |---|---|
 | Context cards | Original sentence, contextual meaning, notes, tags, multiple context examples. |
 | Media | Local `mp4`, `mp3`, `jpg`, `png`, and `webp` attachments. |
-| Review | FSRS scheduling, `Again / Good`, daily progress, media replay. |
+| Review | FSRS scheduling, `Again / Good`, a 10-minute retry cooldown after `Again`, daily progress, media replay. |
 | Library | Search, filters, favorites, tags, detail editing, mastered state. |
 | Statistics | Review count, accuracy, monthly totals, tags, rating trend. |
 | Portability | ZIP backup/import for personal data or shareable cards. |
-| Android offline review | One paired Android device, encrypted local replica, LAN HTTPS or Tailscale sync, offline image/audio/video review, favorites, and mastered actions. |
+| Android offline review | One paired Android device, encrypted local replica, automatic verified LAN HTTPS/Tailscale selection, offline image/audio/video review, favorites, and mastered actions. |
 | Local recognition | Optional ffmpeg, Tesseract OCR, and whisper.cpp STT. |
 | AI assistance | Optional OpenAI-compatible meaning, usage, translation, lemma, and spelling suggestions. |
 
@@ -64,6 +64,10 @@ the relevant GitHub Actions run, extract it, verify `app-debug.apk` with the inc
 The checksum file stays on the computer. See the
 [Android installation and sync guide](./docs/ANDROID_SYNC.md) for exact commands and
 the Debug APK warning.
+
+On the PC, open **Settings → Android offline sync** and choose **Set up phone sync
+automatically**. The same guide covers the one-time Windows/WSL firewall or Tailscale
+authorization prompt when one is needed; Funnel is never enabled.
 
 <!-- README:QUICKSTART -->
 ## Quick start
