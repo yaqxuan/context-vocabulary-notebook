@@ -273,6 +273,30 @@ describe('SettingsPage', () => {
   // ─── Settings PATCH ────────────────────────────────────────────────────────
 
   describe('settings save', () => {
+    it('shows a prominent inline warning only while learning settings are unsaved', async () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
+        if (init?.method === 'PATCH') {
+          return Promise.resolve(jsonResponse({ ...settings, daily_review_limit: 30 }));
+        }
+        return Promise.resolve(jsonResponse(settings));
+      });
+
+      render(<SettingsPage />);
+      await screen.findByLabelText('每日复习数量');
+      expect(screen.queryByText('有未保存的修改，请点击下方“保存”')).not.toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('每日复习数量'), { target: { value: '30' } });
+      const warning = screen.getByRole('status');
+      expect(warning).toHaveTextContent('有未保存的修改，请点击下方“保存”');
+      expect(warning).toHaveClass('phase7-settings-unsaved');
+
+      fireEvent.click(screen.getByRole('button', { name: '保存' }));
+      await screen.findByText('设置已保存');
+      expect(screen.queryByText('有未保存的修改，请点击下方“保存”')).not.toBeInTheDocument();
+    });
+
     it('PATCHes correct payload and shows 设置已保存', async () => {
       const updatedSettings: SettingsDto = {
         ...settings,

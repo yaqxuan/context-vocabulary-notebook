@@ -222,6 +222,7 @@ export const zh = {
       "defLanguage": "默认释义语言",
       "dailyLimit": "每日复习数量",
       "positiveInteger": "每日复习数量必须是正整数",
+      "unsaved": "有未保存的修改，请点击下方“保存”",
       "saveFailed": "保存失败",
       "saved": "设置已保存"
     },
@@ -647,6 +648,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "defLanguage": "Default definition language",
       "dailyLimit": "Daily review count",
       "positiveInteger": "Daily review count must be a positive integer",
+      "unsaved": "You have unsaved changes. Select Save below.",
       "saveFailed": "Save failed",
       "saved": "Settings saved"
     },
@@ -1069,6 +1071,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "defLanguage": "既定の定義言語",
       "dailyLimit": "1日の復習数",
       "positiveInteger": "1日の復習数は正の整数である必要があります",
+      "unsaved": "未保存の変更があります。下の「保存」を選択してください。",
       "saveFailed": "保存に失敗しました",
       "saved": "設定を保存しました"
     },
@@ -1491,6 +1494,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "defLanguage": "기본 뜻풀이 언어",
       "dailyLimit": "일일 복습 개수",
       "positiveInteger": "일일 복습 개수는 양의 정수여야 합니다",
+      "unsaved": "저장되지 않은 변경 사항이 있습니다. 아래의 저장을 선택하세요.",
       "saveFailed": "저장 실패",
       "saved": "설정이 저장되었습니다"
     },
@@ -1913,6 +1917,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "defLanguage": "Langue de définition par défaut",
       "dailyLimit": "Nombre de révisions quotidiennes",
       "positiveInteger": "Le nombre de révisions quotidiennes doit être un entier positif",
+      "unsaved": "Des modifications ne sont pas enregistrées. Sélectionnez Enregistrer ci-dessous.",
       "saveFailed": "Échec de l’enregistrement",
       "saved": "Paramètres enregistrés"
     },
@@ -2335,6 +2340,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "defLanguage": "Standard-Erklärungssprache",
       "dailyLimit": "Tägliche Wiederholungsanzahl",
       "positiveInteger": "Die tägliche Wiederholungsanzahl muss eine positive ganze Zahl sein",
+      "unsaved": "Es gibt ungespeicherte Änderungen. Wählen Sie unten Speichern.",
       "saveFailed": "Speichern fehlgeschlagen",
       "saved": "Einstellungen gespeichert"
     },
@@ -2757,6 +2763,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "defLanguage": "Idioma de definición predeterminado",
       "dailyLimit": "Cantidad diaria de repaso",
       "positiveInteger": "La cantidad diaria de repaso debe ser un entero positivo",
+      "unsaved": "Hay cambios sin guardar. Selecciona Guardar abajo.",
       "saveFailed": "Error al guardar",
       "saved": "Ajustes guardados"
     },
@@ -3179,6 +3186,7 @@ export const translations: Record<SupportedLanguage, typeof zh> = {
       "defLanguage": "Язык определения по умолчанию",
       "dailyLimit": "Дневное количество повторений",
       "positiveInteger": "Дневное количество повторений должно быть положительным целым числом",
+      "unsaved": "Есть несохранённые изменения. Нажмите «Сохранить» ниже.",
       "saveFailed": "Не удалось сохранить",
       "saved": "Настройки сохранены"
     },

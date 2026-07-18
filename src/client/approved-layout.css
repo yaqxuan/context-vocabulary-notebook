@@ -966,6 +966,7 @@ body::after {
 .phase7-settings-section:first-child > .phase7-settings-section-title,
 .phase7-settings-section:first-child > .phase7-settings-form,
 .phase7-settings-section:first-child > .phase7-settings-field-error,
+.phase7-settings-section:first-child > .phase7-settings-unsaved,
 .phase7-settings-section:first-child > .phase7-settings-actions { grid-column: 1 !important; }
 .phase7-settings-section:first-child > .recognition-setup-card {
   grid-column: 2 !important;
