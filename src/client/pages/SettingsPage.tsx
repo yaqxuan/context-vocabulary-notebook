@@ -70,8 +70,10 @@ function LanguageSelect({ id, value, onChange }: LanguageSelectProps) {
 
 function SettingsForm({ initial, onSaved }: SettingsFormProps) {
   const { t } = useI18n();
-  const [targetLang, setTargetLang] = useState(normalizeSupportedLanguage(initial.default_target_language) ?? DEFAULT_TARGET_LANGUAGE);
-  const [defLang, setDefLang] = useState(normalizeSupportedLanguage(initial.default_definition_language) ?? DEFAULT_DEFINITION_LANGUAGE);
+  const initialTargetLang = normalizeSupportedLanguage(initial.default_target_language) ?? DEFAULT_TARGET_LANGUAGE;
+  const initialDefLang = normalizeSupportedLanguage(initial.default_definition_language) ?? DEFAULT_DEFINITION_LANGUAGE;
+  const [targetLang, setTargetLang] = useState(initialTargetLang);
+  const [defLang, setDefLang] = useState(initialDefLang);
   const [dailyLimit, setDailyLimit] = useState(String(initial.daily_review_limit));
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -81,6 +83,24 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
   const [readinessLoading, setReadinessLoading] = useState(false);
   const [readinessError, setReadinessError] = useState('');
   const readinessRequestSeqRef = useRef(0);
+  const hasUnsavedChanges = targetLang !== initialTargetLang
+    || defLang !== initialDefLang
+    || dailyLimit !== String(initial.daily_review_limit);
+
+  function changeTargetLanguage(value: SupportedLanguage) {
+    setTargetLang(value);
+    setSaved(false);
+  }
+
+  function changeDefinitionLanguage(value: SupportedLanguage) {
+    setDefLang(value);
+    setSaved(false);
+  }
+
+  function changeDailyLimit(value: string) {
+    setDailyLimit(value);
+    setSaved(false);
+  }
 
   const loadReadiness = useCallback(async () => {
     const requestSeq = ++readinessRequestSeqRef.current;
@@ -147,7 +167,7 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
           <LanguageSelect
             id="setting-target-lang"
             value={targetLang}
-            onChange={setTargetLang}
+            onChange={changeTargetLanguage}
           />
         </div>
 
@@ -158,7 +178,7 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
           <LanguageSelect
             id="setting-def-lang"
             value={defLang}
-            onChange={setDefLang}
+            onChange={changeDefinitionLanguage}
           />
         </div>
 
@@ -171,7 +191,7 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
             className="phase7-settings-input"
             type="number"
             value={dailyLimit}
-            onChange={(e) => setDailyLimit(e.target.value)}
+            onChange={(e) => changeDailyLimit(e.target.value)}
           />
           {validationError && (
             <p className="phase7-settings-field-error">{validationError}</p>
@@ -186,6 +206,13 @@ function SettingsForm({ initial, onSaved }: SettingsFormProps) {
         error={readinessError}
         onRefresh={() => void loadReadiness()}
       />
+
+      {hasUnsavedChanges && (
+        <div className="phase7-settings-unsaved" role="status" aria-live="polite">
+          <span aria-hidden="true">●</span>
+          <strong>{t('settings.learning.unsaved')}</strong>
+        </div>
+      )}
 
       <div className="phase7-settings-actions">
         <Button onClick={handleSave} disabled={saving}>

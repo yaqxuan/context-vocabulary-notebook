@@ -3179,6 +3179,30 @@ body {
   font: 650 .88rem ui-sans-serif, system-ui, sans-serif;
 }
 
+.phase7-settings-unsaved {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  width: fit-content;
+  border: 1px solid #b7791f;
+  border-radius: .75rem;
+  background: linear-gradient(135deg, #fff4c2, #ffe29a);
+  box-shadow: 0 8px 22px rgba(146, 92, 18, .2);
+  padding: .7rem .9rem;
+  color: #7a3e00;
+  font: 700 .9rem ui-sans-serif, system-ui, sans-serif;
+}
+
+.phase7-settings-unsaved > span {
+  color: #d97706;
+  font-size: 1.05rem;
+  animation: settings-unsaved-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes settings-unsaved-pulse {
+  50% { opacity: .45; transform: scale(.82); }
+}
+
 .phase7-settings-save-error {
   color: #be123c;
   font: 650 .88rem ui-sans-serif, system-ui, sans-serif;
