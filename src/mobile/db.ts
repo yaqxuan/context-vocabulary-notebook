@@ -1,8 +1,16 @@
 import { CapacitorSQLite, SQLiteConnection, type SQLiteDBConnection } from '@capacitor-community/sqlite';
-import type { ReviewRating } from '../shared/constants.js';
+import { type ReviewRating, type SupportedLanguage } from '../shared/constants.js';
 import { SCHEDULER_PARAMETER_VERSION, SCHEDULER_VERSION, scheduleReview } from '../shared/scheduler.js';
 import type { SyncCardActionInput, SyncReviewEventInput, SyncSnapshot } from '../shared/sync.js';
 import type { CardInput } from 'ts-fsrs';
+import { MobileError } from './errors.js';
+import { resolveLearningLanguage, type LearningLanguageState } from './learningLanguage.js';
+import {
+  MOBILE_SCHEMA_MIGRATION_VERSION,
+  MOBILE_V3_BACKFILL_REVIEW_LANGUAGE,
+  MOBILE_V3_CONFIG_COLUMNS,
+  MOBILE_V3_REVIEW_COLUMNS,
+} from './schema.js';
 
 const DATABASE_NAME = 'context-vocabulary-notebook-mobile';
 const MOBILE_SCHEMA_VERSION = 1;
@@ -25,6 +33,8 @@ export interface MobileConfig {
   next_card_action_sequence: number;
   last_sync_at: string | null;
   interface_language: string;
+  target_language_override: string | null;
+  override_base_pc_target_language: string | null;
 }
 
 export interface MobileDueCard {
@@ -53,6 +63,10 @@ export interface MobileProgress {
   pendingUpload: number;
 }
 
+export interface MobileLearningLanguageState extends LearningLanguageState {
+  hasSnapshot: boolean;
+}
+
 function randomBase64Url(bytes: number): string {
   const values = new Uint8Array(bytes);
   crypto.getRandomValues(values);
@@ -62,7 +76,7 @@ function randomBase64Url(bytes: number): string {
 }
 
 function requiredString(value: unknown, field: string): string {
-  if (typeof value !== 'string') throw new Error(`Snapshot field ${field} is invalid`);
+  if (typeof value !== 'string') throw new MobileError('snapshot_invalid', `Snapshot field ${field} is invalid`);
   return value;
 }
 
@@ -94,7 +108,7 @@ export class MobileDatabase {
   }
 
   private db(): SQLiteDBConnection {
-    if (!this.connection) throw new Error('Mobile database is not open');
+    if (!this.connection) throw new MobileError('database_unavailable');
     return this.connection;
   }
 
@@ -120,7 +134,9 @@ export class MobileDatabase {
         next_device_sequence INTEGER NOT NULL DEFAULT 1,
         next_card_action_sequence INTEGER NOT NULL DEFAULT 1,
         last_sync_at TEXT,
-        interface_language TEXT NOT NULL DEFAULT '英语'
+        interface_language TEXT NOT NULL DEFAULT '英语',
+        target_language_override TEXT,
+        override_base_pc_target_language TEXT
       );
       CREATE TABLE IF NOT EXISTS cards (
         id TEXT PRIMARY KEY, target_word TEXT NOT NULL, context_meaning TEXT NOT NULL,
@@ -157,7 +173,8 @@ export class MobileDatabase {
         rating TEXT NOT NULL, reviewed_at TEXT NOT NULL, recorded_at TEXT NOT NULL,
         scheduler_version TEXT NOT NULL, parameter_version TEXT NOT NULL,
         due_date_before TEXT NOT NULL, due_date_after TEXT NOT NULL,
-        state_before_json TEXT, state_after_json TEXT, uploaded INTEGER NOT NULL DEFAULT 0
+        state_before_json TEXT, state_after_json TEXT, target_language TEXT,
+        uploaded INTEGER NOT NULL DEFAULT 0
       );
       CREATE TABLE IF NOT EXISTS card_action_outbox (
         action_id TEXT PRIMARY KEY, card_id TEXT NOT NULL, action_sequence INTEGER NOT NULL UNIQUE,
@@ -181,6 +198,23 @@ export class MobileDatabase {
       'INSERT OR IGNORE INTO mobile_schema_migrations (version, applied_at) VALUES (2, ?)',
       [new Date().toISOString()],
     );
+    const migratedConfigColumns = await this.db().query('PRAGMA table_info(mobile_config)');
+    for (const column of MOBILE_V3_CONFIG_COLUMNS) {
+      if (!(migratedConfigColumns.values ?? []).some((existing) => existing.name === column.name)) {
+        await this.db().run(`ALTER TABLE mobile_config ADD COLUMN ${column.definition}`);
+      }
+    }
+    const outboxColumns = await this.db().query('PRAGMA table_info(review_outbox)');
+    for (const column of MOBILE_V3_REVIEW_COLUMNS) {
+      if (!(outboxColumns.values ?? []).some((existing) => existing.name === column.name)) {
+        await this.db().run(`ALTER TABLE review_outbox ADD COLUMN ${column.definition}`);
+      }
+    }
+    await this.db().run(MOBILE_V3_BACKFILL_REVIEW_LANGUAGE);
+    await this.db().run(
+      'INSERT OR IGNORE INTO mobile_schema_migrations (version, applied_at) VALUES (?, ?)',
+      [MOBILE_SCHEMA_MIGRATION_VERSION, new Date().toISOString()],
+    );
     const config = await this.db().query('SELECT id FROM mobile_config WHERE id = 1');
     if (!config.values?.length) {
       await this.db().run(
@@ -193,7 +227,7 @@ export class MobileDatabase {
   async getConfig(): Promise<MobileConfig> {
     const result = await this.db().query('SELECT * FROM mobile_config WHERE id = 1');
     const row = result.values?.[0] as MobileConfig | undefined;
-    if (!row) throw new Error('Mobile configuration is missing');
+    if (!row) throw new MobileError('database_unavailable', 'Mobile configuration is missing');
     return row;
   }
 
@@ -231,6 +265,56 @@ export class MobileDatabase {
     await this.db().run('UPDATE mobile_config SET interface_language = ? WHERE id = 1', [language]);
   }
 
+  private async availableTargetLanguages(): Promise<string[]> {
+    const result = await this.db().query('SELECT DISTINCT target_language FROM cards ORDER BY target_language');
+    return (result.values ?? []).map((row) => row.target_language as string);
+  }
+
+  async learningLanguageState(): Promise<MobileLearningLanguageState> {
+    const config = await this.getConfig();
+    if (config.snapshot_revision === 0) {
+      return {
+        hasSnapshot: false,
+        pcTargetLanguage: null,
+        effectiveTargetLanguage: null,
+        targetLanguageOverride: null,
+        availableTargetLanguages: [],
+        followsPc: true,
+      };
+    }
+    const settings = await this.db().query('SELECT default_target_language FROM mobile_settings WHERE id = 1');
+    const state = resolveLearningLanguage({
+      pcTargetLanguage: settings.values?.[0]?.default_target_language,
+      targetLanguageOverride: config.target_language_override,
+      overrideBasePcTargetLanguage: config.override_base_pc_target_language,
+      availableTargetLanguages: await this.availableTargetLanguages(),
+    });
+    if (config.target_language_override && state.targetLanguageOverride === null) {
+      await this.db().run(`
+        UPDATE mobile_config
+        SET target_language_override = NULL, override_base_pc_target_language = NULL WHERE id = 1
+      `);
+    }
+    return { ...state, hasSnapshot: true };
+  }
+
+  async setTargetLanguageOverride(language: SupportedLanguage | null): Promise<void> {
+    const current = await this.learningLanguageState();
+    if (!current.hasSnapshot || !current.pcTargetLanguage) throw new MobileError('snapshot_invalid');
+    if (language === null || language === current.pcTargetLanguage) {
+      await this.db().run(`
+        UPDATE mobile_config
+        SET target_language_override = NULL, override_base_pc_target_language = NULL WHERE id = 1
+      `);
+      return;
+    }
+    if (!current.availableTargetLanguages.includes(language)) throw new MobileError('card_unavailable');
+    await this.db().run(`
+      UPDATE mobile_config
+      SET target_language_override = ?, override_base_pc_target_language = ? WHERE id = 1
+    `, [language, current.pcTargetLanguage]);
+  }
+
   async clearPairing(): Promise<void> {
     const db = this.db();
     await db.beginTransaction();
@@ -240,7 +324,8 @@ export class MobileDatabase {
         UPDATE mobile_config SET device_id = ?, server_id = NULL, credential = NULL, lan_url = NULL,
           lan_spki_sha256 = NULL, lan_public_key = NULL, lan_service_name = NULL, tailscale_url = NULL,
           snapshot_revision = 0, next_device_sequence = 1, next_card_action_sequence = 1,
-          last_sync_at = NULL WHERE id = 1
+          last_sync_at = NULL, target_language_override = NULL,
+          override_base_pc_target_language = NULL WHERE id = 1
       `, [crypto.randomUUID()], false);
       await db.commitTransaction();
     } catch (error) {
@@ -252,8 +337,8 @@ export class MobileDatabase {
   async applySnapshot(snapshot: SyncSnapshot): Promise<void> {
     const db = this.db();
     const config = await this.getConfig();
-    if (snapshot.protocol_version !== 1) throw new Error('Snapshot protocol is incompatible');
-    if (!Number.isInteger(snapshot.revision) || snapshot.revision < config.snapshot_revision) throw new Error('Snapshot revision is invalid');
+    if (snapshot.protocol_version !== 1) throw new MobileError('snapshot_protocol');
+    if (!Number.isInteger(snapshot.revision) || snapshot.revision < config.snapshot_revision) throw new MobileError('snapshot_invalid');
     const existingMedia = await db.query('SELECT sha256, local_path FROM media WHERE local_path IS NOT NULL');
     const paths = new Map((existingMedia.values ?? []).map((row) => [row.sha256 as string, row.local_path as string]));
     await db.beginTransaction();
@@ -295,7 +380,22 @@ export class MobileDatabase {
       const profile = snapshot.scheduler_profile;
       await db.run('INSERT INTO scheduler_profile VALUES (?, ?, ?, ?)', [profile.profile_id, profile.scheduler_version, profile.parameters_json, profile.created_at], false);
       await db.run('INSERT INTO mobile_settings VALUES (1, ?, ?, ?)', [snapshot.settings.default_target_language, snapshot.settings.default_definition_language, snapshot.settings.daily_review_limit], false);
-      await db.run('UPDATE mobile_config SET snapshot_revision = ?, last_sync_at = ? WHERE id = 1', [snapshot.revision, new Date().toISOString()], false);
+      const languageState = resolveLearningLanguage({
+        pcTargetLanguage: snapshot.settings.default_target_language,
+        targetLanguageOverride: config.snapshot_revision === 0 ? null : config.target_language_override,
+        overrideBasePcTargetLanguage: config.snapshot_revision === 0 ? null : config.override_base_pc_target_language,
+        availableTargetLanguages: snapshot.cards.map((card) => card.target_language),
+      });
+      await db.run(`
+        UPDATE mobile_config
+        SET snapshot_revision = ?, last_sync_at = ?, target_language_override = ?,
+          override_base_pc_target_language = ? WHERE id = 1
+      `, [
+        snapshot.revision,
+        new Date().toISOString(),
+        languageState.targetLanguageOverride,
+        languageState.targetLanguageOverride ? languageState.pcTargetLanguage : null,
+      ], false);
       await db.commitTransaction();
     } catch (error) {
       await db.rollbackTransaction();
@@ -367,6 +467,8 @@ export class MobileDatabase {
   }
 
   async nextDueCard(now = new Date()): Promise<MobileDueCard | null> {
+    const language = (await this.learningLanguageState()).effectiveTargetLanguage;
+    if (!language) return null;
     const nowIso = now.toISOString();
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
@@ -374,9 +476,10 @@ export class MobileDatabase {
       SELECT c.*, fs.due_date,
         (SELECT sentence FROM contexts WHERE card_id = c.id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) AS primary_sentence
       FROM cards c JOIN fsrs_states fs ON fs.card_id = c.id
-      WHERE c.status = 'reviewing' AND (fs.due_date <= ? OR fs.same_day_retry_at >= ?)
+      WHERE c.status = 'reviewing' AND c.target_language = ?
+        AND (fs.due_date <= ? OR fs.same_day_retry_at >= ?)
       ORDER BY CASE WHEN fs.same_day_retry_at >= ? THEN 1 ELSE 0 END, fs.due_date, c.created_at, c.id LIMIT 1
-    `, [nowIso, start.toISOString(), start.toISOString()]);
+    `, [language, nowIso, start.toISOString(), start.toISOString()]);
     const card = result.values?.[0] as Omit<MobileDueCard, 'media'> | undefined;
     if (!card) return null;
     const media = await this.db().query(`
@@ -392,9 +495,12 @@ export class MobileDatabase {
     reviewedAt: Date,
   ): Promise<void> {
     const db = this.db();
-    const query = await db.query('SELECT * FROM fsrs_states WHERE card_id = ?', [cardId]);
+    const query = await db.query(`
+      SELECT fs.*, c.target_language FROM fsrs_states fs
+      JOIN cards c ON c.id = fs.card_id WHERE fs.card_id = ?
+    `, [cardId]);
     const state = query.values?.[0] as Record<string, unknown> | undefined;
-    if (!state) throw new Error('Card scheduling state is missing');
+    if (!state) throw new MobileError('review_state_missing');
     const input: CardInput = {
       due: requiredString(state.due_date, 'due_date'),
       stability: nullableNumber(state.stability) ?? 0,
@@ -409,6 +515,8 @@ export class MobileDatabase {
     const config = await this.getConfig();
     const reviewedAtIso = reviewedAt.toISOString();
     const dueAfter = next.due.toISOString();
+    const targetLanguage = requiredString(state.target_language, 'target_language');
+    const { target_language: _targetLanguage, ...stateBefore } = state;
     await db.run(`
       UPDATE fsrs_states SET due_date = ?, stability = ?, difficulty = ?, elapsed_days = ?,
         scheduled_days = ?, learning_steps = ?, reps = ?, lapses = ?, state = ?,
@@ -417,10 +525,15 @@ export class MobileDatabase {
       next.learning_steps, next.reps, next.lapses, next.state, reviewedAtIso,
       scheduled.sameDayRetryAt, reviewedAtIso, cardId], false);
     await db.run(`
-      INSERT INTO review_outbox VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+      INSERT INTO review_outbox
+        (event_id, card_id, device_sequence, rating, reviewed_at, recorded_at,
+          scheduler_version, parameter_version, due_date_before, due_date_after,
+          state_before_json, state_after_json, target_language, uploaded)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
     `, [crypto.randomUUID(), cardId, config.next_device_sequence, rating, reviewedAtIso,
       reviewedAtIso, SCHEDULER_VERSION, SCHEDULER_PARAMETER_VERSION, state.due_date,
-      dueAfter, JSON.stringify(state), JSON.stringify({ ...next, due: dueAfter })], false);
+      dueAfter, JSON.stringify(stateBefore), JSON.stringify({ ...next, due: dueAfter }),
+      targetLanguage], false);
     await db.run(
       'UPDATE mobile_config SET next_device_sequence = next_device_sequence + 1 WHERE id = 1',
       [],
@@ -474,7 +587,7 @@ export class MobileDatabase {
         [cardId, 'reviewing', 'mastered'],
       );
       const card = result.values?.[0] as { is_favorite: number } | undefined;
-      if (!card) throw new Error('Card is no longer available');
+      if (!card) throw new MobileError('card_unavailable');
       const favorite = !Boolean(card.is_favorite);
       await db.run('UPDATE cards SET is_favorite = ?, updated_at = ? WHERE id = ?', [
         favorite ? 1 : 0,
@@ -537,7 +650,13 @@ export class MobileDatabase {
   async progress(now = new Date()): Promise<MobileProgress> {
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
-    const reviewed = await this.db().query('SELECT COUNT(*) AS count FROM review_outbox WHERE reviewed_at >= ?', [start.toISOString()]);
+    const language = (await this.learningLanguageState()).effectiveTargetLanguage;
+    const reviewed = language
+      ? await this.db().query(
+        'SELECT COUNT(*) AS count FROM review_outbox WHERE reviewed_at >= ? AND target_language = ?',
+        [start.toISOString(), language],
+      )
+      : { values: [{ count: 0 }] };
     const pendingReviews = await this.db().query('SELECT COUNT(*) AS count FROM review_outbox WHERE uploaded = 0');
     const pendingActions = await this.db().query('SELECT COUNT(*) AS count FROM card_action_outbox WHERE uploaded = 0');
     const settings = await this.db().query('SELECT daily_review_limit FROM mobile_settings WHERE id = 1');

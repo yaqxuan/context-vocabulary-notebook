@@ -8,18 +8,19 @@ import type {
 } from '../shared/sync.js';
 import { decodePairingPayloadText, SYNC_PROTOCOL_VERSION } from '../shared/sync.js';
 import { MobileDatabase, type MobileConfig, type MobileTransport } from './db.js';
+import { MobileError } from './errors.js';
 import { LanDiscovery, PinnedHttp, type PinnedHttpResponse } from './native.js';
 
-export class MobileSyncError extends Error {
+export class MobileSyncError extends MobileError {
   constructor(public readonly status: number, message: string) {
-    super(message);
+    super('http_error', message, { status });
     this.name = 'MobileSyncError';
   }
 }
 
 function normalizedBaseUrl(value: string): string {
   const url = new URL(value);
-  if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Only HTTPS sync URLs are allowed');
+  if (url.protocol !== 'https:' || url.username || url.password) throw new MobileError('https_required');
   return url.origin;
 }
 
@@ -95,10 +96,10 @@ export class MobileSyncClient {
   private async endpoint(config: MobileConfig): Promise<{ baseUrl: string; pin?: string }> {
     if (config.selected_transport === 'lan') {
       const baseUrl = await this.discoverLan(config);
-      if (!baseUrl || !config.lan_spki_sha256) throw new Error('LAN connection is not configured');
+      if (!baseUrl || !config.lan_spki_sha256) throw new MobileError('lan_not_configured');
       return { baseUrl: normalizedBaseUrl(baseUrl), pin: config.lan_spki_sha256 };
     }
-    if (!config.tailscale_url) throw new Error('Tailscale connection is not configured');
+    if (!config.tailscale_url) throw new MobileError('tailscale_not_configured');
     return { baseUrl: normalizedBaseUrl(config.tailscale_url) };
   }
 
@@ -153,27 +154,27 @@ export class MobileSyncClient {
         `/v1/pair/${encodeURIComponent(payload.session_id)}/status`,
         { headers: { 'X-Pairing-Secret': payload.secret } },
       ));
-      if (status.status === 'denied') throw new Error('Pairing was denied on the PC');
+      if (status.status === 'denied') throw new MobileError('pairing_denied');
       if (status.status === 'approved' && status.credential && status.device_id === config.device_id) {
         await this.db.updateConnection({ serverId: payload.server_id, credential: status.credential });
         return;
       }
     }
-    throw new Error('Pairing session expired');
+    throw new MobileError('pairing_expired');
   }
 
   async applySignedConnectionProfile(value: SignedConnectionProfile): Promise<void> {
     const config = await this.db.getConfig();
     if (!config.server_id || value.profile.server_id !== config.server_id || !config.lan_public_key) {
-      throw new Error('Connection profile does not belong to the paired PC');
+      throw new MobileError('profile_wrong_pc');
     }
     const verified = await PinnedHttp.verifySignature({
       data: JSON.stringify(value.profile),
       signature: value.signature,
       publicKeySpki: config.lan_public_key,
     });
-    if (!verified.valid) throw new Error('Connection profile signature is invalid');
-    if (value.profile.lan_spki_sha256 !== config.lan_spki_sha256) throw new Error('PC identity changed; pair again');
+    if (!verified.valid) throw new MobileError('profile_signature_invalid');
+    if (value.profile.lan_spki_sha256 !== config.lan_spki_sha256) throw new MobileError('pc_identity_changed');
     await this.db.updateConnection({
       serverId: config.server_id,
       lanUrl: value.profile.lan_urls[0] ?? config.lan_url,
@@ -195,7 +196,7 @@ export class MobileSyncClient {
 
   private async performSync(): Promise<{ revision: number; uploaded: number; downloadedMedia: number }> {
     let config = await this.db.getConfig();
-    if (!config.server_id || !config.credential) throw new Error('Pair with a PC before syncing');
+    if (!config.server_id || !config.credential) throw new MobileError('not_paired');
     const endpoint = await this.endpoint(config);
     const auth = { Authorization: `Bearer ${config.credential}` };
     const capabilities = parseJson<{
@@ -204,12 +205,13 @@ export class MobileSyncClient {
       minimum_client_version: string;
     }>(await this.request(endpoint, '/v1/capabilities'));
     if (capabilities.protocol_version !== SYNC_PROTOCOL_VERSION || capabilities.server_id !== config.server_id) {
-      throw new Error('Connected server identity or sync protocol does not match');
+      throw new MobileError('server_mismatch');
     }
     if (!isClientVersionSupported(packageMetadata.version, capabilities.minimum_client_version)) {
-      throw new Error(
-        `Android app ${capabilities.minimum_client_version} or newer is required; installed version is ${packageMetadata.version}`,
-      );
+      throw new MobileError('upgrade_required', undefined, {
+        minimum: capabilities.minimum_client_version,
+        current: packageMetadata.version,
+      });
     }
 
     let uploaded = 0;
@@ -271,8 +273,8 @@ export class MobileSyncClient {
 export function parsePairingPayload(raw: string): PairingPayload {
   const value = decodePairingPayloadText(raw) as PairingPayload;
   if (value.protocol_version !== SYNC_PROTOCOL_VERSION || !value.server_id || !value.session_id || !value.secret || !value.expires_at) {
-    throw new Error('This is not a supported Context Vocabulary Notebook pairing code');
+    throw new MobileError('pairing_code_invalid');
   }
-  if (!value.tailscale_url && !value.lan) throw new Error('Pairing code does not contain a usable connection');
+  if (!value.tailscale_url && !value.lan) throw new MobileError('pairing_transport_missing');
   return value;
 }
