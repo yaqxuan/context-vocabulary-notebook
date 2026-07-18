@@ -1,6 +1,6 @@
 # Android offline review and device sync
 
-Version `0.3.0-alpha` supports one PC and one Android device. After the first sync,
+Version `0.3.0-alpha.6` supports one PC and one Android device. After the first sync,
 the phone can review text, images, and audio while the PC is off. Review events
 remain in an encrypted outbox and are uploaded when the user-selected connection
 is available again.
@@ -30,6 +30,10 @@ or another file-transfer method. Open it on the phone and allow that file manage
 install unknown apps if Android asks. Disable that permission again after installation.
 Debug APKs are test builds rather than public releases, and Android may show an extra
 warning. Never install the APK when the checksum does not match.
+
+Before replacing an older test build, sync until **Pending upload** is zero. If Android
+reports an incompatible signature, uninstall the old Debug APK and install the new one;
+uninstalling deletes the phone replica, so confirm the outbox is empty first.
 
 Pull requests and unsigned tag builds expose the Debug APK only as a short-lived
 GitHub Actions artifact; they do not create a public Release.
@@ -141,6 +145,18 @@ is pressed. The button uploads offline reviews and card actions, refreshes the
 canonical PC snapshot, and downloads missing media. It does not schedule Android
 background work. Switching LAN/Tailscale keeps the same device identity, both
 outboxes, snapshot revision, and media cache.
+
+The first pairing must finish a complete PC snapshot before review or learning-language
+selection is enabled. The phone then follows the PC learning language by default. You can
+choose any language represented by active cards, even while offline; that phone-only choice
+survives restarts and is not written to PC Settings. Reviews, favorite changes, and mastered
+actions from every language remain in their outboxes and upload before the next snapshot.
+If the PC default language changes, the next sync clears the phone override and follows the
+new PC language. **Today** is counted for the current phone language, while **Pending upload**
+always covers every language.
+
+The Android interface is independent of the learning language and is available in Chinese,
+English, Japanese, Korean, French, German, Spanish, and Russian before and after pairing.
 
 ## Build locally
 

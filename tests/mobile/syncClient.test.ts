@@ -28,12 +28,12 @@ describe('Android pairing payload validation', () => {
       protocol_version: 0,
       server_id: 'pc-1', session_id: 's', secret: 'x', expires_at: '2026-07-16T12:05:00.000Z',
       tailscale_url: null, lan: null,
-    }))).toThrow(/supported/u);
+    }))).toThrow('pairing_code_invalid');
     expect(() => parsePairingPayload(JSON.stringify({
       protocol_version: 1,
       server_id: 'pc-1', session_id: 's', secret: 'x', expires_at: '2026-07-16T12:05:00.000Z',
       tailscale_url: null, lan: null,
-    }))).toThrow(/usable connection/u);
+    }))).toThrow('pairing_transport_missing');
   });
 
   it('accepts the compact low-density QR payload', () => {
@@ -60,6 +60,7 @@ describe('Android pairing payload validation', () => {
 
 describe('Android client version compatibility', () => {
   it('accepts the minimum version and newer prereleases but rejects older builds', () => {
+    expect(isClientVersionSupported('0.3.0-alpha.6', '0.3.0-alpha.5')).toBe(true);
     expect(isClientVersionSupported('0.3.0-alpha.5', '0.3.0-alpha')).toBe(true);
     expect(isClientVersionSupported('0.3.0-alpha.5', '0.3.0-alpha.5')).toBe(true);
     expect(isClientVersionSupported('0.3.0-alpha.4', '0.3.0-alpha.5')).toBe(false);
