@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Context Vocabulary Notebook</title>
+  <desc id="description">An open crystalline notebook glowing against a starry navy background.</desc>
+  <defs>
+    <linearGradient id="background" x1="54" y1="34" x2="458" y2="482" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#082B5F"/>
+      <stop offset="0.52" stop-color="#04142F"/>
+      <stop offset="1" stop-color="#020817"/>
+    </linearGradient>
+    <linearGradient id="left-page" x1="112" y1="151" x2="252" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D8FBFF"/>
+      <stop offset="0.38" stop-color="#54DFF8"/>
+      <stop offset="1" stop-color="#278CFF"/>
+    </linearGradient>
+    <linearGradient id="right-page" x1="400" y1="151" x2="258" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B9B8FF"/>
+      <stop offset="0.48" stop-color="#8354FF"/>
+      <stop offset="1" stop-color="#3B61EC"/>
+    </linearGradient>
+    <linearGradient id="page-shine" x1="159" y1="178" x2="228" y2="341" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.78"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="halo">
+      <stop stop-color="#39D9F4" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#278CFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="soft-shadow" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000817" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <rect x="18" y="18" width="476" height="476" rx="112" fill="url(#background)"/>
+  <rect x="29" y="29" width="454" height="454" rx="102" fill="none" stroke="#F3CA73" stroke-width="6"/>
+  <rect x="41" y="41" width="430" height="430" rx="92" fill="none" stroke="#5CAEFF" stroke-opacity="0.42" stroke-width="3"/>
+
+  <circle cx="256" cy="275" r="208" fill="url(#halo)"/>
+  <g fill="#EAFBFF">
+    <circle cx="113" cy="116" r="5"/>
+    <circle cx="399" cy="121" r="4"/>
+    <circle cx="421" cy="329" r="3"/>
+    <circle cx="91" cy="349" r="3"/>
+  </g>
+  <g fill="#F3CA73" filter="url(#glow)">
+    <path d="M256 80l7 19 19 7-19 7-7 19-7-19-19-7 19-7 7-19Z"/>
+    <path d="M415 207l4 11 11 4-11 4-4 11-4-11-11-4 11-4 4-11Z"/>
+  </g>
+
+  <g filter="url(#soft-shadow)">
+    <path d="M92 162c0-13 13-22 25-18l100 32c21 7 35 26 35 48v181c-9-13-22-22-38-27l-106-34c-10-3-16-12-16-22V162Z" fill="url(#left-page)" stroke="#D8FBFF" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M420 162c0-13-13-22-25-18l-100 32c-21 7-35 26-35 48v181c9-13 22-22 38-27l106-34c10-3 16-12 16-22V162Z" fill="url(#right-page)" stroke="#C9D1FF" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M256 214v196" stroke="#FFF0C2" stroke-width="10" stroke-linecap="round"/>
+    <path d="M112 166l100 32c15 5 25 18 25 34v111c-7-7-16-12-25-15l-100-32V166Z" fill="url(#page-shine)"/>
+    <path d="M400 166l-100 32c-15 5-25 18-25 34v111c7-7 16-12 25-15l100-32V166Z" fill="#FFFFFF" fill-opacity="0.12"/>
+  </g>
+
+  <g fill="none" stroke="#06204A" stroke-linecap="round" stroke-width="9" opacity="0.72">
+    <path d="M137 235l72 23"/>
+    <path d="M137 272l72 23"/>
+    <path d="M303 258l72-23"/>
+    <path d="M303 295l72-23"/>
+  </g>
+  <path d="M256 397l-31-43 31 13 31-13-31 43Z" fill="#F3CA73" stroke="#FFF0C2" stroke-width="5" stroke-linejoin="round"/>
+</svg>
