@@ -52,6 +52,8 @@ prima del salvataggio. Non accetta URL di siti video.
 | Riconoscimento | ffmpeg, Tesseract OCR e whisper.cpp STT facoltativi. |
 | IA | Suggerimenti facoltativi tramite API OpenAI-compatible. |
 
+> Stato delle piattaforme: Windows/WSL è stato verificato su installazioni reali e Linux tramite CI. Lo script di installazione macOS è implementato, ma non è ancora stato provato su un Mac reale, quindi il supporto è sperimentale. L’APK Android firmato è disponibile in [GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases). iOS / iPadOS non è disponibile in `v0.3.x`.
+
 <!-- README:QUICKSTART -->
 ## Avvio rapido
 

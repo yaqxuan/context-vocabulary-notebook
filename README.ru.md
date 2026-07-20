@@ -49,6 +49,8 @@ FSRS планирует повторение, а пользователь отв
 | Распознавание | Необязательные ffmpeg, Tesseract OCR и whisper.cpp STT. |
 | AI | Необязательные подсказки через OpenAI-compatible API. |
 
+> Статус платформ: Windows/WSL проверен на реальных установках, Linux — в CI. Установщик macOS реализован, но ещё не проверен на настоящем Mac, поэтому его поддержка пока экспериментальная. Подписанный Android APK доступен в [GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases). iOS / iPadOS не поддерживается в `v0.3.x`.
+
 <!-- README:QUICKSTART -->
 ## Быстрый запуск
 

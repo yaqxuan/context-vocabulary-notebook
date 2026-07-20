@@ -9,9 +9,10 @@ Android 客户端最低要求 Android 7.0 / API 24。Capacitor 8 已不再支持
 
 ## 安装 APK
 
-正式签名发布后，从 GitHub Release 下载 APK 和同名 `.sha256` 文件。正式发布前测试
-时，请打开对应的 **Android APK** 工作流运行页面，滚动到 **Artifacts**，下载
-`cvn-android-...` 并解压。里面有两个文件：
+普通安装请从
+[GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases)
+下载签名 APK 和同名 `.sha256` 文件。只有开发测试时才打开对应的 **Android APK**
+工作流运行页面，滚动到 **Artifacts**，下载 `cvn-android-...` 并解压。里面有两个文件：
 
 - `app-debug.apk`：Android 安装包，需要发送到手机的是这个文件；
 - `app-debug.apk.sha256`：预期校验值，只需留在电脑上用于验证。

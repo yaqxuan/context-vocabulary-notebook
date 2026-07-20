@@ -10,9 +10,10 @@ supports API 23. The package id is `io.github.yaqxuan.contextvocabularynotebook`
 
 ## Install the Android app
 
-For a signed release, download the APK and matching `.sha256` file from the GitHub
-Release. Before a signed release exists, open the relevant **Android APK** workflow run,
-scroll to **Artifacts**, download `cvn-android-...`, and extract the ZIP. It contains:
+For normal installation, download the signed APK and matching `.sha256` file from
+[GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases).
+For development testing only, open the relevant **Android APK** workflow run, scroll
+to **Artifacts**, download `cvn-android-...`, and extract the ZIP. It contains:
 
 - `app-debug.apk`: the Android installer; this is the file to send to the phone.
 - `app-debug.apk.sha256`: the expected checksum; keep it on the computer for verification.

@@ -49,6 +49,8 @@ résultat avant l’enregistrement. Les URL de sites vidéo ne sont pas accepté
 | Reconnaissance | ffmpeg, Tesseract OCR et whisper.cpp STT facultatifs. |
 | IA | Suggestions facultatives via une API OpenAI-compatible. |
 
+> État des plateformes : Windows/WSL a été testé sur de vraies installations et Linux par CI. Le programme d’installation macOS est implémenté, mais pas encore vérifié sur un vrai Mac ; son support reste donc expérimental. L’APK Android signé est disponible dans [GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases). iOS / iPadOS n’est pas proposé dans `v0.3.x`.
+
 <!-- README:QUICKSTART -->
 ## Démarrage rapide
 

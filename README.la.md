@@ -52,6 +52,8 @@ conservationem confirmari sinit. URL situs pellicularum non accipiuntur.
 | Agnitio | ffmpeg, Tesseract OCR et whisper.cpp STT libita. |
 | AI | Suggestiones libitae per API OpenAI-compatible. |
 
+> Status systematum: Windows/WSL in veris institutionibus probatum est, Linux per CI. Installer macOS confectus est sed in vero Mac nondum probatus, ideo adhuc experimentalis est. APK Android subsignatum in [GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases) praesto est. iOS / iPadOS in `v0.3.x` non praebetur.
+
 <!-- README:QUICKSTART -->
 ## Initium celer
 

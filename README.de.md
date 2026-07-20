@@ -49,6 +49,8 @@ Speichern prüfen. URLs von Video-Websites werden nicht unterstützt.
 | Erkennung | Optionale ffmpeg-, Tesseract-OCR- und whisper.cpp-STT-Werkzeuge. |
 | KI | Optionale Vorschläge über eine OpenAI-compatible API. |
 
+> Plattformstatus: Windows/WSL wurde auf echten Installationen getestet, Linux über CI. Der macOS-Installer ist implementiert, aber noch nicht auf einem echten Mac geprüft und daher derzeit experimentell. Das signierte Android-APK ist unter [GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases) verfügbar. iOS / iPadOS wird in `v0.3.x` nicht angeboten.
+
 <!-- README:QUICKSTART -->
 ## Schnellstart
 

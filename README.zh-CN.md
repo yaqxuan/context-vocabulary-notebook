@@ -52,10 +52,9 @@
 | 本地识别 | 可选 ffmpeg、Tesseract OCR 和 whisper.cpp STT。 |
 | AI 辅助 | 可选 OpenAI-compatible 释义、用法、翻译、词形和拼写建议。 |
 
-正式签名发布前测试 Android 时，请从对应的 GitHub Actions 运行页面下载
-`cvn-android-...` artifact 并解压，使用随附的 `app-debug.apk.sha256` 校验
-`app-debug.apk`，然后**只把 `app-debug.apk` 发到手机**安装；校验文件留在电脑即可。
-具体命令和 Debug APK 安全提示见
+普通用户请从 [GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases)
+下载签名 APK 和同名 `.sha256` 文件。GitHub Actions 中的 Debug APK 只用于开发测试，
+可能无法覆盖安装到签名正式包上。校验命令和安全升级说明见
 [Android 安装与同步指南](./docs/ANDROID_SYNC.zh-CN.md)。
 
 在 PC 打开 **设置 → Android 离线同步**，点击 **自动设置手机同步** 即可。若首次
@@ -70,9 +69,19 @@
 请先进入准备安装的空目录，再执行安装命令。项目会直接安装到当前目录，
 不会在里面继续新建 `context-vocabulary-notebook` 子目录。
 
+### 平台支持状态
+
+| 平台 | 当前状态 |
+|---|---|
+| Windows 11 / WSL | 已在真实安装环境测试。 |
+| Linux | 已通过自动 CI 和安装脚本冒烟测试。 |
+| macOS | 已实现基于 Homebrew 的安装逻辑，但尚未在真实 Mac 上验证，当前按实验性支持处理。 |
+| Android | 已发布签名 APK，并通过真实手机及 API 24/36 模拟器测试。 |
+| iOS / iPadOS | `v0.3.x` 不提供；当前没有 iOS 工程或可安装构建。 |
+
 ### 1. 安装核心应用
 
-Linux、macOS 或 WSL：
+Linux、实验性 macOS 或 WSL：
 
 ```bash
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash

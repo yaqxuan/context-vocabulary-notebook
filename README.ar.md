@@ -52,6 +52,8 @@ Context Vocabulary Notebook تطبيق ذاتي الاستضافة ومحلي أ
 | التعرف المحلي | ffmpeg وTesseract OCR وwhisper.cpp STT اختيارية. |
 | الذكاء الاصطناعي | اقتراحات اختيارية عبر API من نوع OpenAI-compatible. |
 
+> حالة المنصات: تم اختبار Windows/WSL على عمليات تثبيت حقيقية، واختُبر Linux عبر CI. أداة تثبيت macOS مُنفذة لكنها لم تُختبر بعد على جهاز Mac حقيقي، لذا يُعد دعمها تجريبياً. يتوفر ملف Android APK الموقّع في [GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases). لا يتوفر iOS / iPadOS في `v0.3.x`.
+
 <!-- README:QUICKSTART -->
 ## بدء سريع
 
