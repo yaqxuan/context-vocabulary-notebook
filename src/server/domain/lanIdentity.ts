@@ -37,19 +37,35 @@ export function lanAddresses(): string[] {
   const addresses = new Set<string>();
   for (const entries of Object.values(os.networkInterfaces())) {
     for (const entry of entries ?? []) {
-      if (!entry.internal && (entry.family === 'IPv4' || entry.family === 'IPv6') && isLanCandidate(entry.address)) addresses.add(entry.address);
+      if (
+        !entry.internal
+        && (entry.family === 'IPv4' || entry.family === 'IPv6')
+        && isAdvertisableLanAddress(entry.address)
+      ) {
+        addresses.add(entry.address);
+      }
     }
   }
   return [...addresses].sort();
 }
 
-function isLanCandidate(input: string): boolean {
+export function isAdvertisableLanAddress(input: string): boolean {
   const address = input.split('%')[0]!.toLowerCase();
   if (net.isIP(address) === 4) {
     const [a, b] = address.split('.').map(Number);
-    return a === 10 || (a === 100 && b! >= 64 && b! <= 127) || (a === 169 && b === 254) || (a === 172 && b! >= 16 && b! <= 31) || (a === 192 && b === 168);
+    // Tailnet addresses are valid inbound sources, but they must never be
+    // advertised as ordinary LAN endpoints. Otherwise Android may save a
+    // 100.64.0.0/10 address and silently depend on Tailscale being enabled.
+    return a === 10
+      || (a === 169 && b === 254)
+      || (a === 172 && b! >= 16 && b! <= 31)
+      || (a === 192 && b === 168);
   }
-  return net.isIP(address) === 6 && (address.startsWith('fc') || address.startsWith('fd') || address.startsWith('fe8') || address.startsWith('fe9') || address.startsWith('fea') || address.startsWith('feb'));
+  if (net.isIP(address) !== 6) return false;
+  // fd7a:115c:a1e0::/48 is Tailscale's ULA range. Link-local IPv6 addresses
+  // require an interface scope id and are not portable inside a QR code.
+  return (address.startsWith('fc') || address.startsWith('fd'))
+    && !address.startsWith('fd7a:115c:a1e0:');
 }
 
 function publicIdentity(certificatePem: string): { spkiSha256: string; publicKeySpki: string } {
