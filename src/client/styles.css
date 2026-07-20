@@ -3249,6 +3249,33 @@ body {
   font: 500 .88rem/1.6 ui-sans-serif, system-ui, sans-serif;
 }
 
+.phase7-settings-language-scope {
+  max-width: 30rem;
+  margin-bottom: 1rem;
+}
+
+.phase7-settings-language-picker {
+  border: 1px solid rgba(23, 32, 51, 0.12);
+  border-radius: 1rem;
+  padding: 1rem;
+  display: grid;
+  gap: .75rem;
+}
+
+.phase7-settings-language-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem 1rem;
+}
+
+.phase7-settings-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  color: #334155;
+  font: 650 .88rem/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+
 /* Import controls */
 
 .phase7-settings-import-controls {

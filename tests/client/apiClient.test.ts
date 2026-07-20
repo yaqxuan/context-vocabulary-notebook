@@ -272,6 +272,17 @@ describe('endpoint modules', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/export?type=pure', expect.any(Object));
   });
 
+  it('adds the selected language to scoped exports', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('zip', { status: 200 }));
+
+    await exportCards('marked', '日语');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/export?type=marked&language=${encodeURIComponent('日语')}`,
+      expect.any(Object),
+    );
+  });
+
   it('posts import execute decisions using the server form key', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ imported_cards: 0, imported_contexts: 0, imported_media_files: 0, skipped_cards: 1, merged_cards: 0, missing_media_files: 0 }), {
@@ -287,5 +298,20 @@ describe('endpoint modules', () => {
     expect(body.get('file')).toBe(file);
     expect(body.get('decisions')).toBe(JSON.stringify({ mode: 'skip_all' }));
     expect(body.get('decision')).toBeNull();
+  });
+
+  it('posts selected import languages using the server form key', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ imported_cards: 0, imported_contexts: 0, imported_media_files: 0, skipped_cards: 0, merged_cards: 0, missing_media_files: 0 }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const file = new File(['zip'], 'cards.zip', { type: 'application/zip' });
+
+    await executeImport(file, { mode: 'skip_all' }, ['日语', '韩语']);
+
+    const body = fetchMock.mock.calls[0]?.[1]?.body as FormData;
+    expect(body.get('languages')).toBe(JSON.stringify(['日语', '韩语']));
   });
 });

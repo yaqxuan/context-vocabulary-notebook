@@ -160,6 +160,43 @@ describe('import/export API', () => {
     expect(exported).not.toHaveProperty('ai_configs');
   });
 
+  it('exports only the selected language without global settings', async () => {
+    const english = createCard(db, {
+      target_word: 'river',
+      context_meaning: '河流',
+      target_language: '英语',
+      definition_language: '中文',
+    });
+    const japanese = createCard(db, {
+      target_word: '川',
+      context_meaning: '河流',
+      target_language: '日语',
+      definition_language: '中文',
+    });
+    createContext(db, { card_id: english.id, sentence: 'The river is wide.' });
+    createContext(db, { card_id: japanese.id, sentence: '川が広いです。' });
+
+    const response = await request(createApp(db, { uploadsDir }))
+      .get(`/api/export?type=marked&language=${encodeURIComponent('日语')}`)
+      .buffer(true)
+      .parse(zipParser)
+      .expect(200);
+
+    const exported = await readExportJson(response.body as Buffer);
+    expect(exported.language_scope).toBe('selected');
+    expect(exported.target_languages).toEqual(['日语']);
+    expect(exported.cards.map((card) => card.id)).toEqual([japanese.id]);
+    expect(exported.contexts).toHaveLength(1);
+    expect(exported.fsrs_states).toHaveLength(1);
+    expect(exported.settings).toBeUndefined();
+  });
+
+  it('rejects an unsupported export language', async () => {
+    await request(createApp(db, { uploadsDir }))
+      .get('/api/export?type=pure&language=Klingon')
+      .expect(400);
+  });
+
   it('includes available media files under uploads in zip', async () => {
     const card = createCard(db, {
       target_word: 'scene',
@@ -206,6 +243,8 @@ describe('import/export API', () => {
 
     expect(response.body.conflicts).toMatchObject([{ target_word: 'charge', context_meaning: '收费' }]);
     expect(response.body.counts.cards).toBe(1);
+    expect(response.body.language_scope).toBe('all');
+    expect(response.body.languages).toEqual([{ target_language: '英语', cards: 1 }]);
     const count = db.prepare('SELECT COUNT(*) as count FROM context_examples').get() as { count: number };
     expect(count.count).toBe(0);
   });
@@ -467,5 +506,76 @@ describe('import/export API', () => {
     expect(logs.count).toBe(1);
     expect((db.prepare('SELECT revoked_at FROM sync_devices WHERE device_id = ?').get('old-phone') as { revoked_at: string | null }).revoked_at).toBeTruthy();
     expect((db.prepare('SELECT COUNT(*) AS count FROM pairing_sessions').get() as { count: number }).count).toBe(0);
+  });
+
+  it('imports only selected languages without changing settings or revoking devices', async () => {
+    const now = '2026-05-30T00:00:00.000Z';
+    const marked = baseExportJson({
+      schema_version: 2,
+      export_type: 'marked',
+      language_scope: 'all',
+      target_languages: ['英语', '日语'],
+      cards: [
+        {
+          id: 'english-card',
+          target_word: 'morning',
+          context_meaning: '早晨',
+          target_language: '英语',
+          definition_language: '中文',
+          is_favorite: 0,
+          status: 'reviewing',
+          created_at: now,
+          updated_at: now,
+        },
+        {
+          id: 'japanese-card',
+          target_word: '朝',
+          context_meaning: '早晨',
+          target_language: '日语',
+          definition_language: '中文',
+          is_favorite: 1,
+          status: 'mastered',
+          created_at: now,
+          updated_at: now,
+        },
+      ],
+      contexts: [],
+      settings: {
+        id: 1,
+        interface_language: '日语',
+        default_target_language: '日语',
+        default_definition_language: '英语',
+        daily_review_limit: 99,
+        created_at: now,
+        updated_at: now,
+      },
+    });
+    db.prepare(`
+      INSERT INTO sync_devices (device_id, device_name, device_type, credential_hash, paired_at)
+      VALUES ('current-phone', 'Current phone', 'android', ?, ?)
+    `).run('c'.repeat(64), now);
+
+    await request(createApp(db, { uploadsDir }))
+      .post('/api/import/execute')
+      .field('decisions', JSON.stringify({ mode: 'import_all_as_new' }))
+      .field('languages', JSON.stringify(['日语']))
+      .attach('file', await makeZip(marked), 'import.zip')
+      .expect(200);
+
+    const imported = db.prepare(`
+      SELECT target_word, target_language FROM word_sense_cards
+      WHERE target_word IN ('morning', '朝') ORDER BY target_word
+    `).all() as Array<{ target_word: string; target_language: string }>;
+    const settings = db.prepare('SELECT default_target_language, daily_review_limit FROM user_settings WHERE id = 1').get() as {
+      default_target_language: string;
+      daily_review_limit: number;
+    };
+    const device = db.prepare('SELECT revoked_at FROM sync_devices WHERE device_id = ?').get('current-phone') as {
+      revoked_at: string | null;
+    };
+
+    expect(imported).toEqual([{ target_word: '朝', target_language: '日语' }]);
+    expect(settings).toMatchObject({ default_target_language: '英语', daily_review_limit: 20 });
+    expect(device.revoked_at).toBeNull();
   });
 });

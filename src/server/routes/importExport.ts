@@ -6,6 +6,7 @@ import { BadRequestError } from '../http/errors.js';
 import { buildExportZip, executeImportZip, scanImportZip } from '../domain/importExport.js';
 import { isExportType, isImportExecuteDecision } from '../../shared/validators.js';
 import type { ImportExecuteDecisionDto } from '../../shared/types.js';
+import { getLanguageIso6391Code, normalizeSupportedLanguage } from '../../shared/constants.js';
 
 const MAX_IMPORT_ZIP_BYTES = 1024 * 1024 * 1024;
 
@@ -22,9 +23,14 @@ export function importExportRouter(db: Database, uploadsDir: string): Router {
   router.get('/export', asyncRoute(async (req, res) => {
     const type = req.query.type;
     if (!isExportType(type)) throw new BadRequestError('type must be marked or pure');
-    const zip = await buildExportZip(db, uploadsDir, type);
+    const requestedLanguage = req.query.language;
+    const normalizedLanguage = requestedLanguage === undefined ? null : normalizeSupportedLanguage(requestedLanguage);
+    if (requestedLanguage !== undefined && !normalizedLanguage) throw new BadRequestError('language must be supported');
+    const language = normalizedLanguage ?? undefined;
+    const zip = await buildExportZip(db, uploadsDir, type, language);
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="cvn-${type}-export.zip"`);
+    const suffix = language ? `-${getLanguageIso6391Code(language)}` : '';
+    res.setHeader('Content-Disposition', `attachment; filename="cvn-${type}${suffix}-export.zip"`);
     res.send(zip);
   }));
 
@@ -46,7 +52,21 @@ export function importExportRouter(db: Database, uploadsDir: string): Router {
     }
 
     if (!isImportExecuteDecision(decisions)) throw new BadRequestError('Invalid import decisions');
-    const result = await executeImportZip(db, uploadsDir, req.file.buffer, decisions as ImportExecuteDecisionDto);
+    let languages: string[] | undefined;
+    if (req.body.languages !== undefined) {
+      if (typeof req.body.languages !== 'string') throw new BadRequestError('languages must be valid JSON');
+      try {
+        const parsed = JSON.parse(req.body.languages) as unknown;
+        if (!Array.isArray(parsed) || parsed.length === 0 || parsed.some((value) => typeof value !== 'string' || !value.trim())) {
+          throw new BadRequestError('languages must be a non-empty string array');
+        }
+        languages = [...new Set(parsed.map((value) => value.trim()))];
+      } catch (error) {
+        if (error instanceof BadRequestError) throw error;
+        throw new BadRequestError('languages must be valid JSON');
+      }
+    }
+    const result = await executeImportZip(db, uploadsDir, req.file.buffer, decisions as ImportExecuteDecisionDto, languages);
     res.json(result);
   }));
 

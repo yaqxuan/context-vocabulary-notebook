@@ -485,6 +485,8 @@ export interface ExportJson {
   schema_version: 1 | 2;
   export_type: ExportType;
   exported_at: string;
+  language_scope?: 'all' | 'selected';
+  target_languages?: string[];
   cards: ExportCardRecord[];
   contexts: ExportContextRecord[];
   media_files: ExportMediaRecord[];
@@ -502,11 +504,17 @@ export interface ImportConflictDto {
   existing_card_id: string;
   target_word: string;
   context_meaning: string;
+  target_language: string;
 }
 
 export interface ImportScanResponseDto {
   schema_version: 1 | 2;
   export_type: ExportType;
+  language_scope: 'all' | 'selected';
+  languages: Array<{
+    target_language: string;
+    cards: number;
+  }>;
   counts: {
     cards: number;
     contexts: number;
