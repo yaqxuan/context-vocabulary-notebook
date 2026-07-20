@@ -1,6 +1,6 @@
 # Android offline review and device sync
 
-Version `0.3.0-alpha.8` supports one PC and one Android device. After the first sync,
+Version `0.3.0-alpha.9` supports one PC and one Android device. After the first sync,
 the phone can review text, images, and audio while the PC is off. Review events
 remain in an encrypted outbox and are uploaded through the first secure connection
 available again.
