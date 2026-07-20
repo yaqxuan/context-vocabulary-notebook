@@ -70,6 +70,7 @@ const conflict1: ImportConflictDto = {
   existing_card_id: 'existing-1',
   target_word: 'ephemeral',
   context_meaning: '短暂的',
+  target_language: '英语',
 };
 
 const conflict2: ImportConflictDto = {
@@ -77,11 +78,17 @@ const conflict2: ImportConflictDto = {
   existing_card_id: 'existing-2',
   target_word: 'laconic',
   context_meaning: '简洁的',
+  target_language: '日语',
 };
 
 const scanResult: ImportScanResponseDto = {
   schema_version: 1,
   export_type: 'marked',
+  language_scope: 'all',
+  languages: [
+    { target_language: '英语', cards: 21 },
+    { target_language: '日语', cards: 21 },
+  ],
   counts: {
     cards: 42,
     contexts: 67,
@@ -840,6 +847,27 @@ describe('SettingsPage', () => {
       await waitFor(() => expect(fetchedUrls.some((u) => u.includes('type=pure'))).toBe(true));
     });
 
+    it('exports only the language selected by the user', async () => {
+      const fetchedUrls: string[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        fetchedUrls.push(url);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
+        if (url.includes('/export')) return Promise.resolve(blobResponse());
+        return Promise.resolve(jsonResponse(settings));
+      });
+
+      render(<SettingsPage />);
+      await screen.findByLabelText('默认学习语言');
+      fireEvent.change(screen.getByLabelText('导出语言'), { target: { value: '日语' } });
+      fireEvent.click(screen.getByRole('button', { name: '导出含有标记的卡片' }));
+
+      await waitFor(() => expect(
+        fetchedUrls.some((url) => url.includes(`language=${encodeURIComponent('日语')}`)),
+      ).toBe(true));
+      expect(lastAnchorDownload).toBe('cvn-marked-ja-export.zip');
+    });
+
     it('removes the hidden anchor from the DOM after export, even if click throws', async () => {
       vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
         const url = String(input);
@@ -1017,6 +1045,29 @@ describe('SettingsPage', () => {
       const keys = getFormDataKeys(capturedBody);
       expect(keys).toContain('decisions');
       expect(keys).not.toContain('decision');
+    });
+
+    it('sends only selected languages and hides conflicts from unselected languages', async () => {
+      let capturedLanguages: unknown = null;
+
+      await setupAndScan((input, init) => {
+        const url = String(input);
+        if (url === '/api/ai-configs') return Promise.resolve(jsonResponse([]));
+        if (url.includes('/import/execute')) {
+          const entry = getFormDataEntry(init?.body, 'languages');
+          capturedLanguages = entry ? JSON.parse(String(entry)) : null;
+          return Promise.resolve(jsonResponse(executeResult));
+        }
+        if (url.includes('/import/scan')) return Promise.resolve(jsonResponse(scanResult));
+        return Promise.resolve(jsonResponse(settings));
+      });
+
+      fireEvent.click(screen.getByLabelText('English (21)'));
+      expect(screen.queryByText('ephemeral')).not.toBeInTheDocument();
+      expect(screen.getByText('laconic')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '执行导入' }));
+
+      await waitFor(() => expect(capturedLanguages).toEqual(['日语']));
     });
 
     it('shows 导入完成 after successful execute with skip_all', async () => {

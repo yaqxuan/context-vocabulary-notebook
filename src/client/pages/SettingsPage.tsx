@@ -4,6 +4,7 @@ import {
   DEFAULT_DEFINITION_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   SUPPORTED_LANGUAGES,
+  getLanguageIso6391Code,
   getNativeLanguageLabel,
   normalizeSupportedLanguage,
   type SupportedLanguage,
@@ -524,15 +525,18 @@ function ExportSection() {
   const { t } = useI18n();
   const [markedLoading, setMarkedLoading] = useState(false);
   const [pureLoading, setPureLoading] = useState(false);
+  const [languageScope, setLanguageScope] = useState<'all' | SupportedLanguage>('all');
 
   async function triggerDownload(type: 'marked' | 'pure') {
-    const filename = type === 'marked' ? 'cvn-marked-export.zip' : 'cvn-pure-export.zip';
+    const selectedLanguage = languageScope === 'all' ? undefined : languageScope;
+    const languageSuffix = selectedLanguage ? `-${getLanguageIso6391Code(selectedLanguage)}` : '';
+    const filename = `cvn-${type}${languageSuffix}-export.zip`;
     const setter = type === 'marked' ? setMarkedLoading : setPureLoading;
     setter(true);
     let url: string | null = null;
     let a: HTMLAnchorElement | null = null;
     try {
-      const blob = await exportCards(type);
+      const blob = await exportCards(type, selectedLanguage);
       url = URL.createObjectURL(blob);
       a = document.createElement('a');
       a.href = url;
@@ -552,6 +556,25 @@ function ExportSection() {
   return (
     <section className="phase7-settings-section">
       <h2 className="phase7-settings-section-title">{t('settings.export.title')}</h2>
+      <div className="phase7-settings-field phase7-settings-language-scope">
+        <label htmlFor="export-language-scope" className="phase7-settings-label">
+          {t('settings.export.scopeLabel')}
+        </label>
+        <select
+          id="export-language-scope"
+          className="phase7-settings-input"
+          value={languageScope}
+          onChange={(event) => setLanguageScope(event.target.value as 'all' | SupportedLanguage)}
+        >
+          <option value="all">{t('settings.export.allLanguages')}</option>
+          {SUPPORTED_LANGUAGES.map((language) => (
+            <option key={language} value={language}>{getNativeLanguageLabel(language)}</option>
+          ))}
+        </select>
+        <p className="phase7-settings-export-desc">
+          {languageScope === 'all' ? t('settings.export.allScopeNote') : t('settings.export.selectedScopeNote')}
+        </p>
+      </div>
       <div className="phase7-settings-export-grid">
         <div className="phase7-settings-export-card">
           <p className="phase7-settings-export-desc">
@@ -609,6 +632,7 @@ function ImportSection() {
 
   const [mode, setMode] = useState<DecisionMode>('skip_all');
   const [perItem, setPerItem] = useState<PerItemDecisions>({});
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
 
   const [executing, setExecuting] = useState(false);
   const [executeResult, setExecuteResult] = useState<ImportExecuteResponseDto | null>(null);
@@ -621,6 +645,7 @@ function ImportSection() {
     setScanError(null);
     setExecuteResult(null);
     setExecuteError(null);
+    setSelectedLanguages([]);
   }
 
   async function handleScan() {
@@ -632,6 +657,7 @@ function ImportSection() {
     try {
       const result = await scanImport(file);
       setScanResult(result);
+      setSelectedLanguages(result.languages.map((language) => language.target_language));
       // Initialize per-item decisions to default 'skip'
       const initial: PerItemDecisions = {};
       for (const c of result.conflicts) {
@@ -646,13 +672,16 @@ function ImportSection() {
   }
 
   async function handleExecute() {
-    if (!file || !scanResult) return;
+    if (!file || !scanResult || selectedLanguages.length === 0) return;
     setExecuting(true);
     setExecuteResult(null);
     setExecuteError(null);
     try {
-      const decision = buildDecisionDto(mode, scanResult.conflicts, perItem);
-      const result = await executeImport(file, decision);
+      const selectedSet = new Set(selectedLanguages);
+      const selectedConflicts = scanResult.conflicts.filter((conflict) => selectedSet.has(conflict.target_language));
+      const decision = buildDecisionDto(mode, selectedConflicts, perItem);
+      const includesEveryLanguage = scanResult.languages.every((language) => selectedSet.has(language.target_language));
+      const result = await executeImport(file, decision, includesEveryLanguage ? undefined : selectedLanguages);
       setExecuteResult(result);
     } catch (err: unknown) {
       setExecuteError(err instanceof Error ? err.message : t('settings.import.executeFailed'));
@@ -660,6 +689,9 @@ function ImportSection() {
       setExecuting(false);
     }
   }
+
+  const selectedLanguageSet = new Set(selectedLanguages);
+  const visibleConflicts = scanResult?.conflicts.filter((conflict) => selectedLanguageSet.has(conflict.target_language)) ?? [];
 
   return (
     <section className="phase7-settings-section">
@@ -686,7 +718,7 @@ function ImportSection() {
           <Button onClick={handleScan} disabled={!file || scanning}>
             {t('settings.import.scan')}
           </Button>
-          <Button onClick={handleExecute} disabled={!scanResult || executing}>
+          <Button onClick={handleExecute} disabled={!scanResult || executing || selectedLanguages.length === 0}>
             {t('settings.import.execute')}
           </Button>
         </div>
@@ -721,14 +753,55 @@ function ImportSection() {
             </div>
           </div>
 
+          <fieldset className="phase7-settings-language-picker">
+            <legend className="phase7-settings-subsection-title">{t('settings.import.languageTitle')}</legend>
+            <label className="phase7-settings-check-label">
+              <input
+                type="checkbox"
+                checked={selectedLanguages.length === scanResult.languages.length}
+                onChange={(event) => setSelectedLanguages(
+                  event.target.checked ? scanResult.languages.map((language) => language.target_language) : [],
+                )}
+              />
+              {t('settings.import.allLanguages')}
+            </label>
+            <div className="phase7-settings-language-options">
+              {scanResult.languages.map((language) => {
+                const normalized = normalizeSupportedLanguage(language.target_language);
+                return (
+                  <label key={language.target_language} className="phase7-settings-check-label">
+                    <input
+                      type="checkbox"
+                      checked={selectedLanguageSet.has(language.target_language)}
+                      onChange={(event) => setSelectedLanguages((current) => (
+                        event.target.checked
+                          ? [...new Set([...current, language.target_language])]
+                          : current.filter((item) => item !== language.target_language)
+                      ))}
+                    />
+                    {normalized ? getNativeLanguageLabel(normalized) : language.target_language} ({language.cards})
+                  </label>
+                );
+              })}
+            </div>
+            {selectedLanguages.length === 0 && (
+              <p className="phase7-settings-import-error" role="alert">{t('settings.import.selectAtLeastOne')}</p>
+            )}
+            <p className="phase7-settings-export-desc">
+              {scanResult.language_scope === 'all' && selectedLanguages.length === scanResult.languages.length
+                ? t('settings.import.fullRestoreNote')
+                : t('settings.import.scopedRestoreNote')}
+            </p>
+          </fieldset>
+
           {/* Conflicts */}
-          {scanResult.conflicts.length > 0 && (
+          {visibleConflicts.length > 0 && (
             <div className="phase7-settings-conflicts">
               <h3 className="phase7-settings-subsection-title">
-                {t('settings.import.conflicts')} ({scanResult.conflicts.length})
+                {t('settings.import.conflicts')} ({visibleConflicts.length})
               </h3>
               <ul className="phase7-settings-conflict-list">
-                {scanResult.conflicts.map((c) => (
+                {visibleConflicts.map((c) => (
                   <li key={c.import_card_id} className="phase7-settings-conflict-item">
                     <span className="phase7-settings-conflict-word">{c.target_word}</span>
                     <span className="phase7-settings-conflict-sep"> — </span>

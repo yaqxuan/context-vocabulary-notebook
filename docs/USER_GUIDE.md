@@ -301,6 +301,16 @@ The in-app ZIP export supports:
   state, review logs, and settings;
 - a card-only share without personal review progress, favorites, or settings.
 
+Each export can include all languages or one selected learning language. An
+all-language personal backup also contains global settings. A language-scoped
+backup contains that language's review state but excludes global settings.
+
+When importing, scan the ZIP first and choose one or more languages found in the
+archive. Restoring every language from an all-language personal backup restores
+global settings and revokes old phone pairings. Importing only selected languages
+does neither, so other language libraries and the current phone pairing remain
+unchanged.
+
 API keys are excluded from the app's ZIP exports. That guarantee does not apply
 to filesystem copies or the `tar` backup above.
 
