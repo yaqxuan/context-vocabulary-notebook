@@ -1,6 +1,6 @@
 # Android 离线复习与设备同步
 
-`0.3.0-alpha.7` 支持一台 PC 配对一台 Android 手机。首次同步后，即使 PC
+`0.3.0-alpha.8` 支持一台 PC 配对一台 Android 手机。首次同步后，即使 PC
 关机，手机仍可离线复习文字、图片和音频；复习事件保存在加密 outbox 中，并通过
 首个安全可用的通道上传。
 
@@ -70,6 +70,10 @@ CVN_DEVICE_SYNC=1
 PC 通过 `_cvn-sync._tcp.local` 发布 mDNS。广播只用于寻找地址，Android 始终校验
 已保存的完整 SHA-256 SPKI 指纹。mDNS 不可用时使用二维码保存的地址或手动地址。
 IP 改变不用重新配对；证书身份改变才需要。
+
+配对二维码的局域网地址会排除 Tailnet 和无法直接使用的链路本地地址。如果 PC
+同时存在多个私有网卡地址，Android 会并行验证二维码中的全部 LAN 地址，并保存
+真正连通到配对 PC 的地址。因此普通局域网配对不要求安装或开启 Tailscale。
 
 Android 13 及以上版本首次进行局域网发现时，请允许 **附近设备** 权限。Tailscale
 模式不使用 mDNS。当前 target SDK 36 在 Android 16 仍默认获得局域网访问；清单声明

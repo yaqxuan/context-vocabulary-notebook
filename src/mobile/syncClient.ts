@@ -27,7 +27,7 @@ interface SyncEndpoint {
   baseUrl: string;
   pin?: string;
   transport: MobileTransport;
-  source: 'discovered-lan' | 'saved-lan' | 'tailscale';
+  source: 'discovered-lan' | 'saved-lan' | 'pairing-lan' | 'tailscale';
 }
 
 interface CapabilitiesResponse {
@@ -145,19 +145,32 @@ export class MobileSyncClient {
     }
   }
 
-  private async availableEndpoints(config: MobileConfig): Promise<SyncEndpoint[]> {
+  private async availableEndpoints(
+    config: MobileConfig,
+    pairingLanUrls: string[] = [],
+  ): Promise<SyncEndpoint[]> {
     const mode = config.connection_mode ?? config.selected_transport;
     const candidateOperations: Array<Promise<SyncEndpoint | null>> = [];
     if (mode === 'auto' || mode === 'lan') {
       candidateOperations.push(this.discoverLan(config));
-      candidateOperations.push(Promise.resolve(
+      candidateOperations.push(Promise.resolve().then(() => (
         config.lan_url && config.lan_spki_sha256
           ? {
               baseUrl: normalizedBaseUrl(config.lan_url), pin: config.lan_spki_sha256,
               transport: 'lan' as const, source: 'saved-lan' as const,
             }
-          : null,
-      ));
+          : null
+      )));
+      for (const value of pairingLanUrls) {
+        candidateOperations.push(Promise.resolve().then(() => (
+          config.lan_spki_sha256
+            ? {
+                baseUrl: normalizedBaseUrl(value), pin: config.lan_spki_sha256,
+                transport: 'lan' as const, source: 'pairing-lan' as const,
+              }
+            : null
+        )));
+      }
     }
     if (mode === 'auto' || mode === 'tailscale') {
       candidateOperations.push(Promise.resolve(config.tailscale_url ? {
@@ -195,7 +208,7 @@ export class MobileSyncClient {
     }));
 
     const storedIdentityFailure = results.find((result) => (
-      result.candidate?.source !== 'discovered-lan'
+      (result.candidate?.source === 'saved-lan' || result.candidate?.source === 'tailscale')
       && result.error
       && (
         isPinnedIdentityError(result.error)
@@ -253,14 +266,20 @@ export class MobileSyncClient {
       serverId: payload.server_id,
       credential: null,
       mode,
-      lanUrl,
+      // Pairing payloads can contain several interfaces. Do not turn the first
+      // one into an authoritative saved address until it has actually passed
+      // certificate pinning and the capabilities check.
+      lanUrl: null,
       lanSpkiSha256: payload.lan?.spki_sha256 ?? null,
       lanPublicKey: payload.lan?.public_key_spki ?? null,
       lanServiceName: payload.lan?.service_name ?? null,
       tailscaleUrl: payload.tailscale_url,
     });
     const pairedConfig = await this.db.getConfig();
-    const endpoint = (await this.availableEndpoints(pairedConfig))[0]!;
+    const endpoint = (await this.availableEndpoints(
+      pairedConfig,
+      payload.lan?.urls ?? (lanUrl ? [lanUrl] : []),
+    ))[0]!;
     parseJson(await this.request(endpoint, '/v1/pair', {
       method: 'POST',
       body: { session_id: payload.session_id, secret: payload.secret, device_id: config.device_id, device_name: config.device_name },

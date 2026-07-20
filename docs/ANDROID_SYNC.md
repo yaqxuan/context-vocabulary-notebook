@@ -1,6 +1,6 @@
 # Android offline review and device sync
 
-Version `0.3.0-alpha.7` supports one PC and one Android device. After the first sync,
+Version `0.3.0-alpha.8` supports one PC and one Android device. After the first sync,
 the phone can review text, images, and audio while the PC is off. Review events
 remain in an encrypted outbox and are uploaded through the first secure connection
 available again.
@@ -81,6 +81,11 @@ hint: Android always checks the exact saved SHA-256 SPKI fingerprint. If mDNS is
 unavailable, the app uses the address saved from the QR code or a manually entered
 address. IP changes do not require pairing again; a certificate identity change
 does.
+
+Pairing QR codes exclude Tailnet and unusable link-local addresses from the LAN
+list. When a PC has several private interfaces, Android validates all QR-provided
+LAN addresses in parallel and saves the one that actually reaches the paired PC.
+Ordinary LAN pairing therefore does not require Tailscale to be installed or enabled.
 
 On Android 13 or newer, allow the **Nearby devices** permission when LAN mode
 first performs discovery. Tailscale mode does not use mDNS. Android 16 still

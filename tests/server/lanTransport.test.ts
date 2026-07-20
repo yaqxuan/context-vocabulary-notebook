@@ -6,7 +6,11 @@ import { X509Certificate, verify } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { createTestDb } from '../../src/server/db/testDb.js';
-import { ensureLanIdentity, signedConnectionProfile } from '../../src/server/domain/lanIdentity.js';
+import {
+  ensureLanIdentity,
+  isAdvertisableLanAddress,
+  signedConnectionProfile,
+} from '../../src/server/domain/lanIdentity.js';
 import { detectWslNetwork } from '../../src/server/domain/networkDiagnostics.js';
 import { isPrivateNetworkAddress, startLanSyncServer, type LanSyncServer } from '../../src/server/lanServer.js';
 import { DeviceSyncRuntime } from '../../src/server/deviceSyncRuntime.js';
@@ -77,6 +81,15 @@ describe('LAN sync transport', () => {
     expect(isPrivateNetworkAddress('fd00::10')).toBe(true);
     expect(isPrivateNetworkAddress('8.8.8.8')).toBe(false);
     expect(isPrivateNetworkAddress('2001:4860:4860::8888')).toBe(false);
+  });
+
+  it('does not advertise Tailnet or unusable link-local addresses as LAN URLs', () => {
+    expect(isAdvertisableLanAddress('192.168.1.231')).toBe(true);
+    expect(isAdvertisableLanAddress('10.20.30.40')).toBe(true);
+    expect(isAdvertisableLanAddress('fd12:3456::10')).toBe(true);
+    expect(isAdvertisableLanAddress('100.95.236.101')).toBe(false);
+    expect(isAdvertisableLanAddress('fd7a:115c:a1e0::8f33:ec66')).toBe(false);
+    expect(isAdvertisableLanAddress('fe80::d48:471c:e60b:b421')).toBe(false);
   });
 
   it('reports a scoped WSL firewall command without changing the system', () => {

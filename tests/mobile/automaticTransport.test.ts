@@ -73,4 +73,38 @@ describe('Android automatic transport selection', () => {
       availableEndpoints(value: MobileConfig): Promise<unknown>;
     }).availableEndpoints(config)).rejects.toMatchObject({ code: 'server_mismatch' });
   });
+
+  it('tries every pinned LAN address from a pairing QR and keeps the reachable one', async () => {
+    request.mockImplementation((options: { url: string }) => {
+      if (options.url.includes('100.95.236.101')) {
+        return Promise.reject(new Error('Connection probe timed out'));
+      }
+      return Promise.resolve({
+        status: 200,
+        body: JSON.stringify({
+          protocol_version: 1,
+          server_id: 'pc-1',
+          minimum_client_version: '0.3.0-alpha.7',
+        }),
+        contentType: 'application/json',
+      });
+    });
+    const client = new MobileSyncClient({} as MobileDatabase);
+    const endpoints = await (client as unknown as {
+      availableEndpoints(
+        value: MobileConfig,
+        pairingLanUrls: string[],
+      ): Promise<Array<{ baseUrl: string; source: string }>>;
+    }).availableEndpoints(
+      { ...config, connection_mode: 'lan', lan_url: null, tailscale_url: null },
+      ['https://100.95.236.101:3109', 'https://192.168.1.231:3109'],
+    );
+
+    expect(endpoints).toEqual([
+      expect.objectContaining({
+        baseUrl: 'https://192.168.1.231:3109',
+        source: 'pairing-lan',
+      }),
+    ]);
+  });
 });
