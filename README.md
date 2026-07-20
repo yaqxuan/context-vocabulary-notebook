@@ -58,12 +58,11 @@ recognition result before saving each card. It does not accept website video URL
 | Local recognition | Optional ffmpeg, Tesseract OCR, and whisper.cpp STT. |
 | AI assistance | Optional OpenAI-compatible meaning, usage, translation, lemma, and spelling suggestions. |
 
-Testing Android before a signed release? Download the `cvn-android-...` artifact from
-the relevant GitHub Actions run, extract it, verify `app-debug.apk` with the included
-`app-debug.apk.sha256`, and send **only `app-debug.apk`** to the phone for installation.
-The checksum file stays on the computer. See the
-[Android installation and sync guide](./docs/ANDROID_SYNC.md) for exact commands and
-the Debug APK warning.
+For normal installation, download the signed APK and its `.sha256` file from
+[GitHub Releases](https://github.com/yaqxuan/context-vocabulary-notebook/releases).
+GitHub Actions Debug APKs are only for development testing and may not update over a
+signed installation. See the [Android installation and sync guide](./docs/ANDROID_SYNC.md)
+for checksum commands and safe upgrade instructions.
 
 On the PC, open **Settings → Android offline sync** and choose **Set up phone sync
 automatically**. The same guide covers the one-time Windows/WSL firewall or Tailscale
@@ -77,9 +76,19 @@ Requires Git, npm, and Node.js `20.19+` or `22.12+` (Node.js 22 LTS recommended)
 Run the installer from an empty directory. It installs the project directly into
 that directory and does not create a nested `context-vocabulary-notebook` folder.
 
+### Platform support
+
+| Platform | Current status |
+|---|---|
+| Windows 11 / WSL | Tested on real installations. |
+| Linux | Covered by automated CI and installer smoke tests. |
+| macOS | The Homebrew-based installer is implemented, but has not yet been verified on a real Mac; treat it as experimental. |
+| Android | Signed APK published and tested on a real phone plus API 24/36 emulators. |
+| iOS / iPadOS | Not provided in `v0.3.x`; there is no iOS project or installable build. |
+
 ### 1. Install the core app
 
-Linux, macOS, or WSL:
+Linux, experimental macOS, or WSL:
 
 ```bash
 curl --retry 5 --retry-delay 2 --retry-connrefused -fsSL https://raw.githubusercontent.com/yaqxuan/context-vocabulary-notebook/main/scripts/install.sh | bash

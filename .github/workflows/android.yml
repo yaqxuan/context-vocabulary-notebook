@@ -93,7 +93,15 @@ jobs:
         if: env.HAS_ANDROID_SIGNING == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" context-vocabulary-notebook-${GITHUB_REF_NAME}.apk context-vocabulary-notebook-${GITHUB_REF_NAME}.apk.sha256 --verify-tag --generate-notes
+        run: |
+          release_flags=(--verify-tag --generate-notes)
+          case "$GITHUB_REF_NAME" in
+            *-alpha*|*-beta*|*-rc*) release_flags+=(--prerelease) ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" \
+            context-vocabulary-notebook-${GITHUB_REF_NAME}.apk \
+            context-vocabulary-notebook-${GITHUB_REF_NAME}.apk.sha256 \
+            "${release_flags[@]}"
 
   emulator:
     name: Install on API ${{ matrix.api-level }}
