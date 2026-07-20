@@ -46,6 +46,23 @@ test('keeps native select options readable across every form route', async ({ pa
   expect(checkedOptions).toBeGreaterThan(20);
 });
 
+test('keeps settings helper text readable on its painted panels', async ({ page }) => {
+  await page.goto('/#/settings');
+
+  const diagnostic = page.locator('.device-sync-diagnostic:has(.device-sync-setup-status)');
+  const setupStatus = diagnostic.locator('.device-sync-setup-status > span').first();
+  const aiDescription = page.locator('.ai-settings-section > .phase7-settings-export-desc').first();
+
+  await expect(diagnostic).toBeVisible();
+  await expect(setupStatus).toBeVisible();
+  await expect(aiDescription).toBeVisible();
+
+  await expect(diagnostic.locator('h3')).toHaveCSS('color', 'rgb(8, 36, 61)');
+  await expect(diagnostic.locator('p').first()).toHaveCSS('color', 'rgb(8, 36, 61)');
+  await expect(setupStatus).toHaveCSS('color', 'rgb(8, 36, 61)');
+  await expect(aiDescription).toHaveCSS('color', 'rgb(237, 247, 255)');
+});
+
 test('keeps the desktop sidebar contained and scrollable on short screens', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 640 });
   await page.goto('/#/');

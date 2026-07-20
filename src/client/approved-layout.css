@@ -2735,3 +2735,39 @@ body {
 .app-shell select option:disabled {
   color: #a9bfd2;
 }
+
+/* Keep text paired with the actual surface painted by the approved settings
+   layout. These panels otherwise inherit colors from the alternate ice theme,
+   producing light-on-light and dark-on-dark combinations. */
+.phase7-settings-section.device-sync-section :is(
+  .device-sync-card,
+  .device-sync-diagnostic,
+  .device-sync-request,
+  .device-sync-device,
+  .device-sync-qr
+) {
+  color: #08243d !important;
+}
+
+.phase7-settings-section.device-sync-section :is(
+  .device-sync-card,
+  .device-sync-diagnostic,
+  .device-sync-request,
+  .device-sync-device,
+  .device-sync-qr
+) :where(h3, p, span, strong, small, code, pre) {
+  color: inherit !important;
+  text-shadow: none !important;
+}
+
+.phase7-settings-section.device-sync-section .device-sync-setup-status > span {
+  border: 1px solid rgba(8, 36, 61, .14);
+  background: rgba(248, 252, 255, .88);
+  color: #08243d !important;
+}
+
+.phase7-settings-section.ai-settings-section > .phase7-settings-export-desc {
+  color: #edf7ff !important;
+  font-weight: 650;
+  text-shadow: 0 1px 0 rgba(3, 16, 43, .72) !important;
+}
