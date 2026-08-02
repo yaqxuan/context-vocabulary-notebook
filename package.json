@@ -57,7 +57,7 @@
     "autoprefixer": "10.5.0",
     "jsdom": "29.1.1",
     "playwright": "1.60.0",
-    "postcss": "8.5.15",
+    "postcss": "8.5.25",
     "supertest": "7.2.2",
     "tailwindcss": "4.3.0",
     "tsx": "4.22.3",
